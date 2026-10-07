@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 async function connectDB(uri) {
   if (!uri) {
-    console.log('MONGO_URI not set — skipping MongoDB connection')
+    console.log('MONGODB_URL not set — skipping MongoDB connection')
     return
   }
   try {
