@@ -7,7 +7,7 @@ import Card from '../../components/ui/Card'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import { Select } from '../../components/ui/Input'
 
-export default function ThreadView({ convoId, onChanged }) {
+export default function ThreadView({ convoId, onChanged, onBack }) {
   const { token } = useAuth()
   const [thread, setThread] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -61,7 +61,8 @@ export default function ThreadView({ convoId, onChanged }) {
 
   return (
     <Card>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <Button variant="secondary" size="sm" className="lg:hidden" onClick={onBack}>Back</Button>
         <div className="flex gap-2">
           <Badge>{thread.status}</Badge>
           <Badge color="blue">{thread.marketplace}</Badge>

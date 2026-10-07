@@ -19,6 +19,7 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeId, setActiveId] = useState(null)
+  const [mobileThread, setMobileThread] = useState(false)
 
   const shopsRes = useApi(token ? '/api/shops' : null)
 
@@ -42,7 +43,7 @@ export default function InboxPage() {
   return (
     <div className="space-y-3">
       <h1 className="text-2xl font-bold">Inbox <span className="text-sm font-normal text-gray-500">(placeholder — local only)</span></h1>
-      <div className="flex max-w-md gap-2">
+      <div className="grid max-w-md grid-cols-1 gap-2 sm:grid-cols-2">
         <Select
           value={shopId}
           onChange={(e) => { setShopId(e.target.value); setPage(1) }}
@@ -55,16 +56,18 @@ export default function InboxPage() {
         />
       </div>
       <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
-        <Card className="!p-0 overflow-hidden">
+        <Card className={`${mobileThread ? 'hidden lg:block' : 'block'} !p-0 overflow-hidden`}>
           {loading ? <Spinner /> : error ? <ErrorState message={error} onRetry={fetchConvos} /> :
             convos.length === 0 ? <EmptyState message="No conversations" /> : (
               <>
-                <ConversationList convos={convos} activeId={activeId} onSelect={setActiveId} />
+                <ConversationList convos={convos} activeId={activeId} onSelect={(id) => { setActiveId(id); setMobileThread(true) }} />
                 <Pagination page={meta.page} pages={meta.pages} total={meta.total} onPage={setPage} />
               </>
             )}
         </Card>
-        <ThreadView convoId={activeId} onChanged={fetchConvos} />
+        <div className={`${mobileThread ? 'block' : 'hidden lg:block'}`}>
+          <ThreadView convoId={activeId} onChanged={fetchConvos} onBack={() => setMobileThread(false)} />
+        </div>
       </div>
     </div>
   )

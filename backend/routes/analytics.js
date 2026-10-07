@@ -20,10 +20,16 @@ function match(req, extra = {}) {
   return m
 }
 
+function marketplaceFilter(req) {
+  return req.query.marketplace && req.query.marketplace !== 'all'
+    ? { marketplace: req.query.marketplace }
+    : {}
+}
+
 // GET /api/analytics/summary?from=&to=
 router.get('/summary', async (req, res) => {
   try {
-    const m = match(req)
+    const m = match(req, marketplaceFilter(req))
     const [agg] = await Order.aggregate([
       { $match: m },
       {
@@ -78,7 +84,7 @@ router.get('/revenue', async (req, res) => {
 router.get('/marketplaces', async (req, res) => {
   try {
     const rows = await Order.aggregate([
-      { $match: match(req) },
+      { $match: match(req, marketplaceFilter(req)) },
       {
         $group: {
           _id: '$marketplace',
@@ -99,7 +105,7 @@ router.get('/products', async (req, res) => {
   try {
     const limit = Math.min(20, Number(req.query.limit) || 10)
     const rows = await Order.aggregate([
-      { $match: match(req) },
+      { $match: match(req, marketplaceFilter(req)) },
       { $unwind: '$items' },
       {
         $group: {

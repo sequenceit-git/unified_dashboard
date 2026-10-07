@@ -19,16 +19,41 @@ router.get('/low-stock', async (req, res) => {
   }
 })
 
-// GET /api/inventory/logs?productId=&shopId=&reason=&page=&limit=
+// GET /api/inventory/logs?productId=&shopId=&reason=&direction=&q=&from=&to=&page=&limit=
 router.get('/logs', async (req, res) => {
   try {
     const filter = {}
     if (req.query.productId) filter.productId = req.query.productId
     if (req.query.shopId) filter.shopId = req.query.shopId
     if (req.query.reason) filter.reason = req.query.reason
+    if (req.query.direction === 'increase') filter.change = { $gt: 0 }
+    if (req.query.direction === 'decrease') filter.change = { $lt: 0 }
+    if (req.query.from || req.query.to) {
+      filter.createdAt = {}
+      if (req.query.from) filter.createdAt.$gte = new Date(req.query.from)
+      if (req.query.to) filter.createdAt.$lte = new Date(req.query.to)
+    }
+    if (req.query.q) {
+      const q = req.query.q.trim()
+      const productIds = await Product.find({
+        $or: [
+          { sku: { $regex: q, $options: 'i' } },
+          { title: { $regex: q, $options: 'i' } },
+        ],
+      }).distinct('_id')
+      filter.$or = [
+        { productId: { $in: productIds } },
+        { variantSku: { $regex: q, $options: 'i' } },
+      ]
+    }
     if (req.user.role === 'sub_admin') filter.shopId = req.user.shopId
     const pg = paging(req)
     const out = await paged(InventoryLog, filter, pg, { createdAt: -1 })
+    out.data = await InventoryLog.populate(out.data, [
+      { path: 'productId', select: 'sku title' },
+      { path: 'shopId', select: 'name marketplace' },
+      { path: 'createdBy', select: 'name email' },
+    ])
     res.json(out)
   } catch (err) {
     res.status(500).json({ error: err.message })
