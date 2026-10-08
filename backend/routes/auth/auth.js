@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs')
 const express = require('express')
-const { requireAuth, requireRole, signToken } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireRole, signToken } = require('../../middleware/auth')
+const UserShopAccess = require('../../models/UserShopAccess')
+const Shop = require('../../models/Shop')
+const { MAIN_ROUTES } = require('../../config/access')
 const User = require('../../models/User')
 
 const router = express.Router()
@@ -42,7 +45,7 @@ router.post('/login', async (req, res) => {
     await user.save()
     res.json({
       token: signToken(user),
-      user: { id: user._id, name: user.name, role: user.role, shopId: user.shopId },
+      user: await userSummary(user),
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -50,22 +53,117 @@ router.post('/login', async (req, res) => {
 })
 
 // POST /api/auth/users — super_admin creates sub_admins (or more admins)
-router.post('/users', requireAuth, requireRole('super_admin'), async (req, res) => {
+router.use(requireAuth, loadAccess)
+
+async function userSummary(user) {
+  const access = user.role === 'sub_admin'
+    ? await UserShopAccess.find({ userId: user._id }).populate('shopId', 'name marketplace status')
+    : []
+  const shops = access.length
+    ? access.map((row) => row.shopId).filter(Boolean)
+    : user.shopId
+      ? await Shop.find({ _id: user.shopId }).select('name marketplace status')
+      : []
+  return {
+    id: user._id,
+    name: user.name,
+    role: user.role,
+    profileImageUrl: user.profileImageUrl || '',
+    mainRoutes: user.mainRoutes,
+    shopId: user.shopId,
+    shops,
+  }
+}
+
+// POST /api/auth/users — super_admin creates sub_admins and their access
+router.post('/users', requireRole('super_admin'), async (req, res) => {
   try {
-    const { name, email, password, role, shopId } = req.body
-    if (role === 'sub_admin' && !shopId) {
-      return res.status(400).json({ error: 'sub_admin requires shopId' })
+    const { name, email, password, role, shopIds = [], shopId, mainRoutes = [], profileImageUrl = '' } = req.body
+    const requestedShopIds = Array.isArray(shopIds) && shopIds.length
+      ? shopIds
+      : shopId
+        ? [shopId]
+        : []
+    if (!name || !email || !password || !role || !['super_admin', 'sub_admin'].includes(role)) {
+      return res.status(400).json({ error: 'name, email, password, and a valid role are required' })
+    }
+    if (role === 'sub_admin' && (!Array.isArray(requestedShopIds) || requestedShopIds.length === 0)) {
+      return res.status(400).json({ error: 'sub_admin requires at least one shopId' })
+    }
+    if (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route))) {
+      return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
     }
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await User.create({
       name,
       email,
       passwordHash,
+      profileImageUrl,
       role,
-      shopId: shopId || null,
+      mainRoutes: role === 'super_admin' ? MAIN_ROUTES : mainRoutes,
+      // Keep the legacy field populated during the migration period.
+      shopId: role === 'sub_admin' ? requestedShopIds[0] : null,
       createdBy: req.user.id,
     })
+    if (role === 'sub_admin') {
+      const uniqueShopIds = [...new Set(requestedShopIds.map(String))]
+      const validShops = await Shop.countDocuments({ _id: { $in: uniqueShopIds } })
+      if (validShops !== uniqueShopIds.length) {
+        await User.findByIdAndDelete(user._id)
+        return res.status(400).json({ error: 'One or more shopIds are invalid' })
+      }
+      await UserShopAccess.insertMany(
+        uniqueShopIds.map((shopId) => ({
+          userId: user._id, shopId, grantedBy: req.user.id,
+        })),
+      )
+    }
     res.status(201).json({ id: user._id, email: user.email, role: user.role })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+router.get('/users', requireRole('super_admin'), async (req, res) => {
+  const users = await User.find({ role: 'sub_admin' }).select('-passwordHash').sort({ createdAt: -1 })
+  const access = await UserShopAccess.find({ userId: { $in: users.map((user) => user._id) } })
+  const byUser = new Map()
+  for (const row of access) {
+    if (!byUser.has(String(row.userId))) byUser.set(String(row.userId), [])
+    byUser.get(String(row.userId)).push(row.shopId)
+  }
+  res.json(users.map((user) => ({ ...user.toObject(), shopIds: byUser.get(String(user._id)) || [] })))
+})
+
+router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
+  try {
+    const { name, email, password, profileImageUrl, mainRoutes, shopIds, status } = req.body
+    if (mainRoutes && (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route)))) {
+      return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
+    }
+    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin' })
+    if (!user) return res.status(404).json({ error: 'Sub-admin not found' })
+    if (name !== undefined) user.name = name
+    if (email !== undefined) user.email = email
+    if (profileImageUrl !== undefined) user.profileImageUrl = profileImageUrl
+    if (password) user.passwordHash = await bcrypt.hash(password, 10)
+    if (mainRoutes) user.mainRoutes = mainRoutes
+    if (status) user.status = status
+    if (shopIds) {
+      if (!Array.isArray(shopIds) || shopIds.length === 0) {
+        return res.status(400).json({ error: 'At least one shopId is required' })
+      }
+      const uniqueShopIds = [...new Set(shopIds.map(String))]
+      const validShops = await Shop.countDocuments({ _id: { $in: uniqueShopIds } })
+      if (validShops !== uniqueShopIds.length) return res.status(400).json({ error: 'One or more shopIds are invalid' })
+      await UserShopAccess.deleteMany({ userId: user._id })
+      await UserShopAccess.insertMany(uniqueShopIds.map((shopId) => ({
+        userId: user._id, shopId, grantedBy: req.user.id,
+      })))
+      user.shopId = uniqueShopIds[0]
+    }
+    await user.save()
+    res.json(await userSummary(user))
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

@@ -37,6 +37,12 @@ export default function AnalyticsPage() {
   const markets = useApi(token ? `/api/analytics/marketplaces${queryString({ from, to, marketplace })}` : null, [days, marketplace, customFrom, customTo])
   const top = useApi(token ? `/api/analytics/products${queryString({ from, to, marketplace, limit: 10 })}` : null, [days, marketplace, customFrom, customTo])
   const inv = useApi(token ? '/api/analytics/inventory' : null)
+  const shopsRes = useApi(token ? '/api/shops' : null)
+  const shops = shopsRes.data || []
+  const availableMarketplaces = [
+    MARKETPLACES[0],
+    ...MARKETPLACES.slice(1).filter((market) => shops.some((shop) => shop.marketplace === market.id)),
+  ]
 
   return (
     <div className="space-y-3">
@@ -56,7 +62,7 @@ export default function AnalyticsPage() {
         <StatCard label="Low stock" value={inv.loading ? '…' : inv.data?.lowCount} sub={inv.data ? `${inv.data.outCount} out of stock` : ''} />
       </div>
 
-      <Tabs tabs={MARKETPLACES} active={marketplace} onChange={setMarketplace} />
+      <Tabs tabs={availableMarketplaces} active={marketplace} onChange={setMarketplace} />
       <RevenueChart data={revenue.data} />
 
       <div className="grid gap-3 lg:grid-cols-2">

@@ -11,6 +11,7 @@ const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 
 const User = require('../models/User')
+const UserShopAccess = require('../models/UserShopAccess')
 const Shop = require('../models/Shop')
 const Product = require('../models/Product')
 const Listing = require('../models/Listing')
@@ -25,7 +26,7 @@ const SyncLog = require('../models/SyncLog')
 const Notification = require('../models/Notification')
 const AuditLog = require('../models/AuditLog')
 
-const ALL = [User, Shop, Product, Listing, InventoryLog, Order, Customer, Conversation, Message, MessageTemplate, ResearchReport, SyncLog, Notification, AuditLog]
+const ALL = [User, UserShopAccess, Shop, Product, Listing, InventoryLog, Order, Customer, Conversation, Message, MessageTemplate, ResearchReport, SyncLog, Notification, AuditLog]
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 const daysAgo = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
@@ -35,7 +36,7 @@ async function main() {
   console.log('connected to db:', mongoose.connection.name)
 
   for (const m of ALL) await m.deleteMany({})
-  console.log('cleared 14 collections')
+  console.log('cleared collections')
 
   const passwordHash = await bcrypt.hash('Temp1234!', 10)
 
@@ -52,12 +53,24 @@ async function main() {
   ])
   const [ebay, temu, tiktok] = shops
 
-  await User.insertMany(
+  const agents = await User.insertMany(
     shops.map((s, i) => ({
       name: `Shop Agent ${i + 1}`, email: `agent${i + 1}@dev.local`, passwordHash,
-      role: 'sub_admin', shopId: s._id, createdBy: admin._id,
+      role: 'sub_admin', shopId: s._id,
+      mainRoutes: i === 0
+        ? ['dashboard', 'analytics', 'orders', 'inbox']
+        : i === 1
+          ? ['dashboard', 'products', 'inventory', 'orders']
+          : ['dashboard', 'inbox', 'customers'],
+      createdBy: admin._id,
     })),
   )
+  await UserShopAccess.insertMany([
+    { userId: agents[0]._id, shopId: ebay._id, grantedBy: admin._id },
+    { userId: agents[0]._id, shopId: temu._id, grantedBy: admin._id },
+    { userId: agents[1]._id, shopId: temu._id, grantedBy: admin._id },
+    { userId: agents[2]._id, shopId: tiktok._id, grantedBy: admin._id },
+  ])
 
   // --- products ---
   const products = await Product.insertMany([

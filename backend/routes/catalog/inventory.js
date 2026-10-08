@@ -1,16 +1,21 @@
 const express = require('express')
-const { requireAuth, requireRole } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
 const { paging, paged } = require('../../utils/query')
 const InventoryLog = require('../../models/InventoryLog')
 const Product = require('../../models/Product')
 
 const router = express.Router()
-router.use(requireAuth)
+router.use(requireAuth, loadAccess, requireMainRoute('inventory'))
 
 // GET /api/inventory/low-stock
 router.get('/low-stock', async (req, res) => {
   try {
-    const docs = await Product.find({ $expr: { $lte: ['$stock', '$lowStockThreshold'] } })
+    const productIds = req.user.role === 'sub_admin'
+      ? await require('../../models/Listing').find({ shopId: { $in: req.allowedShopIds } }).distinct('productId')
+      : null
+    const filter = { $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
+    if (productIds) filter._id = { $in: productIds }
+    const docs = await Product.find(filter)
       .sort({ stock: 1 })
       .limit(100)
     res.json(docs)
@@ -46,7 +51,7 @@ router.get('/logs', async (req, res) => {
         { variantSku: { $regex: q, $options: 'i' } },
       ]
     }
-    if (req.user.role === 'sub_admin') filter.shopId = req.user.shopId
+    Object.assign(filter, shopFilter(req, InventoryLog))
     const pg = paging(req)
     const out = await paged(InventoryLog, filter, pg, { createdAt: -1 })
     out.data = await InventoryLog.populate(out.data, [

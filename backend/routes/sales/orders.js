@@ -1,10 +1,10 @@
 const express = require('express')
-const { requireAuth, requireRole, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Order = require('../../models/Order')
 
 const router = express.Router()
-router.use(requireAuth)
+router.use(requireAuth, loadAccess, requireMainRoute('orders'))
 
 const SORTABLE = ['placedAt', 'totals.total', 'createdAt', 'status']
 
@@ -15,7 +15,12 @@ router.get('/', async (req, res) => {
     if (req.query.marketplace && req.query.marketplace !== 'all') {
       filter.marketplace = req.query.marketplace
     }
-    if (req.query.shopId) filter.shopId = req.query.shopId
+    if (req.query.shopId) {
+      if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === req.query.shopId)) {
+        return res.status(403).json({ error: 'You do not have access to this shop' })
+      }
+      filter.shopId = req.query.shopId
+    }
     if (req.query.status && req.query.status !== 'all') filter.status = req.query.status
     if (req.query.from || req.query.to) {
       filter.placedAt = {}

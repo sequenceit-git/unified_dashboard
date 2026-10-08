@@ -20,6 +20,10 @@ export default function ProductsPage() {
 
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = shopsRes.data || []
+  const availableMarketplaces = [
+    MARKETPLACES[0],
+    ...MARKETPLACES.slice(1).filter((market) => shops.some((shop) => shop.marketplace === market.id)),
+  ]
   const shopIds = marketplace === 'all' ? [] : shops.filter((s) => s.marketplace === marketplace).map((s) => s._id)
   const noShopForTab = marketplace !== 'all' && !shopsRes.loading && shopIds.length === 0
 
@@ -43,7 +47,7 @@ export default function ProductsPage() {
         )}
       </div>
       <Tabs
-        tabs={MARKETPLACES}
+        tabs={availableMarketplaces}
         active={marketplace}
         onChange={setMarketplace}
       />

@@ -49,10 +49,11 @@ export function AuthProvider({ children }) {
   }
 
   const quickLogin = (email) => login(email, QUICK_PASSWORD)
+  const hasRoute = (route) => user?.role === 'super_admin' || user?.mainRoutes?.includes(route)
 
   return (
     <AuthContext.Provider
-      value={{ token, user, login, quickLogin, logout, isAdmin: user?.role === 'super_admin' }}
+      value={{ token, user, login, quickLogin, logout, isAdmin: user?.role === 'super_admin', hasRoute }}
     >
       {children}
     </AuthContext.Provider>

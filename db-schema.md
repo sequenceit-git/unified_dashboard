@@ -24,6 +24,7 @@
 | 12 | `sync_logs` | Sync runs, API errors, failure tracking |
 | 13 | `notifications` | Low-stock and sync-failure alerts |
 | 14 | `audit_logs` | Who did what |
+| 15 | `user_shop_access` | Which shops each sub-admin can access |
 
 Analytics (sales overview, revenue, marketplace comparison, product performance) are **aggregation queries on `orders`**, so no separate collection is needed for now.
 
@@ -32,8 +33,9 @@ Analytics (sales overview, revenue, marketplace comparison, product performance)
 ## 2. RBAC Model
 
 - `super_admin`: access to all shops, can create/manage sub-admins and shops, runs the research bot.
-- `sub_admin`: access to **exactly one shop** (`user.shopId`). Created only by a super admin.
-- Middleware rule: if `role === 'sub_admin'`, force `filter.shopId = user.shopId` on every shop-scoped query. Never trust a `shopId` from the request body or query string.
+- `sub_admin`: access to one or more shops through `user_shop_access`. Created and configured only by a super admin.
+- `users.mainRoutes` contains the major application sections the sub-admin can open.
+- Middleware rule: if `role === 'sub_admin'`, force `filter.shopId = { $in: allowedShopIds }` on every shop-scoped query. Never trust a `shopId` from the request body or query string.
 
 ---
 
@@ -48,9 +50,11 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 | `_id` | ObjectId | |
 | `name` | String | required |
 | `email` | String | required, unique, lowercase |
+| `profileImageUrl` | String | optional profile image URL |
 | `passwordHash` | String | bcrypt/argon2, `select: false` |
 | `role` | String | enum: `super_admin`, `sub_admin` |
-| `shopId` | ObjectId → shops | required if `sub_admin`, null for `super_admin` |
+| `mainRoutes` | [String] | allowed sections: `dashboard`, `analytics`, `products`, `inventory`, `orders`, `customers`, `inbox` |
+| `shopId` | ObjectId → shops | legacy migration field; first assigned shop for `sub_admin` |
 | `createdBy` | ObjectId → users | the super admin who created this user |
 | `status` | String | enum: `active`, `disabled`; default `active` |
 | `lastLoginAt` | Date | |
@@ -62,9 +66,29 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 { shopId: 1, role: 1 }        // list sub-admins of a shop
 ```
 
+`shopId` is retained temporarily for migration compatibility and points to the first assigned shop. New authorization decisions use `user_shop_access`.
+
+### 3.2 `user_shop_access`
+
+| Field | Type | Notes |
+| ------- | ------ | ------- |
+| `_id` | ObjectId | |
+| `userId` | ObjectId → users | required |
+| `shopId` | ObjectId → shops | required |
+| `grantedBy` | ObjectId → users | super admin who granted access |
+| `createdAt` / `updatedAt` | Date | |
+
+**Indexes**
+
+```js
+{ userId: 1, shopId: 1 } // unique
+{ userId: 1 }
+{ shopId: 1 }
+```
+
 ---
 
-### 3.2 `shops`
+### 3.3 `shops`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -89,7 +113,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 
 ---
 
-### 3.3 `products` (generic master catalog)
+### 3.4 `products` (generic master catalog)
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -133,7 +157,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 
 ---
 
-### 3.4 `listings`
+### 3.5 `listings`
 
 A product listed on a shop. One product can have many listings (one per shop).
 
@@ -159,7 +183,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 
 ---
 
-### 3.5 `inventory_logs`
+### 3.6 `inventory_logs`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -184,7 +208,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 
 ---
 
-### 3.6 `orders`
+### 3.7 `orders`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -219,7 +243,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 
 ---
 
-### 3.7 `customers`
+### 3.8 `customers`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -245,7 +269,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 
 ---
 
-### 3.8 `conversations`
+### 3.9 `conversations`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -271,7 +295,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 
 ---
 
-### 3.9 `messages`
+### 3.10 `messages`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -296,7 +320,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 
 ---
 
-### 3.10 `message_templates`
+### 3.11 `message_templates`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -314,7 +338,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 
 ---
 
-### 3.11 `research_reports` (AI Market Research Bot)
+### 3.12 `research_reports` (AI Market Research Bot)
 
 One document per bot run. Opportunities are embedded (bounded to roughly the top 20 to 50 per run).
 
@@ -356,7 +380,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 
 ---
 
-### 3.12 `sync_logs`
+### 3.13 `sync_logs`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -379,7 +403,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 
 ---
 
-### 3.13 `notifications`
+### 3.14 `notifications`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -399,7 +423,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 
 ---
 
-### 3.14 `audit_logs`
+### 3.15 `audit_logs`
 
 | Field | Type | Notes |
 | ------- | ------ | ------- |
@@ -427,7 +451,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 ## 4. Relationships
 
 ```
-users ──(sub_admin)──> shops
+users ──< user_shop_access >── shops
 shops ──< listings >── products
 shops ──< orders >── customers
 orders.items ──> products
@@ -437,6 +461,15 @@ products ──< inventory_logs
 research_reports.opportunities ──> products (when added to catalog)
 ```
 
+### Main route administration
+
+Super-admins configure a sub-admin with:
+
+- `shopIds`: one or more IDs sent to `POST /api/auth/users` or `PATCH /api/auth/users/:id`
+- `mainRoutes`: any of `dashboard`, `analytics`, `products`, `inventory`, `orders`, `customers`, `inbox`
+
+The login response includes the assigned `shops` and `mainRoutes`. The frontend uses these values to hide navigation and redirect from unavailable pages. Backend route middleware enforces the same `mainRoutes`, while every shop-scoped query is limited to the assigned shop IDs.
+
 ---
 
 ## 5. Design Notes
@@ -445,9 +478,10 @@ research_reports.opportunities ──> products (when added to catalog)
 2. **Idempotent syncing:** the unique indexes on `(shopId, externalOrderId)`, `(shopId, externalThreadId)` and `(shopId, externalMessageId)` mean re-running a sync never creates duplicates. Use `bulkWrite` with `upsert`.
 3. **Stock updates:** use atomic `$inc` (`findOneAndUpdate` with `{ stock: { $gte: qty } }`) to avoid overselling. Log every change in `inventory_logs`.
 4. **Tokens:** encrypt marketplace tokens (AES-256-GCM, key in env or secret manager) and keep `select: false`. Never return them to the client.
-5. **Shop scoping:** `shopId` is denormalized onto `messages` and `orders` on purpose, so RBAC filtering never needs a join.
-6. **Products are global, visibility is per shop:** sub-admins see products through `listings` for their own shop only.
-7. **Analytics:** start with aggregation pipelines on `orders` (`$group` by day and marketplace). If dashboards get slow, add a `daily_stats` collection later; it is not needed now.
+5. **Shop scoping:** `shopId` is denormalized onto `messages` and `orders` on purpose. Sub-admin access is resolved from `user_shop_access` and applied as an `$in` filter.
+6. **Main route access:** route keys are stored in `users.mainRoutes`. The frontend hides unavailable navigation and the backend rejects direct API calls with the same route key.
+7. **Products are global, visibility is per shop:** sub-admins see products only through listings belonging to an assigned shop.
+8. **Analytics:** start with aggregation pipelines on `orders` (`$group` by day and marketplace). If dashboards get slow, add a `daily_stats` collection later; it is not needed now.
 8. **Backups:** handled at the infra level (MongoDB Atlas backups, or `mongodump` cron on the VPS). No schema changes needed.
 9. **Generic products:** use `attributes` (free-form object) and `variants[].options` for anything product-specific. Once the product type is decided, add a typed schema or validation for those fields.
 10. **Env/cost note:** AI usage costs are excluded from the budget per the agreement. Consider storing `aiTokensUsed` on messages or reports later if you need to bill the client for it.

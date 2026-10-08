@@ -1,11 +1,12 @@
 const express = require('express')
 const mongoose = require('mongoose')
-const { requireAuth, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
 const Order = require('../../models/Order')
 const Product = require('../../models/Product')
+const Listing = require('../../models/Listing')
 
 const router = express.Router()
-router.use(requireAuth)
+router.use(requireAuth, loadAccess, requireMainRoute('analytics'))
 
 function dates(req) {
   const to = req.query.to ? new Date(req.query.to) : new Date()
@@ -130,10 +131,15 @@ router.get('/products', async (req, res) => {
 // GET /api/analytics/inventory — low/out-of-stock snapshot
 router.get('/inventory', async (req, res) => {
   try {
-    const low = await Product.find({ $expr: { $lte: ['$stock', '$lowStockThreshold'] } })
+    const filter = { $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
+    if (req.user.role === 'sub_admin') {
+      const productIds = await Listing.find({ shopId: { $in: req.allowedShopIds } }).distinct('productId')
+      filter._id = { $in: productIds }
+    }
+    const low = await Product.find(filter)
       .select('sku title stock lowStockThreshold')
       .sort({ stock: 1 })
-    const out = await Product.countDocuments({ stock: 0 })
+    const out = await Product.countDocuments({ ...filter, stock: 0 })
     res.json({ lowCount: low.length, outCount: out, low })
   } catch (err) {
     res.status(500).json({ error: err.message })

@@ -1,18 +1,23 @@
 const express = require('express')
-const { requireAuth, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
 const { paging, paged } = require('../../utils/query')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 const MessageTemplate = require('../../models/MessageTemplate')
 
 const router = express.Router()
-router.use(requireAuth)
+router.use(requireAuth, loadAccess, requireMainRoute('inbox'))
 
 // GET /api/inbox/conversations?shopId=&status=&page=&limit=
 router.get('/conversations', async (req, res) => {
   try {
     const filter = { ...shopFilter(req, Conversation) }
-    if (req.query.shopId) filter.shopId = req.query.shopId
+    if (req.query.shopId) {
+      if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === req.query.shopId)) {
+        return res.status(403).json({ error: 'You do not have access to this shop' })
+      }
+      filter.shopId = req.query.shopId
+    }
     if (req.query.status && req.query.status !== 'all') filter.status = req.query.status
     const pg = paging(req)
     const out = await paged(Conversation, filter, pg, { lastMessageAt: -1 })
@@ -86,7 +91,10 @@ router.patch('/conversations/:id', async (req, res) => {
 router.get('/templates', async (req, res) => {
   try {
     const or = [{ shopId: null }]
-    const shopId = req.query.shopId || (req.user.role === 'sub_admin' ? req.user.shopId : null)
+    const shopId = req.query.shopId || null
+    if (req.user.role === 'sub_admin' && shopId && !req.allowedShopIds.some((id) => String(id) === shopId)) {
+      return res.status(403).json({ error: 'You do not have access to this shop' })
+    }
     if (shopId) or.push({ shopId })
     res.json(await MessageTemplate.find({ $or: or }).sort({ createdAt: -1 }))
   } catch (err) {
@@ -98,7 +106,12 @@ router.get('/templates', async (req, res) => {
 router.post('/templates', async (req, res) => {
   try {
     const body = { ...req.body, createdBy: req.user.id }
-    if (req.user.role === 'sub_admin') body.shopId = req.user.shopId
+    if (req.user.role === 'sub_admin') {
+      if (body.shopId && !req.allowedShopIds.some((id) => String(id) === body.shopId)) {
+        return res.status(403).json({ error: 'You do not have access to this shop' })
+      }
+      body.shopId = body.shopId || req.allowedShopIds[0]
+    }
     res.status(201).json(await MessageTemplate.create(body))
   } catch (err) {
     res.status(400).json({ error: err.message })

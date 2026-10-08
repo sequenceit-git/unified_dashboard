@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
 
 const resources = {
   users: require('../../models/User'),
@@ -19,7 +19,7 @@ const resources = {
 }
 
 const router = express.Router()
-router.use(requireAuth)
+router.use(requireAuth, loadAccess, requireMainRoute('dashboard'))
 
 // GET /api/dashboard/overview — document counts per collection
 router.get('/overview', async (req, res) => {
@@ -38,6 +38,9 @@ for (const [name, model] of Object.entries(resources)) {
   // GET /api/dashboard/<collection>?limit=50
   router.get(`/${name}`, async (req, res) => {
     try {
+      if (req.user.role === 'sub_admin' && !model.schema.path('shopId')) {
+        return res.json([])
+      }
       const limit = Math.min(Number(req.query.limit) || 50, 200)
       const docs = await model
         .find(shopFilter(req, model))
@@ -55,7 +58,7 @@ for (const [name, model] of Object.entries(resources)) {
       const body = { ...req.body }
       // sub_admin can only write into their own shop
       if (req.user.role === 'sub_admin' && model.schema.path('shopId')) {
-        body.shopId = req.user.shopId
+        body.shopId = req.allowedShopIds[0]
       }
       const doc = await model.create(body)
       res.status(201).json(doc)

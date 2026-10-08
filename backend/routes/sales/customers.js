@@ -1,16 +1,16 @@
 const express = require('express')
-const { requireAuth } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Conversation = require('../../models/Conversation')
 const Customer = require('../../models/Customer')
 const Order = require('../../models/Order')
 
 const router = express.Router()
-router.use(requireAuth)
+router.use(requireAuth, loadAccess, requireMainRoute('customers'))
 
 function scope(req) {
   if (req.user.role !== 'sub_admin') return {}
-  return { 'identities.shopId': req.user.shopId }
+  return { 'identities.shopId': { $in: req.allowedShopIds } }
 }
 
 // GET /api/customers?q=&sort=&page=&limit=
@@ -38,8 +38,8 @@ router.get('/:id', async (req, res) => {
     const customer = await Customer.findOne({ _id: req.params.id, ...scope(req) })
     if (!customer) return res.status(404).json({ error: 'Not found' })
     const [orders, conversations] = await Promise.all([
-      Order.find({ customerId: customer._id }).sort({ placedAt: -1 }).limit(50),
-      Conversation.find({ customerId: customer._id }).sort({ lastMessageAt: -1 }).limit(20),
+      Order.find({ customerId: customer._id, ...shopFilter(req, Order) }).sort({ placedAt: -1 }).limit(50),
+      Conversation.find({ customerId: customer._id, ...shopFilter(req, Conversation) }).sort({ lastMessageAt: -1 }).limit(20),
     ])
     res.json({ ...customer.toObject(), orders, conversations })
   } catch (err) {

@@ -24,6 +24,10 @@ export default function InboxPage() {
 
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = useMemo(() => shopsRes.data || [], [shopsRes.data])
+  const availableMarketplaces = useMemo(() => [
+    MARKETPLACES[0],
+    ...MARKETPLACES.slice(1).filter((market) => shops.some((shop) => shop.marketplace === market.id)),
+  ], [shops])
   const shopIds = useMemo(
     () => (marketplace === 'all' ? [] : shops.filter((s) => s.marketplace === marketplace).map((s) => s._id)),
     [shops, marketplace],
@@ -87,7 +91,7 @@ export default function InboxPage() {
         </div>
       </div>
       <Tabs
-        tabs={MARKETPLACES}
+        tabs={availableMarketplaces}
         active={marketplace}
         onChange={(m) => { setMarketplace(m); setPage(1); setMobileThread(false) }}
       />

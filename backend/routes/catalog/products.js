@@ -1,18 +1,18 @@
 const express = require('express')
-const { requireAuth, requireRole, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
 
 const router = express.Router()
-router.use(requireAuth)
+router.use(requireAuth, loadAccess, requireMainRoute('products'))
 
 const SORTABLE = ['createdAt', 'title', 'basePrice', 'stock']
 
 // Sub-admins see products through listings of their own shop (schema note 6).
 async function scopedIds(req) {
   if (req.user.role !== 'sub_admin') return null
-  const rows = await Listing.find({ shopId: req.user.shopId }).select('productId')
+  const rows = await Listing.find({ shopId: { $in: req.allowedShopIds } }).select('productId')
   return rows.map((r) => r.productId)
 }
 
@@ -34,7 +34,10 @@ router.get('/', async (req, res) => {
     const ids = await scopedIds(req)
     if (ids) filter._id = { $in: ids }
     if (req.query.shop) {
-      const rows = await Listing.find({ shopId: req.query.shop }).select('productId')
+      const shopId = req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === req.query.shop)
+        ? null
+        : req.query.shop
+      const rows = shopId ? await Listing.find({ shopId }).select('productId') : []
       filter._id = { $in: rows.map((r) => r.productId) }
     }
     const pg = paging(req)
@@ -56,9 +59,13 @@ router.get('/categories', async (req, res) => {
 // GET /api/products/:id
 router.get('/:id', async (req, res) => {
   try {
+    const listingFilter = { productId: req.params.id, ...shopFilter(req, Listing) }
+    const listings = await Listing.find(listingFilter).populate('shopId', 'name marketplace')
+    if (req.user.role === 'sub_admin' && listings.length === 0) {
+      return res.status(404).json({ error: 'Not found' })
+    }
     const doc = await Product.findById(req.params.id)
     if (!doc) return res.status(404).json({ error: 'Not found' })
-    const listings = await Listing.find({ productId: doc._id }).populate('shopId', 'name marketplace')
     res.json({ ...doc.toObject(), listings })
   } catch (err) {
     res.status(400).json({ error: err.message })
