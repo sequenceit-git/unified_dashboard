@@ -43,10 +43,13 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <h1 className="text-xl font-bold">Unified Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">Sign in to manage eBay, Temu & TikTok Shop</p>
+    <div className="flex min-h-screen items-center justify-center bg-transparent p-4 sm:p-6">
+      <Card className="w-full max-w-md p-6 sm:p-8">
+        <div className="mb-7">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-600 text-sm font-black text-white shadow-lg shadow-indigo-200">EP</span>
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-gray-900">Welcome back</h1>
+          <p className="mt-1 text-sm text-gray-500">Sign in to your EcomPilotPro workspace</p>
+        </div>
 
         <form onSubmit={submit} className="mt-4 space-y-3">
           <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -63,8 +66,8 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="mt-6 border-t border-gray-200 pt-4">
-          <p className="text-xs font-medium uppercase text-gray-500">Dev quick sign-in</p>
+        <div className="mt-7 border-t border-gray-200 pt-5">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Developer access</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             {QUICK_ACCOUNTS.map((a) => (
               <Button key={a.email} variant="secondary" size="sm" disabled={busy} onClick={() => quick(a.email)}>

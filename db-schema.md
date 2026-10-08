@@ -9,7 +9,7 @@
 ## 1. Collections Overview
 
 | # | Collection | Purpose |
-|---|------------|---------|
+| --- | ------------ | --------- |
 | 1 | `users` | Super admin and sub-admin accounts |
 | 2 | `shops` | Connected marketplace accounts (and encrypted tokens) |
 | 3 | `products` | Master product catalog (generic schema) |
@@ -44,7 +44,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 ### 3.1 `users`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `name` | String | required |
 | `email` | String | required, unique, lowercase |
@@ -56,6 +56,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 | `lastLoginAt` | Date | |
 
 **Indexes**
+
 ```js
 { email: 1 }                  // unique
 { shopId: 1, role: 1 }        // list sub-admins of a shop
@@ -66,7 +67,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 ### 3.2 `shops`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `name` | String | display name |
 | `marketplace` | String | enum: `ebay`, `temu`, `tiktok_shop` |
@@ -79,6 +80,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 | `aiReplyEnabled` | Boolean | default `false`. Toggle AI auto-replies per shop |
 
 **Indexes**
+
 ```js
 { marketplace: 1, externalShopId: 1 }   // unique, prevents connecting the same shop twice
 { status: 1 }
@@ -90,7 +92,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 ### 3.3 `products` (generic master catalog)
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `sku` | String | required, unique |
 | `title` | String | required |
@@ -111,7 +113,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 **Variant (embedded)**
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `sku` | String | unique per product |
 | `options` | Mixed (object) | e.g. `{ color: "red", size: "M" }` |
 | `price` | Number | overrides `basePrice` |
@@ -120,6 +122,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 > Stock rule: if `variants` exist, variant `stock` is the source of truth. Otherwise use the product `stock`.
 
 **Indexes**
+
 ```js
 { sku: 1 }                               // unique
 { "variants.sku": 1 }                    // sparse, lookup from marketplace orders
@@ -135,7 +138,7 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 A product listed on a shop. One product can have many listings (one per shop).
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `productId` | ObjectId → products | required |
 | `shopId` | ObjectId → shops | required |
@@ -147,6 +150,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 | `lastSyncedAt` | Date | |
 
 **Indexes**
+
 ```js
 { productId: 1, shopId: 1 }              // unique, one listing per product per shop
 { shopId: 1, status: 1 }                 // shop's listing tab
@@ -158,7 +162,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 ### 3.5 `inventory_logs`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `productId` | ObjectId → products | |
 | `variantSku` | String | optional |
@@ -172,6 +176,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 | `createdAt` | Date | no `updatedAt` (append-only) |
 
 **Indexes**
+
 ```js
 { productId: 1, createdAt: -1 }          // per-product history
 { shopId: 1, createdAt: -1 }
@@ -182,7 +187,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 ### 3.6 `orders`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `shopId` | ObjectId → shops | required |
 | `marketplace` | String | denormalized |
@@ -202,6 +207,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 **Return (embedded):** `reason`, `status` (`requested`, `approved`, `received`, `rejected`), `refundAmount`, `refundedAt`, `requestedAt`
 
 **Indexes**
+
 ```js
 { shopId: 1, externalOrderId: 1 }        // unique, makes order sync idempotent
 { shopId: 1, placedAt: -1 }              // order list + sales over time
@@ -216,7 +222,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 ### 3.7 `customers`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `name` | String | |
 | `email` | String | may be missing or masked on some marketplaces |
@@ -229,6 +235,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 **Identity (embedded):** `shopId`, `marketplace`, `externalBuyerId`, `username`
 
 **Indexes**
+
 ```js
 { "identities.shopId": 1, "identities.externalBuyerId": 1 }   // unique, find/create from marketplace data
 { email: 1 }                                                  // sparse
@@ -241,7 +248,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 ### 3.8 `conversations`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `shopId` | ObjectId → shops | required |
 | `marketplace` | String | |
@@ -255,6 +262,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 | `unreadCount` | Number | default `0` |
 
 **Indexes**
+
 ```js
 { shopId: 1, externalThreadId: 1 }       // unique
 { shopId: 1, status: 1, lastMessageAt: -1 }   // inbox list (main query)
@@ -266,7 +274,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 ### 3.9 `messages`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `conversationId` | ObjectId → conversations | required |
 | `shopId` | ObjectId → shops | denormalized for RBAC filtering |
@@ -280,6 +288,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 | `sentAt` | Date | |
 
 **Indexes**
+
 ```js
 { conversationId: 1, sentAt: 1 }                  // load a thread in order
 { shopId: 1, externalMessageId: 1 }               // unique + sparse, de-duplicate polled/webhook messages
@@ -290,7 +299,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 ### 3.10 `message_templates`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `shopId` | ObjectId → shops | null = global template |
 | `title` | String | |
@@ -298,6 +307,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 | `createdBy` | ObjectId → users | |
 
 **Indexes**
+
 ```js
 { shopId: 1 }
 ```
@@ -309,7 +319,7 @@ A product listed on a shop. One product can have many listings (one per shop).
 One document per bot run. Opportunities are embedded (bounded to roughly the top 20 to 50 per run).
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `runBy` | ObjectId → users | or null for scheduled run |
 | `trigger` | String | enum: `manual`, `scheduled` |
@@ -324,7 +334,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 **Opportunity (embedded)**
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `rank` | Number | |
 | `title` | String | |
 | `marketplace` | String | |
@@ -337,6 +347,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 | `addedProductId` | ObjectId → products | set when added to the catalog |
 
 **Indexes**
+
 ```js
 { createdAt: -1 }                         // report list
 { status: 1, createdAt: -1 }
@@ -348,7 +359,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 ### 3.12 `sync_logs`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `shopId` | ObjectId → shops | |
 | `type` | String | enum: `products`, `inventory`, `orders`, `messages`, `token_refresh` |
@@ -359,6 +370,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 | `startedAt` / `finishedAt` | Date | |
 
 **Indexes**
+
 ```js
 { shopId: 1, startedAt: -1 }
 { status: 1, startedAt: -1 }
@@ -370,7 +382,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 ### 3.13 `notifications`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `shopId` | ObjectId → shops | null = visible to super admin only |
 | `type` | String | enum: `low_stock`, `sync_failed`, `token_expiring`, `report_ready` |
@@ -379,6 +391,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 | `isRead` | Boolean | default `false` |
 
 **Indexes**
+
 ```js
 { shopId: 1, isRead: 1, createdAt: -1 }
 { createdAt: 1 }   // TTL: expireAfterSeconds = 2592000 (30 days)
@@ -389,7 +402,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 ### 3.14 `audit_logs`
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `_id` | ObjectId | |
 | `userId` | ObjectId → users | |
 | `shopId` | ObjectId → shops | optional |
@@ -401,6 +414,7 @@ One document per bot run. Opportunities are embedded (bounded to roughly the top
 | `createdAt` | Date | append-only |
 
 **Indexes**
+
 ```js
 { userId: 1, createdAt: -1 }
 { entity: 1, entityId: 1, createdAt: -1 }

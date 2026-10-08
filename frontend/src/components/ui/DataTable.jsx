@@ -16,8 +16,8 @@ export default function DataTable({ columns, rows, loading, error, onRetry, sort
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] text-left text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 text-xs uppercase text-gray-500">
+        <thead className="bg-gray-50/80">
+          <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
             {columns.map((c) => (
               <th key={c.key} className="px-3 py-2">
                 {c.sortable ? (
@@ -40,7 +40,7 @@ export default function DataTable({ columns, rows, loading, error, onRetry, sort
               className={`border-b border-gray-100 hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''}`}
             >
               {columns.map((c) => (
-                <td key={c.key} className="px-3 py-2.5">
+                <td key={c.key} className="px-3 py-3">
                   {c.render ? c.render(row) : row[c.key]}
                 </td>
               ))}

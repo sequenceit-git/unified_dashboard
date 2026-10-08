@@ -1,6 +1,6 @@
 const express = require('express')
-const { requireAuth } = require('../middleware/auth')
-const Shop = require('../models/Shop')
+const { requireAuth } = require('../../middleware/auth')
+const Shop = require('../../models/Shop')
 
 const router = express.Router()
 router.use(requireAuth)

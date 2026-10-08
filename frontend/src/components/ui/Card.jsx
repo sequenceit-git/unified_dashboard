@@ -1,12 +1,13 @@
 export default function Card({ className = '', children }) {
-  return <div className={`rounded-xl bg-white p-4 shadow-sm sm:p-5 ${className}`}>{children}</div>
+  return <div className={`app-card p-4 sm:p-5 ${className}`}>{children}</div>
 }
 
 export function StatCard({ label, value, sub }) {
   return (
-    <Card>
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold">{value}</p>
+    <Card className="app-card-hover h-full">
+      <div className="mb-4 h-1.5 w-8 rounded-full bg-indigo-500" />
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">{label}</p>
+      <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900">{value}</p>
       {sub && <p className="mt-1 text-xs text-gray-500">{sub}</p>}
     </Card>
   )

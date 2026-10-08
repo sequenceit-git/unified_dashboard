@@ -1,21 +1,21 @@
 const express = require('express')
-const { requireAuth, shopFilter } = require('../middleware/auth')
+const { requireAuth, shopFilter } = require('../../middleware/auth')
 
 const resources = {
-  users: require('../models/User'),
-  shops: require('../models/Shop'),
-  products: require('../models/Product'),
-  listings: require('../models/Listing'),
-  inventory_logs: require('../models/InventoryLog'),
-  orders: require('../models/Order'),
-  customers: require('../models/Customer'),
-  conversations: require('../models/Conversation'),
-  messages: require('../models/Message'),
-  message_templates: require('../models/MessageTemplate'),
-  research_reports: require('../models/ResearchReport'),
-  sync_logs: require('../models/SyncLog'),
-  notifications: require('../models/Notification'),
-  audit_logs: require('../models/AuditLog'),
+  users: require('../../models/User'),
+  shops: require('../../models/Shop'),
+  products: require('../../models/Product'),
+  listings: require('../../models/Listing'),
+  inventory_logs: require('../../models/InventoryLog'),
+  orders: require('../../models/Order'),
+  customers: require('../../models/Customer'),
+  conversations: require('../../models/Conversation'),
+  messages: require('../../models/Message'),
+  message_templates: require('../../models/MessageTemplate'),
+  research_reports: require('../../models/ResearchReport'),
+  sync_logs: require('../../models/SyncLog'),
+  notifications: require('../../models/Notification'),
+  audit_logs: require('../../models/AuditLog'),
 }
 
 const router = express.Router()

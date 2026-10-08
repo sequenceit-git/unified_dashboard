@@ -1,8 +1,8 @@
 const express = require('express')
 const mongoose = require('mongoose')
-const { requireAuth, shopFilter } = require('../middleware/auth')
-const Order = require('../models/Order')
-const Product = require('../models/Product')
+const { requireAuth, shopFilter } = require('../../middleware/auth')
+const Order = require('../../models/Order')
+const Product = require('../../models/Product')
 
 const router = express.Router()
 router.use(requireAuth)

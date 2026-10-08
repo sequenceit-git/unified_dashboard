@@ -1,8 +1,8 @@
 const express = require('express')
-const { requireAuth, requireRole, shopFilter } = require('../middleware/auth')
-const { paging, sortOf, paged } = require('../utils/query')
-const Listing = require('../models/Listing')
-const Product = require('../models/Product')
+const { requireAuth, requireRole, shopFilter } = require('../../middleware/auth')
+const { paging, sortOf, paged } = require('../../utils/query')
+const Listing = require('../../models/Listing')
+const Product = require('../../models/Product')
 
 const router = express.Router()
 router.use(requireAuth)
