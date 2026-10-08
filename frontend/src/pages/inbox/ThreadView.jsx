@@ -3,7 +3,6 @@ import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import Card from '../../components/ui/Card'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import { Select } from '../../components/ui/Input'
 
@@ -55,15 +54,15 @@ export default function ThreadView({ convoId, onChanged, onBack }) {
     onChanged()
   }
 
-  if (!convoId) return <Card><EmptyState message="Select a conversation" /></Card>
-  if (loading) return <Card><Spinner /></Card>
-  if (error) return <Card><ErrorState message={error} onRetry={load} /></Card>
+  if (!convoId) return <div className="grid flex-1 place-items-center p-6"><EmptyState message="Select a conversation" /></div>
+  if (loading) return <div className="grid flex-1 place-items-center p-6"><Spinner /></div>
+  if (error) return <div className="grid flex-1 place-items-center p-6"><ErrorState message={error} onRetry={load} /></div>
 
   return (
-    <Card>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <Button variant="secondary" size="sm" className="lg:hidden" onClick={onBack}>Back</Button>
-        <div className="flex gap-2">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button variant="secondary" size="sm" className="sm:hidden" onClick={onBack}>Back</Button>
           <Badge>{thread.status}</Badge>
           <Badge color="blue">{thread.marketplace}</Badge>
         </div>
@@ -72,7 +71,7 @@ export default function ThreadView({ convoId, onChanged, onBack }) {
         </Button>
       </div>
 
-      <ul className="max-h-80 space-y-2 overflow-y-auto">
+      <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {thread.messages.map((m) => (
           <li key={m._id} className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${m.direction === 'inbound' ? 'bg-gray-100' : 'ml-auto bg-indigo-600 text-white'}`}>
             <p>{m.text}</p>
@@ -83,28 +82,30 @@ export default function ThreadView({ convoId, onChanged, onBack }) {
         ))}
       </ul>
 
-      {templates.length > 0 && (
-        <div className="mt-3">
-          <Select
-            value=""
-            onChange={(e) => {
-              const t = templates.find((x) => x._id === e.target.value)
-              if (t) setDraft(t.body)
-            }}
-            options={[{ value: '', label: 'Insert template…' }, ...templates.map((t) => ({ value: t._id, label: t.title }))]}
-          />
-        </div>
-      )}
+      <div className="border-t border-gray-100 px-4 py-3">
+        {templates.length > 0 && (
+          <div className="mb-2">
+            <Select
+              value=""
+              onChange={(e) => {
+                const t = templates.find((x) => x._id === e.target.value)
+                if (t) setDraft(t.body)
+              }}
+              options={[{ value: '', label: 'Insert template…' }, ...templates.map((t) => ({ value: t._id, label: t.title }))]}
+            />
+          </div>
+        )}
 
-      <div className="mt-2 flex gap-2">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Write a reply… (stored locally — marketplace send needs §2.1)"
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-        />
-        <Button disabled={busy || !draft.trim()} onClick={send}>Send</Button>
+        <div className="flex gap-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Write a reply… (stored locally — marketplace send needs §2.1)"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          />
+          <Button disabled={busy || !draft.trim()} onClick={send}>Send</Button>
+        </div>
       </div>
-    </Card>
+    </div>
   )
 }

@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { api, queryString } from '../../lib/api'
 import Badge, { statusColor } from '../../components/ui/Badge'
-import Button from '../../components/ui/Button'
-import Card from '../../components/ui/Card'
 import DataTable from '../../components/ui/DataTable'
 import { Select } from '../../components/ui/Input'
 import Pagination from '../../components/ui/Pagination'
 import RowMenu from '../../components/ui/RowMenu'
 import SearchInput from '../../components/ui/SearchInput'
+import { EmptyState } from '../../components/ui/Feedback'
 
 const STATUSES = ['all', 'draft', 'active', 'archived']
 const STOCK = [
@@ -17,7 +16,7 @@ const STOCK = [
   { value: 'out', label: 'Out of stock' },
 ]
 
-export default function CatalogTab({ onEdit, onList, refreshKey }) {
+export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], disabled = false, disabledMessage = '' }) {
   const { token, isAdmin } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -36,13 +35,31 @@ export default function CatalogTab({ onEdit, onList, refreshKey }) {
   }, [token])
 
   const fetchRows = async () => {
+    if (disabled) return
     setLoading(true)
     setError('')
     try {
-      const res = await api.get(
-        `/api/products${queryString({ q, status, category, stock, sort, page, limit: 15 })}`,
-        token,
-      )
+      const base = { q, status, category, stock, sort, page, limit: 15 }
+      let res
+      if (shopIds.length <= 1) {
+        res = await api.get(
+          `/api/products${queryString({ ...base, shop: shopIds[0] })}`,
+          token,
+        )
+      } else {
+        const parts = await Promise.all(
+          shopIds.map((id) =>
+            api.get(`/api/products${queryString({ ...base, shop: id })}`, token),
+          ),
+        )
+        const seen = new Map()
+        for (const p of parts) {
+          for (const r of p.data || []) {
+            if (!seen.has(r._id)) seen.set(r._id, r)
+          }
+        }
+        res = { data: [...seen.values()], page: 1, pages: 1, total: seen.size }
+      }
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
@@ -56,7 +73,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey }) {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, status, category, stock, sort, page, refreshKey])
+  }, [q, status, category, stock, sort, page, refreshKey, disabled, shopIds.join(',')])
 
   const toggleSort = (key) => {
     setSort((s) => (s === key ? `-${key}` : key))
@@ -69,8 +86,10 @@ export default function CatalogTab({ onEdit, onList, refreshKey }) {
     fetchRows()
   }
 
+  if (disabled) return <EmptyState message={disabledMessage || 'Nothing to show'} />
+
   return (
-    <Card>
+    <div>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search title or SKU…" />
         <div className="flex gap-2">
@@ -113,6 +132,6 @@ export default function CatalogTab({ onEdit, onList, refreshKey }) {
         onRowClick={onEdit}
       />
       <Pagination page={meta.page} pages={meta.pages} total={meta.total} onPage={setPage} />
-    </Card>
+    </div>
   )
 }
