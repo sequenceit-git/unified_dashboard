@@ -26,6 +26,11 @@ const CLIENT_URLS = (process.env.CLIENT_URL || 'http://localhost:5173')
 app.use(cors({ origin: CLIENT_URLS.length === 1 ? CLIENT_URLS[0] : CLIENT_URLS }))
 app.use(express.json())
 
+// Root probe — so GET / doesn't 404 (load balancers, browser checks).
+app.get('/', (req, res) => {
+  res.json({ message: 'Unified Dashboard API — OK', health: '/api/health' })
+})
+
 app.use('/api', apiRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/analytics', analyticsRoutes)
@@ -38,4 +43,11 @@ app.use('/api/customers', customerRoutes)
 app.use('/api/inbox', inboxRoutes)
 
 connectDB(process.env.MONGODB_URL || process.env.MONGO_URI)
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`))
+
+// Local dev: `node server.js` listens. On Vercel the exported app is run by
+// the serverless function in api/index.js — do NOT listen there.
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Backend running on port ${PORT}`))
+}
+
+module.exports = app
