@@ -36,6 +36,9 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
     const user = await User.findOne({ email: String(email).toLowerCase() }).select('+passwordHash')
+    if (user && user.isDeleted) {
+      return res.status(403).json({ error: 'This account has been deleted. Contact your administrator.' })
+    }
     if (!user || user.status !== 'active') {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
@@ -125,7 +128,7 @@ router.post('/users', requireRole('super_admin'), async (req, res) => {
 })
 
 router.get('/users', requireRole('super_admin'), async (req, res) => {
-  const users = await User.find({ role: 'sub_admin' }).select('-passwordHash').sort({ createdAt: -1 })
+  const users = await User.find({ role: 'sub_admin', isDeleted: { $ne: true } }).select('-passwordHash').sort({ createdAt: -1 })
   const access = await UserShopAccess.find({ userId: { $in: users.map((user) => user._id) } })
   const byUser = new Map()
   for (const row of access) {
@@ -141,14 +144,19 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
     if (mainRoutes && (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route)))) {
       return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
     }
-    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin' })
+    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin', isDeleted: { $ne: true } })
     if (!user) return res.status(404).json({ error: 'Sub-admin not found' })
     if (name !== undefined) user.name = name
     if (email !== undefined) user.email = email
     if (profileImageUrl !== undefined) user.profileImageUrl = profileImageUrl
     if (password) user.passwordHash = await bcrypt.hash(password, 10)
     if (mainRoutes) user.mainRoutes = mainRoutes
-    if (status) user.status = status
+    if (status) {
+      if (!['active', 'disabled'].includes(status)) {
+        return res.status(400).json({ error: 'status must be active or disabled' })
+      }
+      user.status = status
+    }
     if (shopIds) {
       if (!Array.isArray(shopIds) || shopIds.length === 0) {
         return res.status(400).json({ error: 'At least one shopId is required' })
@@ -164,6 +172,26 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
     }
     await user.save()
     res.json(await userSummary(user))
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// DELETE /api/auth/users/:id — super_admin soft-deletes (partial delete) a sub-admin.
+// The row is kept for audit history: isDeleted=true, status=disabled,
+// shop access revoked. Deleted accounts are hidden from GET /users and
+// blocked at login + loadAccess even with a previously issued token.
+router.delete('/users/:id', requireRole('super_admin'), async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin', isDeleted: { $ne: true } })
+    if (!user) return res.status(404).json({ error: 'Sub-admin not found' })
+    user.isDeleted = true
+    user.deletedAt = new Date()
+    user.deletedBy = req.user.id
+    user.status = 'disabled'
+    await user.save()
+    await UserShopAccess.deleteMany({ userId: user._id })
+    res.json({ deleted: true, id: user._id })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

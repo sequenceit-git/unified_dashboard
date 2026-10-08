@@ -57,6 +57,9 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 | `shopId` | ObjectId → shops | legacy migration field; first assigned shop for `sub_admin` |
 | `createdBy` | ObjectId → users | the super admin who created this user |
 | `status` | String | enum: `active`, `disabled`; default `active` |
+| `isDeleted` | Boolean | soft-delete flag (partial delete); default `false`. Row is kept for audit history |
+| `deletedAt` | Date | set when soft-deleted |
+| `deletedBy` | ObjectId → users | super admin who deleted this user |
 | `lastLoginAt` | Date | |
 
 **Indexes**
@@ -64,9 +67,12 @@ All collections have `createdAt` and `updatedAt` (Mongoose `{ timestamps: true }
 ```js
 { email: 1 }                  // unique
 { shopId: 1, role: 1 }        // list sub-admins of a shop
+{ isDeleted: 1, role: 1 }     // hide deleted sub-admins from GET /api/auth/users
 ```
 
 `shopId` is retained temporarily for migration compatibility and points to the first assigned shop. New authorization decisions use `user_shop_access`.
+
+**Soft delete (partial delete):** `DELETE /api/auth/users/:id` (super-admin only) sets `isDeleted: true`, `deletedAt`, `deletedBy` and forces `status: 'disabled'`, and revokes all `user_shop_access` rows. Deleted rows are kept for audit history but are excluded from `GET /api/auth/users`, cannot be edited, are blocked in `loadAccess` (so old tokens stop working), and `POST /api/auth/login` rejects them with `403 "This account has been deleted..."`.
 
 ### 3.2 `user_shop_access`
 

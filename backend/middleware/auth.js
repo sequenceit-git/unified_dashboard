@@ -34,8 +34,11 @@ function requireRole(...roles) {
 
 async function loadAccess(req, res, next) {
   try {
-    const user = await User.findById(req.user.id).select('role mainRoutes status shopId')
-    if (!user || user.status !== 'active') {
+    const user = await User.findById(req.user.id).select('role mainRoutes status shopId isDeleted')
+    if (!user || user.isDeleted) {
+      return res.status(401).json({ error: 'This account has been deleted. Contact your administrator.' })
+    }
+    if (user.status !== 'active') {
       return res.status(401).json({ error: 'User is inactive or no longer exists' })
     }
     req.authUser = user
