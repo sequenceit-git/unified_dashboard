@@ -1,4 +1,7 @@
-const BASE = import.meta.env.VITE_API_URL || ''
+// Base URL of the backend. Empty string = same-origin (local dev uses the
+// Vite proxy in vite.config.js). Set VITE_API_URL in `.env.local` locally or
+// in Vercel env vars for the deployed frontend — no code changes needed.
+const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 
 function headers(token, isJson = true) {
   return {
