@@ -1,9 +1,9 @@
-// Single root env: load unified_dashboard/.env first, then fall back to
-// backend/.env (deploy) if present. Never put secrets in code.
+// Backend env comes from its own files only: backend/.env.local, then
+// backend/.env. Never the repo-root .env (it isn't deployed — each Vercel
+// project only sees its own Root Directory). Never put secrets in code.
 const path = require('path')
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
-require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') })
-require('dotenv').config()
+require('dotenv').config({ path: path.join(__dirname, '.env.local') })
+require('dotenv').config({ path: path.join(__dirname, '.env') })
 const cors = require('cors')
 const express = require('express')
 const connectDB = require('./config/db')
