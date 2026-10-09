@@ -5,7 +5,10 @@
  * Usage: npm run seed
  * Wipes and re-seeds all 14 collections.
  */
-require('dotenv').config({ path: '.env.local' })
+// Single root env: load unified_dashboard/.env first, then backend/.env fallback.
+const path = require('path')
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') })
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env.local') })
 require('dotenv').config()
 const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')

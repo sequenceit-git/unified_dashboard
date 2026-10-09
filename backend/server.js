@@ -1,4 +1,8 @@
-require('dotenv').config({ path: '.env.local' })
+// Single root env: load unified_dashboard/.env first, then fall back to
+// backend/.env (deploy) if present. Never put secrets in code.
+const path = require('path')
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') })
 require('dotenv').config()
 const cors = require('cors')
 const express = require('express')

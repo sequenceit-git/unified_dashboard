@@ -4,11 +4,11 @@ import { useAuth } from '../../auth/AuthContext'
 const LINKS = [
   { to: '/', label: 'Overview', route: 'dashboard', end: true },
   { to: '/analytics', label: 'Analytics', route: 'analytics' },
+  { to: '/inbox', label: 'Inbox', route: 'inbox' },
   { to: '/products', label: 'Products', route: 'products' },
   { to: '/inventory', label: 'Inventory', route: 'inventory' },
   { to: '/orders', label: 'Orders', route: 'orders' },
   { to: '/customers', label: 'Customers', route: 'customers' },
-  { to: '/inbox', label: 'Inbox', route: 'inbox' },
 ]
 
 export default function Sidebar({ open, onClose }) {
@@ -18,11 +18,11 @@ export default function Sidebar({ open, onClose }) {
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed bottom-0 left-0 top-16 z-40 w-64 transform bg-[#171b35] p-4 text-white shadow-2xl transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
+        className={`fixed bottom-0 left-0 top-16 z-40 w-64 transform border-r border-[#E2E8F0] bg-white p-0 text-[#0F172A] shadow-2xl transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <nav className="space-y-1.5 overflow-y-auto">
+        <nav className="h-full w-full overflow-y-auto pt-6">
           {visibleLinks.map((l) => (
             <NavLink
               key={l.to}
@@ -30,8 +30,8 @@ export default function Sidebar({ open, onClose }) {
               end={l.end}
               onClick={onClose}
               className={({ isActive }) =>
-                `block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                isActive ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-950/20' : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                `block w-full px-12 py-4 text-[15px] font-semibold transition ${
+                isActive ? 'bg-[#4F46E5] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`
               }
             >
@@ -43,8 +43,8 @@ export default function Sidebar({ open, onClose }) {
               to="/sub-admins"
               onClick={onClose}
               className={({ isActive }) =>
-                `block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  isActive ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-950/20' : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                `block w-full px-12 py-4 text-[15px] font-semibold transition ${
+                  isActive ? 'bg-[#4F46E5] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`
               }
             >

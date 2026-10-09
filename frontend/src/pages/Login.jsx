@@ -45,10 +45,10 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-transparent p-4 sm:p-6">
       <Card className="w-full max-w-md p-6 sm:p-8">
-        <div className="mb-7">
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-600 text-sm font-black text-white shadow-lg shadow-indigo-200">EP</span>
+        <div className="mb-7 text-center">
+          <span className="inline-block -skew-x-2 overflow-visible pl-1 pr-3 text-4xl font-black italic tracking-tight text-black" style={{ fontSynthesis: 'style', WebkitTextStroke: '0.6px black' }}><span className="text-[#4F46E5]" style={{ WebkitTextStroke: '0.6px #4F46E5' }}>E</span>comPilot</span>
           <h1 className="mt-5 text-2xl font-bold tracking-tight text-gray-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-gray-500">Sign in to your EcomPilotPro workspace</p>
+          <p className="mt-1 text-sm text-gray-500">Sign in to your EcomPilot workspace</p>
         </div>
 
         <form onSubmit={submit} className="mt-4 space-y-3">

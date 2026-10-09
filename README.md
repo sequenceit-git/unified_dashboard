@@ -6,11 +6,13 @@
 
 ## Run
 
+One root env file: copy `.env.example` → `.env` at the repo root and fill in secrets.
+Backend (`server.js`, `seed.js`) and frontend (Vite `envDir`) both read from there.
+
 Backend:
 ```sh
 cd backend
 npm install
-cp .env.example .env   # edit MONGO_URI
 npm run dev            # http://localhost:5000
 ```
 
