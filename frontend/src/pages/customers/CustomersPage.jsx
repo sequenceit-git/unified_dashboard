@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../auth/AuthContext'
-import { api, queryString } from '../lib/api'
-import Card from '../components/ui/Card'
-import DataTable from '../components/ui/DataTable'
-import Pagination from '../components/ui/Pagination'
-import SearchInput from '../components/ui/SearchInput'
-import CustomerDrawer from './customers/CustomerDrawer'
+import { useAuth } from '../../auth/AuthContext'
+import { api, queryString } from '../../lib/api'
+import Card from '../../components/ui/Card'
+import DataTable from '../../components/ui/DataTable'
+import Pagination from '../../components/ui/Pagination'
+import SearchInput from '../../components/ui/SearchInput'
+import CustomerDrawer from './CustomerDrawer'
 
 export default function CustomersPage() {
   const { token } = useAuth()

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
-import { api } from '../lib/api'
-import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import { EmptyState, ErrorState, Spinner } from '../components/ui/Feedback'
-import Modal from '../components/ui/Modal'
-import { useApi } from '../hooks/useApi'
+import { useAuth } from '../../auth/AuthContext'
+import { api } from '../../lib/api'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
+import Modal from '../../components/ui/Modal'
+import { useApi } from '../../hooks/useApi'
 
 const ROUTE_LABELS = {
   dashboard: 'Dashboard',

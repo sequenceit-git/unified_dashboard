@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
-import Card, { StatCard } from '../components/ui/Card'
-import { EmptyState, ErrorState, Spinner } from '../components/ui/Feedback'
-import { useApi } from '../hooks/useApi'
+import { useAuth } from '../../auth/AuthContext'
+import Card, { StatCard } from '../../components/ui/Card'
+import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
+import { useApi } from '../../hooks/useApi'
 
 export default function Overview() {
   const { token } = useAuth()
