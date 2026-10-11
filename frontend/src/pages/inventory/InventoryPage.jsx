@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import Tabs from '../components/ui/Tabs'
-import AdjustModal from './inventory/AdjustModal'
-import HistoryTab from './inventory/HistoryTab'
-import LowStockTab from './inventory/LowStockTab'
-import StockTab from './inventory/StockTab'
+import Tabs from '../../components/ui/Tabs'
+import AdjustModal from './AdjustModal'
+import HistoryTab from './HistoryTab'
+import LowStockTab from './LowStockTab'
+import StockTab from './StockTab'
 
 export default function InventoryPage() {
   const [tab, setTab] = useState('stock')

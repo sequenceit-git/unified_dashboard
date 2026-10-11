@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
-import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import { ErrorState, Spinner } from '../components/ui/Feedback'
-import { Input } from '../components/ui/Input'
-import Modal from '../components/ui/Modal'
-import { api } from '../lib/api'
-import { useApi } from '../hooks/useApi'
+import { useAuth } from '../../auth/AuthContext'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import { ErrorState, Spinner } from '../../components/ui/Feedback'
+import { Input } from '../../components/ui/Input'
+import Modal from '../../components/ui/Modal'
+import { api } from '../../lib/api'
+import { useApi } from '../../hooks/useApi'
 
 const ROUTES = [
   ['dashboard', 'Dashboard'],

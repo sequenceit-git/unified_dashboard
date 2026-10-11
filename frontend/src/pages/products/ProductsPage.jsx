@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { useAuth } from '../auth/AuthContext'
-import { MARKETPLACES } from '../lib/marketplaces'
-import Button from '../components/ui/Button'
-import Tabs from '../components/ui/Tabs'
-import { useApi } from '../hooks/useApi'
-import BulkModal from './products/BulkModal'
-import CatalogTab from './products/CatalogTab'
-import ListModal from './products/ListModal'
-import ProductModal from './products/ProductModal'
+import { useAuth } from '../../auth/AuthContext'
+import { MARKETPLACES } from '../../lib/marketplaces'
+import Button from '../../components/ui/Button'
+import Tabs from '../../components/ui/Tabs'
+import { useApi } from '../../hooks/useApi'
+import BulkModal from './BulkModal'
+import CatalogTab from './CatalogTab'
+import ListModal from './ListModal'
+import ProductModal from './ProductModal'
 
 export default function ProductsPage() {
   const { isAdmin, token } = useAuth()

@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { QUICK_ACCOUNTS, useAuth } from '../auth/AuthContext'
-import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
+import { QUICK_ACCOUNTS, useAuth } from '../../auth/AuthContext'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
 
 export default function Login() {
   const { login, quickLogin } = useAuth()
