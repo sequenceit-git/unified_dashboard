@@ -3,9 +3,10 @@ import { useAuth } from '../../auth/AuthContext'
 import { api, queryString } from '../../lib/api'
 import { MARKETPLACES } from '../../lib/marketplaces'
 import Badge, { statusColor } from '../../components/ui/Badge'
+import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import DataTable from '../../components/ui/DataTable'
-import { Input, Select } from '../../components/ui/Input'
+import { Select } from '../../components/ui/Input'
 import Pagination from '../../components/ui/Pagination'
 import SearchInput from '../../components/ui/SearchInput'
 import Tabs from '../../components/ui/Tabs'
@@ -18,6 +19,8 @@ export default function OrdersPage() {
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState('')
   const [error, setError] = useState('')
   const [marketplace, setMarketplace] = useState('all')
   const [status, setStatus] = useState('all')
@@ -41,6 +44,22 @@ export default function OrdersPage() {
     }
   }
 
+  const handleSyncOrders = async () => {
+    setSyncing(true)
+    setSyncMessage('')
+    try {
+      const res = await api.post('/api/orders/sync', { marketplace: marketplace !== 'all' ? marketplace : undefined }, token)
+      const totalSynced = res.results?.reduce((acc, r) => acc + (r.synced || 0), 0) || 0
+      setSyncMessage(`Sync completed: ${totalSynced} orders updated from marketplaces`)
+      setRefreshKey((k) => k + 1)
+      setTimeout(() => setSyncMessage(''), 4000)
+    } catch (err) {
+      setError(`Sync failed: ${err.message}`)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   useEffect(() => {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
@@ -54,10 +73,19 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-2xl font-bold">Orders</h1>
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Orders</h1>
+          {syncMessage && <p className="text-xs text-emerald-600 font-medium">{syncMessage}</p>}
+        </div>
+        <Button onClick={handleSyncOrders} disabled={syncing} size="sm">
+          {syncing ? 'Syncing...' : '↻ Sync Marketplaces'}
+        </Button>
+      </div>
       <Tabs tabs={MARKETPLACES} active={marketplace} onChange={(m) => { setMarketplace(m); setPage(1) }} />
       <Card>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+
           <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Order ID, tracking, buyer…" />
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
         </div>

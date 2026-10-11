@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 
 const REQUIRED = ['sku', 'title']
-const NUMERIC = ['basePrice', 'stock', 'lowStockThreshold']
+const NUMERIC = ['basePrice', 'stock', 'lowStockThreshold', 'weight']
 
 function parseCsv(text) {
   const rows = []
@@ -90,7 +90,7 @@ export default function BulkModal({ onClose, onSaved }) {
   return (
     <Modal title="Bulk upload" onClose={onClose} wide>
       <input type="file" accept=".csv,text/csv" onChange={(e) => loadFile(e.target.files?.[0])} className="w-full rounded-lg border border-gray-300 p-2 text-sm" />
-      <p className="mt-2 text-xs text-gray-500">CSV columns: sku, title, description, category, brand, basePrice, stock, lowStockThreshold, status.</p>
+      <p className="mt-2 text-xs text-gray-500">CSV columns: sku, title, description, category, brand, basePrice, stock, lowStockThreshold, status, images, weight.</p>
       {fileName && <p className="mt-2 text-sm">Selected: <strong>{fileName}</strong> · {products.length} rows</p>}
       {validation.length > 0 && <ul className="mt-2 max-h-32 overflow-y-auto rounded bg-red-50 p-2 text-xs text-red-700">{validation.slice(0, 20).map((item) => <li key={item}>{item}</li>)}</ul>}
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

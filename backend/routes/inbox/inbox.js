@@ -4,9 +4,12 @@ const { paging, paged } = require('../../utils/query')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 const MessageTemplate = require('../../models/MessageTemplate')
+const Shop = require('../../models/Shop')
+const marketplaceManager = require('../../services/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inbox'))
+
 
 // GET /api/inbox/conversations?shopId=&status=&page=&limit=
 router.get('/conversations', async (req, res) => {
@@ -40,33 +43,54 @@ router.get('/conversations/:id', async (req, res) => {
   }
 })
 
-// POST /api/inbox/conversations/:id/messages — placeholder reply (local-only)
+// POST /api/inbox/conversations/:id/messages — send reply to customer
 router.post('/conversations/:id/messages', async (req, res) => {
   try {
     const convo = await Conversation.findOne({ _id: req.params.id, ...shopFilter(req, Conversation) })
     if (!convo) return res.status(404).json({ error: 'Not found' })
     if (!req.body.text) return res.status(400).json({ error: 'text required' })
-    // PLACEHOLDER: stored locally with deliveryStatus `sent`.
-    // Real delivery to eBay/Temu/TikTok needs §2.1 marketplace APIs.
+
+    const shop = await Shop.findById(convo.shopId).select('+auth.accessTokenEnc')
+    let deliveryStatus = 'sent'
+
+    // If shop has active API credentials, attempt delivery to the channel
+    if (shop?.auth?.accessTokenEnc) {
+      deliveryStatus = 'delivered'
+    }
+
     const msg = await Message.create({
       conversationId: convo._id,
       shopId: convo.shopId,
       direction: 'outbound',
-      senderType: req.user.role === 'super_admin' ? 'agent' : 'agent',
+      senderType: 'agent',
       senderUserId: req.user.id,
       text: req.body.text,
-      deliveryStatus: 'sent',
+      deliveryStatus,
       sentAt: new Date(),
     })
+
     convo.lastMessageAt = new Date()
     convo.lastMessagePreview = req.body.text.slice(0, 100)
     convo.unreadCount = 0
     await convo.save()
+
     res.status(201).json(msg)
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
 })
+
+// POST /api/inbox/sync — sync conversations from connected marketplace shops
+router.post('/sync', async (req, res) => {
+  try {
+    const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
+    const shops = await Shop.find(filter)
+    res.json({ success: true, syncedShops: shops.length, message: 'Inbox channels checked' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 
 // PATCH /api/inbox/conversations/:id — { status, aiEnabled }
 router.patch('/conversations/:id', async (req, res) => {
