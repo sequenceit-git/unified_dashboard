@@ -12,6 +12,7 @@ const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 
 const User = require('../models/User')
+const UserShopAccess = require('../models/UserShopAccess')
 const Shop = require('../models/Shop')
 const Product = require('../models/Product')
 const Listing = require('../models/Listing')
