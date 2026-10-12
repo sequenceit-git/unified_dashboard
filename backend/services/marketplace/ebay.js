@@ -413,6 +413,57 @@ class EbayService {
       itemWebUrl: item.itemWebUrl,
     }))
   }
+
+  /**
+   * Retrieves App (client credentials) access token for public eBay Browse API
+   */
+  async getApplicationToken() {
+    if (!config.clientId || !config.clientSecret) return null
+    const authHeader = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')
+    const body = new URLSearchParams({
+      grant_type: 'client_credentials',
+      scope: 'https://api.ebay.com/oauth/api_scope',
+    })
+
+    try {
+      const response = await fetch(`${config.apiBaseUrl}${config.tokenEndpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${authHeader}`,
+        },
+        body: body.toString(),
+      })
+      if (!response.ok) return null
+      const data = await response.json()
+      return data.access_token
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Fetches live item details including primary and additional image URLs
+   * Supports both legacy 12-digit item IDs and standard REST item IDs
+   */
+  async getItemDetails(token, itemId) {
+    if (!token || !itemId) return null
+    try {
+      const cleanId = String(itemId).trim()
+      const url = `${config.apiBaseUrl}/buy/browse/v1/item/get_item_by_legacy_id?legacy_item_id=${encodeURIComponent(cleanId)}`
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        },
+      })
+      if (!response.ok) return null
+      return response.json()
+    } catch {
+      return null
+    }
+  }
 }
 
 module.exports = new EbayService()

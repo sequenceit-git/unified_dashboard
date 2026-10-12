@@ -148,7 +148,12 @@ class UnifiedMarketplaceManager {
       }
 
       let createdCount = 0
-      let updatedCount = 0
+      let appToken = null
+      if (shop.marketplace === 'ebay' && typeof service.getApplicationToken === 'function') {
+        try {
+          appToken = await service.getApplicationToken()
+        } catch {}
+      }
 
       for (const ord of rawOrders) {
         let customer = null
@@ -188,18 +193,42 @@ class UnifiedMarketplaceManager {
         for (const item of ord.items || []) {
           if (!item.sku) continue
           let prod = await Product.findOne({ sku: item.sku })
+
+          let itemImages = []
+          if (!prod || !prod.images || prod.images.length === 0) {
+            const tokenToUse = appToken || token
+            if (shop.marketplace === 'ebay' && tokenToUse && typeof service.getItemDetails === 'function') {
+              try {
+                const details = await service.getItemDetails(tokenToUse, item.sku)
+                if (details) {
+                  if (details.image?.imageUrl) itemImages.push(details.image.imageUrl)
+                  if (Array.isArray(details.additionalImages)) {
+                    for (const ai of details.additionalImages) {
+                      if (ai.imageUrl && !itemImages.includes(ai.imageUrl)) {
+                        itemImages.push(ai.imageUrl)
+                      }
+                    }
+                  }
+                }
+              } catch {}
+            }
+          }
+
           if (!prod) {
             prod = await Product.create({
               sku: item.sku,
               title: item.title || `Item ${item.sku}`,
               category: 'General',
               brand: shop.name || 'eBay Store',
-              images: [],
+              images: itemImages,
               basePrice: item.unitPrice || 19.99,
               stock: 10,
               status: 'active',
               source: 'marketplace_sync',
             })
+          } else if (itemImages.length > 0 && (!prod.images || prod.images.length === 0)) {
+            prod.images = itemImages
+            await prod.save()
           }
           item.productId = prod._id
 
@@ -372,6 +401,9 @@ class UnifiedMarketplaceManager {
             source: 'manual',
           })
           createdProducts++
+        } else if (item.images?.length > 0 && (!product.images || product.images.length === 0)) {
+          product.images = item.images
+          await product.save()
         }
 
         // 2. Link or update marketplace Listing
