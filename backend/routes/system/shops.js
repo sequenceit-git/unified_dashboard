@@ -6,7 +6,7 @@ const config = require('../../config/marketplaces')
 
 const router = express.Router()
 
-// GET /api/shops/oauth/callback/:marketplace — Browser redirect callback from eBay / TikTok / Temu OAuth
+// GET /api/shops/oauth/callback/:marketplace — Browser redirect callback from eBay OAuth
 router.get('/oauth/callback/:marketplace', async (req, res) => {
   try {
     const { marketplace } = req.params
@@ -57,21 +57,13 @@ router.get('/', async (req, res) => {
   }
 })
 
-// GET /api/shops/configs — Check configuration status for all 3 marketplaces
+// GET /api/shops/configs — Check configuration status for eBay marketplace
 router.get('/configs', requireRole('super_admin'), (req, res) => {
   res.json({
     ebay: {
-      configured: Boolean(config.ebay.clientId && config.ebay.clientSecret),
-      environment: config.ebay.environment,
-      ruNameConfigured: Boolean(config.ebay.ruName),
-    },
-    tiktok_shop: {
-      configured: Boolean(config.tiktok_shop.appKey && config.tiktok_shop.appSecret),
-      region: config.tiktok_shop.region,
-    },
-    temu: {
-      configured: Boolean(config.temu.appKey && config.temu.appSecret),
-      region: config.temu.region,
+      configured: Boolean(config.ebay?.clientId && config.ebay?.clientSecret),
+      environment: config.ebay?.environment || 'PRODUCTION',
+      ruNameConfigured: Boolean(config.ebay?.ruName),
     },
   })
 })
@@ -97,10 +89,16 @@ router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (r
 
     const tokenData = await marketplaceManager.exchangeCode(marketplace, code)
 
+    let filter = externalShopId ? { marketplace, externalShopId } : { marketplace }
+    const existingShop = await Shop.findOne(filter)
+    if (!existingShop && !externalShopId) {
+      filter = { marketplace, externalShopId: `${marketplace}-${Date.now()}` }
+    }
+
     const shop = await Shop.findOneAndUpdate(
-      { marketplace, externalShopId: externalShopId || `${marketplace}-${Date.now()}` },
+      existingShop ? { _id: existingShop._id } : filter,
       {
-        name: shopName || `${marketplace.toUpperCase()} Store`,
+        name: shopName || existingShop?.name || `${marketplace.toUpperCase()} Store`,
         marketplace,
         status: 'connected',
         auth: {
@@ -110,8 +108,13 @@ router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (r
         },
         lastSyncAt: new Date(),
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
+
+    // Trigger initial background sync for orders & listings
+    marketplaceManager.syncAllForShop(shop).catch((err) => {
+      console.warn(`Initial sync failed for shop ${shop.name}:`, err.message)
+    })
 
     res.json({ success: true, shop })
   } catch (err) {

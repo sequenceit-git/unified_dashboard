@@ -100,7 +100,7 @@ router.post('/run', requireRole('super_admin'), async (req, res) => {
     const report = await discoveryAgent.runDiscovery({
       category: category || 'All',
       keywords: Array.isArray(keywords) ? keywords : keywords ? [keywords] : [],
-      marketplaces: Array.isArray(marketplaces) && marketplaces.length ? marketplaces : ['ebay', 'tiktok_shop', 'temu'],
+      marketplaces: Array.isArray(marketplaces) && marketplaces.length ? marketplaces : ['ebay'],
       user: req.authUser || req.user,
     })
     res.status(201).json(report)

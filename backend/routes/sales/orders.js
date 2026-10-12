@@ -122,7 +122,7 @@ router.patch('/:id/shipping', async (req, res) => {
     )
     if (!doc) return res.status(404).json({ error: 'Not found' })
 
-    // Push tracking to eBay, TikTok Shop, or Temu
+    // Push tracking to eBay
     let marketplacePush = { pushed: false }
     try {
       marketplacePush = await marketplaceManager.pushShipping(doc, { carrier, trackingNumber })

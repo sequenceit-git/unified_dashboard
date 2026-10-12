@@ -49,7 +49,7 @@ class MarketAnalyzer {
    * Generates AI strategic insight notes for an opportunity
    */
   generateAiInsight({ title, marketplace, margin, score, competitorCount, monthlySales }) {
-    const marketLabel = marketplace === 'tiktok_shop' ? 'TikTok Shop' : marketplace === 'temu' ? 'Temu' : 'eBay'
+    const marketLabel = 'eBay'
     
     if (score >= 85) {
       return `High potential winner on ${marketLabel}. Strong demand velocity (~${monthlySales} units/mo) with exceptional ${margin}% margin. Low-to-moderate competition (${competitorCount} sellers). Recommended for immediate catalog addition.`

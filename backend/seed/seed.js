@@ -50,31 +50,22 @@ async function main() {
     name: 'Dev Admin', email: 'admin@dev.local', passwordHash, role: 'super_admin',
   })
 
-  // --- shops (one per marketplace) ---
+  // --- shop (eBay only) ---
   const shops = await Shop.insertMany([
-    { name: 'MasudRana eBay Store', marketplace: 'ebay', externalShopId: 'dev-ebay-1', status: 'connected', lastSyncAt: daysAgo(0), aiReplyEnabled: true },
-    { name: 'MasudRana Temu Store', marketplace: 'temu', externalShopId: 'dev-temu-1', status: 'connected', lastSyncAt: daysAgo(0) },
-    { name: 'MasudRana TikTok Shop', marketplace: 'tiktok_shop', externalShopId: 'dev-tiktok-1', status: 'connected', lastSyncAt: daysAgo(1) },
+    { name: 'eBay Store', marketplace: 'ebay', externalShopId: 'dev-ebay-1', status: 'connected', lastSyncAt: daysAgo(0), aiReplyEnabled: true },
   ])
-  const [ebay, temu, tiktok] = shops
+  const [ebay] = shops
 
-  const agents = await User.insertMany(
-    shops.map((s, i) => ({
-      name: `Shop Agent ${i + 1}`, email: `agent${i + 1}@dev.local`, passwordHash,
-      role: 'sub_admin', shopId: s._id,
-      mainRoutes: i === 0
-        ? ['dashboard', 'analytics', 'orders', 'inbox']
-        : i === 1
-          ? ['dashboard', 'products', 'inventory', 'orders']
-          : ['dashboard', 'inbox', 'customers'],
+  const agents = await User.insertMany([
+    {
+      name: 'eBay Agent', email: 'agent1@dev.local', passwordHash,
+      role: 'sub_admin', shopId: ebay._id,
+      mainRoutes: ['dashboard', 'products', 'inventory', 'orders', 'inbox'],
       createdBy: admin._id,
-    })),
-  )
+    },
+  ])
   await UserShopAccess.insertMany([
     { userId: agents[0]._id, shopId: ebay._id, grantedBy: admin._id },
-    { userId: agents[0]._id, shopId: temu._id, grantedBy: admin._id },
-    { userId: agents[1]._id, shopId: temu._id, grantedBy: admin._id },
-    { userId: agents[2]._id, shopId: tiktok._id, grantedBy: admin._id },
   ])
 
   // --- products ---
@@ -92,10 +83,10 @@ async function main() {
   // --- listings (products x shops) ---
   const listings = []
   for (const p of products.filter((x) => x.status === 'active')) {
-    for (const s of [ebay, temu, tiktok].slice(0, 1 + Math.floor(Math.random() * 3))) {
+    for (const s of [ebay]) {
       listings.push({
         productId: p._id, shopId: s._id, marketplace: s.marketplace,
-        externalListingId: `${s.marketplace}-lst-${p.sku}`, status: 'live', lastSyncedAt: daysAgo(0),
+        externalListingId: `ebay-lst-${p.sku}`, status: 'live', lastSyncedAt: daysAgo(0),
       })
     }
   }
@@ -104,11 +95,11 @@ async function main() {
   // --- customers ---
   const customers = await Customer.insertMany([
     { name: 'Alice Johnson', email: 'alice@example.com', phone: '555-0101', identities: [{ shopId: ebay._id, marketplace: 'ebay', externalBuyerId: 'ebay-buyer-1', username: 'alice_j' }], orderCount: 3, totalSpent: 120.5, lastOrderAt: daysAgo(2) },
-    { name: 'Bob Smith', email: 'bob@example.com', identities: [{ shopId: temu._id, marketplace: 'temu', externalBuyerId: 'temu-buyer-2', username: 'bob s' }], orderCount: 2, totalSpent: 64.0, lastOrderAt: daysAgo(5) },
-    { name: 'Carol Lee', email: 'carol@example.com', identities: [{ shopId: tiktok._id, marketplace: 'tiktok_shop', externalBuyerId: 'tt-buyer-3', username: 'carollee' }], orderCount: 4, totalSpent: 210.75, lastOrderAt: daysAgo(1) },
+    { name: 'Bob Smith', email: 'bob@example.com', identities: [{ shopId: ebay._id, marketplace: 'ebay', externalBuyerId: 'ebay-buyer-2', username: 'bob_s' }], orderCount: 2, totalSpent: 64.0, lastOrderAt: daysAgo(5) },
+    { name: 'Carol Lee', email: 'carol@example.com', identities: [{ shopId: ebay._id, marketplace: 'ebay', externalBuyerId: 'ebay-buyer-3', username: 'carollee' }], orderCount: 4, totalSpent: 210.75, lastOrderAt: daysAgo(1) },
     { name: 'David Kim', email: 'david@example.com', identities: [{ shopId: ebay._id, marketplace: 'ebay', externalBuyerId: 'ebay-buyer-4', username: 'davidk' }], orderCount: 1, totalSpent: 49.99, lastOrderAt: daysAgo(9) },
-    { name: 'Emma Davis', identities: [{ shopId: temu._id, marketplace: 'temu', externalBuyerId: 'temu-buyer-5', username: 'emma_d' }], orderCount: 2, totalSpent: 44.98, lastOrderAt: daysAgo(4) },
-    { name: 'Frank Moore', email: 'frank@example.com', identities: [{ shopId: tiktok._id, marketplace: 'tiktok_shop', externalBuyerId: 'tt-buyer-6', username: 'frankm' }], orderCount: 1, totalSpent: 29.99, lastOrderAt: daysAgo(12) },
+    { name: 'Emma Davis', identities: [{ shopId: ebay._id, marketplace: 'ebay', externalBuyerId: 'ebay-buyer-5', username: 'emma_d' }], orderCount: 2, totalSpent: 44.98, lastOrderAt: daysAgo(4) },
+    { name: 'Frank Moore', email: 'frank@example.com', identities: [{ shopId: ebay._id, marketplace: 'ebay', externalBuyerId: 'ebay-buyer-6', username: 'frankm' }], orderCount: 1, totalSpent: 29.99, lastOrderAt: daysAgo(12) },
   ])
 
   // --- orders (spread over 30 days, mixed statuses) ---
@@ -132,7 +123,7 @@ async function main() {
     const placedDays = Math.floor(Math.random() * 30)
     orderDocs.push({
       shopId: shop._id, marketplace: shop.marketplace,
-      externalOrderId: `${shop.marketplace}-ord-${1000 + i}`,
+      externalOrderId: `ebay-ord-${1000 + i}`,
       customerId: customer._id, status: pick(statuses), items,
       buyer: { name: customer.name, email: customer.email, phone: customer.phone },
       shippingAddress: { line1: `${100 + i} Dev Street`, city: 'Austin', state: 'TX', zip: '78701', country: 'US' },
@@ -166,8 +157,8 @@ async function main() {
   // --- conversations + messages ---
   const convos = await Conversation.insertMany([
     { shopId: ebay._id, marketplace: 'ebay', customerId: customers[0]._id, externalThreadId: 'ebay-th-1', status: 'open', aiEnabled: true, lastMessageAt: daysAgo(0), lastMessagePreview: 'When will my order ship?', unreadCount: 1 },
-    { shopId: temu._id, marketplace: 'temu', customerId: customers[1]._id, externalThreadId: 'temu-th-2', orderId: orders[1]._id, status: 'open', aiEnabled: false, lastMessageAt: daysAgo(1), lastMessagePreview: 'Thanks, got it!', unreadCount: 0 },
-    { shopId: tiktok._id, marketplace: 'tiktok_shop', customerId: customers[2]._id, externalThreadId: 'tt-th-3', status: 'closed', aiEnabled: true, lastMessageAt: daysAgo(4), lastMessagePreview: 'Refund processed.', unreadCount: 0 },
+    { shopId: ebay._id, marketplace: 'ebay', customerId: customers[1]._id, externalThreadId: 'ebay-th-2', orderId: orders[1]._id, status: 'open', aiEnabled: false, lastMessageAt: daysAgo(1), lastMessagePreview: 'Thanks, got it!', unreadCount: 0 },
+    { shopId: ebay._id, marketplace: 'ebay', customerId: customers[2]._id, externalThreadId: 'ebay-th-3', status: 'closed', aiEnabled: true, lastMessageAt: daysAgo(4), lastMessagePreview: 'Refund processed.', unreadCount: 0 },
     { shopId: ebay._id, marketplace: 'ebay', customerId: customers[3]._id, externalThreadId: 'ebay-th-4', status: 'open', aiEnabled: true, lastMessageAt: daysAgo(0), lastMessagePreview: 'Is this waterproof?', unreadCount: 2 },
   ])
   const msgs = []

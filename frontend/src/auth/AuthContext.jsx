@@ -3,12 +3,10 @@ import { api } from '../lib/api'
 
 const AuthContext = createContext(null)
 
-// Dev quick sign-in accounts (seeded). agent1 → eBay, agent2 → Temu, agent3 → TikTok.
+// Dev quick sign-in accounts.
 export const QUICK_ACCOUNTS = [
   { label: 'Super Admin', email: 'admin@dev.local', role: 'super_admin' },
   { label: 'eBay Agent', email: 'agent1@dev.local', role: 'sub_admin' },
-  { label: 'Temu Agent', email: 'agent2@dev.local', role: 'sub_admin' },
-  { label: 'TikTok Agent', email: 'agent3@dev.local', role: 'sub_admin' },
 ]
 const QUICK_PASSWORD = 'Temp1234!'
 

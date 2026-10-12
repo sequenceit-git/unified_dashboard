@@ -3,7 +3,7 @@ export const DEFAULT_REPORT_META = {
   category: 'Home & Kitchen',
   niche: 'Portable Blenders',
   createdAt: new Date('2026-10-12T10:15:00'),
-  marketplaces: ['tiktok_shop', 'temu', 'ebay'],
+  marketplaces: ['ebay'],
 }
 
 export const FALLBACK_MARKET_ANALYSIS = {
@@ -164,7 +164,7 @@ export const FALLBACK_PRODUCT_RECOMMENDATIONS = [
     rank: 1,
     productName: 'Portable USB-C Smoothie Blender 450ml (6-Blade)',
     category: 'Home & Kitchen',
-    marketplace: 'tiktok_shop',
+    marketplace: 'ebay',
     productUrl: 'https://shop.tiktok.com/item/portable-blender-450ml',
     price: 29.99,
     currency: 'USD',
@@ -224,7 +224,7 @@ export const FALLBACK_PRODUCT_RECOMMENDATIONS = [
     rank: 4,
     productName: 'Magnetic Motion-Sensor Under Cabinet LED Strip',
     category: 'Home & Kitchen',
-    marketplace: 'tiktok_shop',
+    marketplace: 'ebay',
     productUrl: 'https://shop.tiktok.com/item/under-cabinet-sensor-light',
     price: 19.99,
     currency: 'USD',
@@ -263,7 +263,7 @@ export const FALLBACK_PRODUCT_RECOMMENDATIONS = [
 export const FALLBACK_MARKETPLACE_RESEARCH = [
   {
     productName: 'USB-C Portable Blender 6-Blade 450ml',
-    marketplace: 'tiktok_shop',
+    marketplace: 'ebay',
     productUrl: 'https://shop.tiktok.com/item/portable-blender-450ml',
     price: 29.99,
     currency: 'USD',

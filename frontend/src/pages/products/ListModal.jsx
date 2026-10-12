@@ -42,14 +42,7 @@ export default function ListModal({ product, onClose, onSaved }) {
   const [busy, setBusy] = useState(false)
 
   const handleShopChange = (e) => {
-    const newId = e.target.value
-    setShopId(newId)
-    const nextShop = (shopsRes.data || []).find((s) => s._id === newId)
-    if (nextShop?.marketplace === 'tiktok_shop' && !categoryId) {
-      setCategoryId('600001')
-    } else if (nextShop?.marketplace === 'temu' && !categoryId) {
-      setCategoryId('200001')
-    }
+    setShopId(e.target.value)
   }
 
   const submit = async (e) => {
@@ -59,7 +52,7 @@ export default function ListModal({ product, onClose, onSaved }) {
       return
     }
 
-    if (marketplace === 'ebay' && title.length > 80) {
+    if (title.length > 80) {
       setError('eBay titles cannot exceed 80 characters.')
       return
     }
@@ -79,15 +72,8 @@ export default function ListModal({ product, onClose, onSaved }) {
           height: Number(height) || 5,
           unit: 'in',
         },
-      }
-
-      if (marketplace === 'ebay') {
-        payload.condition = condition
-        payload.brand = brand.trim() || 'Unbranded'
-      } else if (marketplace === 'tiktok_shop') {
-        payload.categoryId = categoryId.trim() || '600001'
-      } else if (marketplace === 'temu') {
-        payload.categoryId = categoryId.trim() || '200001'
+        condition,
+        brand: brand.trim() || 'Unbranded',
       }
 
       await api.post(`/api/products/${product._id}/list`, payload, token)
@@ -133,75 +119,42 @@ export default function ListModal({ product, onClose, onSaved }) {
                 {marketplaceLabel(marketplace)} Channel Configuration
               </span>
               <span className="rounded bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
-                {marketplace === 'ebay' ? 'eBay Sell Inventory API' : marketplace === 'tiktok_shop' ? 'TikTok Open Platform 202309' : 'Temu Open Platform'}
+                eBay Sell Inventory API
               </span>
             </div>
 
-            {/* Title field with marketplace-specific limits */}
+            {/* Title field with eBay limits */}
             <div className="mt-2">
               <div className="flex items-center justify-between">
                 <span className="mb-1 text-xs font-semibold text-gray-700">Listing Title *</span>
-                {marketplace === 'ebay' ? (
-                  <span className={`text-xs font-medium ${title.length > 80 ? 'text-red-600 font-bold' : title.length > 70 ? 'text-amber-600' : 'text-gray-500'}`}>
-                    {title.length}/80 characters (eBay limit)
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-500">{title.length} characters</span>
-                )}
+                <span className={`text-xs font-medium ${title.length > 80 ? 'text-red-600 font-bold' : title.length > 70 ? 'text-amber-600' : 'text-gray-500'}`}>
+                  {title.length}/80 characters (eBay limit)
+                </span>
               </div>
               <input
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                maxLength={marketplace === 'ebay' ? 80 : 255}
+                maxLength={80}
                 required
               />
             </div>
 
-            {/* Marketplace Specific Fields */}
-            {marketplace === 'ebay' && (
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Select
-                  label="Condition (eBay required)"
-                  value={condition}
-                  onChange={(e) => setCondition(e.target.value)}
-                  options={EBAY_CONDITIONS}
-                />
-                <Input
-                  label="Brand Aspect (eBay required)"
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                  placeholder="e.g. Apple, Nike, Unbranded"
-                />
-              </div>
-            )}
-
-            {marketplace === 'tiktok_shop' && (
-              <div className="mt-3">
-                <Input
-                  label="TikTok Category ID (Leaf Category)"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  placeholder="600001 (Default General Retail Category)"
-                />
-                <p className="mt-1 text-xs text-gray-500">TikTok requires a valid leaf category ID and package dimensions for rate calculations.</p>
-              </div>
-            )}
-
-            {marketplace === 'temu' && (
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input
-                  label="Temu Category ID (cat_id)"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  placeholder="200001"
-                />
-                <div className="flex flex-col justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  <span>Temu Weight Conversion:</span>
-                  <span className="font-semibold">{Math.round((Number(weight) || 1) * 453.592)} grams ({weight} lbs)</span>
-                </div>
-              </div>
-            )}
+            {/* eBay Specific Fields */}
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select
+                label="Condition (eBay required)"
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+                options={EBAY_CONDITIONS}
+              />
+              <Input
+                label="Brand Aspect (eBay required)"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                placeholder="e.g. Apple, Nike, Unbranded"
+              />
+            </div>
 
             {/* Packaging and Dimensions */}
             <div className="mt-3 pt-2 border-t border-indigo-100">
@@ -221,7 +174,7 @@ export default function ListModal({ product, onClose, onSaved }) {
           <ImageDropzone
             images={images}
             onChange={setImages}
-            label={`Listing Images ${marketplace === 'temu' ? '(Temu Carousel Images)' : marketplace === 'tiktok_shop' ? '(TikTok main_images)' : '(eBay imageUrls)'}`}
+            label="Listing Images (eBay imageUrls)"
             maxImages={12}
           />
           {images.length === 0 && (

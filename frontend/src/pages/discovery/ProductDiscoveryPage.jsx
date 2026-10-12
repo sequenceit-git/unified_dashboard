@@ -87,7 +87,7 @@ export default function ProductDiscoveryPage() {
             Product Discovery
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Real-time market signals, profit margin analytics, and opportunity discovery across eBay, TikTok Shop, and Temu.
+            Real-time market signals, profit margin analytics, and opportunity discovery for your eBay store.
           </p>
         </div>
 

@@ -146,6 +146,7 @@ class EbayService {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/json',
+        'Accept-Language': 'en-US',
       },
     })
 

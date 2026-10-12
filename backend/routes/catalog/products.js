@@ -174,7 +174,7 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
       brand: req.body.brand || product.brand,
     }
 
-    // Push listing to eBay, TikTok Shop, or Temu
+    // Push listing to eBay
     let externalListingId = null
     let listingStatus = 'pending'
     let syncError = null

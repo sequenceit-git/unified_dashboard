@@ -4,8 +4,6 @@
  */
 
 const ebay = require('./ebay')
-const tiktok = require('./tiktok')
-const temu = require('./temu')
 const config = require('../../config/marketplaces')
 const Order = require('../../models/Order')
 const Customer = require('../../models/Customer')
@@ -16,8 +14,6 @@ const Listing = require('../../models/Listing')
 
 const marketplaceServices = {
   ebay,
-  tiktok_shop: tiktok,
-  temu,
 }
 
 class UnifiedMarketplaceManager {
@@ -78,24 +74,15 @@ class UnifiedMarketplaceManager {
   /**
    * Pushes stock updates to a connected marketplace
    */
-  async pushStock(shop, { sku, quantity, externalListingId, productId }) {
-    const service = this.getService(shop.marketplace)
+  async pushStock(shop, { sku, quantity }) {
+    const service = this.getService('ebay')
     const token = shop.auth?.accessTokenEnc || ''
     if (!token) return { success: false, reason: 'unauthorized_shop' }
-
-    if (shop.marketplace === 'ebay') {
-      return service.updateStock(token, sku, quantity)
-    }
-    if (shop.marketplace === 'tiktok_shop') {
-      return service.updateStock(token, { productId: externalListingId, skuId: sku, quantity })
-    }
-    if (shop.marketplace === 'temu') {
-      return service.updateStock(token, { goodsId: externalListingId, skuId: sku, quantity })
-    }
+    return service.updateStock(token, sku, quantity)
   }
 
   /**
-   * Pushes shipping fulfillment & tracking number to the marketplace
+   * Pushes shipping fulfillment & tracking number to eBay
    */
   async pushShipping(order, { carrier, trackingNumber }) {
     const shop = await Shop.findById(order.shopId).select('+auth.accessTokenEnc')
@@ -104,35 +91,14 @@ class UnifiedMarketplaceManager {
     }
 
     const token = shop.auth.accessTokenEnc
-    const service = this.getService(order.marketplace)
+    const service = this.getService('ebay')
 
-    if (order.marketplace === 'ebay') {
-      await service.createShippingFulfillment(token, order.externalOrderId, {
-        carrier,
-        trackingNumber,
-        lineItems: order.items.map((i) => ({ lineItemId: i.sku, quantity: i.quantity })),
-      })
-      return { pushed: true }
-    }
-
-    if (order.marketplace === 'tiktok_shop') {
-      await service.shipPackage(token, order.externalOrderId, {
-        trackingNumber,
-        shippingProviderId: carrier,
-      })
-      return { pushed: true }
-    }
-
-    if (order.marketplace === 'temu') {
-      await service.confirmShipment(token, {
-        orderSn: order.externalOrderId,
-        expressCompanyId: carrier,
-        trackingNumber,
-      })
-      return { pushed: true }
-    }
-
-    return { pushed: false }
+    await service.createShippingFulfillment(token, order.externalOrderId, {
+      carrier,
+      trackingNumber,
+      lineItems: (order.items || []).map((i) => ({ lineItemId: i.sku, quantity: i.quantity })),
+    })
+    return { pushed: true }
   }
 
   /**
@@ -179,48 +145,6 @@ class UnifiedMarketplaceManager {
             unitPrice: parseFloat(li.lineItemCost?.value || 0),
           })),
         }))
-      } else if (shop.marketplace === 'tiktok_shop') {
-        const res = await service.getOrders(token, { pageSize: 50 })
-        rawOrders = (res.order_list || []).map((o) => ({
-          externalOrderId: o.id,
-          placedAt: new Date(o.create_time * 1000),
-          status: o.status === 'COMPLETED' ? 'delivered' : o.status === 'SHIPPED' ? 'shipped' : 'paid',
-          buyer: {
-            name: o.buyer_uid || 'TikTok Customer',
-            email: o.buyer_email || '',
-          },
-          totals: {
-            total: parseFloat(o.payment_info?.total_amount || 0),
-            currency: o.payment_info?.currency || 'USD',
-          },
-          items: (o.item_list || []).map((li) => ({
-            sku: li.seller_sku,
-            title: li.product_name,
-            quantity: li.quantity,
-            unitPrice: parseFloat(li.sku_sale_price || 0),
-          })),
-        }))
-      } else if (shop.marketplace === 'temu') {
-        const res = await service.getOrders(token, { page: 1, pageSize: 50 })
-        rawOrders = (res.order_list || []).map((o) => ({
-          externalOrderId: o.order_sn,
-          placedAt: new Date(o.created_at * 1000),
-          status: o.order_status === 2 ? 'shipped' : 'paid',
-          buyer: {
-            name: o.receiver_name || 'Temu Customer',
-            email: '',
-          },
-          totals: {
-            total: (o.pay_amount || 0) / 100,
-            currency: 'USD',
-          },
-          items: (o.item_list || []).map((li) => ({
-            sku: li.out_sku_sn,
-            title: li.goods_name,
-            quantity: li.goods_number,
-            unitPrice: (li.goods_price || 0) / 100,
-          })),
-        }))
       }
 
       let createdCount = 0
@@ -229,14 +153,69 @@ class UnifiedMarketplaceManager {
       for (const ord of rawOrders) {
         let customer = null
         if (ord.buyer?.name) {
-          customer = await Customer.findOneAndUpdate(
-            { 'identities.externalBuyerId': ord.buyer.name },
-            {
+          customer = await Customer.findOne({ 'identities.externalBuyerId': ord.buyer.name })
+          if (!customer) {
+            customer = await Customer.create({
               name: ord.buyer.name,
-              email: ord.buyer.email,
-              $addToSet: { identities: { shopId: shop._id, marketplace: shop.marketplace, externalBuyerId: ord.buyer.name } },
+              email: ord.buyer.email || undefined,
+              identities: [
+                {
+                  shopId: shop._id,
+                  marketplace: shop.marketplace,
+                  externalBuyerId: ord.buyer.name,
+                  username: ord.buyer.name,
+                },
+              ],
+            })
+          } else {
+            const hasId = (customer.identities || []).some(
+              (i) => i.shopId?.toString() === shop._id.toString() && i.externalBuyerId === ord.buyer.name,
+            )
+            if (!hasId) {
+              customer.identities = customer.identities || []
+              customer.identities.push({
+                shopId: shop._id,
+                marketplace: shop.marketplace,
+                externalBuyerId: ord.buyer.name,
+                username: ord.buyer.name,
+              })
+              await customer.save()
+            }
+          }
+        }
+
+        // Ensure catalog products and listings exist for ordered items
+        for (const item of ord.items || []) {
+          if (!item.sku) continue
+          let prod = await Product.findOne({ sku: item.sku })
+          if (!prod) {
+            prod = await Product.create({
+              sku: item.sku,
+              title: item.title || `Item ${item.sku}`,
+              category: 'General',
+              brand: shop.name || 'eBay Store',
+              images: [],
+              basePrice: item.unitPrice || 19.99,
+              stock: 10,
+              status: 'active',
+              source: 'marketplace_sync',
+            })
+          }
+          item.productId = prod._id
+
+          // Ensure listing link exists
+          await Listing.findOneAndUpdate(
+            { productId: prod._id, shopId: shop._id },
+            {
+              productId: prod._id,
+              shopId: shop._id,
+              marketplace: shop.marketplace,
+              externalListingId: `item-${item.sku}`,
+              price: item.unitPrice || prod.basePrice,
+              status: 'live',
+              lastSyncedAt: new Date(),
             },
-            { upsert: true, new: true },
+            { upsert: true, returnDocument: 'after' },
           )
         }
 
@@ -285,54 +264,29 @@ class UnifiedMarketplaceManager {
   /**
    * Pushes price update to marketplace
    */
-  async pushPrice(shop, { sku, price, externalListingId }) {
-    const service = this.getService(shop.marketplace)
+  async pushPrice(shop, { sku, price }) {
     const token = shop.auth?.accessTokenEnc || ''
     if (!token) return { success: false, reason: 'unauthorized_shop' }
-
-    if (shop.marketplace === 'ebay') {
-      return service.updatePrice(token, sku, price)
-    }
-    if (shop.marketplace === 'tiktok_shop') {
-      return service.updatePrice(token, externalListingId, { skuId: sku, price })
-    }
-    if (shop.marketplace === 'temu') {
-      return service.updatePrice(token, { goodsId: externalListingId, skuId: sku, price })
-    }
+    const service = this.getService('ebay')
+    return service.updatePrice(token, sku, price)
   }
 
   /**
-   * Looks up categories across marketplaces
+   * Looks up categories via eBay Taxonomy API
    */
   async getCategories(shop, query = 'General') {
-    const service = this.getService(shop.marketplace)
+    const service = this.getService('ebay')
     const token = shop.auth?.accessTokenEnc || ''
-    if (shop.marketplace === 'ebay') {
-      return service.getCategories(token, query)
-    }
-    if (shop.marketplace === 'tiktok_shop') {
-      return service.getCategories(token)
-    }
-    if (shop.marketplace === 'temu') {
-      return service.getCategories(token)
-    }
+    return service.getCategories(token, query)
   }
 
   /**
-   * Looks up category attribute schema across marketplaces
+   * Looks up category attribute schema via eBay Taxonomy API
    */
   async getCategoryAttributes(shop, categoryId) {
-    const service = this.getService(shop.marketplace)
+    const service = this.getService('ebay')
     const token = shop.auth?.accessTokenEnc || ''
-    if (shop.marketplace === 'ebay') {
-      return service.getItemAspects(token, categoryId)
-    }
-    if (shop.marketplace === 'tiktok_shop') {
-      return service.getCategoryAttributes(token, categoryId)
-    }
-    if (shop.marketplace === 'temu') {
-      return service.getCategoryAttributes(token, categoryId)
-    }
+    return service.getItemAspects(token, categoryId)
   }
 
   /**
@@ -344,51 +298,34 @@ class UnifiedMarketplaceManager {
       return { success: false, note: 'Shop not connected or credentials missing' }
     }
     const token = shop.auth.accessTokenEnc
-    const service = this.getService(order.marketplace)
-
-    if (order.marketplace === 'ebay') {
-      return service.issueRefund(token, order.externalOrderId, { reason, comment, amount })
-    }
-    if (order.marketplace === 'tiktok_shop') {
-      return service.confirmReverseOrder(token, order.externalOrderId, 'AGREE')
-    }
-    if (order.marketplace === 'temu') {
-      return { success: true, note: 'Temu return status recorded locally (API confirmation not supported)' }
-    }
+    const service = this.getService('ebay')
+    return service.issueRefund(token, order.externalOrderId, { reason, comment, amount })
   }
 
   /**
-   * Automatically initializes and connects shops if direct tokens are present in .env
+   * Automatically initializes and connects shop if direct token is present in .env
    */
   async autoConnectFromEnv() {
-    const directTokens = [
-      { marketplace: 'ebay', name: 'eBay Store', token: config.ebay?.accessToken },
-      { marketplace: 'tiktok_shop', name: 'TikTok Shop Store', token: config.tiktok_shop?.accessToken },
-      { marketplace: 'temu', name: 'Temu Store', token: config.temu?.accessToken },
-    ]
-
-    for (const item of directTokens) {
-      if (item.token) {
-        await Shop.findOneAndUpdate(
-          { marketplace: item.marketplace },
-          {
-            name: item.name,
-            marketplace: item.marketplace,
-            externalShopId: `${item.marketplace}-live-store`,
-            status: 'connected',
-            auth: {
-              accessTokenEnc: item.token,
-            },
-            lastSyncAt: new Date(),
+    if (config.ebay?.accessToken) {
+      await Shop.findOneAndUpdate(
+        { marketplace: 'ebay' },
+        {
+          name: 'eBay Store',
+          marketplace: 'ebay',
+          externalShopId: 'ebay-live-store',
+          status: 'connected',
+          auth: {
+            accessTokenEnc: config.ebay.accessToken,
           },
-          { upsert: true, new: true },
-        )
-      }
+          lastSyncAt: new Date(),
+        },
+        { upsert: true, new: true },
+      )
     }
   }
 
   /**
-   * Synchronizes existing product listings from a marketplace shop into the platform
+   * Synchronizes existing product listings from eBay into the platform
    * Automatically populates the Products catalog and Listings tab!
    */
   async syncListingsForShop(shop) {
@@ -397,51 +334,23 @@ class UnifiedMarketplaceManager {
       return { synced: 0, reason: 'No active access token' }
     }
 
-    const service = this.getService(shop.marketplace)
+    const service = this.getService('ebay')
     let rawItems = []
 
     try {
-      if (shop.marketplace === 'ebay') {
-        const res = await service.getInventory(token, { limit: 50 })
-        rawItems = (res.inventoryItems || []).map((item) => ({
-          sku: item.sku,
-          title: item.product?.title || `eBay Item ${item.sku}`,
-          description: item.product?.description || '',
-          price: Number(item.product?.aspects?.Price?.[0] || 19.99),
-          stock: Number(item.availability?.shipToLocationAvailability?.quantity || 10),
-          images: item.product?.imageUrls || [],
-          weight: Number(item.packageWeightAndSize?.weight?.value || 1),
-          category: item.product?.aspects?.Category?.[0] || 'General',
-          brand: item.product?.aspects?.Brand?.[0] || 'Generic',
-          externalListingId: `ebay-item-${item.sku}`,
-        }))
-      } else if (shop.marketplace === 'tiktok_shop') {
-        const res = await service.getProducts(token, { pageSize: 50 })
-        rawItems = (res.products || []).map((p) => ({
-          sku: p.skus?.[0]?.seller_sku || `tt-${p.id}`,
-          title: p.title,
-          description: p.description || '',
-          price: Number(p.skus?.[0]?.price?.amount || 19.99),
-          stock: Number(p.skus?.[0]?.stock_infos?.[0]?.available_stock || 10),
-          images: (p.main_images || []).map((img) => img.uri || img.url),
-          weight: Number(p.package_weight?.value || 1),
-          category: p.category_chains?.[0]?.name || 'General',
-          externalListingId: p.id,
-        }))
-      } else if (shop.marketplace === 'temu') {
-        const res = await service.getGoodsList(token, { pageSize: 50 })
-        rawItems = (res.goods_list || []).map((g) => ({
-          sku: g.sku_list?.[0]?.out_sku_sn || `temu-${g.goods_id}`,
-          title: g.goods_name,
-          description: g.goods_desc || '',
-          price: Number(g.sku_list?.[0]?.price || 1999) / 100,
-          stock: Number(g.sku_list?.[0]?.quantity || 10),
-          images: g.carousel_image_list || [],
-          weight: Math.round((g.weight || 450) / 453.592),
-          category: g.cat_name || 'General',
-          externalListingId: String(g.goods_id),
-        }))
-      }
+      const res = await service.getInventory(token, { limit: 50 })
+      rawItems = (res.inventoryItems || []).map((item) => ({
+        sku: item.sku,
+        title: item.product?.title || `eBay Item ${item.sku}`,
+        description: item.product?.description || '',
+        price: Number(item.product?.aspects?.Price?.[0] || 19.99),
+        stock: Number(item.availability?.shipToLocationAvailability?.quantity || 10),
+        images: item.product?.imageUrls || [],
+        weight: Number(item.packageWeightAndSize?.weight?.value || 1),
+        category: item.product?.aspects?.Category?.[0] || 'General',
+        brand: item.product?.aspects?.Brand?.[0] || 'Generic',
+        externalListingId: `ebay-item-${item.sku}`,
+      }))
 
       let createdProducts = 0
       let updatedListings = 0

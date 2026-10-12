@@ -8,8 +8,6 @@ function MarketplaceText({ id, label }) {
         <span className="text-[#86B817]">y</span>
       </span>
     )
-  if (id === 'temu') return <span className="text-lg font-bold tracking-tight text-[#FB7701]">{label}</span>
-  if (id === 'tiktok_shop') return <span className="text-lg font-bold tracking-tight text-[#010101]">{label}</span>
   return label
 }
 
@@ -17,7 +15,7 @@ export default function Tabs({ tabs, active, onChange }) {
   return (
     <div className="flex gap-1 overflow-x-auto border-b border-gray-200">
       {tabs.map((t) => {
-        const isMarketplace = t.id === 'ebay' || t.id === 'temu' || t.id === 'tiktok_shop'
+        const isMarketplace = t.id === 'ebay'
         const isActive = active === t.id
         return (
           <button

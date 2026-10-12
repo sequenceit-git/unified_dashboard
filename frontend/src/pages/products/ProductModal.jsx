@@ -128,7 +128,7 @@ export default function ProductModal({ product, onClose, onSaved }) {
             <div className="rounded-xl border border-gray-200/80 bg-gray-50/70 p-4 shadow-2xs space-y-2.5">
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">Package Logistics & Dimensions</h3>
-                <p className="text-[11px] text-gray-500">Used by eBay, TikTok Shop, and Temu for shipping rates</p>
+                <p className="text-[11px] text-gray-500">Used by eBay for shipping rates</p>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <Input label="Weight (lbs)" type="number" step="0.1" value={form.weight} onChange={set('weight')} />

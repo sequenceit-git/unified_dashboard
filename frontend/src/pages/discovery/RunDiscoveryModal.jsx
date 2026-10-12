@@ -18,8 +18,6 @@ export default function RunDiscoveryModal({ isOpen, onClose, onRun, running }) {
   const [keywords, setKeywords] = useState('')
   const [marketplaces, setMarketplaces] = useState({
     ebay: true,
-    tiktok_shop: true,
-    temu: true,
   })
 
   if (!isOpen) return null
@@ -43,7 +41,7 @@ export default function RunDiscoveryModal({ isOpen, onClose, onRun, running }) {
     <Modal title="Launch AI Product Discovery Agent" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-sm text-gray-500">
-          The agent scans high-velocity sales trends, calculate margins, analyzes competitor density, and identifies top product opportunities across supported marketplaces.
+          The agent scans high-velocity sales trends, calculate margins, analyzes competitor density, and identifies top product opportunities across eBay.
         </p>
 
         <div>
@@ -56,12 +54,10 @@ export default function RunDiscoveryModal({ isOpen, onClose, onRun, running }) {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Target Marketplaces</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Target Marketplace</label>
           <div className="flex flex-wrap gap-3">
             {[
               { id: 'ebay', label: 'eBay' },
-              { id: 'tiktok_shop', label: 'TikTok Shop' },
-              { id: 'temu', label: 'Temu' },
             ].map((m) => (
               <label
                 key={m.id}

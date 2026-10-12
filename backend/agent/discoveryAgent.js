@@ -6,7 +6,7 @@ const marketAnalyzer = require('./marketAnalyzer')
 const PRODUCT_CATALOG_KNOWLEDGE = [
   {
     category: 'Home & Kitchen',
-    marketplace: 'tiktok_shop',
+    marketplace: 'ebay',
     title: 'Magnetic Silicone Measuring Spoons & Leveler Set',
     image: 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=500&auto=format&fit=crop&q=60',
     basePrice: 19.99,
@@ -30,7 +30,7 @@ const PRODUCT_CATALOG_KNOWLEDGE = [
   },
   {
     category: 'Electronics',
-    marketplace: 'temu',
+    marketplace: 'ebay',
     title: '3-in-1 Foldable Magnetic Wireless Charging Station (MagSafe Compatible)',
     image: 'https://images.unsplash.com/photo-1586816879360-004f5b0c51e5?w=500&auto=format&fit=crop&q=60',
     basePrice: 38.99,
@@ -42,7 +42,7 @@ const PRODUCT_CATALOG_KNOWLEDGE = [
   },
   {
     category: 'Electronics',
-    marketplace: 'tiktok_shop',
+    marketplace: 'ebay',
     title: 'RGB Desktop Sound-Controlled Rhythm Pickup Ambient Bar Lamp',
     image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=500&auto=format&fit=crop&q=60',
     basePrice: 22.95,
@@ -66,7 +66,7 @@ const PRODUCT_CATALOG_KNOWLEDGE = [
   },
   {
     category: 'Sports & Fitness',
-    marketplace: 'tiktok_shop',
+    marketplace: 'ebay',
     title: 'High-Density Deep Tissue Muscle Roller with Ergonomic Handle',
     image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=500&auto=format&fit=crop&q=60',
     basePrice: 27.99,
@@ -78,7 +78,7 @@ const PRODUCT_CATALOG_KNOWLEDGE = [
   },
   {
     category: 'Beauty & Personal Care',
-    marketplace: 'tiktok_shop',
+    marketplace: 'ebay',
     title: 'LED Facial Light Therapy Wand with Warm Massage & Microcurrent',
     image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&auto=format&fit=crop&q=60',
     basePrice: 42.00,
@@ -90,7 +90,7 @@ const PRODUCT_CATALOG_KNOWLEDGE = [
   },
   {
     category: 'Accessories',
-    marketplace: 'temu',
+    marketplace: 'ebay',
     title: 'Minimalist RFID-Blocking Slim Aluminum Pop-Up Cardholder Wallet',
     image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=500&auto=format&fit=crop&q=60',
     basePrice: 18.50,
@@ -114,7 +114,7 @@ const PRODUCT_CATALOG_KNOWLEDGE = [
   },
   {
     category: 'Home & Kitchen',
-    marketplace: 'temu',
+    marketplace: 'ebay',
     title: 'Automatic Touchless Motion Sensor Trash Can (14L Waterproof)',
     image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=500&auto=format&fit=crop&q=60',
     basePrice: 34.99,
@@ -130,7 +130,7 @@ class DiscoveryAgent {
   /**
    * Discovers and evaluates opportunities based on target criteria
    */
-  async runDiscovery({ category = 'All', keywords = [], marketplaces = ['ebay', 'tiktok_shop', 'temu'], user = null }) {
+  async runDiscovery({ category = 'All', keywords = [], marketplaces = ['ebay'], user = null }) {
     const startedAt = new Date()
 
     // 1. Filter and match items

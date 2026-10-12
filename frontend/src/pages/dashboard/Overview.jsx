@@ -85,24 +85,6 @@ export default function Overview() {
         ? `Configured (${configs.ebay.environment})`
         : 'Missing EBAY_CLIENT_ID / EBAY_CLIENT_SECRET in .env',
     },
-    {
-      id: 'tiktok_shop',
-      name: 'TikTok Shop',
-      configured: configs?.tiktok_shop?.configured,
-      connected: getShopForMarketplace('tiktok_shop')?.status === 'connected',
-      detail: configs?.tiktok_shop?.configured
-        ? `Configured (${configs.tiktok_shop.region} region)`
-        : 'Missing TIKTOK_SHOP_APP_KEY / APP_SECRET in .env',
-    },
-    {
-      id: 'temu',
-      name: 'Temu',
-      configured: configs?.temu?.configured,
-      connected: getShopForMarketplace('temu')?.status === 'connected',
-      detail: configs?.temu?.configured
-        ? `Configured (${configs.temu.region} region)`
-        : 'Missing TEMU_APP_KEY / TEMU_APP_SECRET in .env',
-    },
   ]
 
   return (
@@ -152,9 +134,9 @@ export default function Overview() {
             <div className="flex items-start gap-3">
               <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-100 text-sm text-indigo-700">✦</span>
               <div>
-                <h2 className="font-semibold text-gray-900">Unified Marketplace API Integration Status</h2>
+                <h2 className="font-semibold text-gray-900">eBay Marketplace API Integration Status</h2>
                 <p className="mt-1 text-sm leading-6 text-gray-600">
-                  Centralized gateway for eBay, TikTok Shop, and Temu. Manage OAuth tokens, inventory sync, and order pipelines across all three channels.
+                  Direct gateway for eBay. Manage OAuth tokens, inventory synchronization, and order pipelines.
                 </p>
               </div>
             </div>

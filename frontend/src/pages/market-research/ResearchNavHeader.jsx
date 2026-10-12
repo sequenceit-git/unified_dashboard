@@ -3,7 +3,7 @@ import { FiArrowLeft, FiBarChart2, FiAward, FiFileText } from 'react-icons/fi'
 import Badge from '../../components/ui/Badge'
 import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
 
-export default function ResearchNavHeader({ reportId = 'rep-001', category = 'Home & Kitchen', niche, createdAt, marketplaces = ['tiktok_shop', 'temu', 'ebay'], extraActions }) {
+export default function ResearchNavHeader({ reportId = 'rep-001', category = 'Home & Kitchen', niche, createdAt, marketplaces = ['ebay'], extraActions }) {
   const location = useLocation()
 
   const tabs = [

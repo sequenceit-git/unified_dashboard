@@ -12,13 +12,7 @@ export default function OAuthCallback() {
 
   const code = searchParams.get('code')
   const state = searchParams.get('state') || ''
-  const marketplace = state.startsWith('ebay')
-    ? 'ebay'
-    : state.startsWith('tiktok')
-      ? 'tiktok_shop'
-      : state.startsWith('temu')
-        ? 'temu'
-        : 'ebay'
+  const marketplace = 'ebay'
 
   useEffect(() => {
     async function exchange() {

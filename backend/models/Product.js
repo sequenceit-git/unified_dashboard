@@ -33,7 +33,7 @@ const productSchema = new mongoose.Schema(
 
     variants: [variantSchema],
     status: { type: String, enum: ['draft', 'active', 'archived'], default: 'draft' },
-    source: { type: String, enum: ['manual', 'bulk_upload', 'research_bot'], default: 'manual' },
+    source: { type: String, enum: ['manual', 'bulk_upload', 'research_bot', 'marketplace_sync'], default: 'manual' },
     sourceReportId: { type: mongoose.Schema.Types.ObjectId, ref: 'ResearchReport', default: null },
   },
   { timestamps: true },

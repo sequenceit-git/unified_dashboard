@@ -28,13 +28,8 @@ export default function OpportunityCard({ opportunity, reportId, onAddToCatalog,
     score >= 70 ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
     'bg-amber-100 text-amber-800 border-amber-200'
 
-  const marketColor =
-    opportunity.marketplace === 'tiktok_shop' ? 'purple' :
-    opportunity.marketplace === 'temu' ? 'yellow' : 'blue'
-
-  const marketName =
-    opportunity.marketplace === 'tiktok_shop' ? 'TikTok Shop' :
-    opportunity.marketplace === 'temu' ? 'Temu' : 'eBay'
+  const marketColor = 'blue'
+  const marketName = 'eBay'
 
   return (
     <div className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-xs transition hover:shadow-md">
