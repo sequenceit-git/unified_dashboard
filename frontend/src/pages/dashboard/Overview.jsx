@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import Card, { StatCard } from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
@@ -12,8 +12,38 @@ export default function Overview() {
   const { data, loading, error, refetch } = useApi(token ? '/api/dashboard/overview' : null)
   const configsRes = useApi(token && isAdmin ? '/api/shops/configs' : null)
   const configs = configsRes.data
+  const shopsRes = useApi(token ? '/api/shops' : null)
+  const shops = shopsRes.data || []
+
+  const [searchParams, setSearchParams] = useSearchParams()
   const [syncingAll, setSyncingAll] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
+  const [connecting, setConnecting] = useState(false)
+
+  const connectedMarketplace = searchParams.get('connected')
+  const oauthError = searchParams.get('error')
+
+  useEffect(() => {
+    if (connectedMarketplace) {
+      setSyncMsg(`${connectedMarketplace.toUpperCase()} store was connected successfully!`)
+      shopsRes.refetch()
+      refetch()
+    }
+  }, [connectedMarketplace])
+
+  const handleConnect = async (marketplace) => {
+    setConnecting(true)
+    try {
+      const res = await api.get(`/api/shops/oauth/connect/${marketplace}`, token)
+      if (res?.url) {
+        window.location.href = res.url
+      }
+    } catch (err) {
+      alert(`Failed to start connection: ${err.message}`)
+    } finally {
+      setConnecting(false)
+    }
+  }
 
   const handleSyncAll = async () => {
     setSyncingAll(true)
@@ -43,11 +73,14 @@ export default function Overview() {
     { label: 'Low-stock alerts', value: data.counts.notifications, to: '/inventory' },
   ]
 
+  const getShopForMarketplace = (id) => shops.find((s) => s.marketplace === id)
+
   const marketplaces = [
     {
       id: 'ebay',
       name: 'eBay',
       configured: configs?.ebay?.configured,
+      connected: getShopForMarketplace('ebay')?.status === 'connected',
       detail: configs?.ebay?.configured
         ? `Configured (${configs.ebay.environment})`
         : 'Missing EBAY_CLIENT_ID / EBAY_CLIENT_SECRET in .env',
@@ -56,6 +89,7 @@ export default function Overview() {
       id: 'tiktok_shop',
       name: 'TikTok Shop',
       configured: configs?.tiktok_shop?.configured,
+      connected: getShopForMarketplace('tiktok_shop')?.status === 'connected',
       detail: configs?.tiktok_shop?.configured
         ? `Configured (${configs.tiktok_shop.region} region)`
         : 'Missing TIKTOK_SHOP_APP_KEY / APP_SECRET in .env',
@@ -64,6 +98,7 @@ export default function Overview() {
       id: 'temu',
       name: 'Temu',
       configured: configs?.temu?.configured,
+      connected: getShopForMarketplace('temu')?.status === 'connected',
       detail: configs?.temu?.configured
         ? `Configured (${configs.temu.region} region)`
         : 'Missing TEMU_APP_KEY / TEMU_APP_SECRET in .env',
@@ -136,20 +171,46 @@ export default function Overview() {
             </div>
           )}
 
+          {oauthError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-800">
+              ✕ Connection error: {oauthError}
+            </div>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-3">
             {marketplaces.map((m) => (
-              <div key={m.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{m.name}</span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                      m.configured ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20'
-                    }`}
-                  >
-                    {m.configured ? 'API Ready' : 'Credentials Needed'}
-                  </span>
+              <div key={m.id} className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{m.name}</span>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        m.connected
+                          ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
+                          : m.configured
+                            ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20'
+                            : 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20'
+                      }`}
+                    >
+                      {m.connected ? '● Connected' : m.configured ? 'API Ready' : 'Credentials Needed'}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">{m.detail}</p>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">{m.detail}</p>
+
+                {isAdmin && m.configured && !m.connected && (
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full text-xs"
+                      onClick={() => handleConnect(m.id)}
+                      disabled={connecting}
+                    >
+                      {connecting ? 'Connecting…' : `Connect ${m.name} Store →`}
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -10,13 +10,16 @@ const messageSchema = new mongoose.Schema(
     text: { type: String },
     attachments: [{ type: String }],
     externalMessageId: { type: String },
-    deliveryStatus: { type: String, enum: ['sent', 'failed'] },
+    deliveryStatus: { type: String, enum: ['sent', 'delivered', 'failed'], default: 'sent' },
     sentAt: { type: Date, default: Date.now },
   },
   { timestamps: true },
 )
 
 messageSchema.index({ conversationId: 1, sentAt: 1 })
-messageSchema.index({ shopId: 1, externalMessageId: 1 }, { unique: true, sparse: true })
+messageSchema.index(
+  { shopId: 1, externalMessageId: 1 },
+  { unique: true, partialFilterExpression: { externalMessageId: { $type: 'string' } } },
+)
 
 module.exports = mongoose.model('Message', messageSchema, 'messages')

@@ -5,6 +5,44 @@ const marketplaceManager = require('../../services/marketplace')
 const config = require('../../config/marketplaces')
 
 const router = express.Router()
+
+// GET /api/shops/oauth/callback/:marketplace — Browser redirect callback from eBay / TikTok / Temu OAuth
+router.get('/oauth/callback/:marketplace', async (req, res) => {
+  try {
+    const { marketplace } = req.params
+    const code = req.query.code
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim()
+
+    if (!code) {
+      return res.redirect(`${clientUrl}/?error=no_code`)
+    }
+
+    const tokenData = await marketplaceManager.exchangeCode(marketplace, code)
+
+    await Shop.findOneAndUpdate(
+      { marketplace },
+      {
+        name: `${marketplace.toUpperCase()} Store`,
+        marketplace,
+        status: 'connected',
+        auth: {
+          accessTokenEnc: tokenData.access_token || tokenData.accessToken,
+          refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
+          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+        },
+        lastSyncAt: new Date(),
+      },
+      { upsert: true, new: true },
+    )
+
+    res.redirect(`${clientUrl}/?connected=${marketplace}`)
+  } catch (err) {
+    console.error('OAuth callback error:', err.message)
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim()
+    res.redirect(`${clientUrl}/?error=${encodeURIComponent(err.message)}`)
+  }
+})
+
 router.use(requireAuth, loadAccess)
 
 // GET /api/shops — id/name/marketplace for dropdowns and tabs.

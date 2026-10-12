@@ -68,11 +68,7 @@ class UnifiedMarketplaceManager {
     const token = shop.auth?.accessTokenEnc || ''
 
     if (!token) {
-      // Staged mode if shop is not yet authorized with a live token
-      return {
-        externalListingId: `${shop.marketplace}-mock-${product.sku}`,
-        status: 'pending',
-      }
+      throw new Error(`Shop "${shop.name}" does not have an active ${shop.marketplace} token. Please connect your store via OAuth first.`)
     }
 
     return service.createListing(token, product, options)

@@ -175,8 +175,9 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
     }
 
     // Push listing to eBay, TikTok Shop, or Temu
-    let externalListingId = `${shop.marketplace}-lst-${product.sku}`
+    let externalListingId = null
     let listingStatus = 'pending'
+    let syncError = null
 
     try {
       const publishRes = await marketplaceManager.publishListing(shop, product, listingOptions)
@@ -185,6 +186,7 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
     } catch (apiErr) {
       console.warn(`Marketplace [${shop.marketplace}] listing error:`, apiErr.message)
       listingStatus = 'error'
+      syncError = apiErr.message
     }
 
     const listing = await Listing.findOneAndUpdate(
@@ -193,9 +195,10 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
         productId: product._id,
         shopId: shop._id,
         marketplace: shop.marketplace,
-        externalListingId,
+        ...(externalListingId ? { externalListingId } : {}),
         price,
         status: listingStatus,
+        syncError,
         lastSyncedAt: new Date(),
       },
       { new: true, upsert: true, runValidators: true },

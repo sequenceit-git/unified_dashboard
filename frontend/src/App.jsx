@@ -9,6 +9,7 @@ import Login from './pages/auth/Login'
 import OrdersPage from './pages/orders/OrdersPage'
 import Overview from './pages/dashboard/Overview'
 import ProductsPage from './pages/products/ProductsPage'
+import OAuthCallback from './pages/auth/OAuthCallback'
 import ProductDiscoveryPage from './pages/discovery/ProductDiscoveryPage'
 import SubAdminFormPage from './pages/sub-admins/SubAdminFormPage'
 import SubAdminManagementPage from './pages/sub-admins/SubAdminManagementPage'
@@ -36,6 +37,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
+      <Route path="/oauth/:marketplace/callback" element={<OAuthCallback />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/discovery" element={<RouteAccess route="discovery"><ProductDiscoveryPage /></RouteAccess>} />
         <Route path="/" element={<RouteAccess route="dashboard"><Overview /></RouteAccess>} />
