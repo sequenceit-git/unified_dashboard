@@ -8,3 +8,10 @@ export const MARKETPLACES = [
 export function marketplaceLabel(id) {
   return MARKETPLACES.find((m) => m.id === id)?.label || id
 }
+
+export function marketplaceBadgeColor(id) {
+  if (id === 'ebay') return 'blue'
+  if (id === 'temu') return 'yellow'
+  if (id === 'tiktok_shop') return 'purple'
+  return 'gray'
+}

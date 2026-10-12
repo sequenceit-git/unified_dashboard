@@ -9,6 +9,7 @@ pages/
 ├── auth/            # Public. Login.jsx (route: /login)
 ├── dashboard/       # Overview.jsx (route: /, route key: dashboard)
 ├── analytics/       # AnalyticsPage.jsx + RevenueChart, MarketplaceChart, TopProducts
+├── market-research/ # MarketResearchPage.jsx (route: /market-research, route key: market-research)
 ├── products/        # ProductsPage.jsx + CatalogTab, ListingsTab, ProductModal, BulkModal, ListModal
 ├── inventory/       # InventoryPage.jsx + StockTab, HistoryTab, LowStockTab, AdjustModal
 ├── orders/          # OrdersPage.jsx + OrderDrawer.jsx
