@@ -24,7 +24,13 @@ const { withRetry } = require('../../utils/retry')
 
 // ─── OpenAI client ────────────────────────────────────────────────────────────
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API })
+function getOpenAIClient() {
+  const apiKey = (process.env.OPENAI_API || process.env.OPENAI_API_KEY || '').trim()
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API or OPENAI_API_KEY in your environment variables.')
+  }
+  return new OpenAI({ apiKey })
+}
 
 // ─── Zod schemas for structured output validation ─────────────────────────────
 
@@ -276,6 +282,7 @@ You MUST return a single valid JSON object matching this exact structure. Do not
  * Uses structured JSON output request.
  */
 async function callOpenAIResearchAgent(systemPrompt, userPrompt) {
+  const openai = getOpenAIClient()
   const response = await withRetry(
     () =>
       openai.responses.create({
