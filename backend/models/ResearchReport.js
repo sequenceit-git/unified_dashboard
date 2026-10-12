@@ -22,7 +22,8 @@ const reportSchema = new mongoose.Schema(
     trigger: { type: String, enum: ['manual', 'scheduled'], default: 'manual' },
     params: {
       marketplaces: [{ type: String }],
-      category: { type: String },
+      categories: [{ type: String }],  // multi-category support
+      category: { type: String },       // legacy single-category (kept for compat)
       keywords: [{ type: String }],
     },
     status: { type: String, enum: ['queued', 'running', 'completed', 'failed'], default: 'queued' },

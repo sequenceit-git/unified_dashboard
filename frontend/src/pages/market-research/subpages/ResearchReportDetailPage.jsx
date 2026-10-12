@@ -7,18 +7,18 @@ import {
   FiShoppingBag,
   FiPrinter,
 } from 'react-icons/fi'
-import { useAuth } from '../../auth/AuthContext'
-import { api } from '../../lib/api'
-import Button from '../../components/ui/Button'
-import Card, { StatCard } from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
-import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
-import ResearchNavHeader from './ResearchNavHeader'
+import { useAuth } from '../../../auth/AuthContext'
+import { api } from '../../../lib/api'
+import Button from '../../../components/ui/Button'
+import Card, { StatCard } from '../../../components/ui/Card'
+import Badge from '../../../components/ui/Badge'
+import { marketplaceBadgeColor, marketplaceLabel } from '../../../lib/marketplaces'
+import ResearchNavHeader from '../ResearchNavHeader'
 import {
   FALLBACK_MARKET_ANALYSIS,
   FALLBACK_PRODUCT_RECOMMENDATIONS,
   FALLBACK_MARKETPLACE_RESEARCH,
-} from './researchData'
+} from '../researchData'
 
 export default function ResearchReportDetailPage() {
   const { reportId } = useParams()
@@ -42,9 +42,7 @@ export default function ResearchReportDetailPage() {
       }
     }
     fetchData()
-    return () => {
-      isMounted = false
-    }
+    return () => { isMounted = false }
   }, [reportId, token])
 
   const topPick = recommendations[0]
@@ -69,25 +67,17 @@ export default function ResearchReportDetailPage() {
 
       {/* KPI Highlights */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Market Viability"
-          value="88 / 100"
-          sub="Aggregate confidence score"
-        />
+        <StatCard label="Market Viability" value="88 / 100" sub="Aggregate confidence score" />
         <StatCard
           label="Top Opportunity Product"
           value={topPick ? topPick.productName.slice(0, 18) + '…' : 'Portable Blender'}
           sub={`$${topPick?.price?.toFixed(2)} • ${topPick?.opportunityScore} score`}
         />
-        <StatCard
-          label="Average Margin"
-          value="42.8%"
-          sub="Gross operating estimate"
-        />
+        <StatCard label="Average Margin" value="42.8%" sub="Gross operating estimate" />
         <StatCard
           label="Marketplaces Scanned"
-          value="3 Stores"
-          sub="eBay, Temu, TikTok Shop"
+          value={`${[...new Set(marketData.map((m) => m.marketplace))].length || 3} Stores`}
+          sub="Amazon, eBay, Temu, TikTok Shop & more"
         />
       </div>
 
@@ -112,9 +102,9 @@ export default function ResearchReportDetailPage() {
               </p>
             </div>
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Recommended Go-To-Market</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">AI Strategic Conclusion</span>
               <p className="mt-1 text-xs text-slate-700 sm:text-sm font-medium">
-                Launch with top-ranked USB-C blender bundled with customized insulation sleeve to deter direct factory price competition.
+                {analysis.conclusion || 'Launch with top-ranked product bundled to deter direct factory price competition.'}
               </p>
             </div>
           </div>
@@ -125,19 +115,21 @@ export default function ResearchReportDetailPage() {
       <Card>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Cross-Marketplace Scraping & Intelligence Feed</h2>
-            <p className="text-xs text-slate-500">Live competitor benchmarks collected across connected marketplace APIs.</p>
+            <h2 className="text-base font-semibold text-slate-900">Cross-Marketplace Intelligence Feed</h2>
+            <p className="text-xs text-slate-500">Competitor benchmarks collected across marketplace research.</p>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {marketData.map((item, idx) => (
+          {marketData.slice(0, 9).map((item, idx) => (
             <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <Badge color={marketplaceBadgeColor(item.marketplace)}>
                   {marketplaceLabel(item.marketplace)}
                 </Badge>
-                <span className="text-xs font-bold text-slate-500">Rank #{item.searchRanking}</span>
+                {item.searchRanking && (
+                  <span className="text-xs font-bold text-slate-500">Rank #{item.searchRanking}</span>
+                )}
               </div>
               <h3 className="text-sm font-semibold text-slate-900 truncate" title={item.productName}>
                 {item.productName}
@@ -147,7 +139,14 @@ export default function ResearchReportDetailPage() {
                 <span>Rating: <strong className="text-slate-800">★ {item.rating}</strong></span>
               </div>
               <div className="text-xs text-slate-600">
-                <span>Est. Sales: <strong className="text-emerald-700 font-semibold">{item.estimatedMonthlySales?.toLocaleString()} / mo</strong></span>
+                <span>
+                  Est. Sales:{' '}
+                  <strong className="text-emerald-700 font-semibold">
+                    {item.estimatedMonthlySales != null
+                      ? `${item.estimatedMonthlySales.toLocaleString()} / mo`
+                      : '—'}
+                  </strong>
+                </span>
               </div>
               {item.reviewSummary?.positive?.length > 0 && (
                 <div className="border-t border-slate-200/60 pt-2 text-[11px] text-slate-500 space-y-1">

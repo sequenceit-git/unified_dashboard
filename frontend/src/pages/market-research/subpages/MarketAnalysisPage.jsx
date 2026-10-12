@@ -15,12 +15,12 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts'
-import { useAuth } from '../../auth/AuthContext'
-import { api } from '../../lib/api'
-import Card, { StatCard } from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
-import ResearchNavHeader from './ResearchNavHeader'
-import { FALLBACK_MARKET_ANALYSIS } from './researchData'
+import { useAuth } from '../../../auth/AuthContext'
+import { api } from '../../../lib/api'
+import Card, { StatCard } from '../../../components/ui/Card'
+import Badge from '../../../components/ui/Badge'
+import ResearchNavHeader from '../ResearchNavHeader'
+import { FALLBACK_MARKET_ANALYSIS } from '../researchData'
 
 export default function MarketAnalysisPage() {
   const { reportId } = useParams()
@@ -44,9 +44,7 @@ export default function MarketAnalysisPage() {
       }
     }
     fetchData()
-    return () => {
-      isMounted = false
-    }
+    return () => { isMounted = false }
   }, [reportId, token])
 
   const overview = data.marketOverview || {}
@@ -55,7 +53,6 @@ export default function MarketAnalysisPage() {
   const opportunities = data.opportunities || []
   const risks = data.risks || []
 
-  // Chart data formatted for Recharts
   const chartData = opportunities.map((opp) => ({
     name: opp.productName.length > 20 ? `${opp.productName.slice(0, 20)}…` : opp.productName,
     fullName: opp.productName,
@@ -79,7 +76,6 @@ export default function MarketAnalysisPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header and Sub-Navigation */}
       <ResearchNavHeader
         reportId={reportId}
         category={data.categories?.[0] || 'Home & Kitchen'}
@@ -242,7 +238,6 @@ export default function MarketAnalysisPage() {
           </div>
         </Card>
 
-        {/* Operational Risks & Strategic Recommendation */}
         <div className="space-y-6">
           <Card>
             <div className="mb-3 flex items-center gap-2">

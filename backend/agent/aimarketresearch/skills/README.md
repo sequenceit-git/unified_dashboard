@@ -1,8 +1,8 @@
 # Agent Skills — AI Market Research Pipeline
 
 **Runtime:** OpenAI (Responses API + Web Search + Structured Outputs).  
-**Location:** `backend/skills/<skill-name>/SKILL.md` (Agent Skills Standard with YAML frontmatter `name` + `description`).  
-**Registry Module:** [backend/skills/index.js](file:///f:/OFFICE/US%20Client%20Automation%20Dashboard/Code%20File/backend/skills/index.js) (Programmatic stage loader for the AI agent).
+**Location:** `backend/agent/aimarketresearch/skills/<skill-name>/SKILL.md` (Agent Skills Standard with YAML frontmatter `name` + `description`).  
+**Registry Module:** [backend/agent/aimarketresearch/skills/index.js](file:///f:/OFFICE/US%20Client%20Automation%20Dashboard/Code%20File/backend/agent/aimarketresearch/skills/index.js) (Programmatic stage loader for the AI market research agent).
 
 ---
 

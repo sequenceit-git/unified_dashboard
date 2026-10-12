@@ -16,14 +16,14 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts'
-import { useAuth } from '../../auth/AuthContext'
-import { api } from '../../lib/api'
-import Button from '../../components/ui/Button'
-import Card, { StatCard } from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
-import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
-import ResearchNavHeader from './ResearchNavHeader'
-import { FALLBACK_PRODUCT_RECOMMENDATIONS } from './researchData'
+import { useAuth } from '../../../auth/AuthContext'
+import { api } from '../../../lib/api'
+import Button from '../../../components/ui/Button'
+import Card, { StatCard } from '../../../components/ui/Card'
+import Badge from '../../../components/ui/Badge'
+import { marketplaceBadgeColor, marketplaceLabel } from '../../../lib/marketplaces'
+import ResearchNavHeader from '../ResearchNavHeader'
+import { FALLBACK_PRODUCT_RECOMMENDATIONS } from '../researchData'
 
 export default function ProductRecommendationsPage() {
   const { reportId } = useParams()
@@ -48,28 +48,16 @@ export default function ProductRecommendationsPage() {
       }
     }
     fetchData()
-    return () => {
-      isMounted = false
-    }
+    return () => { isMounted = false }
   }, [reportId, token])
 
   // Export as CSV functionality
   const handleExportCSV = () => {
     const headers = [
-      'Rank',
-      'Product Name',
-      'Category',
-      'Marketplace',
-      'Price (USD)',
-      'Estimated Monthly Sales',
-      'Estimated Monthly Revenue',
-      'Rating',
-      'Review Count',
-      'Competition Level',
-      'Profit Margin (%)',
-      'Opportunity Score (0-100)',
-      'Recommendation Reason',
-      'Product URL',
+      'Rank', 'Product Name', 'Category', 'Marketplace', 'Price (USD)',
+      'Estimated Monthly Sales', 'Estimated Monthly Revenue', 'Rating', 'Review Count',
+      'Competition Level', 'Profit Margin (%)', 'Opportunity Score (0-100)',
+      'Recommendation Reason', 'Product URL',
     ]
 
     const rows = recommendations.map((r) => [
@@ -155,26 +143,10 @@ export default function ProductRecommendationsPage() {
 
       {/* High-level KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Top Ranked Products"
-          value={recommendations.length}
-          sub="Filtered by opportunity threshold"
-        />
-        <StatCard
-          label="Average Opportunity Score"
-          value={`${avgScore} / 100`}
-          sub="Algorithmic market potential"
-        />
-        <StatCard
-          label="Est. Monthly Revenue Pool"
-          value={`$${totalRev.toLocaleString()}`}
-          sub="Across analyzed product listings"
-        />
-        <StatCard
-          label="Average Profit Margin"
-          value={`${avgMargin}%`}
-          sub="Net margin before marketing"
-        />
+        <StatCard label="Top Ranked Products" value={recommendations.length} sub="Filtered by opportunity threshold" />
+        <StatCard label="Average Opportunity Score" value={`${avgScore} / 100`} sub="Algorithmic market potential" />
+        <StatCard label="Est. Monthly Revenue Pool" value={`$${totalRev.toLocaleString()}`} sub="Across analyzed product listings" />
+        <StatCard label="Average Profit Margin" value={`${avgMargin}%`} sub="Net margin before marketing" />
       </div>
 
       {/* Visual Chart: Opportunity Score & Margin Comparison */}
@@ -240,14 +212,12 @@ export default function ProductRecommendationsPage() {
             <tbody className="divide-y divide-slate-100">
               {recommendations.map((item) => (
                 <tr key={item._id || item.rank} className="transition hover:bg-slate-50/70">
-                  {/* Rank */}
                   <td className="px-3 py-3.5 text-center">
                     <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-50 font-bold text-xs text-indigo-700 mx-auto">
                       #{item.rank}
                     </span>
                   </td>
 
-                  {/* Product Title & Link */}
                   <td className="px-4 py-3.5">
                     <div className="max-w-xs">
                       <a
@@ -265,19 +235,16 @@ export default function ProductRecommendationsPage() {
                     </div>
                   </td>
 
-                  {/* Marketplace */}
                   <td className="px-3 py-3.5">
                     <Badge color={marketplaceBadgeColor(item.marketplace)}>
                       {marketplaceLabel(item.marketplace)}
                     </Badge>
                   </td>
 
-                  {/* Price */}
                   <td className="px-3 py-3.5 font-semibold text-slate-800">
                     ${item.price?.toFixed(2)}
                   </td>
 
-                  {/* Monthly Sales / Revenue */}
                   <td className="px-3 py-3.5">
                     <span className="font-semibold text-slate-900">{item.estimatedMonthlySales?.toLocaleString()} units</span>
                     <span className="block text-xs text-emerald-600 font-medium">
@@ -285,7 +252,6 @@ export default function ProductRecommendationsPage() {
                     </span>
                   </td>
 
-                  {/* Rating */}
                   <td className="px-3 py-3.5">
                     <div className="flex items-center gap-1">
                       <FiStar size={13} className="text-amber-500 fill-amber-500" />
@@ -294,21 +260,18 @@ export default function ProductRecommendationsPage() {
                     </div>
                   </td>
 
-                  {/* Competition */}
                   <td className="px-3 py-3.5">
                     <Badge color={getCompetitionBadge(item.competitionLevel)}>
                       {item.competitionLevel}
                     </Badge>
                   </td>
 
-                  {/* Profit Margin */}
                   <td className="px-3 py-3.5">
                     <span className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
                       {item.estimatedProfitMarginPercent}%
                     </span>
                   </td>
 
-                  {/* Opportunity Score */}
                   <td className="px-3 py-3.5 text-right">
                     <div className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 px-2.5 py-1 text-xs font-black text-indigo-700">
                       <FiAward size={13} />
