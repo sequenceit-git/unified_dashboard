@@ -15,7 +15,7 @@ router.get('/ebay/deletion', (req, res) => {
     return res.status(400).json({ error: 'challenge_code required' })
   }
 
-  const verificationToken = (process.env.EBAY_VERIFICATION_TOKEN || 'UnifiedDashboardVerificationToken2026!').trim()
+  const verificationToken = (process.env.EBAY_VERIFICATION_TOKEN || 'UnifiedDashboardVerificationToken2026').trim()
   const configuredEndpoint = (process.env.EBAY_DELETION_ENDPOINT || '').trim()
   const endpointUrl = configuredEndpoint || `${req.protocol}://${req.get('host')}/api/ebay/deletion`
 
