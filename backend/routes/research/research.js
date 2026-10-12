@@ -137,10 +137,12 @@ router.get('/status/:reportId', async (req, res) => {
   }
 })
 
-// ─── GET /api/research/export/:reportId — download Excel ─────────────────────
+// ─── GET /api/research/export/:reportId — download Excel or CSV ──────────────
 router.get('/export/:reportId', async (req, res) => {
   try {
     const { reportId } = req.params
+    const format = (req.query.format || 'xlsx').toLowerCase()
+
     if (!mongoose.isValidObjectId(reportId)) {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
@@ -156,6 +158,38 @@ router.get('/export/:reportId', async (req, res) => {
 
     if (!recommendations.length) {
       return res.status(404).json({ error: 'No recommendations found for this report' })
+    }
+
+    if (format === 'csv') {
+      const headers = [
+        'Rank', 'Product Name', 'Category', 'Marketplace', 'Price (USD)',
+        'Estimated Monthly Sales', 'Estimated Monthly Revenue', 'Rating', 'Review Count',
+        'Competition Level', 'Profit Margin (%)', 'Opportunity Score (0-100)',
+        'Recommendation Reason', 'Product URL',
+      ]
+
+      const rows = recommendations.map((r) => [
+        r.rank ?? '',
+        `"${(r.productName || '').replace(/"/g, '""')}"`,
+        `"${(r.category || '').replace(/"/g, '""')}"`,
+        r.marketplace || '',
+        r.price ?? '',
+        r.estimatedMonthlySales ?? '',
+        r.estimatedMonthlyRevenue ?? '',
+        r.rating ?? '',
+        r.reviewCount ?? '',
+        r.competitionLevel || '',
+        r.estimatedProfitMarginPercent ?? '',
+        r.opportunityScore ?? '',
+        `"${(r.recommendationReason || '').replace(/"/g, '""')}"`,
+        `"${(r.productUrl || '').replace(/"/g, '""')}"`,
+      ])
+
+      const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
+      const safeName = `product_recommendations_${reportId.slice(-8)}.csv`
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`)
+      return res.send(csvContent)
     }
 
     const categories = report.params?.categories || [report.params?.category].filter(Boolean)

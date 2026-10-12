@@ -185,6 +185,31 @@ export default function MarketResearchPage() {
     }
   }
 
+  // ── CSV download ─────────────────────────────────────────────────────────
+  const handleCsvDownload = async (reportId) => {
+    try {
+      const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+      const res = await fetch(`${BASE}/api/research/export/${reportId}?format=csv`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || 'Export failed')
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `product_recommendations_${reportId.slice(-8)}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert(`CSV export failed: ${err.message}`)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -365,6 +390,7 @@ export default function MarketResearchPage() {
       <MarketResearchPageTable
         reports={reports}
         onExcelDownload={handleExcelDownload}
+        onCsvDownload={handleCsvDownload}
       />
     </div>
   )

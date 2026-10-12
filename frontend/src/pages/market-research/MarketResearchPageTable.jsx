@@ -1,39 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import {
-  FiLoader,
-  FiCheckCircle,
-  FiAlertTriangle,
-  FiClock,
   FiDownload,
   FiSearch,
 } from 'react-icons/fi'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
-
-// ─── Status badge ──────────────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  queued:    { label: 'Queued',    color: 'amber', icon: FiClock },
-  running:   { label: 'Running…', color: 'blue',  icon: FiLoader },
-  completed: { label: 'Completed', color: 'green', icon: FiCheckCircle },
-  failed:    { label: 'Failed',    color: 'red',   icon: FiAlertTriangle },
-}
-
-function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.queued
-  const Icon = cfg.icon
-  const colorMap = {
-    amber: 'bg-amber-50 text-amber-700 border-amber-200',
-    blue:  'bg-blue-50 text-blue-700 border-blue-200',
-    green: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    red:   'bg-red-50 text-red-700 border-red-200',
-  }
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${colorMap[cfg.color]}`}>
-      <Icon size={12} className={status === 'running' ? 'animate-spin' : ''} />
-      {cfg.label}
-    </span>
-  )
-}
 
 function formatDate(date) {
   if (!date) return '—'
@@ -61,8 +32,9 @@ function getReportMeta(r) {
  * Props:
  *   reports         {Array}    – list of ResearchReport documents from the API
  *   onExcelDownload {Function} – called with reportId when the .xlsx button is clicked
+ *   onCsvDownload   {Function} – called with reportId when the .csv button is clicked
  */
-export default function MarketResearchPageTable({ reports = [], onExcelDownload }) {
+export default function MarketResearchPageTable({ reports = [], onExcelDownload, onCsvDownload }) {
   const navigate = useNavigate()
 
   return (
@@ -82,12 +54,10 @@ export default function MarketResearchPageTable({ reports = [], onExcelDownload 
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left text-sm">
+          <table className="w-full min-w-[700px] text-left text-sm">
             <thead className="bg-gray-50/80">
               <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
                 <th className="px-4 py-3 font-semibold">Generated</th>
-                <th className="px-4 py-3 font-semibold">Categories</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Market Analysis</th>
                 <th className="px-4 py-3 font-semibold">Recommendations</th>
                 <th className="px-4 py-3 font-semibold">Research Report</th>
@@ -99,6 +69,23 @@ export default function MarketResearchPageTable({ reports = [], onExcelDownload 
                 const meta = getReportMeta(row)
                 const isCompleted = meta.status === 'completed'
                 const isFailed = meta.status === 'failed'
+
+                // Status underline color & indicator:
+                // green (completed), blue (running), amber (queued), red (failed)
+                const underlineColor = {
+                  completed: 'bg-emerald-500',
+                  running:   'bg-blue-500 animate-pulse',
+                  queued:    'bg-amber-400',
+                  failed:    'bg-red-500',
+                }[meta.status] || 'bg-amber-400'
+
+                const statusLabel = {
+                  completed: 'Status: Completed',
+                  running:   'Status: Running…',
+                  queued:    'Status: Queued',
+                  failed:    `Status: Failed${meta.error ? ` (${meta.error})` : ''}`,
+                }[meta.status] || 'Status: Queued'
+
                 return (
                   <tr key={meta.id} className="transition hover:bg-gray-50/60">
                     {/* Date + niche */}
@@ -109,85 +96,91 @@ export default function MarketResearchPageTable({ reports = [], onExcelDownload 
                       )}
                     </td>
 
-                    {/* Categories */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex flex-wrap gap-1">
-                        {meta.categories.map((c) => (
-                          <span
-                            key={c}
-                            className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700"
-                          >
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-4 py-3.5">
-                      <StatusBadge status={meta.status} />
-                      {isFailed && meta.error && (
-                        <p
-                          className="mt-1 max-w-[160px] truncate text-xs text-red-500"
-                          title={meta.error}
-                        >
-                          {meta.error}
-                        </p>
-                      )}
-                    </td>
-
                     {/* Market Analysis */}
                     <td className="px-4 py-3.5">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={!isCompleted}
-                        onClick={() => navigate(`/market-research/${meta.id}/analysis`)}
-                      >
-                        View
-                      </Button>
+                      <div className="inline-flex flex-col items-center">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isCompleted}
+                          onClick={() => navigate(`/market-research/${meta.id}/analysis`)}
+                        >
+                          View
+                        </Button>
+                        <span
+                          className={`mt-1.5 h-1 w-full rounded-full ${underlineColor}`}
+                          title={statusLabel}
+                        />
+                      </div>
                     </td>
 
                     {/* Recommendations */}
                     <td className="px-4 py-3.5">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={!isCompleted}
-                        onClick={() => navigate(`/market-research/${meta.id}/recommendations`)}
-                      >
-                        View
-                      </Button>
+                      <div className="inline-flex flex-col items-center">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isCompleted}
+                          onClick={() => navigate(`/market-research/${meta.id}/recommendations`)}
+                        >
+                          View
+                        </Button>
+                        <span
+                          className={`mt-1.5 h-1 w-full rounded-full ${underlineColor}`}
+                          title={statusLabel}
+                        />
+                      </div>
                     </td>
 
                     {/* Research Report */}
                     <td className="px-4 py-3.5">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={!isCompleted}
-                        onClick={() => navigate(`/market-research/${meta.id}/report`)}
-                      >
-                        View
-                      </Button>
+                      <div className="inline-flex flex-col items-center">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isCompleted}
+                          onClick={() => navigate(`/market-research/${meta.id}/report`)}
+                        >
+                          View
+                        </Button>
+                        <span
+                          className={`mt-1.5 h-1 w-full rounded-full ${underlineColor}`}
+                          title={statusLabel}
+                        />
+                      </div>
                     </td>
 
-                    {/* Excel Export */}
+                    {/* Excel / CSV Export */}
                     <td className="px-4 py-3.5">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={!isCompleted}
-                        onClick={() => onExcelDownload?.(meta.id)}
-                        className="flex items-center gap-1.5"
-                      >
-                        <FiDownload size={13} />
-                        <span>.xlsx</span>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isCompleted}
+                          onClick={() => onExcelDownload?.(meta.id)}
+                          className="flex items-center gap-1.5"
+                          title="Download Excel spreadsheet"
+                        >
+                          <FiDownload size={13} />
+                          <span>.xlsx</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isCompleted}
+                          onClick={() => onCsvDownload?.(meta.id)}
+                          className="flex items-center gap-1.5"
+                          title="Download CSV file"
+                        >
+                          <FiDownload size={13} />
+                          <span>CSV</span>
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 )

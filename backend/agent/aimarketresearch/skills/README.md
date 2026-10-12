@@ -27,7 +27,9 @@ To prevent cognitive overload and maintain strict token budgets, the AI Agent lo
 ---
 
 ### Stage 1: Pipeline Orchestration & API Resilience (`orchestration`)
+
 Skills governing the research lifecycle, schema validation, rate-limits, and quality gates:
+
 1. `marketplace-research-orchestration` — End-to-end multi-marketplace workflow coordinator.
 2. `structured-research-output` — Mongoose schema alignment (`MarketAnalysis`, `ProductRecommendation`, `MarketplaceResearch`).
 3. `research-quality-control` — Pre-save sanity checks, value bounds, and validation gates.
@@ -35,7 +37,9 @@ Skills governing the research lifecycle, schema validation, rate-limits, and qua
 ---
 
 ### Stage 2: Web Search & Source Discovery (`discovery`)
+
 Skills governing query strategy, web crawling, URL gathering, and evidence freshness:
+
 1. `web-search-strategy` — Search query formulation and multi-query research plans.
 2. `deep-web-research` — Recursive search and source corroboration.
 3. `browser-navigation` — Result traversal and pagination guidelines.
@@ -49,7 +53,9 @@ Skills governing query strategy, web crawling, URL gathering, and evidence fresh
 ---
 
 ### Stage 3: Marketplace & Supplier Intelligence (`marketplace`)
+
 Skills tailored to specific e-commerce platforms and wholesale directories:
+
 1. `amazon-product-research` — ASIN, Buy Box, BSR trends, ratings.
 2. `walmart-product-research` — WFS, seller classification, pricing.
 3. `bestbuy-product-research` — Model specifications, consumer electronics pricing.
@@ -63,7 +69,9 @@ Skills tailored to specific e-commerce platforms and wholesale directories:
 ---
 
 ### Stage 4: Financial, Competitive & Sentiment Analysis (`analysis`)
+
 Skills governing economics, sentiment extraction, and ranking algorithms:
+
 1. `market-analysis` — Demand levels, market outlook, macro trends.
 2. `competitor-analysis` — Direct competitor landscape, differentiation angles.
 3. `review-analysis` — Pain point extraction, customer sentiment, unmet needs.
@@ -78,13 +86,16 @@ Skills governing economics, sentiment extraction, and ranking algorithms:
 ---
 
 ### Stage 5: Reporting, Synthesis & Data Export (`reporting`)
+
 Skills governing the final output formatting and file deliverables:
+
 1. `research-report` — Executive summary narrative and actionable takeaways.
 2. `excel-product-export` — Clickable URLs, formatted currency, and tabular exports.
 
 ---
 
 ## Shared Conventions
+
 1. **Never fabricate metrics**: When true sales volume or historical ranks cannot be observed, mark them as `estimated` with stated methodology or `unavailable`.
 2. **Every metric must cite evidence**: Every data point includes `sourceUrl` and `dataCollectedAt`.
 3. **Database Schema Compliance**: All emitted JSON documents conform directly to our backend Mongoose models.
