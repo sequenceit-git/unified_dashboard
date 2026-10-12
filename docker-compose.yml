@@ -1,15 +1,39 @@
 services:
+  mongo:
+    image: mongo:7.0
+    container_name: unified-dashboard-mongo
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_DATABASE=unified_dashboard
+    volumes:
+      - mongodb-data:/data/db
+    ports:
+      # Expose to localhost only on server host (secure, not exposed to public WAN)
+      - "127.0.0.1:27017:27017"
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: unified-dashboard-backend
     restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
     env_file:
       - ./backend/.env
     environment:
       - NODE_ENV=production
       - PORT=5000
+      - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017/unified_dashboard}
     volumes:
       - backend-uploads:/app/uploads
     networks:
@@ -50,6 +74,7 @@ services:
 
 volumes:
   backend-uploads:
+  mongodb-data:
 
 networks:
   internal-net:
