@@ -14,11 +14,15 @@
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.3.12",
     "cors": "^2.8.6",
     "dotenv": "^18.0.6",
     "express": "^5.2.1",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.11.0"
+    "mongoose": "^9.11.1",
+    "openai": "^7.32.0",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext'
 const LINKS = [
   { to: '/', label: 'Overview', route: 'dashboard', end: true },
   { to: '/analytics', label: 'Analytics', route: 'analytics' },
+  { to: '/market-research', label: 'AI Market Research', route: 'market-research' },
   { to: '/inbox', label: 'Inbox', route: 'inbox' },
   { to: '/products', label: 'Products', route: 'products' },
   { to: '/inventory', label: 'Inventory', route: 'inventory' },
