@@ -17,7 +17,8 @@ export default function Topbar({ onMenu }) {
           <FiMenu size={18} />
         </button>
         <div className="flex min-w-0 items-center gap-2.5 overflow-visible">
-          <span className="ml-3 inline-block -skew-x-2 overflow-visible pl-1 pr-3 text-2xl font-black italic tracking-tight text-black" style={{ fontSynthesis: 'style', WebkitTextStroke: '0.6px black' }}><span className="text-[#4F46E5]" style={{ WebkitTextStroke: '0.6px #4F46E5' }}>E</span>comPilot</span>
+          <img src="/favicon.svg" alt="EcomPilot" className="h-8 w-8 shrink-0 rounded-lg shadow-sm ring-1 ring-slate-200/60" />
+          <span className="inline-block -skew-x-2 overflow-visible pl-1 pr-3 text-2xl font-black italic tracking-tight text-black" style={{ fontSynthesis: 'style', WebkitTextStroke: '0.6px black' }}><span className="text-[#4F46E5]" style={{ WebkitTextStroke: '0.6px #4F46E5' }}>E</span>comPilot</span>
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">

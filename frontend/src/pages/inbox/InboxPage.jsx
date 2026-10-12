@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { api, queryString } from '../../lib/api'
 import { MARKETPLACES } from '../../lib/marketplaces'
+import Button from '../../components/ui/Button'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import { Select } from '../../components/ui/Input'
 import Pagination from '../../components/ui/Pagination'
@@ -18,6 +19,7 @@ export default function InboxPage() {
   const [convos, setConvos] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState('')
   const [activeId, setActiveId] = useState(null)
   const [mobileThread, setMobileThread] = useState(false)
@@ -33,6 +35,19 @@ export default function InboxPage() {
     [shops, marketplace],
   )
   const noShopForTab = marketplace !== 'all' && !shopsRes.loading && shopIds.length === 0
+
+  const handleSyncInbox = async () => {
+    setSyncing(true)
+    try {
+      await api.post('/api/inbox/sync', {}, token)
+      await fetchConvos()
+    } catch (err) {
+      setError(`Sync failed: ${err.message}`)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
 
   const fetchConvos = async () => {
     if (shopsRes.loading) return
@@ -82,14 +97,20 @@ export default function InboxPage() {
     <div className="flex h-[calc(100vh-4rem-3rem)] min-h-[480px] flex-col">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-bold">Inbox</h1>
-        <div className="w-full max-w-[180px]">
-          <Select
-            value={status}
-            onChange={(e) => { setStatus(e.target.value); setPage(1) }}
-            options={['open', 'closed', 'all'].map((s) => ({ value: s, label: s }))}
-          />
+        <div className="flex items-center gap-2">
+          <div className="w-[140px]">
+            <Select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value); setPage(1) }}
+              options={['open', 'closed', 'all'].map((s) => ({ value: s, label: s }))}
+            />
+          </div>
+          <Button onClick={handleSyncInbox} disabled={syncing} size="sm">
+            {syncing ? 'Checking...' : '↻ Check Channels'}
+          </Button>
         </div>
       </div>
+
       <Tabs
         tabs={availableMarketplaces}
         active={marketplace}

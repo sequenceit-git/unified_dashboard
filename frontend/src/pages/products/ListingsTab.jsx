@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
-import { api } from '../../lib/api'
 import { MARKETPLACES, marketplaceLabel } from '../../lib/marketplaces'
+
 import Badge, { statusColor } from '../../components/ui/Badge'
 import Card from '../../components/ui/Card'
 import DataTable from '../../components/ui/DataTable'
@@ -38,6 +38,29 @@ export default function ListingsTab() {
               {prods.loading ? <Spinner /> : prods.error ? <ErrorState message={prods.error} onRetry={prods.refetch} /> : (
                 <DataTable
                   columns={[
+                    {
+                      key: 'image',
+                      label: 'Image',
+                      render: (r) => {
+                        const img = Array.isArray(r.images) && r.images[0]
+                        return (
+                          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+                            {img ? (
+                              <img
+                                src={img}
+                                alt={r.title}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                }}
+                              />
+                            ) : (
+                              <span className="text-[10px] text-gray-400">No img</span>
+                            )}
+                          </div>
+                        )
+                      },
+                    },
                     { key: 'sku', label: 'SKU' },
                     { key: 'title', label: 'Title' },
                     { key: 'basePrice', label: 'Price', render: (r) => `$${r.basePrice}` },

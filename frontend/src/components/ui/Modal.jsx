@@ -1,28 +1,38 @@
 import { useEffect } from 'react'
 
-export default function Modal({ title, onClose, children, wide = false }) {
+export default function Modal({ title, onClose, children, wide = false, size = '' }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const maxWidthClass =
+    size === '5xl' || size === '2xl' ? 'sm:max-w-5xl' :
+    size === '4xl' ? 'sm:max-w-4xl' :
+    wide ? 'sm:max-w-4xl' : 'sm:max-w-lg'
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs p-0 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className={`w-full rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-xl sm:p-6 ${wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}
+        className={`w-full max-h-[92vh] flex flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${maxWidthClass}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button onClick={onClose} className="rounded p-1 text-gray-500 hover:bg-gray-100">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
+          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+          >
             ✕
           </button>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {children}
+        </div>
       </div>
     </div>
   )

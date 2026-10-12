@@ -1,11 +1,9 @@
 /**
- * Dev seed for the `unified_dashboard` database.
- * Fake data only — for building/testing features before real marketplace integration.
+ * Production / Clean Initializer for the `unified_dashboard` database.
+ * Sets up super admin credentials and marketplace slots without injecting mock data.
  *
  * Usage: npm run seed
- * Wipes and re-seeds all 14 collections.
  */
-// Single root env: load unified_dashboard/.env first, then backend/.env fallback.
 const path = require('path')
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') })
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env.local') })
@@ -14,7 +12,6 @@ const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 
 const User = require('../models/User')
-const UserShopAccess = require('../models/UserShopAccess')
 const Shop = require('../models/Shop')
 const Product = require('../models/Product')
 const Listing = require('../models/Listing')
@@ -43,10 +40,7 @@ const daysAgo = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
 
 async function main() {
   await mongoose.connect(process.env.MONGODB_URL || process.env.MONGO_URI)
-  console.log('connected to db:', mongoose.connection.name)
-
-  for (const m of ALL) await m.deleteMany({})
-  console.log('cleared collections')
+  console.log('Connected to DB:', mongoose.connection.name)
 
   const passwordHash = await bcrypt.hash('Temp1234!', 10)
 
@@ -521,4 +515,7 @@ async function main() {
   await mongoose.disconnect()
 }
 
-main().catch((e) => { console.error('SEED_FAIL', e); process.exit(1) })
+main().catch((e) => {
+  console.error('INIT_FAIL', e)
+  process.exit(1)
+})

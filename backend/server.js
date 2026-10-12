@@ -18,6 +18,8 @@ const orderRoutes = require('./routes/sales/orders')
 const productRoutes = require('./routes/catalog/products')
 const researchRoutes = require('./routes/research/research')
 const shopRoutes = require('./routes/system/shops')
+const discoveryRoutes = require('./routes/discovery/discovery')
+const uploadRoutes = require('./routes/system/upload')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -29,7 +31,9 @@ const CLIENT_URLS = (process.env.CLIENT_URL || 'http://localhost:5173')
   .filter(Boolean)
 
 app.use(cors({ origin: CLIENT_URLS.length === 1 ? CLIENT_URLS[0] : CLIENT_URLS }))
-app.use(express.json())
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // Root probe — so GET / doesn't 404 (load balancers, browser checks).
 app.get('/', (req, res) => {
@@ -38,6 +42,8 @@ app.get('/', (req, res) => {
 
 app.use('/api', apiRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/upload', uploadRoutes)
+app.use('/api/discovery', discoveryRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/products', productRoutes)
@@ -48,7 +54,12 @@ app.use('/api/customers', customerRoutes)
 app.use('/api/inbox', inboxRoutes)
 app.use('/api/research', researchRoutes)
 
-connectDB(process.env.MONGODB_URL || process.env.MONGO_URI)
+connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(() => {
+  const marketplaceManager = require('./services/marketplace')
+  marketplaceManager.autoConnectFromEnv().catch((err) => {
+    console.warn('Auto-connect from ENV warning:', err.message)
+  })
+})
 
 // Local dev: `node server.js` listens. On Vercel the exported app is run by
 // the serverless function in api/index.js — do NOT listen there.

@@ -6,8 +6,17 @@
 
 ## Run
 
-One root env file: copy `.env.example` → `.env` at the repo root and fill in secrets.
-Backend (`server.js`, `seed.js`) and frontend (Vite `envDir`) both read from there.
+### Run both Frontend and Backend concurrently from root:
+```sh
+npm run dev
+```
+
+### Install all dependencies (root, backend, frontend):
+```sh
+npm run install:all
+```
+
+Or individually:
 
 Backend:
 ```sh

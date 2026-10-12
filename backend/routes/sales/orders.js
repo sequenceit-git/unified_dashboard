@@ -2,9 +2,12 @@ const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Order = require('../../models/Order')
+const Shop = require('../../models/Shop')
+const marketplaceManager = require('../../services/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('orders'))
+
 
 const SORTABLE = ['placedAt', 'totals.total', 'createdAt', 'status']
 
@@ -58,6 +61,36 @@ router.get('/:id', async (req, res) => {
   }
 })
 
+// POST /api/orders/sync — pull orders from connected marketplace shops
+router.post('/sync', async (req, res) => {
+  try {
+    const filter = {}
+    if (req.user.role === 'sub_admin') {
+      filter._id = { $in: req.allowedShopIds }
+    } else if (req.body.shopId) {
+      filter._id = req.body.shopId
+    } else if (req.body.marketplace) {
+      filter.marketplace = req.body.marketplace
+    }
+
+    const shops = await Shop.find(filter)
+    const results = []
+
+    for (const shop of shops) {
+      try {
+        const r = await marketplaceManager.syncOrdersForShop(shop)
+        results.push({ shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, ...r })
+      } catch (syncErr) {
+        results.push({ shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, error: syncErr.message })
+      }
+    }
+
+    res.json({ success: true, results })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // PATCH /api/orders/:id/status — { status }
 router.patch('/:id/status', async (req, res) => {
   try {
@@ -83,15 +116,26 @@ router.patch('/:id/shipping', async (req, res) => {
         ...(carrier ? { 'shipping.carrier': carrier } : {}),
         ...(trackingNumber ? { 'shipping.trackingNumber': trackingNumber } : {}),
         'shipping.shippedAt': new Date(),
+        status: 'shipped',
       },
       { new: true },
     )
     if (!doc) return res.status(404).json({ error: 'Not found' })
-    res.json(doc)
+
+    // Push tracking to eBay, TikTok Shop, or Temu
+    let marketplacePush = { pushed: false }
+    try {
+      marketplacePush = await marketplaceManager.pushShipping(doc, { carrier, trackingNumber })
+    } catch (apiErr) {
+      console.warn(`Shipping push to [${doc.marketplace}] failed:`, apiErr.message)
+    }
+
+    res.json({ order: doc, marketplacePush })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
 })
+
 
 // POST /api/orders/:id/returns — { reason, refundAmount? }
 router.post('/:id/returns', async (req, res) => {
@@ -111,18 +155,34 @@ router.post('/:id/returns', async (req, res) => {
   }
 })
 
-// PATCH /api/orders/:id/returns/:index — { status }
-router.patch('/:id/returns/:index', requireRole('super_admin'), async (req, res) => {
+// POST /api/orders/:id/refund — process full or partial refund on marketplace
+router.post('/:id/refund', requireRole('super_admin'), async (req, res) => {
   try {
-    const doc = await Order.findById(req.params.id)
-    if (!doc || !doc.returns[req.params.index]) {
-      return res.status(404).json({ error: 'Return not found' })
+    const { reason, comment, amount } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ error: 'Order not found' })
+
+    const refundAmount = amount ? Number(amount) : order.totals?.total || 0
+
+    // Push refund to connected marketplace API
+    let marketplaceResult = { success: true }
+    try {
+      marketplaceResult = await marketplaceManager.processRefund(order, { reason, comment, amount: refundAmount })
+    } catch (apiErr) {
+      console.warn(`Marketplace refund push failed for [${order.marketplace}]:`, apiErr.message)
     }
-    const ret = doc.returns[req.params.index]
-    ret.status = req.body.status
-    if (req.body.status === 'received' && ret.refundAmount) ret.refundedAt = new Date()
-    await doc.save()
-    res.json(doc)
+
+    order.status = 'refunded'
+    order.returns.push({
+      reason: reason || 'Buyer requested refund',
+      status: 'received',
+      refundAmount,
+      refundedAt: new Date(),
+      requestedAt: new Date(),
+    })
+    await order.save()
+
+    res.json({ success: true, order, marketplaceResult })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ['super_admin', 'sub_admin'], required: true },
     mainRoutes: {
       type: [String],
-      enum: ['dashboard', 'analytics', 'products', 'inventory', 'orders', 'customers', 'inbox'],
+      enum: ['discovery', 'dashboard', 'analytics', 'products', 'inventory', 'orders', 'customers', 'inbox'],
       default: [],
     },
     shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', default: null },

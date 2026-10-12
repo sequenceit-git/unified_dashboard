@@ -66,5 +66,8 @@ orderSchema.index({ shopId: 1, status: 1, placedAt: -1 })
 orderSchema.index({ customerId: 1, placedAt: -1 })
 orderSchema.index({ 'items.productId': 1, placedAt: -1 })
 orderSchema.index({ 'shipping.trackingNumber': 1 }, { sparse: true })
+orderSchema.index({ placedAt: -1 })
+orderSchema.index({ marketplace: 1, placedAt: -1 })
+orderSchema.index({ status: 1, placedAt: -1 })
 
 module.exports = mongoose.model('Order', orderSchema, 'orders')

@@ -3,9 +3,12 @@ const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = r
 const { paging, paged } = require('../../utils/query')
 const InventoryLog = require('../../models/InventoryLog')
 const Product = require('../../models/Product')
+const Listing = require('../../models/Listing')
+const marketplaceManager = require('../../services/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inventory'))
+
 
 // GET /api/inventory/low-stock
 router.get('/low-stock', async (req, res) => {
@@ -99,10 +102,66 @@ router.post('/adjust', requireRole('super_admin'), async (req, res) => {
       shopId: shopId || null, change, stockBefore, stockAfter,
       reason, createdBy: req.user.id,
     })
-    res.status(201).json({ stockBefore, stockAfter, log })
+
+    // Synchronize adjusted stock to active marketplace listings
+    let pushedCount = 0
+    try {
+      const listings = await Listing.find({ productId, status: 'live' }).populate('shopId')
+      for (const item of listings) {
+        if (item.shopId) {
+          try {
+            await marketplaceManager.pushStock(item.shopId, {
+              sku: variantSku || product.sku,
+              quantity: stockAfter,
+              externalListingId: item.externalListingId,
+              productId,
+            })
+            pushedCount++
+          } catch (apiErr) {
+            console.warn(`Stock push failed for shop ${item.shopId.name}:`, apiErr.message)
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Listing query failed during stock adjust:', err.message)
+    }
+
+    res.status(201).json({ stockBefore, stockAfter, log, pushedToMarketplaces: pushedCount })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
 })
 
+// POST /api/inventory/sync — push all live product inventory levels to connected marketplace listings
+router.post('/sync', requireRole('super_admin'), async (req, res) => {
+  try {
+    const listings = await Listing.find({ status: 'live' }).populate('productId').populate('shopId')
+    let successCount = 0
+    let failCount = 0
+
+    for (const item of listings) {
+      if (item.productId && item.shopId) {
+        try {
+          await marketplaceManager.pushStock(item.shopId, {
+            sku: item.productId.sku,
+            quantity: item.productId.stock,
+            externalListingId: item.externalListingId,
+            productId: item.productId._id,
+          })
+          item.lastSyncedAt = new Date()
+          await item.save()
+          successCount++
+        } catch {
+          failCount++
+        }
+      }
+    }
+
+    res.json({ success: true, synced: successCount, failed: failCount })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 module.exports = router
+

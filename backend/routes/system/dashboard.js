@@ -24,14 +24,25 @@ const resources = {
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('dashboard'))
 
-// GET /api/dashboard/overview — document counts per collection
+let overviewCache = { timestamp: 0, data: null, userId: null }
+
+// GET /api/dashboard/overview — document counts per collection (parallel + cached)
 router.get('/overview', async (req, res) => {
   try {
-    const counts = {}
-    for (const [name, model] of Object.entries(resources)) {
-      counts[name] = await model.countDocuments(shopFilter(req, model))
+    const now = Date.now()
+    const userKey = `${req.user.id}_${req.user.role}`
+    if (overviewCache.data && overviewCache.userId === userKey && now - overviewCache.timestamp < 10000) {
+      return res.json(overviewCache.data)
     }
-    res.json({ db: 'unified_dashboard', counts })
+
+    const entries = Object.entries(resources)
+    const results = await Promise.all(
+      entries.map(async ([name, model]) => [name, await model.countDocuments(shopFilter(req, model))]),
+    )
+    const counts = Object.fromEntries(results)
+    const responseData = { db: 'unified_dashboard', counts }
+    overviewCache = { timestamp: now, data: responseData, userId: userKey }
+    res.json(responseData)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

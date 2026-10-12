@@ -32,23 +32,48 @@ function requireRole(...roles) {
   }
 }
 
+const accessCache = new Map()
+const ACCESS_CACHE_TTL = 30000 // 30 seconds
+const MAX_ACCESS_CACHE = 500
+
+function clearUserAccessCache(userId) {
+  if (userId) accessCache.delete(String(userId))
+  else accessCache.clear()
+}
+
 async function loadAccess(req, res, next) {
   try {
-    const user = await User.findById(req.user.id).select('role mainRoutes status shopId isDeleted')
+    const cached = accessCache.get(req.user.id)
+    if (cached && Date.now() - cached.timestamp < ACCESS_CACHE_TTL) {
+      req.authUser = cached.user
+      req.allowedShopIds = cached.allowedShopIds
+      return next()
+    }
+
+    const user = await User.findById(req.user.id).select('role mainRoutes status shopId isDeleted').lean()
     if (!user || user.isDeleted) {
+      accessCache.delete(req.user.id)
       return res.status(401).json({ error: 'This account has been deleted. Contact your administrator.' })
     }
     if (user.status !== 'active') {
+      accessCache.delete(req.user.id)
       return res.status(401).json({ error: 'User is inactive or no longer exists' })
     }
     req.authUser = user
+    let allowedShopIds = null
     if (user.role === 'super_admin') {
-      req.allowedShopIds = null
+      allowedShopIds = null
     } else {
-      const access = await UserShopAccess.find({ userId: user._id }).select('shopId')
-      // Keep existing dev data working until it is migrated to user_shop_access.
-      req.allowedShopIds = access.length ? access.map((row) => row.shopId) : user.shopId ? [user.shopId] : []
+      const access = await UserShopAccess.find({ userId: user._id }).select('shopId').lean()
+      allowedShopIds = access.length ? access.map((row) => row.shopId) : user.shopId ? [user.shopId] : []
     }
+    req.allowedShopIds = allowedShopIds
+
+    if (accessCache.size > MAX_ACCESS_CACHE) {
+      const oldestKey = accessCache.keys().next().value
+      accessCache.delete(oldestKey)
+    }
+    accessCache.set(req.user.id, { user, allowedShopIds, timestamp: Date.now() })
     next()
   } catch (err) {
     next(err)
@@ -69,4 +94,4 @@ function shopFilter(req, model) {
   return { shopId: { $in: req.allowedShopIds || [] } }
 }
 
-module.exports = { signToken, requireAuth, loadAccess, requireRole, requireMainRoute, shopFilter }
+module.exports = { signToken, requireAuth, loadAccess, requireRole, requireMainRoute, shopFilter, clearUserAccessCache }
