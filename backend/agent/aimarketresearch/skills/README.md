@@ -46,9 +46,7 @@ Skills governing query strategy, web crawling, URL gathering, and evidence fresh
 4. `web-crawling` — Link discovery and URL deduplication.
 5. `dynamic-page-extraction` — Handling client-rendered data and lazy-loaded items.
 6. `web-data-extraction` — HTML/JSON data parsing into clean models.
-7. `research-freshness` — Timestamp audits and stale price detection.
-8. `source-validation` — Attaching real verifiable URLs to all claims.
-9. `research-deduplication` — Cross-marketplace SKU/variant merging.
+7. `data-validation-and-hygiene` — Validating real URLs, freshness audit, and cross-platform deduplication.
 
 ---
 
@@ -63,8 +61,7 @@ Skills tailored to specific e-commerce platforms and wholesale directories:
 5. `tiktok-shop-product-research` — Short-video virality, social proof, sales badges.
 6. `temu-product-research` — Factory-direct pricing, quantity breaks, blitz sales.
 7. `aliexpress-product-research` — Supplier pricing, ePacket/Choice shipping, MOQ.
-8. `wholesale-supplier-research` — Factory direct, 1688/Alibaba bulk pricing, lead times.
-9. `supplier-verification` — Legitimacy vetting, factory audit checks, ISO/CE red flags.
+8. `supplier-research-and-verification` — Wholesale directories, pricing breaks, factory verification, and risk flags.
 
 ---
 
@@ -77,11 +74,9 @@ Skills governing economics, sentiment extraction, and ranking algorithms:
 3. `review-analysis` — Pain point extraction, customer sentiment, unmet needs.
 4. `keyword-demand-analysis` — Search interest, volume momentum, customer intent.
 5. `sales-estimation` — Evidence-backed demand modeling and estimation bounds.
-6. `cost-and-margin-analysis` — COGS, shipping, platform fees, net margin breakdowns.
-7. `profitability-analysis` — Unit economics sensitivity and ROI projections.
-8. `product-scoring` — Weighted multi-factor scoring (demand, competition, margin, trend).
-9. `product-opportunities` — Opportunity ranking and product filtering.
-10. `evidence-and-citation-management` — Citation verification and linking.
+6. `profitability-and-margin-analysis` — Landed cost stack, platform fees, margin math, and sensitivity scenarios.
+7. `product-opportunity-scoring` — Auditable 0–100 multi-factor scoring rubric and opportunity prioritization.
+8. `evidence-and-citation-management` — Citation verification and linking.
 
 ---
 
