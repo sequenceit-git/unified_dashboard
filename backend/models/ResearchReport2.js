@@ -4,6 +4,7 @@ const opportunitySchema = new mongoose.Schema(
   {
     rank: { type: Number },
     title: { type: String },
+    category: { type: String },
     marketplace: { type: String },
     sourceUrl: { type: String },
     image: { type: String },
@@ -35,6 +36,13 @@ const report2Schema = new mongoose.Schema(
       type: String,
       enum: ['queued', 'running', 'completed', 'failed'],
       default: 'queued',
+    },
+    progress: {
+      stage: { type: String, default: 'Queued' },
+      step: { type: Number, default: 0 },
+      totalSteps: { type: Number, default: 0 },
+      percent: { type: Number, default: 0 },
+      currentItem: { type: String, default: '' },
     },
     error: { type: String },
     summary: { type: String },

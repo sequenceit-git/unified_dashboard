@@ -15,9 +15,10 @@ import Discovery2Overview from './Discovery2Overview'
 import Discovery2Sidebar from './Discovery2Sidebar'
 import OpportunityCard2 from './OpportunityCard2'
 import NewRunModal from './NewRunModal'
+import AgentProgressBar from './AgentProgressBar'
 
 const TERMINAL_STATUSES = new Set(['completed', 'failed'])
-const POLL_INTERVAL_MS = 4000
+const POLL_INTERVAL_MS = 2500
 
 export default function ProductDiscovery2Page() {
   const { token, isAdmin } = useAuth()
@@ -72,6 +73,9 @@ export default function ProductDiscovery2Page() {
           if (data.status === 'completed') {
             setNotification('Research run completed! New opportunities are ready.')
             setTimeout(() => setNotification(''), 5000)
+            // Force recs to reload by briefly resetting selectedReportId
+            setSelectedReportId(null)
+            setTimeout(() => setSelectedReportId(data._id), 50)
           }
           loadReports()
         }
@@ -157,6 +161,28 @@ export default function ProductDiscovery2Page() {
     }
   }
 
+  // ── Add Opportunity to Product Catalog ────────────────────────────────────
+  const handleAddToCatalog = async ({ reportId, rank, title, price, stock }) => {
+    try {
+      const res = await api.post(
+        '/api/research/add-to-catalog',
+        { reportId, rank, title, price, stock },
+        token,
+      )
+      if (res.product?._id) {
+        setRecommendations((prev) =>
+          prev.map((opp) =>
+            opp.rank === rank ? { ...opp, addedProductId: res.product._id } : opp,
+          ),
+        )
+        setNotification(`"${title}" successfully added to Products catalog!`)
+        setTimeout(() => setNotification(''), 4000)
+      }
+    } catch (err) {
+      alert(`Failed to add product to catalog: ${err.message}`)
+    }
+  }
+
   // ── Stats calculation ────────────────────────────────────────────────────
   const overviewStats = {
     totalReports: reports.length,
@@ -165,9 +191,17 @@ export default function ProductDiscovery2Page() {
     lastRunDate: reports[0]?.createdAt || null,
   }
 
-  // Categories list matching Product Discovery standard
-  const DISCOVERY_CATEGORIES = [
-    'All',
+  // Helper to extract category cleanly from an opportunity item
+  const getOppCategory = (r) => {
+    return (r?.category || r?.metrics?.category || '').trim()
+  }
+
+  // Categories list: Start with 'All', then collect all distinct categories in the report, supplemented by standard defaults
+  const activeReportCategories = Array.from(
+    new Set(recommendations.map(getOppCategory).filter(Boolean))
+  )
+
+  const DEFAULT_CATEGORIES = [
     'Home & Kitchen',
     'Electronics',
     'Sports & Fitness',
@@ -176,17 +210,36 @@ export default function ProductDiscovery2Page() {
     'Pet Supplies',
   ]
 
-  // Count items per category in current report
+  // Combine unique categories found + defaults, preserving nice order
+  const dynamicCategories = [
+    'All',
+    ...Array.from(new Set([...activeReportCategories, ...DEFAULT_CATEGORIES])),
+  ]
+
+  // Count items per category in current report (normalized lowercase comparison)
   const categoryCounts = recommendations.reduce((acc, r) => {
-    if (r.category) acc[r.category] = (acc[r.category] || 0) + 1
+    const cat = getOppCategory(r)
+    if (cat) {
+      acc[cat] = (acc[cat] || 0) + 1
+      const lower = cat.toLowerCase()
+      acc[lower] = (acc[lower] || 0) + 1
+    }
     return acc
   }, {})
 
+  // Filter recommendations matching the selected pill (handles exact or case-insensitive match)
   const filteredRecommendations = activeCategoryFilter === 'All'
     ? recommendations
-    : recommendations.filter((r) => r.category === activeCategoryFilter)
+    : recommendations.filter((r) => {
+        const cat = getOppCategory(r).toLowerCase()
+        const target = activeCategoryFilter.toLowerCase()
+        return cat === target || cat.includes(target) || target.includes(cat)
+      })
 
   const selectedReport = reports.find((r) => r._id === selectedReportId)
+  const activeRunningReport = reports.find(
+    (r) => (r._id === pollingId || r.status === 'running' || r.status === 'queued')
+  )
 
   return (
     <div className="space-y-6">
@@ -226,6 +279,11 @@ export default function ProductDiscovery2Page() {
         )}
       </div>
 
+      {/* ── Active Agent Workflow Loading Bar ────────────────────────────── */}
+      {activeRunningReport && (
+        <AgentProgressBar report={activeRunningReport} />
+      )}
+
       {/* ── Notification Banner ──────────────────────────────────────────── */}
       {notification && (
         <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 shadow-xs">
@@ -263,9 +321,9 @@ export default function ProductDiscovery2Page() {
                 <FiFilter size={13} />
                 <span>Category:</span>
               </span>
-              {DISCOVERY_CATEGORIES.map((cat) => {
-                const count = cat === 'All' ? recommendations.length : (categoryCounts[cat] || 0)
-                const isSelected = activeCategoryFilter === cat
+              {dynamicCategories.map((cat) => {
+                const count = cat === 'All' ? recommendations.length : (categoryCounts[cat] || categoryCounts[cat.toLowerCase()] || 0)
+                const isSelected = activeCategoryFilter.toLowerCase() === cat.toLowerCase()
                 return (
                   <button
                     key={cat}
@@ -343,9 +401,15 @@ export default function ProductDiscovery2Page() {
             </div>
           ) : filteredRecommendations.length === 0 ? (
             <EmptyState
-              title="No product recommendations found"
+              title={
+                selectedReport?.status === 'running' || selectedReport?.status === 'queued'
+                  ? 'AI Agent is actively discovering opportunities…'
+                  : 'No product recommendations found'
+              }
               message={
-                reports.length === 0
+                selectedReport?.status === 'running' || selectedReport?.status === 'queued'
+                  ? 'The agentic loop is evaluating margins and ranking top candidates above. Your product cards will render automatically once complete.'
+                  : reports.length === 0
                   ? 'Launch your first AI Research Run to discover opportunities.'
                   : 'No products match the selected category filter.'
               }
@@ -354,8 +418,11 @@ export default function ProductDiscovery2Page() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredRecommendations.map((opp) => (
                 <OpportunityCard2
-                  key={opp._id || `${opp.rank}-${opp.productName}`}
+                  key={opp._id || `${opp.rank}-${opp.title || opp.productName}`}
                   opportunity={opp}
+                  reportId={selectedReportId}
+                  onAddToCatalog={handleAddToCatalog}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>

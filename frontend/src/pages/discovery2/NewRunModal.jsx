@@ -137,16 +137,22 @@ export default function NewRunModal({
 
         {/* Instructions */}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">
-            Custom Instructions <span className="text-xs font-normal text-gray-400">(optional)</span>
-          </label>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-xs font-semibold text-gray-700">
+              Custom Instructions / Margin Note <span className="text-xs font-normal text-gray-400">(optional)</span>
+            </label>
+            <span className="text-[11px] font-medium text-emerald-600">Default: ≥15% margin filter</span>
+          </div>
           <textarea
             rows={2}
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Any specific constraints, price bands, or target margins…"
+            placeholder="e.g., minimum margin 20%, focus on items under $35, exclude glass items…"
             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
           />
+          <p className="mt-1 text-[11px] text-gray-400">
+            Items with net margins below 15% are filtered out automatically, or you can state a custom threshold (e.g., &quot;margin &gt; 20%&quot;).
+          </p>
         </div>
 
         <div className="flex items-center justify-between pt-2">

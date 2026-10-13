@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import Badge from '../../components/ui/Badge'
+import Button from '../../components/ui/Button'
 import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
 
-export default function OpportunityCard2({ opportunity }) {
+export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog, isAdmin }) {
+  const [adding, setAdding] = useState(false)
+  const isAdded = Boolean(opportunity.addedProductId)
+
   const score = opportunity.opportunityScore ?? 75
   const scoreBadgeColor =
     score >= 85 ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
@@ -34,6 +39,25 @@ export default function OpportunityCard2({ opportunity }) {
   const reviewCount = opportunity.reviewCount ?? opportunity.metrics?.reviewCount ?? null
   const rationale = opportunity.aiNotes || opportunity.recommendationReason || ''
   const sourceUrl = opportunity.sourceUrl || opportunity.productUrl || ''
+
+  const handleAdd = async () => {
+    if (isAdded || adding || !onAddToCatalog) return
+    setAdding(true)
+    try {
+      await onAddToCatalog({
+        reportId,
+        rank: opportunity.rank || 1,
+        title,
+        price:
+          opportunity.price != null
+            ? Number(opportunity.price)
+            : Number(opportunity.metrics?.averagePrice || opportunity.metrics?.price || 24.99),
+        stock: 100,
+      })
+    } finally {
+      setAdding(false)
+    }
+  }
 
   return (
     <div className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-xs transition hover:shadow-md">
@@ -132,9 +156,20 @@ export default function OpportunityCard2({ opportunity }) {
         ) : (
           <span />
         )}
-        <span className="text-[11px] text-gray-400">
-          Rank #{opportunity.rank || 1}
-        </span>
+
+        {isAdmin && (
+          <div>
+            {isAdded ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                ✓ Added to Catalog
+              </span>
+            ) : (
+              <Button size="sm" onClick={handleAdd} disabled={adding}>
+                {adding ? 'Adding…' : '+ Add to Catalog'}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

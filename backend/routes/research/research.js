@@ -1,8 +1,9 @@
 const express = require('express')
 const mongoose = require('mongoose')
-const { requireAuth, loadAccess, requireMainRoute } = require('../../middleware/auth')
-const ResearchReport = require('../../models/ResearchReport')
-const { runMarketResearch } = require('../../agent/aimarketresearch/marketResearchAgent')
+const { requireAuth, loadAccess, requireMainRoute, requireRole } = require('../../middleware/auth')
+const ResearchReport2 = require('../../models/ResearchReport2')
+const Product = require('../../models/Product')
+const { runDiscoveryAgentTwo } = require('../../agent/discoveryagenttwo/discoveryAgentTwo')
 const { generateRecommendationsExcel } = require('../../services/excelExport')
 
 const router = express.Router()
@@ -11,7 +12,7 @@ router.use(requireAuth, loadAccess, requireMainRoute('market-research'))
 // ─── GET /api/research/reports — list all reports ────────────────────────────
 router.get('/reports', async (req, res) => {
   try {
-    const reports = await ResearchReport.find()
+    const reports = await ResearchReport2.find()
       .sort({ createdAt: -1 })
       .limit(50)
     res.json(reports)
@@ -26,10 +27,10 @@ router.get('/recommendations/:reportId', async (req, res) => {
     const { reportId } = req.params
     let report = null
     if (mongoose.isValidObjectId(reportId)) {
-      report = await ResearchReport.findById(reportId)
+      report = await ResearchReport2.findById(reportId)
     }
     if (!report) {
-      report = await ResearchReport.findOne().sort({ createdAt: -1 })
+      report = await ResearchReport2.findOne().sort({ createdAt: -1 })
     }
     const docs = report?.opportunities || []
     res.json(docs)
@@ -44,10 +45,10 @@ router.get('/report/:reportId', async (req, res) => {
     const { reportId } = req.params
     let report = null
     if (mongoose.isValidObjectId(reportId)) {
-      report = await ResearchReport.findById(reportId)
+      report = await ResearchReport2.findById(reportId)
     }
     if (!report) {
-      report = await ResearchReport.findOne().sort({ createdAt: -1 })
+      report = await ResearchReport2.findOne().sort({ createdAt: -1 })
     }
 
     res.json({
@@ -70,8 +71,8 @@ router.get('/status/:reportId', async (req, res) => {
     if (!mongoose.isValidObjectId(reportId)) {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
-    const report = await ResearchReport.findById(reportId).select(
-      'status error summary startedAt finishedAt createdAt params',
+    const report = await ResearchReport2.findById(reportId).select(
+      'status progress error summary startedAt finishedAt createdAt params reportDate',
     )
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
@@ -92,7 +93,7 @@ router.get('/export/:reportId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
 
-    const report = await ResearchReport.findById(reportId)
+    const report = await ResearchReport2.findById(reportId)
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
@@ -193,22 +194,25 @@ router.post('/generate', async (req, res) => {
       return res.status(400).json({ error: 'At least one product category is required' })
     }
 
-    // Check if OPENAI_API is configured
-    if (!process.env.OPENAI_API) {
+    // Check if OPENAI_API or OPENAI_API_KEY is configured
+    if (!process.env.OPENAI_API && !process.env.OPENAI_API_KEY) {
       return res.status(503).json({
         error: 'OpenAI API key is not configured. Please set OPENAI_API in your environment variables.',
       })
     }
 
-    // Create the parent ResearchReport record immediately
-    const report = await ResearchReport.create({
+    // Create the parent ResearchReport2 record immediately
+    const reportDate = new Date().toISOString().split('T')[0]
+    const report = await ResearchReport2.create({
       runBy: req.user?.id || null,
       trigger: 'manual',
+      reportDate,
       params: {
         marketplaces: ['amazon', 'walmart', 'bestbuy', 'ebay', 'tiktok_shop', 'temu', 'aliexpress'],
         categories,
         category: categories[0], // backward compat
         keywords: niche ? [niche] : [],
+        instructions: instructions?.trim() || '',
       },
       status: 'queued',
       startedAt: new Date(),
@@ -225,7 +229,7 @@ router.post('/generate', async (req, res) => {
 
     // Run the agent asynchronously (fire-and-forget, errors are persisted to DB)
     setImmediate(() => {
-      runMarketResearch({
+      runDiscoveryAgentTwo({
         categories,
         niche: niche?.trim() || '',
         instructions: instructions?.trim() || '',
@@ -236,6 +240,70 @@ router.post('/generate', async (req, res) => {
         console.error('[research route] Agent run failed:', err.message)
       })
     })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// ─── POST /api/research/add-to-catalog — convert opportunity to catalog product
+router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
+  try {
+    const { reportId, rank, title, price, stock, description } = req.body
+    if (!reportId || rank == null) {
+      return res.status(400).json({ error: 'reportId and rank are required' })
+    }
+
+    const report = await ResearchReport2.findById(reportId)
+    if (!report) {
+      return res.status(404).json({ error: 'Research report not found' })
+    }
+
+    const opp = report.opportunities.find((o) => o.rank === Number(rank))
+    if (!opp) {
+      return res.status(404).json({ error: `Opportunity with rank ${rank} not found in report` })
+    }
+
+    if (opp.addedProductId) {
+      const existingProduct = await Product.findById(opp.addedProductId)
+      if (existingProduct) {
+        return res.json({ product: existingProduct, alreadyAdded: true })
+      }
+    }
+
+    // Generate unique SKU
+    const catPrefix = (opp.metrics?.category || opp.category || 'GEN')
+      .substring(0, 3)
+      .toUpperCase()
+      .replace(/[^A-Z]/g, 'X')
+    const sku = `BOT-${catPrefix}-${Date.now().toString().slice(-6)}`
+
+    const product = await Product.create({
+      sku,
+      title: title || opp.title,
+      description:
+        description ||
+        `${opp.title}. Discovered and evaluated by Discovery Agent Two with an opportunity score of ${opp.opportunityScore || 75}/100 and estimated margin of ${opp.estimatedMargin || 15}%.`,
+      category: opp.metrics?.category || opp.category || 'General',
+      brand: 'DevBrand',
+      images: opp.image ? [opp.image] : [],
+      basePrice: price ? Number(price) : opp.metrics?.averagePrice || opp.metrics?.price || 24.99,
+      stock: stock ? Number(stock) : 100,
+      lowStockThreshold: 10,
+      status: 'active',
+      source: 'research_bot',
+      sourceReportId: report._id,
+      attributes: {
+        aiOpportunityScore: opp.opportunityScore,
+        estimatedMargin: opp.estimatedMargin,
+        targetMarketplace: opp.marketplace,
+        sourceUrl: opp.sourceUrl,
+      },
+    })
+
+    opp.addedProductId = product._id
+    await report.save()
+
+    res.status(201).json({ product, alreadyAdded: false })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
