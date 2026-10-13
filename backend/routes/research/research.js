@@ -1,9 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const { requireAuth, loadAccess, requireMainRoute } = require('../../middleware/auth')
-const MarketAnalysis = require('../../models/MarketAnalysis')
-const ProductRecommendation = require('../../models/ProductRecommendation')
-const MarketplaceResearch = require('../../models/MarketplaceResearch')
 const ResearchReport = require('../../models/ResearchReport')
 const { runMarketResearch } = require('../../agent/aimarketresearch/marketResearchAgent')
 const { generateRecommendationsExcel } = require('../../services/excelExport')
@@ -23,54 +20,18 @@ router.get('/reports', async (req, res) => {
   }
 })
 
-// ─── GET /api/research/analysis/:reportId ─────────────────────────────────────
-router.get('/analysis/:reportId', async (req, res) => {
-  try {
-    const { reportId } = req.params
-    let doc = null
-    if (mongoose.isValidObjectId(reportId)) {
-      doc = await MarketAnalysis.findOne({ reportId })
-    }
-    if (!doc) {
-      doc = await MarketAnalysis.findOne().sort({ createdAt: -1 })
-    }
-    if (!doc) {
-      return res.status(404).json({ error: 'Market analysis not found' })
-    }
-    res.json(doc)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
 // ─── GET /api/research/recommendations/:reportId ──────────────────────────────
 router.get('/recommendations/:reportId', async (req, res) => {
   try {
     const { reportId } = req.params
-    let docs = []
+    let report = null
     if (mongoose.isValidObjectId(reportId)) {
-      docs = await ProductRecommendation.find({ reportId }).sort({ rank: 1 })
+      report = await ResearchReport.findById(reportId)
     }
-    if (!docs.length) {
-      docs = await ProductRecommendation.find().sort({ rank: 1 })
+    if (!report) {
+      report = await ResearchReport.findOne().sort({ createdAt: -1 })
     }
-    res.json(docs)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// ─── GET /api/research/research-data/:reportId ────────────────────────────────
-router.get('/research-data/:reportId', async (req, res) => {
-  try {
-    const { reportId } = req.params
-    let docs = []
-    if (mongoose.isValidObjectId(reportId)) {
-      docs = await MarketplaceResearch.find({ reportId }).sort({ searchRanking: 1 })
-    }
-    if (!docs.length) {
-      docs = await MarketplaceResearch.find().sort({ searchRanking: 1 })
-    }
+    const docs = report?.opportunities || []
     res.json(docs)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -89,29 +50,13 @@ router.get('/report/:reportId', async (req, res) => {
       report = await ResearchReport.findOne().sort({ createdAt: -1 })
     }
 
-    const targetReportId = report?._id
-
-    const [analysis, recommendations, marketplaceData] = await Promise.all([
-      targetReportId
-        ? MarketAnalysis.findOne({ reportId: targetReportId })
-        : MarketAnalysis.findOne().sort({ createdAt: -1 }),
-      targetReportId
-        ? ProductRecommendation.find({ reportId: targetReportId }).sort({ rank: 1 })
-        : ProductRecommendation.find().sort({ rank: 1 }),
-      targetReportId
-        ? MarketplaceResearch.find({ reportId: targetReportId }).sort({ searchRanking: 1 })
-        : MarketplaceResearch.find().sort({ searchRanking: 1 }),
-    ])
-
     res.json({
       report: report || {
         _id: 'default-report',
         status: 'completed',
         createdAt: new Date(),
       },
-      analysis,
-      recommendations,
-      marketplaceData,
+      recommendations: report?.opportunities || [],
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -147,15 +92,12 @@ router.get('/export/:reportId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
 
-    const [report, recommendations] = await Promise.all([
-      ResearchReport.findById(reportId),
-      ProductRecommendation.find({ reportId }).sort({ rank: 1 }),
-    ])
-
+    const report = await ResearchReport.findById(reportId)
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
 
+    const recommendations = report.opportunities || []
     if (!recommendations.length) {
       return res.status(404).json({ error: 'No recommendations found for this report' })
     }
@@ -168,22 +110,38 @@ router.get('/export/:reportId', async (req, res) => {
         'Recommendation Reason', 'Product URL',
       ]
 
-      const rows = recommendations.map((r) => [
-        r.rank ?? '',
-        `"${(r.productName || '').replace(/"/g, '""')}"`,
-        `"${(r.category || '').replace(/"/g, '""')}"`,
-        r.marketplace || '',
-        r.price ?? '',
-        r.estimatedMonthlySales ?? '',
-        r.estimatedMonthlyRevenue ?? '',
-        r.rating ?? '',
-        r.reviewCount ?? '',
-        r.competitionLevel || '',
-        r.estimatedProfitMarginPercent ?? '',
-        r.opportunityScore ?? '',
-        `"${(r.recommendationReason || '').replace(/"/g, '""')}"`,
-        `"${(r.productUrl || '').replace(/"/g, '""')}"`,
-      ])
+      const rows = recommendations.map((r, i) => {
+        const title = r.title || r.productName || ''
+        const category = r.category || r.metrics?.category || ''
+        const marketplace = r.marketplace || 'eBay'
+        const price = r.price != null ? r.price : r.metrics?.averagePrice ?? r.metrics?.price ?? ''
+        const sales = r.estimatedMonthlySales != null ? r.estimatedMonthlySales : r.metrics?.monthlySales ?? r.metrics?.salesVolume ?? ''
+        const rev = r.estimatedMonthlyRevenue != null ? r.estimatedMonthlyRevenue : ''
+        const rating = r.rating != null ? r.rating : r.metrics?.rating ?? ''
+        const reviews = r.reviewCount != null ? r.reviewCount : r.metrics?.reviewCount ?? ''
+        const comp = r.competitionLevel || (r.metrics?.competitorCount ? `${r.metrics.competitorCount} sellers` : '')
+        const margin = r.estimatedProfitMarginPercent != null ? r.estimatedProfitMarginPercent : r.estimatedMargin ?? ''
+        const score = r.opportunityScore ?? ''
+        const reason = r.recommendationReason || r.aiNotes || ''
+        const url = r.productUrl || r.sourceUrl || ''
+
+        return [
+          r.rank || (i + 1),
+          `"${title.replace(/"/g, '""')}"`,
+          `"${category.replace(/"/g, '""')}"`,
+          marketplace,
+          price,
+          sales,
+          rev,
+          rating,
+          reviews,
+          comp,
+          margin,
+          score,
+          `"${reason.replace(/"/g, '""')}"`,
+          `"${url.replace(/"/g, '""')}"`,
+        ]
+      })
 
       const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
       const safeName = `product_recommendations_${reportId.slice(-8)}.csv`

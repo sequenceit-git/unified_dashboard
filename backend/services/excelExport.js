@@ -107,21 +107,35 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
     const row = sheet.getRow(rowIndex)
     const isOdd = i % 2 === 0
 
+    const productName = rec.productName || rec.title || '—'
+    const category = rec.category || rec.metrics?.category || '—'
+    const marketplace = rec.marketplace || 'eBay'
+    const price = rec.price != null ? rec.price : rec.metrics?.averagePrice ?? rec.metrics?.price ?? null
+    const monthlySales = rec.estimatedMonthlySales != null ? rec.estimatedMonthlySales : rec.metrics?.monthlySales ?? rec.metrics?.salesVolume ?? null
+    const monthlyRevenue = rec.estimatedMonthlyRevenue != null ? rec.estimatedMonthlyRevenue : null
+    const rating = rec.rating != null ? rec.rating : rec.metrics?.rating ?? null
+    const reviewCount = rec.reviewCount != null ? rec.reviewCount : rec.metrics?.reviewCount ?? null
+    const competition = rec.competitionLevel || (rec.metrics?.competitorCount ? `${rec.metrics.competitorCount} sellers` : '—')
+    const margin = rec.estimatedProfitMarginPercent != null ? rec.estimatedProfitMarginPercent : rec.estimatedMargin ?? null
+    const score = rec.opportunityScore != null ? rec.opportunityScore : null
+    const reason = rec.recommendationReason || rec.aiNotes || ''
+    const url = rec.productUrl || rec.sourceUrl || ''
+
     row.values = [
-      rec.rank,
-      rec.productName,
-      rec.category,
-      rec.marketplace,
-      rec.price != null ? rec.price : '—',
-      rec.estimatedMonthlySales != null ? rec.estimatedMonthlySales : '—',
-      rec.estimatedMonthlyRevenue != null ? rec.estimatedMonthlyRevenue : '—',
-      rec.rating != null ? rec.rating : '—',
-      rec.reviewCount != null ? rec.reviewCount : '—',
-      rec.competitionLevel || '—',
-      rec.estimatedProfitMarginPercent != null ? rec.estimatedProfitMarginPercent : '—',
-      rec.opportunityScore != null ? rec.opportunityScore : '—',
-      rec.recommendationReason || '',
-      rec.productUrl || '',
+      rec.rank || (i + 1),
+      productName,
+      category,
+      marketplace,
+      price != null ? price : '—',
+      monthlySales != null ? monthlySales : '—',
+      monthlyRevenue != null ? monthlyRevenue : '—',
+      rating != null ? rating : '—',
+      reviewCount != null ? reviewCount : '—',
+      competition,
+      margin != null ? margin : '—',
+      score != null ? score : '—',
+      reason,
+      url,
     ]
 
     // Base row styling
@@ -130,18 +144,18 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
     row.height = 60
 
     // Make URL cell a clickable hyperlink
-    if (rec.productUrl) {
+    if (url) {
       const urlCell = row.getCell(14) // Product URL column
       urlCell.value = {
-        text: rec.productUrl,
-        hyperlink: rec.productUrl,
+        text: url,
+        hyperlink: url,
       }
       urlCell.font = { color: { argb: '4F46E5' }, underline: true }
     }
 
     // Color-code opportunity score cell
-    const score = rec.opportunityScore ?? 0
-    const scoreBg = score >= 70 ? SCORE_HIGH : score >= 45 ? SCORE_MED : SCORE_LOW
+    const numericScore = typeof score === 'number' ? score : (Number(score) || 0)
+    const scoreBg = numericScore >= 70 ? SCORE_HIGH : numericScore >= 45 ? SCORE_MED : SCORE_LOW
     const scoreCell = row.getCell(12)
     scoreCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: scoreBg } }
     scoreCell.font = { bold: true }
