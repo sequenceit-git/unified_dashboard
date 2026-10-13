@@ -10,6 +10,13 @@ import SearchInput from '../../components/ui/SearchInput'
 import { EmptyState } from '../../components/ui/Feedback'
 
 const STATUSES = ['all', 'draft', 'active', 'archived']
+const SOURCES = [
+  { value: 'all', label: 'All sources' },
+  { value: 'research_bot', label: 'AI Agent (Bot)' },
+  { value: 'manual', label: 'Manual' },
+  { value: 'bulk_upload', label: 'Bulk upload' },
+  { value: 'marketplace_sync', label: 'Marketplace sync' },
+]
 const STOCK = [
   { value: 'all', label: 'All stock' },
   { value: 'low', label: 'Low stock' },
@@ -24,6 +31,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('all')
+  const [source, setSource] = useState('all')
   const [category, setCategory] = useState('all')
   const [stock, setStock] = useState('all')
   const [categories, setCategories] = useState([])
@@ -39,7 +47,16 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
     setLoading(true)
     setError('')
     try {
-      const base = { q, status, category, stock, sort, page, limit: 15 }
+      const base = {
+        q,
+        status,
+        category,
+        stock,
+        sort,
+        page,
+        limit: 15,
+        ...(source !== 'all' ? { source } : {}),
+      }
       let res
       if (shopIds.length <= 1) {
         res = await api.get(
@@ -73,7 +90,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, status, category, stock, sort, page, refreshKey, disabled, shopIds.join(',')])
+  }, [q, status, source, category, stock, sort, page, refreshKey, disabled, shopIds.join(',')])
 
   const toggleSort = (key) => {
     setSort((s) => (s === key ? `-${key}` : key))
@@ -92,8 +109,9 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
     <div>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search title or SKU…" />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
+          <Select value={source} onChange={(e) => { setSource(e.target.value); setPage(1) }} options={SOURCES} />
           <Select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1) }} options={[{ value: 'all', label: 'All categories' }, ...categories.map((c) => ({ value: c, label: c }))]} />
           <Select value={stock} onChange={(e) => { setStock(e.target.value); setPage(1) }} options={STOCK} />
         </div>
@@ -129,6 +147,24 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
           {
             key: 'stock', label: 'Stock', sortable: true,
             render: (r) => <span className={r.stock <= r.lowStockThreshold ? 'font-bold text-red-600' : ''}>{r.stock}</span>,
+          },
+          {
+            key: 'source',
+            label: 'Source',
+            render: (r) => {
+              const isAi = r.source === 'research_bot'
+              return (
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+                    isAi
+                      ? 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-700/20'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {isAi ? 'AI Agent' : r.source || 'Manual'}
+                </span>
+              )
+            },
           },
           { key: 'status', label: 'Status', render: (r) => <Badge color={statusColor(r.status)}>{r.status}</Badge> },
           {

@@ -289,7 +289,7 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
       basePrice: price ? Number(price) : opp.metrics?.averagePrice || opp.metrics?.price || 24.99,
       stock: stock ? Number(stock) : 100,
       lowStockThreshold: 10,
-      status: 'active',
+      status: 'draft',
       source: 'research_bot',
       sourceReportId: report._id,
       attributes: {
