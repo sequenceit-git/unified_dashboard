@@ -101,15 +101,28 @@ router.get('/export/:reportId', async (req, res) => {
 
     if (format === 'csv') {
       const headers = [
-        'Rank', 'Product Name', 'Category', 'Marketplace', 'Price (USD)',
-        'Estimated Monthly Sales', 'Estimated Monthly Revenue', 'Rating', 'Review Count',
-        'Competition Level', 'Profit Margin (%)', 'Opportunity Score (0-100)',
-        'Recommendation Reason', 'Product URL',
+        'sku',
+        'title',
+        'description',
+        'category',
+        'brand',
+        'basePrice',
+        'currency',
+        'stock',
+        'lowStockThreshold',
+        'weight',
+        'status',
+        'source',
+        'sourceUrl',
+        'listingUrl',
+        'otherUrl',
+        'estimatedMarginPercent',
+        'opportunityScore',
       ]
 
       // Protect against CSV formula injection
       const sanitizeCell = (val) => {
-        if (val == null) return '""'
+        if (val == null || val === '') return '""'
         let str = String(val).trim()
         if (/^[=+\-@\t\r]/.test(str)) {
           str = `'${str}`
@@ -120,38 +133,41 @@ router.get('/export/:reportId', async (req, res) => {
       const rows = recommendations.map((r, i) => {
         const title = r.title || r.productName || ''
         const category = r.category || r.metrics?.category || ''
-        const marketplace = r.marketplace || 'eBay'
-        const price = r.price != null ? r.price : r.metrics?.averagePrice ?? r.metrics?.price ?? ''
-        const sales = r.estimatedMonthlySales != null ? r.estimatedMonthlySales : r.metrics?.monthlySales ?? r.metrics?.salesVolume ?? ''
-        const rev = r.estimatedMonthlyRevenue != null ? r.estimatedMonthlyRevenue : ''
-        const rating = r.rating != null ? r.rating : r.metrics?.rating ?? ''
-        const reviews = r.reviewCount != null ? r.reviewCount : r.metrics?.reviewCount ?? ''
-        const comp = r.competitionLevel || (r.metrics?.competitorCount ? `${r.metrics.competitorCount} sellers` : '')
-        const margin = r.estimatedProfitMarginPercent != null ? r.estimatedProfitMarginPercent : r.estimatedMargin ?? ''
+        const basePrice = r.metrics?.price != null ? r.metrics.price : (r.price ?? r.metrics?.averagePrice ?? '')
+        const description = r.aiNotes || r.recommendationReason || ''
+        const sourceUrl = r.sourceUrl || r.sourcing?.buyUrl || ''
+        const listingUrl = r.listingUrl || r.productUrl || ''
+        const otherUrl = r.validation?.otherUrl || ''
+        const margin = r.estimatedMargin != null ? r.estimatedMargin : (r.estimatedProfitMarginPercent ?? '')
         const score = r.opportunityScore ?? ''
-        const reason = r.recommendationReason || r.aiNotes || ''
-        const url = r.productUrl || r.sourceUrl || ''
+
+        // Generate clean preview SKU consistent with Product model pattern
+        const catClean = (category || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'GEN'
+        const sku = `BOT-${catClean}-${Date.now().toString().slice(-4)}${i + 1}`
 
         return [
-          r.rank || (i + 1),
+          sanitizeCell(sku),
           sanitizeCell(title),
+          sanitizeCell(description),
           sanitizeCell(category),
-          marketplace,
-          price,
-          sales,
-          rev,
-          rating,
-          reviews,
-          comp,
-          margin,
-          score,
-          sanitizeCell(reason),
-          sanitizeCell(url),
+          sanitizeCell(''), // brand (left blank for client to customize)
+          basePrice !== '' ? Number(basePrice) : '',
+          'USD',
+          0, // stock (draft items default to 0)
+          5, // lowStockThreshold
+          1, // weight
+          'draft',
+          'research_bot',
+          sanitizeCell(sourceUrl),
+          sanitizeCell(listingUrl),
+          sanitizeCell(otherUrl),
+          margin !== '' ? Number(margin) : '',
+          score !== '' ? Number(score) : '',
         ]
       })
 
       const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
-      const safeName = `product_recommendations_${reportId.slice(-8)}.csv`
+      const safeName = `product_catalog_export_${reportId.slice(-8)}.csv`
       res.setHeader('Content-Type', 'text/csv; charset=utf-8')
       res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`)
       return res.send(csvContent)
