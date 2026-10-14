@@ -1,28 +1,33 @@
 ---
 name: opportunity-scoring-rubric
-description: Calculate an explainable 0-100 Opportunity Score based on profit margin, demand strength, and review quality.
+description: Score one product 0-100 from verified fields and write short factual notes; scoring is computed by backend code.
 ---
 
 # Opportunity Scoring Rubric
 
-## Purpose
-Assign an auditable `opportunityScore` (between 0 and 100) to each product candidate.
+## Who does what
 
-## Scoring Rubric (Weights sum to 100)
-1. **Profit Margin (40 points)**:
-   - Margin ≥ 50%: 40 points
-   - Margin 30%–49%: 30 points
-   - Margin 15%–29%: 15 points
-   - Margin < 15%: 0 points (unprofitable)
-2. **Demand & Sales Velocity (35 points)**:
-   - High velocity (≥1,000 units/mo or top seller badge): 35 points
-   - Medium velocity (300–999 units/mo): 25 points
-   - Low velocity (<300 units/mo): 10 points
-3. **Rating & Customer Sentiment (25 points)**:
-   - Rating ≥ 4.5 and low defect rate: 25 points
-   - Rating 4.0–4.4 with minor solvable complaints: 18 points
-   - Rating < 4.0: 5 points
+The backend computes the score from structured fields. The model only writes `aiNotes`.
 
-## Final Calculation
-- `opportunityScore = MarginScore + DemandScore + RatingScore` (clamped 10 to 99).
-- Synthesize a concise 1-2 sentence `aiNotes` rationale explaining why this product is worth buying and selling.
+## Gates (applied first, not scored)
+
+- restrictedFlag true -> exclude
+- netMarginPct below the minimum (default 20%) -> mark "unprofitable", exclude from top list
+- matchConfidence = similar or no eBay evidence -> mark "unverified"
+
+## Weights (sum 100)
+
+- Net profit margin: 35 (>=40%: 35, 30-39%: 28, 20-29%: 18)
+- Demand: 25 (High 25, Medium 15, Low 5, Unknown 0)
+- Rating and sentiment: 15 (rating >=4.5 and no defect risk: 15; 4.0-4.4: 10; <4.0 or highDefectRisk: 3)
+- Competition on eBay: 15 (few active listings and price room: 15; moderate: 8; crowded or price-war: 2)
+- Sourcing reliability: 10 (US or manufacturer source with delivery <= 10 days: 10; overseas with 10-25 days: 5; slow or retail-only: 0)
+
+## Confidence
+
+Count required fields that are null. Cap the score at 60 if any of price, margin, or demand is missing, and set confidence = low | medium | high. Do not clamp to a minimum.
+
+## aiNotes (1-2 sentences)
+
+- Use only fields already extracted. No new facts.
+- State the single strongest reason to buy and the single biggest risk.

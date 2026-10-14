@@ -6,11 +6,15 @@ const opportunitySchema = new mongoose.Schema(
     title: { type: String },
     category: { type: String },
     marketplace: { type: String },
+    listingUrl: { type: String },
     sourceUrl: { type: String },
     image: { type: String },
     metrics: { type: mongoose.Schema.Types.Mixed },
-    estimatedMargin: { type: Number },
-    opportunityScore: { type: Number },
+    validation: { type: mongoose.Schema.Types.Mixed },
+    sourcing: { type: mongoose.Schema.Types.Mixed },
+    estimatedMargin: { type: Number, default: null },
+    opportunityScore: { type: Number, default: null },
+    confidence: { type: String, enum: ['low', 'medium', 'high', 'unverified'], default: 'unverified' },
     aiNotes: { type: String },
     addedProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null },
   },
@@ -22,15 +26,17 @@ const report2Schema = new mongoose.Schema(
     runBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     trigger: { type: String, enum: ['manual', 'scheduled'], default: 'manual' },
     reportDate: {
-      type: String, // Normalized date string "YYYY-MM-DD" for fast date-wise clustering
+      type: String, // Normalized date string "YYYY-MM-DD" set upon agent completion
       index: true,
-      default: () => new Date().toISOString().slice(0, 10),
+      default: null,
     },
     params: {
       marketplaces: [{ type: String }],
       categories: [{ type: String }],
       category: { type: String },
       keywords: [{ type: String }],
+      instructions: { type: String },
+      minMargin: { type: Number, default: 15 },
     },
     status: {
       type: String,

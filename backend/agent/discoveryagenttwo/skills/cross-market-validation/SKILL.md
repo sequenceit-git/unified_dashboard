@@ -1,20 +1,37 @@
 ---
 name: cross-market-validation
-description: Cross-check candidate products across competing platforms to verify true customer demand, ratings, and review sentiment.
+description: Validate one candidate product's demand, competition and customer sentiment on eBay first, then one or two other US marketplaces.
 ---
 
 # Cross-Market Validation
 
 ## Purpose
-Take an individual candidate product and cross-validate its demand across other marketplaces (e.g. if discovered on eBay, check Amazon or Walmart).
+
+Take ONE candidate and check whether it truly sells, and at what price, on the client's channels.
 
 ## Steps
-1. Search competing marketplaces for the same or directly equivalent product title.
-2. Review Metrics to verify:
-   - Average star rating (target: ≥ 4.0 out of 5).
-   - Review volume / sales indicators (target: established demand with at least 50+ reviews or verifiable monthly sales).
-3. Sentiment & Defect Check:
-   - Extract recurring customer complaints (e.g., poor battery, wrong sizing, breaks easily).
-   - Flag high-defect items as risky.
-4. Estimate Monthly Velocity:
-   - Use observable badges or review velocity to categorize demand: High (1,000+ units/mo), Medium (300–999 units/mo), or Low (<300 units/mo).
+
+1. Identity match: find the same or a directly equivalent product. Record matchConfidence: exact | equivalent | similar. Do not use "similar" listings for price evidence.
+2. eBay check (primary channel, always do this first):
+   - Number of active listings, and low/median/high price among exact or equivalent items
+   - Sold counts if visible; median sold price if visible
+3. Second-platform check (Amazon, Walmart or TikTok Shop): rating, review count, demand badges.
+4. Review quality: prefer reviews from the last 12 months; note if reviews look incentivized or suspiciously uniform.
+5. Complaints: list the top 3 recurring complaints (sizing, breaks, battery, etc.). Flag highDefectRisk if the same defect appears repeatedly.
+
+## Demand tier (with evidence type)
+
+- High: strong sold counts or badges across 2+ marketplaces
+- Medium: solid on one marketplace, moderate on another
+- Low: weak or contradictory signals
+- Unknown: not enough observable data
+Always set demandEvidence: "measured" (a sold count or badge you saw) or "inferred" (from review count only). Never convert to units per month unless a page states it.
+
+## Output (strict JSON, nulls allowed)
+
+matchConfidence, ebayActiveListings, ebayPriceLow, ebayPriceMedian, ebayPriceHigh, ebaySoldCount, ebaySourceUrl, otherMarketplace, otherRating, otherReviewCount, otherUrl, topComplaints[], highDefectRisk, demandTier, demandEvidence
+
+## Hard rules
+
+- Every number must come from a page you opened, and its URL must be returned. If not found, null.
+- Suggested sell price is the eBay median, not the Amazon price.

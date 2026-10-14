@@ -1,20 +1,15 @@
 /**
  * Product Discovery 2 Agent (DiscoveryAgentTwo)
  *
- * Implements a 3-Stage Agentic Loop:
- *   Stage 1: Scan target marketplaces (eBay, Temu, Amazon, Walmart) for 15-25 candidate products.
- *   Stage 2: Sequential Deep-Dive Loop (1 product per iteration):
- *            - Cross-market demand and review validation
- *            - Find cheaper sourcing links (AliExpress, 1688, Temu wholesale)
- *            - Landed unit economics & net margin calculation
- *            - Explainable 0-100 Opportunity Scoring
- *   Stage 3: Filter by margin threshold (default 15% or user-specified), rank top 10-20,
- *            and save directly to ResearchReport2.
+ * Implements Live Web Search via OpenAI Responses API,
+ * 3-Stage Agentic Loop with per-product sequential pipeline,
+ * and deterministic landed unit economics & scoring in Node.js.
  */
 
 const OpenAI = require('openai')
 const ResearchReport2 = require('../../models/ResearchReport2')
 const { skillManager } = require('./skills/index')
+const { calculateUnitEconomics, computeOpportunityScore } = require('./economics')
 
 function getOpenAIClient() {
   const apiKey = (process.env.OPENAI_API || process.env.OPENAI_API_KEY || '').trim()
@@ -46,213 +41,272 @@ function parseJsonSafe(text) {
 }
 
 /**
- * Stage 1: Discover 15-25 candidate products from target marketplaces
+ * Robust web search helper using client.responses.create
  */
-async function discoverCandidates({ client, categories, niche, instructions, minMarginThreshold = 15 }) {
+async function callWebSearch({ client, prompt, allowedDomains = [] }) {
+  const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
+  const tools = [{ type: 'web_search' }]
+  if (Array.isArray(allowedDomains) && allowedDomains.length > 0) {
+    tools[0].filters = { allowed_domains: allowedDomains }
+  }
+
+  const response = await client.responses.create({
+    model,
+    tools,
+    input: prompt,
+  })
+
+  return response.output_text || ''
+}
+
+/**
+ * Stage 1: Discover candidate products from target marketplaces using live Web Search
+ */
+async function discoverCandidates({ client, categories, niche, marketplaces = ['ebay', 'amazon', 'walmart', 'temu'] }) {
   const skillPrompt = skillManager.loadSkill('product-discovery-search') || ''
-  const systemPrompt = `You are an elite E-Commerce Product Discovery Agent.
+  const currentYear = new Date().getFullYear()
+
+  const allowedDomains = [
+    'ebay.com',
+    'amazon.com',
+    'walmart.com',
+    'temu.com',
+    'tiktok.com',
+  ]
+
+  const prompt = `You are an elite E-Commerce Product Discovery Agent with live web search capabilities.
 ${skillPrompt}
 
-Return ONLY a valid JSON object in the following format:
+TASK:
+Search live US marketplaces (${marketplaces.join(', ')}) to find in-demand, trending candidate products.
+Target Category: "${categories.join(', ')}".
+${niche ? `Niche Focus: "${niche}".` : ''}
+Current Year: ${currentYear}.
+
+RULES:
+1. Search real product listings on allowed domains: ${allowedDomains.join(', ')}.
+2. Do not fabricate or estimate prices. If not observable, set observedPriceUsd to null.
+3. Every URL must be a real page you visited or searched. Never use placeholders.
+
+Return ONLY a valid JSON object matching this schema:
 {
   "candidates": [
     {
-      "title": "string (specific, searchable product title)",
-      "marketplace": "ebay" | "temu" | "amazon" | "walmart",
-      "approximatePrice": 25.0,
-      "marketplaceUrl": "https://...",
+      "title": "string (specific product title)",
+      "brand": "string or null",
+      "observedMarketplace": "ebay" | "amazon" | "walmart" | "temu" | "tiktok_shop",
+      "listingUrl": "string (valid URL)",
+      "observedPriceUsd": number or null,
+      "demandSignalText": "string or null",
+      "reviewCount": number or null,
+      "rating": number or null,
       "category": "string"
     }
   ]
-}`
+}
 
-  const userQuery = `Find high-velocity, trending products for category: "${categories.join(', ')}"${
-    niche ? `, with niche focus: "${niche}"` : ''
-  }.${instructions ? ` User notes: "${instructions}".` : ''}
-Focus on products capable of yielding at least ${minMarginThreshold}% net profit margin after marketplace fees and wholesale sourcing costs.
-Return 15 to 20 candidates in the "candidates" JSON array.`
+Find 10 to 15 distinct, trending candidate products now.`
 
-  const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
-  const response = await client.chat.completions.create({
-    model,
-    response_format: { type: 'json_object' },
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userQuery },
-    ],
-  })
-
-  const parsed = parseJsonSafe(response.choices[0].message.content)
+  const rawText = await callWebSearch({ client, prompt, allowedDomains })
+  const parsed = parseJsonSafe(rawText)
   const list = parsed?.candidates || (Array.isArray(parsed) ? parsed : [])
   return Array.isArray(list) ? list : []
 }
 
 /**
- * Stage 2: Deep-dive an individual product (sequential loop)
+ * Stage 2A: Validate Demand and Competition on eBay & across other major retail platforms (Amazon, Walmart, TikTok Shop, Temu)
  */
-async function analyzeSingleCandidate({ client, candidate, userMinMargin = 15 }) {
-  const crossMarketSkill = skillManager.loadSkill('cross-market-validation') || ''
-  const sourcingSkill = skillManager.loadSkill('sourcing-and-unit-economics') || ''
-  const scoringSkill = skillManager.loadSkill('opportunity-scoring-rubric') || ''
+async function validateProductDemand({ client, candidate, targetMarketplaces = ['ebay'] }) {
+  const skillPrompt = skillManager.loadSkill('cross-market-validation') || ''
+  // Broad multi-platform search across major US retail channels
+  const allowedDomains = ['ebay.com', 'amazon.com', 'walmart.com', 'temu.com', 'tiktok.com']
 
-  const systemPrompt = `You are a precision E-Commerce Unit Economics & Sourcing Evaluator.
-${crossMarketSkill}
-${sourcingSkill}
-${scoringSkill}
+  const prompt = `You are a precision Cross-Market Demand Validator with live web search.
+${skillPrompt}
 
-Perform deep validation on this single product.
-Formulas:
-- Net Profit = sellingPrice - costPrice - (sellingPrice * 0.15)
-- Margin % = (Net Profit / sellingPrice) * 100
+CANDIDATE TO VALIDATE:
+Title: "${candidate.title}"
+Category: "${candidate.category || ''}"
+Observed Price: $${candidate.observedPriceUsd || 'unknown'}
+Client Target Selling Marketplaces: ${targetMarketplaces.join(', ')}
 
-Return ONLY a JSON object with:
+TASK:
+1. Search ebay.com for exact or equivalent listings. Record active listing count, median sold price, and sold counts if visible.
+2. Cross-check against amazon.com, walmart.com, or temu.com to inspect overall market demand, ratings, review volumes, and customer feedback.
+3. Note top 3 customer complaints and defect risk.
+4. Set demandTier: "High" | "Medium" | "Low" | "Unknown".
+5. Set demandEvidence: "measured" | "inferred".
+
+Return ONLY a valid JSON object with:
 {
-  "title": string,
-  "category": string,
-  "marketplace": string,
-  "sellingPrice": number,
-  "costPrice": number,
-  "estimatedMargin": number,
-  "monthlySales": number,
-  "rating": number,
-  "reviewCount": number,
-  "competitionLevel": "Low" | "Medium" | "High",
-  "opportunityScore": number,
-  "sourceUrl": string (real URL where the item or generic equivalent can be sourced cheaper, e.g. on AliExpress, Temu, or wholesale),
-  "image": string or null,
-  "aiNotes": string (1-2 sentences on why this product is worth buying/selling and key margin facts)
+  "matchConfidence": "exact" | "equivalent" | "similar",
+  "ebayActiveListings": number or null,
+  "ebayPriceLow": number or null,
+  "ebayPriceMedian": number or null,
+  "ebayPriceHigh": number or null,
+  "ebaySoldCount": number or null,
+  "ebaySourceUrl": "string or null",
+  "otherMarketplace": "amazon" | "walmart" | "temu" | "tiktok_shop" | null,
+  "otherRating": number or null,
+  "otherReviewCount": number or null,
+  "otherUrl": "string or null",
+  "topComplaints": ["complaint1", "complaint2"],
+  "highDefectRisk": boolean,
+  "demandTier": "High" | "Medium" | "Low" | "Unknown",
+  "demandEvidence": "measured" | "inferred",
+  "competitionLevel": "Low" | "Medium" | "High"
 }`
 
-  const userQuery = `Analyze this candidate product:
-Title: "${candidate.title}"
-Marketplace: "${candidate.marketplace}"
-Approx Selling Price: $${candidate.approximatePrice || 25}
-Category: "${candidate.category || ''}"
-
-1. Check demand, rating, and review health.
-2. Find the cheapest sourcing buy price on AliExpress, 1688, or Temu and provide a buy URL.
-3. Calculate Net Profit Margin % and assign 0-100 Opportunity Score.`
-
-  const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
-  const response = await client.chat.completions.create({
-    model,
-    response_format: { type: 'json_object' },
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userQuery },
-    ],
-  })
-
-  const evaluated = parseJsonSafe(response.choices[0].message.content)
-  if (!evaluated) return null
-
-  // Enforce margin threshold filter
-  const margin = Number(evaluated.estimatedMargin) || 0
-  if (margin < userMinMargin) {
-    console.log(`[DiscoveryAgent2] Filtered out "${evaluated.title}" — margin ${margin}% is below ${userMinMargin}% threshold`)
-    return null
+  const rawText = await callWebSearch({ client, prompt, allowedDomains })
+  return parseJsonSafe(rawText) || {
+    matchConfidence: 'unverified',
+    demandTier: 'Unknown',
+    competitionLevel: 'Medium',
+    ebayPriceMedian: candidate.observedPriceUsd || null,
   }
-
-  return evaluated
 }
 
 /**
- * Parse user instructions for custom margin override (e.g., "margin > 20%", "min margin 25%", "margin 20%", "20% margin")
- * Strictly defaults to 15% if no valid margin is specified.
+ * Stage 2B: Search live buy sources & suppliers (Alibaba, US Wholesalers, AliExpress, Temu)
  */
-function extractUserMarginThreshold(instructions = '') {
-  if (!instructions || typeof instructions !== 'string') return 15
+async function findBuySources({ client, candidate, validation }) {
+  const skillPrompt = skillManager.loadSkill('sourcing-and-unit-economics') || ''
+  // Sourcing sites: Alibaba wholesale, AliExpress, Temu wholesale, domestic US suppliers
+  const allowedDomains = ['alibaba.com', 'aliexpress.com', 'temu.com']
 
-  // 1. Pattern like "margin 20%", "margin: 20%", "min margin 20%", "margin >= 20%", "filter margin less than 20%"
-  const p1 = /(?:margin|profit)\s*(?:>=|>|:|at least|minimum|min|of|is|should be|less than|below)?\s*(\d+)\s*%/i
-  const m1 = instructions.match(p1)
-  if (m1) {
-    const val = parseInt(m1[1], 10)
-    if (!isNaN(val) && val >= 5 && val <= 85) return val
+  const prompt = `You are a Wholesale Sourcing Specialist with live web search.
+${skillPrompt}
+
+PRODUCT TO SOURCE:
+Title: "${candidate.title}"
+Category: "${candidate.category || ''}"
+Target Retail Price on eBay: $${validation.ebayPriceMedian || candidate.observedPriceUsd || 'unknown'}
+
+TASK:
+Search alibaba.com, domestic wholesalers, or suppliers to find inventory sourcing options.
+Extract verified buy pricing, minimum order quantity (MOQ), and shipping.
+
+HARD RULES:
+- Never invent prices. If not visible, return null.
+- Provide the real product buy URL.
+
+Return ONLY a valid JSON object with:
+{
+  "buySources": [
+    {
+      "supplierName": "string",
+      "supplierType": "manufacturer_wholesale" | "retail_marketplace",
+      "unitCostUsd": number or null,
+      "moq": number or null,
+      "shipFromCountry": "US" | "CN" | "string",
+      "estimatedDeliveryDays": number or null,
+      "shippingCostPerUnitUsd": number or null,
+      "buyUrl": "string (real verified URL)"
+    }
+  ]
+}`
+
+  const rawText = await callWebSearch({ client, prompt, allowedDomains })
+  const parsed = parseJsonSafe(rawText)
+  const sources = Array.isArray(parsed?.buySources) ? parsed.buySources : []
+  return sources.length > 0 ? sources[0] : null
+}
+
+/**
+ * Stage 2C: Generate concise factual AI Notes
+ */
+async function generateAiNotes({ client, candidate, validation, sourcing, economics, scoreData }) {
+  const skillPrompt = skillManager.loadSkill('opportunity-scoring-rubric') || ''
+
+  const prompt = `You are an E-Commerce Advisor synthesizing findings.
+${skillPrompt}
+
+FACTS:
+Product: "${candidate.title}"
+Target Selling Price: $${economics.sellingPrice || 'N/A'}
+Landed Cost: $${economics.landedCost || 'N/A'}
+Net Margin: ${economics.netMarginPct != null ? economics.netMarginPct + '%' : 'Unverified'}
+Opportunity Score: ${scoreData.opportunityScore}/100 (${scoreData.confidence} confidence)
+Demand Tier: ${validation.demandTier || 'Unknown'}
+Sourcing Supplier: ${sourcing?.supplierName || 'Not found'} (${sourcing?.shipFromCountry || 'Unknown'})
+Top Complaints: ${(validation.topComplaints || []).join(', ') || 'None reported'}
+
+TASK:
+Write 1-2 concise, factual sentences explaining the single strongest reason to sell/buy and the single biggest risk. Use ONLY extracted facts.`
+
+  const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
+  try {
+    const res = await client.responses.create({
+      model,
+      input: prompt,
+    })
+    return (res.output_text || '').trim()
+  } catch {
+    return `Discovered on ${candidate.observedMarketplace || 'market'} with estimated ${economics.netMarginPct || 0}% net profit margin.`
   }
-
-  // 2. Pattern like "20% margin", "25% profit margin"
-  const p2 = /(\d+)\s*%\s*(?:profit\s*)?margin/i
-  const m2 = instructions.match(p2)
-  if (m2) {
-    const val = parseInt(m2[1], 10)
-    if (!isNaN(val) && val >= 5 && val <= 85) return val
-  }
-
-  // 3. Pattern like "margin > 20", "min margin 25" (without percentage symbol)
-  const p3 = /(?:margin|profit)\s*(?:>=|>|:|at least|minimum|min|less than|below)\s*(\d+)/i
-  const m3 = instructions.match(p3)
-  if (m3) {
-    const val = parseInt(m3[1], 10)
-    if (!isNaN(val) && val >= 5 && val <= 85) return val
-  }
-
-  return 15 // Default 15% threshold: filter out anything < 15%
 }
 
 /**
  * Main Agent Runner for Product Discovery 2
  */
-async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions = '', reportId, user }) {
+async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions = '', minMargin: directMinMargin, marketplaces, reportId, user }) {
   console.log(`[DiscoveryAgent2] Starting run for reportId: ${reportId}, categories: [${categories.join(', ')}]`)
 
   const client = getOpenAIClient()
-  const minMarginThreshold = extractUserMarginThreshold(instructions)
+  const minMarginThreshold = Number(directMinMargin) || 15
   console.log(`[DiscoveryAgent2] Active minimum margin filter: ${minMarginThreshold}%`)
 
-  // Update report to running
+  // Update report to running with initial progress
   await ResearchReport2.findByIdAndUpdate(reportId, {
     status: 'running',
     startedAt: new Date(),
     progress: {
       stage: 'Scanning Marketplaces',
       step: 1,
-      totalSteps: 20,
+      totalSteps: 15,
       percent: 5,
-      currentItem: 'Scanning trending items across eBay, Temu, Amazon & Walmart...',
+      currentItem: `Initializing Web Search across ${categories.join(', ')}...`,
     },
   })
 
   try {
-    // Stage 1: Discover 15-25 raw product candidates
-    console.log('[DiscoveryAgent2] Stage 1: Scanning marketplaces for candidates…')
+    // Stage 1: Live Web Search across target marketplaces
     await ResearchReport2.findByIdAndUpdate(reportId, {
       'progress.stage': 'Scanning Marketplaces',
       'progress.percent': 10,
-      'progress.currentItem': `Querying GPT-5 Mini across categories: ${categories.join(', ')}`,
+      'progress.currentItem': `Searching live listings on eBay, Amazon, Walmart & Temu...`,
     })
 
     const candidates = await discoverCandidates({
       client,
       categories,
       niche,
-      instructions,
-      minMarginThreshold,
+      marketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay', 'amazon', 'walmart', 'temu'],
     })
-    console.log(`[DiscoveryAgent2] Discovered ${candidates.length} candidates.`)
+
+    console.log(`[DiscoveryAgent2] Discovered ${candidates.length} candidates via Web Search.`)
 
     if (!candidates.length) {
-      throw new Error('No candidate products discovered for the requested category/niche.')
+      throw new Error('No candidate products found via live web search. Please try another category or niche.')
     }
 
+    const totalCandidates = candidates.length
     await ResearchReport2.findByIdAndUpdate(reportId, {
       'progress.stage': 'Evaluating Products',
-      'progress.totalSteps': candidates.length,
+      'progress.totalSteps': totalCandidates,
       'progress.percent': 20,
-      'progress.currentItem': `Discovered ${candidates.length} candidates. Starting cross-market validation loop...`,
+      'progress.currentItem': `Discovered ${totalCandidates} items. Beginning deep-dive cross-market validation...`,
     })
 
-    // Stage 2: Sequential Deep-Dive Loop (1 candidate per iteration)
+    // Stage 2: Sequential Deep-Dive Pipeline (1 candidate per iteration, incremental DB writes)
     const evaluatedOpportunities = []
-    const totalCandidates = candidates.length
 
     for (let i = 0; i < totalCandidates; i++) {
       const candidate = candidates[i]
       const stepNum = i + 1
-      // Scale Stage 2 progress from 20% to 85%
       const loopPercent = Math.min(85, Math.round(20 + ((stepNum / totalCandidates) * 65)))
 
-      console.log(`[DiscoveryAgent2] Stage 2 Loop [${stepNum}/${totalCandidates}]: Evaluating "${candidate.title}"…`)
+      console.log(`[DiscoveryAgent2] Deep-dive [${stepNum}/${totalCandidates}]: "${candidate.title}"…`)
 
       await ResearchReport2.findByIdAndUpdate(reportId, {
         'progress.stage': `Evaluating (${stepNum}/${totalCandidates})`,
@@ -263,60 +317,124 @@ async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions 
       })
 
       try {
-        const itemResult = await analyzeSingleCandidate({
+        // 2A: Validate Demand & Competition across eBay and other retail channels
+        const validation = await validateProductDemand({
           client,
           candidate,
-          userMinMargin: minMarginThreshold,
+          targetMarketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay'],
         })
 
-        if (itemResult) {
-          evaluatedOpportunities.push(itemResult)
+        // 2B: Find Real Sourcing Buy Link (Alibaba, AliExpress, etc.)
+        const sourcing = await findBuySources({ client, candidate, validation })
+
+        // 2C: Deterministic Unit Economics in Node.js
+        const sellingPrice = validation.ebayPriceMedian || candidate.observedPriceUsd || null
+        const unitCost = sourcing?.unitCostUsd || null
+        const shippingCost = sourcing?.shippingCostPerUnitUsd || 0
+        const dutyApplies = sourcing?.shipFromCountry && sourcing.shipFromCountry.toUpperCase() !== 'US'
+
+        const primaryMarket = (marketplaces && marketplaces[0]) || 'ebay'
+        const economics = calculateUnitEconomics({
+          sellingPrice,
+          unitCost,
+          shippingCost,
+          marketplace: primaryMarket,
+          dutyApplies,
+        })
+
+        // Filter: Check user minimum margin requirement
+        const marginPct = economics.netMarginPct
+        if (marginPct != null && marginPct < minMarginThreshold) {
+          console.log(`[DiscoveryAgent2] Skipped "${candidate.title}": margin ${marginPct}% < threshold ${minMarginThreshold}%`)
+          continue
         }
+
+        // 2D: Deterministic Opportunity Scoring in Node.js
+        const scoreData = computeOpportunityScore({
+          netMarginPct: marginPct,
+          demandTier: validation.demandTier,
+          rating: validation.otherRating || candidate.rating,
+          highDefectRisk: validation.highDefectRisk,
+          competitionLevel: validation.competitionLevel,
+          supplierType: sourcing?.supplierType,
+          shipFromCountry: sourcing?.shipFromCountry,
+          estimatedDeliveryDays: sourcing?.estimatedDeliveryDays,
+        })
+
+        // 2E: Short factual AI Notes
+        const aiNotes = await generateAiNotes({
+          client,
+          candidate,
+          validation,
+          sourcing,
+          economics,
+          scoreData,
+        })
+
+        const opp = {
+          rank: evaluatedOpportunities.length + 1,
+          title: candidate.title,
+          category: candidate.category || categories[0] || 'General',
+          marketplace: candidate.observedMarketplace || 'ebay',
+          listingUrl: candidate.listingUrl || null,
+          sourceUrl: sourcing?.buyUrl || candidate.listingUrl || null,
+          image: null,
+          metrics: {
+            price: economics.sellingPrice,
+            averagePrice: economics.sellingPrice,
+            estimatedCost: economics.unitCost,
+            category: candidate.category || categories[0] || 'General',
+            monthlySales: validation.ebaySoldCount || null,
+            rating: validation.otherRating || candidate.rating || null,
+            reviewCount: validation.otherReviewCount || candidate.reviewCount || null,
+            competitorCount: validation.ebayActiveListings || null,
+            landedCost: economics.landedCost,
+            channelFee: economics.channelFee,
+            netProfit: economics.netProfit,
+          },
+          validation,
+          sourcing,
+          estimatedMargin: marginPct != null ? Math.round(marginPct) : null,
+          opportunityScore: scoreData.opportunityScore,
+          confidence: scoreData.confidence,
+          aiNotes,
+        }
+
+        evaluatedOpportunities.push(opp)
+
+        // Incremental DB update so progress and finished candidates are never lost on crash
+        await ResearchReport2.findByIdAndUpdate(reportId, {
+          $set: { opportunities: evaluatedOpportunities },
+        })
       } catch (itemErr) {
         console.warn(`[DiscoveryAgent2] Error analyzing candidate "${candidate.title}":`, itemErr.message)
       }
     }
 
-    console.log(`[DiscoveryAgent2] Stage 2 complete. ${evaluatedOpportunities.length} passed the ${minMarginThreshold}% margin threshold.`)
+    console.log(`[DiscoveryAgent2] Deep-dive complete. ${evaluatedOpportunities.length} opportunities meet criteria.`)
 
-    // Stage 3: Rank by Opportunity Score and take top 10 to 20
+    // Stage 3: Rank top 10-20 by Opportunity Score
     await ResearchReport2.findByIdAndUpdate(reportId, {
       'progress.stage': 'Scoring & Ranking',
       'progress.percent': 90,
-      'progress.currentItem': `Ranking top opportunities meeting ≥${minMarginThreshold}% net margin requirement...`,
+      'progress.currentItem': 'Sorting and finalizing top ranked opportunities...',
     })
 
     evaluatedOpportunities.sort((a, b) => (b.opportunityScore || 0) - (a.opportunityScore || 0))
     const topOpportunities = evaluatedOpportunities.slice(0, 20).map((opp, idx) => ({
+      ...opp,
       rank: idx + 1,
-      title: opp.title,
-      category: opp.category || categories[0] || 'General',
-      marketplace: opp.marketplace || 'ebay',
-      sourceUrl: opp.sourceUrl || candidateUrlFallback(opp),
-      image: opp.image || null,
-      metrics: {
-        price: opp.sellingPrice,
-        averagePrice: opp.sellingPrice,
-        estimatedCost: opp.costPrice,
-        category: opp.category || categories[0] || 'General',
-        monthlySales: opp.monthlySales || 500,
-        salesVolume: opp.monthlySales || 500,
-        rating: opp.rating || 4.5,
-        reviewCount: opp.reviewCount || 120,
-        competitorCount: opp.competitionLevel === 'High' ? 45 : opp.competitionLevel === 'Medium' ? 18 : 6,
-      },
-      estimatedMargin: Math.round(opp.estimatedMargin || 25),
-      opportunityScore: Math.round(opp.opportunityScore || 75),
-      aiNotes: opp.aiNotes || `Discovered with estimated ${opp.estimatedMargin}% profit margin after marketplace fees.`,
     }))
 
-    // Save final opportunities directly to ResearchReport2
-    const summaryNarrative = `Completed market discovery across ${categories.join(', ')}. Analyzed ${
+    // Format date at completion: "YYYY-MM-DD" for accurate date-wise clustering
+    const completionDate = new Date().toISOString().slice(0, 10)
+    const summaryNarrative = `Completed live market discovery across ${categories.join(', ')}. Discovered ${
       candidates.length
-    } candidates and ranked top ${topOpportunities.length} opportunities meeting the ≥${minMarginThreshold}% profit margin requirement.`
+    } candidates and ranked top ${topOpportunities.length} verified opportunities meeting the ≥${minMarginThreshold}% profit margin requirement.`
 
     await ResearchReport2.findByIdAndUpdate(reportId, {
       status: 'completed',
+      reportDate: completionDate,
       finishedAt: new Date(),
       opportunities: topOpportunities,
       summary: summaryNarrative,
@@ -325,7 +443,7 @@ async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions 
         step: totalCandidates,
         totalSteps: totalCandidates,
         percent: 100,
-        currentItem: `${topOpportunities.length} high-margin opportunities finalized.`,
+        currentItem: `${topOpportunities.length} opportunities verified & saved.`,
       },
     })
 
@@ -344,13 +462,6 @@ async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions 
     })
     throw err
   }
-}
-
-function candidateUrlFallback(opp) {
-  if (opp.title) {
-    return `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(opp.title)}`
-  }
-  return 'https://www.aliexpress.com'
 }
 
 module.exports = {

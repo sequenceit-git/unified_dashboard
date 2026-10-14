@@ -1,28 +1,39 @@
 ---
 name: sourcing-and-unit-economics
-description: Search wholesale supplier sources (AliExpress, Temu, 1688, Alibaba) for cheaper buy prices and calculate net profit margins.
+description: Find reliable buy sources for one product and extract the cost inputs; the backend computes margin.
 ---
 
 # Sourcing & Unit Economics
 
 ## Purpose
-Given a product and its market selling price, find where a merchant can buy it at the cheapest reliable price and calculate landed unit economics.
 
-## Sourcing Steps
-1. Search discount/wholesale platforms for the item or its OEM manufacturer:
-   - `"<product core title>" site:aliexpress.com`
-   - `"<product core title>" wholesale price`
-   - `"<product core title>" site:temu.com`
-2. Extract:
-   - Lowest reliable unit buy price (`costPrice`)
-   - Direct link to buy the item (`sourceUrl`)
+Find where the client can buy this product (as inventory, then ship it himself) and extract the raw cost inputs. You do NOT calculate margin; the backend does.
 
-## Financial Formulas (All in USD)
-1. **Gross Margin**: `Selling Price - Cost Price`
-2. **Platform & Payment Fees**: Assume standard ~15% of selling price (referral fee + payment processing).
-3. **Net Profit per Unit**: `Selling Price - Cost Price - (Selling Price * 0.15)`
-4. **Net Profit Margin %**: `(Net Profit / Selling Price) * 100`
+## Source types (classify every link)
 
-## Threshold Rule
-- Default minimum net margin is **15%** (or custom user threshold if specified).
-- Any candidate yielding a margin below the threshold must be filtered out or flagged as unprofitable.
+- manufacturer_wholesale: Alibaba, domestic US wholesalers, manufacturer sites (preferred)
+- retail_marketplace: AliExpress retail, Temu, Amazon, Walmart (price reference only; eBay prohibits fulfilling eBay orders directly from these)
+Skip 1688 (Chinese-language, login-walled, unreliable via web search).
+
+## Search
+
+- "<core product title> wholesale", "<core product title> Alibaba", "<core product title> US supplier"
+- Prefer a US-based supplier when price is within 20% of an overseas one (faster delivery, no import duty).
+
+## Extract per source
+
+unitCostUsd, moq, shipFromCountry, estimatedDeliveryDays, shippingCostPerUnitUsd (nullable), supplierType, supplierRatingOrYears (nullable), buyUrl
+
+## Reference only (backend config, re-verify quarterly)
+
+- eBay: 13.6% of sale total + $0.30 (order <= $10) or $0.40 (order > $10); some categories differ
+- TikTok Shop: 6% referral fee (confirm in Seller Center; reported 8% from Aug 2026) + mandatory TikTok fulfillment + creator commission + refund admin fee on returns
+- Temu seller fees: client to supply
+- Duties: country of origin China or other non-US means add an import duty line; de minimis is suspended
+- Default minimum net margin: 20% (configurable)
+
+## Hard rules
+
+- Never return a link you did not open. Never invent prices; use null.
+- If shipFromCountry is not US, set dutyApplies = true and let the backend estimate.
+- Return the 3 best sources ranked by landed cost, not just the cheapest sticker price.

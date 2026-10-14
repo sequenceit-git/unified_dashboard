@@ -25,14 +25,14 @@ router.get('/reports', async (req, res) => {
 router.get('/recommendations/:reportId', async (req, res) => {
   try {
     const { reportId } = req.params
-    let report = null
-    if (mongoose.isValidObjectId(reportId)) {
-      report = await ResearchReport2.findById(reportId)
+    if (!mongoose.isValidObjectId(reportId)) {
+      return res.status(404).json({ error: 'Report not found' })
     }
+    const report = await ResearchReport2.findById(reportId)
     if (!report) {
-      report = await ResearchReport2.findOne().sort({ createdAt: -1 })
+      return res.status(404).json({ error: 'Report not found' })
     }
-    const docs = report?.opportunities || []
+    const docs = report.opportunities || []
     res.json(docs)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -43,21 +43,17 @@ router.get('/recommendations/:reportId', async (req, res) => {
 router.get('/report/:reportId', async (req, res) => {
   try {
     const { reportId } = req.params
-    let report = null
-    if (mongoose.isValidObjectId(reportId)) {
-      report = await ResearchReport2.findById(reportId)
+    if (!mongoose.isValidObjectId(reportId)) {
+      return res.status(404).json({ error: 'Report not found' })
     }
+    const report = await ResearchReport2.findById(reportId)
     if (!report) {
-      report = await ResearchReport2.findOne().sort({ createdAt: -1 })
+      return res.status(404).json({ error: 'Report not found' })
     }
 
     res.json({
-      report: report || {
-        _id: 'default-report',
-        status: 'completed',
-        createdAt: new Date(),
-      },
-      recommendations: report?.opportunities || [],
+      report,
+      recommendations: report.opportunities || [],
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -111,6 +107,16 @@ router.get('/export/:reportId', async (req, res) => {
         'Recommendation Reason', 'Product URL',
       ]
 
+      // Protect against CSV formula injection
+      const sanitizeCell = (val) => {
+        if (val == null) return '""'
+        let str = String(val).trim()
+        if (/^[=+\-@\t\r]/.test(str)) {
+          str = `'${str}`
+        }
+        return `"${str.replace(/"/g, '""')}"`
+      }
+
       const rows = recommendations.map((r, i) => {
         const title = r.title || r.productName || ''
         const category = r.category || r.metrics?.category || ''
@@ -128,8 +134,8 @@ router.get('/export/:reportId', async (req, res) => {
 
         return [
           r.rank || (i + 1),
-          `"${title.replace(/"/g, '""')}"`,
-          `"${category.replace(/"/g, '""')}"`,
+          sanitizeCell(title),
+          sanitizeCell(category),
           marketplace,
           price,
           sales,
@@ -139,8 +145,8 @@ router.get('/export/:reportId', async (req, res) => {
           comp,
           margin,
           score,
-          `"${reason.replace(/"/g, '""')}"`,
-          `"${url.replace(/"/g, '""')}"`,
+          sanitizeCell(reason),
+          sanitizeCell(url),
         ]
       })
 
@@ -181,7 +187,7 @@ router.get('/export/:reportId', async (req, res) => {
 //
 router.post('/generate', async (req, res) => {
   try {
-    const { categories: rawCategories, category, niche, instructions } = req.body
+    const { categories: rawCategories, category, niche, instructions, minMargin, targetMarketplaces: rawTargetMarketplaces } = req.body
 
     // Accept both { categories: [...] } and legacy { category: "..." }
     const categories = Array.isArray(rawCategories) && rawCategories.length
@@ -201,18 +207,37 @@ router.post('/generate', async (req, res) => {
       })
     }
 
-    // Create the parent ResearchReport2 record immediately
-    const reportDate = new Date().toISOString().split('T')[0]
+    // Rate Limit / Concurrency guard: Check if a run is already queued or running
+    const activeRun = await ResearchReport2.findOne({
+      status: { $in: ['queued', 'running'] },
+    })
+    if (activeRun) {
+      return res.status(409).json({
+        error: 'A research run is already in progress. Please wait for it to complete.',
+        activeReportId: activeRun._id,
+      })
+    }
+
+    // Client's target selling marketplaces (e.g. ['ebay', 'tiktok', 'temu'])
+    const validMarkets = ['ebay', 'tiktok', 'temu']
+    const targetMarketplaces = Array.isArray(rawTargetMarketplaces) && rawTargetMarketplaces.length
+      ? rawTargetMarketplaces.map((m) => String(m).toLowerCase().trim()).filter((m) => validMarkets.includes(m))
+      : ['ebay']
+
+    const parsedMinMargin = Number(minMargin) || 15
+
+    // Create the parent ResearchReport2 record initially with reportDate = null
     const report = await ResearchReport2.create({
       runBy: req.user?.id || null,
       trigger: 'manual',
-      reportDate,
+      reportDate: null,
       params: {
-        marketplaces: ['amazon', 'walmart', 'bestbuy', 'ebay', 'tiktok_shop', 'temu', 'aliexpress'],
+        marketplaces: targetMarketplaces,
         categories,
-        category: categories[0], // backward compat
+        category: categories[0],
         keywords: niche ? [niche] : [],
         instructions: instructions?.trim() || '',
+        minMargin: parsedMinMargin,
       },
       status: 'queued',
       startedAt: new Date(),
@@ -227,16 +252,17 @@ router.post('/generate', async (req, res) => {
       createdAt: report.createdAt,
     })
 
-    // Run the agent asynchronously (fire-and-forget, errors are persisted to DB)
+    // Run the agent asynchronously
     setImmediate(() => {
       runDiscoveryAgentTwo({
         categories,
         niche: niche?.trim() || '',
         instructions: instructions?.trim() || '',
+        minMargin: parsedMinMargin,
+        marketplaces: targetMarketplaces,
         reportId: report._id,
         user: req.user,
       }).catch((err) => {
-        // Error is already persisted in the report document by the agent
         console.error('[research route] Agent run failed:', err.message)
       })
     })
@@ -270,12 +296,19 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
       }
     }
 
-    // Generate unique SKU
+    // Generate collision-resistant unique SKU with crypto random suffix
     const catPrefix = (opp.metrics?.category || opp.category || 'GEN')
       .substring(0, 3)
       .toUpperCase()
       .replace(/[^A-Z]/g, 'X')
-    const sku = `BOT-${catPrefix}-${Date.now().toString().slice(-6)}`
+    const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase()
+    const sku = `BOT-${catPrefix}-${Date.now().toString().slice(-4)}${randomSuffix}`
+
+    const sellingPrice = price != null ? Number(price) : opp.metrics?.averagePrice ?? opp.metrics?.price ?? 0
+    const estCost = opp.metrics?.estimatedCost != null ? Number(opp.metrics.estimatedCost) : 0
+
+    // Safely default stock to 0 to prevent ghost marketplace listing
+    const safeStock = stock != null ? Number(stock) : 0
 
     const product = await Product.create({
       sku,
@@ -284,10 +317,10 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
         description ||
         `${opp.title}. Discovered and evaluated by Discovery Agent Two with an opportunity score of ${opp.opportunityScore || 75}/100 and estimated margin of ${opp.estimatedMargin || 15}%.`,
       category: opp.metrics?.category || opp.category || 'General',
-      brand: 'DevBrand',
+      brand: opp.brand || 'Unbranded',
       images: opp.image ? [opp.image] : [],
-      basePrice: price ? Number(price) : opp.metrics?.averagePrice || opp.metrics?.price || 24.99,
-      stock: stock ? Number(stock) : 100,
+      basePrice: sellingPrice,
+      stock: safeStock,
       lowStockThreshold: 10,
       status: 'draft',
       source: 'research_bot',
@@ -297,6 +330,8 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
         estimatedMargin: opp.estimatedMargin,
         targetMarketplace: opp.marketplace,
         sourceUrl: opp.sourceUrl,
+        listingUrl: opp.listingUrl,
+        estimatedCost: estCost,
       },
     })
 

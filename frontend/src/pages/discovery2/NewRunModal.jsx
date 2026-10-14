@@ -22,6 +22,8 @@ export default function NewRunModal({
   const [selectedCategories, setSelectedCategories] = useState(['Home & Kitchen'])
   const [categoryInput, setCategoryInput] = useState('')
   const [niche, setNiche] = useState('')
+  const [minMargin, setMinMargin] = useState('15')
+  const [targetMarketplaces, setTargetMarketplaces] = useState(['ebay'])
   const [instructions, setInstructions] = useState('')
 
   if (!isOpen) return null
@@ -46,6 +48,17 @@ export default function NewRunModal({
     }
   }
 
+  const toggleMarketplace = (market) => {
+    setTargetMarketplaces((prev) => {
+      if (prev.includes(market)) {
+        // Prevent unchecking all
+        if (prev.length <= 1) return prev
+        return prev.filter((m) => m !== market)
+      }
+      return [...prev, market]
+    })
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     const finalCategories = [...selectedCategories]
@@ -55,6 +68,8 @@ export default function NewRunModal({
     onSubmit({
       categories: finalCategories,
       niche: niche.trim(),
+      targetMarketplaces,
+      minMargin: Number(minMargin) || 15,
       instructions: instructions.trim(),
     })
   }
@@ -135,24 +150,83 @@ export default function NewRunModal({
           />
         </div>
 
+        {/* Target Marketplaces */}
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="block text-xs font-semibold text-gray-700">
+              Target Marketplaces <span className="text-xs font-normal text-gray-400">(where client sells)</span>
+            </label>
+            <span className="text-[11px] font-medium text-indigo-600">Cross-checks Amazon, Walmart, Alibaba</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {[
+              { id: 'ebay', label: 'eBay', defaultBadge: 'Default' },
+              { id: 'tiktok', label: 'TikTok Shop' },
+              { id: 'temu', label: 'Temu' },
+            ].map((m) => {
+              const isChecked = targetMarketplaces.includes(m.id)
+              return (
+                <label
+                  key={m.id}
+                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                    isChecked
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleMarketplace(m.id)}
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>{m.label}</span>
+                  {m.defaultBadge && (
+                    <span className="rounded bg-indigo-200/60 px-1.5 py-0.2 text-[10px] font-bold text-indigo-800">
+                      {m.defaultBadge}
+                    </span>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Minimum Profit Margin Target */}
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-xs font-semibold text-gray-700">
+              Minimum Net Profit Margin (%)
+            </label>
+            <span className="text-[11px] font-medium text-emerald-600">Strict filter threshold</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="5"
+              max="85"
+              value={minMargin}
+              onChange={(e) => setMinMargin(e.target.value)}
+              className="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            />
+            <span className="text-xs text-gray-500">% net profit after marketplace fees & landed costs</span>
+          </div>
+        </div>
+
         {/* Instructions */}
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="block text-xs font-semibold text-gray-700">
-              Custom Instructions / Margin Note <span className="text-xs font-normal text-gray-400">(optional)</span>
+              Custom Instructions <span className="text-xs font-normal text-gray-400">(optional)</span>
             </label>
-            <span className="text-[11px] font-medium text-emerald-600">Default: ≥15% margin filter</span>
           </div>
           <textarea
             rows={2}
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            placeholder="e.g., minimum margin 20%, focus on items under $35, exclude glass items…"
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            placeholder="e.g., Focus on lightweight products under $40, exclude fragile glass items…"
+            className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
           />
-          <p className="mt-1 text-[11px] text-gray-400">
-            Items with net margins below 15% are filtered out automatically, or you can state a custom threshold (e.g., &quot;margin &gt; 20%&quot;).
-          </p>
         </div>
 
         <div className="flex items-center justify-between pt-2">
