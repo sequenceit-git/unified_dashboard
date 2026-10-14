@@ -103,8 +103,8 @@ function computeOpportunityScore({
   // Rating & Sentiment (15)
   const r = Number(rating)
   if (!isNaN(r) && r > 0) {
-    if (r >= 4.5 && !highDefectRisk) score += 15
-    else if (r >= 4.0 && !highDefectRisk) score += 10
+    if (r >= 4.5) score += 15
+    else if (r >= 4.0) score += 10
     else score += 3
   } else {
     score += 5

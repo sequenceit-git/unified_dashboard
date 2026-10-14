@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
+import { FiExternalLink, FiAlertTriangle, FiDollarSign, FiShoppingBag } from 'react-icons/fi'
 
 export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog, isAdmin }) {
   const [adding, setAdding] = useState(false)
@@ -19,13 +20,19 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
 
   const title = opportunity.title || opportunity.productName || 'Untitled Opportunity'
   const category = opportunity.category || opportunity.metrics?.category || ''
-  const sellPrice = opportunity.price != null
-    ? `$${Number(opportunity.price).toFixed(2)}`
+  
+  const sellPriceNum = opportunity.price != null
+    ? Number(opportunity.price)
     : opportunity.metrics?.averagePrice || opportunity.metrics?.price
-      ? `$${Number(opportunity.metrics.averagePrice || opportunity.metrics.price).toFixed(2)}`
-      : '—'
+      ? Number(opportunity.metrics.averagePrice || opportunity.metrics.price)
+      : null
+  const sellPrice = sellPriceNum != null ? `$${sellPriceNum.toFixed(2)}` : '—'
 
-  const cost = opportunity.metrics?.estimatedCost != null ? `$${opportunity.metrics.estimatedCost}` : null
+  const costNum = opportunity.metrics?.estimatedCost != null ? Number(opportunity.metrics.estimatedCost) : null
+  const cost = costNum != null ? `$${costNum.toFixed(2)}` : null
+
+  const netProfitNum = opportunity.metrics?.netProfit != null ? Number(opportunity.metrics.netProfit) : null
+  const netProfit = netProfitNum != null ? `$${netProfitNum.toFixed(2)}` : null
 
   const margin = opportunity.estimatedMargin != null
     ? opportunity.estimatedMargin
@@ -38,7 +45,15 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
   const rating = opportunity.rating ?? opportunity.metrics?.rating ?? null
   const reviewCount = opportunity.reviewCount ?? opportunity.metrics?.reviewCount ?? null
   const rationale = opportunity.aiNotes || opportunity.recommendationReason || ''
-  const sourceUrl = opportunity.sourceUrl || opportunity.productUrl || ''
+  
+  // Both URLs
+  const supplierUrl = opportunity.sourceUrl || opportunity.sourcing?.buyUrl || ''
+  const marketplaceUrl = opportunity.listingUrl || ''
+
+  // Confidence & defect risk signals
+  const confidence = opportunity.confidence || 'unverified'
+  const highDefectRisk = opportunity.validation?.highDefectRisk
+  const topComplaints = Array.isArray(opportunity.validation?.topComplaints) ? opportunity.validation.topComplaints : []
 
   const handleAdd = async () => {
     if (isAdded || adding || !onAddToCatalog) return
@@ -48,11 +63,8 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
         reportId,
         rank: opportunity.rank || 1,
         title,
-        price:
-          opportunity.price != null
-            ? Number(opportunity.price)
-            : Number(opportunity.metrics?.averagePrice || opportunity.metrics?.price || 24.99),
-        stock: 100,
+        price: sellPriceNum != null ? sellPriceNum : 24.99,
+        stock: 0,
       })
     } finally {
       setAdding(false)
@@ -62,7 +74,7 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
   return (
     <div className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-xs transition hover:shadow-md">
       <div className="space-y-4">
-        {/* Header with Rank & Marketplace */}
+        {/* Header with Rank, Marketplace & Confidence */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
@@ -70,15 +82,24 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
             </span>
             <Badge color={marketColor}>{marketName}</Badge>
             {category && (
-              <span className="text-xs text-gray-400 font-medium">{category}</span>
+              <span className="text-xs text-gray-400 font-medium truncate max-w-[120px]" title={category}>
+                {category}
+              </span>
             )}
           </div>
-          <div className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${scoreBadgeColor}`}>
-            Score: {score}/100
+          <div className="flex items-center gap-1.5">
+            {confidence && confidence !== 'unverified' && (
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-500">
+                {confidence}
+              </span>
+            )}
+            <div className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${scoreBadgeColor}`}>
+              Score: {score}/100
+            </div>
           </div>
         </div>
 
-        {/* Product Image + Title & Metrics */}
+        {/* Product Image + Title & Financial Metrics */}
         <div className="flex gap-4">
           {opportunity.image && (
             <img
@@ -94,7 +115,7 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
             <h3 className="line-clamp-2 text-sm font-semibold text-gray-900" title={title}>
               {title}
             </h3>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
               <span>
                 Sell: <strong className="text-gray-900">{sellPrice}</strong>
               </span>
@@ -103,9 +124,14 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
                   Cost: <strong className="text-gray-900">{cost}</strong>
                 </span>
               )}
+              {netProfit && (
+                <span className="flex items-center text-emerald-700 font-medium">
+                  Profit: <strong className="ml-0.5">{netProfit}</strong>
+                </span>
+              )}
               {margin != null && (
-                <span>
-                  Margin: <strong className="text-emerald-600 font-bold">+{margin}%</strong>
+                <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                  +{margin}%
                 </span>
               )}
             </div>
@@ -133,6 +159,17 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
           </div>
         </div>
 
+        {/* Quality Complaints / High Defect Warning if any */}
+        {highDefectRisk && (
+          <div className="flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50/70 p-2 text-xs text-amber-900">
+            <FiAlertTriangle className="mt-0.5 shrink-0 text-amber-600" size={13} />
+            <div>
+              <span className="font-bold">Defect Risk Noted:</span>{' '}
+              {topComplaints.length > 0 ? topComplaints.slice(0, 2).join('; ') : 'Frequent complaints detected in reviews.'}
+            </div>
+          </div>
+        )}
+
         {/* AI Strategic Analysis / Rationale */}
         {rationale && (
           <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-3">
@@ -142,20 +179,34 @@ export default function OpportunityCard2({ opportunity, reportId, onAddToCatalog
         )}
       </div>
 
-      {/* Footer Actions */}
-      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-        {sourceUrl ? (
-          <a
-            href={sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
-          >
-            Source Listing ↗
-          </a>
-        ) : (
-          <span />
-        )}
+      {/* Footer Actions: Both Links (Marketplace + Supplier) and Add to Catalog */}
+      <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          {supplierUrl && (
+            <a
+              href={supplierUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
+              title="Open wholesale purchase / supplier listing"
+            >
+              <FiShoppingBag size={12} />
+              <span>Buy Link ↗</span>
+            </a>
+          )}
+          {marketplaceUrl && (
+            <a
+              href={marketplaceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-medium text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
+              title="View customer listing on retail marketplace"
+            >
+              <FiExternalLink size={12} />
+              <span>Live Listing ↗</span>
+            </a>
+          )}
+        </div>
 
         {isAdmin && (
           <div>

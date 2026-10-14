@@ -132,10 +132,9 @@ Client Target Selling Marketplaces: ${targetMarketplaces.join(', ')}
 
 TASK:
 1. Search ebay.com for exact or equivalent listings. Record active listing count, median sold price, and sold counts if visible.
-2. Cross-check against amazon.com, walmart.com, or temu.com to inspect overall market demand, ratings, review volumes, and customer feedback.
-3. Note top 3 customer complaints and defect risk.
-4. Set demandTier: "High" | "Medium" | "Low" | "Unknown".
-5. Set demandEvidence: "measured" | "inferred".
+2. Cross-check against amazon.com, walmart.com, or temu.com to inspect overall market demand, ratings, and review volumes.
+3. Set demandTier: "High" | "Medium" | "Low" | "Unknown".
+4. Set demandEvidence: "measured" | "inferred".
 
 Return ONLY a valid JSON object with:
 {
@@ -150,8 +149,6 @@ Return ONLY a valid JSON object with:
   "otherRating": number or null,
   "otherReviewCount": number or null,
   "otherUrl": "string or null",
-  "topComplaints": ["complaint1", "complaint2"],
-  "highDefectRisk": boolean,
   "demandTier": "High" | "Medium" | "Low" | "Unknown",
   "demandEvidence": "measured" | "inferred",
   "competitionLevel": "Low" | "Medium" | "High"
@@ -171,7 +168,6 @@ Return ONLY a valid JSON object with:
  */
 async function findBuySources({ client, candidate, validation }) {
   const skillPrompt = skillManager.loadSkill('sourcing-and-unit-economics') || ''
-  // Sourcing sites: Alibaba wholesale, AliExpress, Temu wholesale, domestic US suppliers
   const allowedDomains = ['alibaba.com', 'aliexpress.com', 'temu.com']
 
   const prompt = `You are a Wholesale Sourcing Specialist with live web search.
@@ -180,11 +176,11 @@ ${skillPrompt}
 PRODUCT TO SOURCE:
 Title: "${candidate.title}"
 Category: "${candidate.category || ''}"
-Target Retail Price on eBay: $${validation.ebayPriceMedian || candidate.observedPriceUsd || 'unknown'}
+Target Retail Price: $${validation.ebayPriceMedian || candidate.observedPriceUsd || 'unknown'}
 
 TASK:
 Search alibaba.com, domestic wholesalers, or suppliers to find inventory sourcing options.
-Extract verified buy pricing, minimum order quantity (MOQ), and shipping.
+Extract verified buy unit cost and the real buy URL.
 
 HARD RULES:
 - Never invent prices. If not visible, return null.
@@ -194,13 +190,7 @@ Return ONLY a valid JSON object with:
 {
   "buySources": [
     {
-      "supplierName": "string",
-      "supplierType": "manufacturer_wholesale" | "retail_marketplace",
       "unitCostUsd": number or null,
-      "moq": number or null,
-      "shipFromCountry": "US" | "CN" | "string",
-      "estimatedDeliveryDays": number or null,
-      "shippingCostPerUnitUsd": number or null,
       "buyUrl": "string (real verified URL)"
     }
   ]
@@ -354,7 +344,6 @@ async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions 
           netMarginPct: marginPct,
           demandTier: validation.demandTier,
           rating: validation.otherRating || candidate.rating,
-          highDefectRisk: validation.highDefectRisk,
           competitionLevel: validation.competitionLevel,
           supplierType: sourcing?.supplierType,
           shipFromCountry: sourcing?.shipFromCountry,
@@ -388,12 +377,20 @@ async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions 
             rating: validation.otherRating || candidate.rating || null,
             reviewCount: validation.otherReviewCount || candidate.reviewCount || null,
             competitorCount: validation.ebayActiveListings || null,
-            landedCost: economics.landedCost,
-            channelFee: economics.channelFee,
             netProfit: economics.netProfit,
           },
-          validation,
-          sourcing,
+          validation: {
+            demandTier: validation.demandTier,
+            matchConfidence: validation.matchConfidence,
+            ebayPriceHigh: validation.ebayPriceHigh,
+            ebayPriceLow: validation.ebayPriceLow,
+            otherMarketplace: validation.otherMarketplace,
+            otherUrl: validation.otherUrl,
+          },
+          sourcing: sourcing ? {
+            buyUrl: sourcing.buyUrl,
+            unitCostUsd: sourcing.unitCostUsd,
+          } : null,
           estimatedMargin: marginPct != null ? Math.round(marginPct) : null,
           opportunityScore: scoreData.opportunityScore,
           confidence: scoreData.confidence,
