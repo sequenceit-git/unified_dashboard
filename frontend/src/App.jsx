@@ -11,7 +11,7 @@ import OrdersPage from './pages/orders/OrdersPage'
 import Overview from './pages/dashboard/Overview'
 import ProductsPage from './pages/products/ProductsPage'
 import OAuthCallback from './pages/auth/OAuthCallback'
-import ProductDiscoveryPage from './pages/discovery/ProductDiscoveryPage'
+import SettingsPage from './pages/settings/SettingsPage'
 import SubAdminFormPage from './pages/sub-admins/SubAdminFormPage'
 import SubAdminManagementPage from './pages/sub-admins/SubAdminManagementPage'
 
@@ -41,7 +41,7 @@ export default function App() {
       <Route path="/oauth/callback" element={<OAuthCallback />} />
       <Route path="/oauth/:marketplace/callback" element={<OAuthCallback />} />
       <Route element={<ProtectedRoute />}>
-        <Route path="/discovery" element={<RouteAccess route="discovery"><ProductDiscoveryPage /></RouteAccess>} />
+        <Route path="/discovery" element={<Navigate to="/market-research" replace />} />
         <Route path="/" element={<RouteAccess route="dashboard"><Overview /></RouteAccess>} />
         <Route path="/analytics" element={<RouteAccess route="analytics"><AnalyticsPage /></RouteAccess>} />
         <Route path="/market-research" element={<RouteAccess route="market-research"><ProductDiscovery2Page /></RouteAccess>} />
@@ -50,6 +50,7 @@ export default function App() {
         <Route path="/orders" element={<RouteAccess route="orders"><OrdersPage /></RouteAccess>} />
         <Route path="/customers" element={<RouteAccess route="customers"><CustomersPage /></RouteAccess>} />
         <Route path="/inbox" element={<RouteAccess route="inbox"><InboxPage /></RouteAccess>} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/sub-admins" element={<AdminOnly><SubAdminManagementPage /></AdminOnly>} />
         <Route path="/sub-admins/new" element={<AdminOnly><SubAdminFormPage /></AdminOnly>} />
         <Route path="/sub-admins/:id/edit" element={<AdminOnly><SubAdminFormPage /></AdminOnly>} />

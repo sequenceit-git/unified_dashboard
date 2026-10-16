@@ -3,6 +3,7 @@ const { requireAuth, loadAccess, requireRole } = require('../../middleware/auth'
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const config = require('../../config/marketplaces')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
 
@@ -14,32 +15,40 @@ router.get('/oauth/callback/:marketplace', async (req, res) => {
     const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim()
 
     if (!code) {
-      return res.redirect(`${clientUrl}/?error=no_code`)
+      return res.redirect(`${clientUrl}/settings?error=${encodeURIComponent('no_code')}`)
     }
 
-    const tokenData = await marketplaceManager.exchangeCode(marketplace, code)
+    const market = canonicalMarketplace(marketplace)
+    if (!market) return res.redirect(`${clientUrl}/settings?error=${encodeURIComponent('Unknown marketplace')}`)
+    const tokenData = await marketplaceManager.exchangeCode(market, code)
+    const existing = tokenData.externalShopId
+      ? null
+      : await Shop.findOne({ marketplace: market }).select('externalShopId')
+    const externalShopId = tokenData.externalShopId || existing?.externalShopId || `${market}-us`
 
     await Shop.findOneAndUpdate(
-      { marketplace },
+      { marketplace: market, externalShopId },
       {
-        name: `${marketplace.toUpperCase()} Store`,
-        marketplace,
+        name: tokenData.shopName || `${config[market]?.name || market} Store`,
+        marketplace: market,
+        externalShopId,
+        shopCipher: tokenData.shopCipher,
         status: 'connected',
         auth: {
           accessTokenEnc: tokenData.access_token || tokenData.accessToken,
           refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
-          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+          expiresAt: tokenData.expires_in ? new Date(Date.now() + Number(tokenData.expires_in) * 1000) : null,
         },
         lastSyncAt: new Date(),
       },
       { upsert: true, new: true },
     )
 
-    res.redirect(`${clientUrl}/?connected=${marketplace}`)
+    res.redirect(`${clientUrl}/settings?connected=${market}`)
   } catch (err) {
     console.error('OAuth callback error:', err.message)
     const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim()
-    res.redirect(`${clientUrl}/?error=${encodeURIComponent(err.message)}`)
+    res.redirect(`${clientUrl}/settings?error=${encodeURIComponent(err.message)}`)
   }
 })
 
@@ -65,13 +74,22 @@ router.get('/configs', requireRole('super_admin'), (req, res) => {
       environment: config.ebay?.environment || 'PRODUCTION',
       ruNameConfigured: Boolean(config.ebay?.ruName),
     },
+    tiktok_shop: {
+      configured: Boolean(config.tiktok_shop?.appKey && config.tiktok_shop?.appSecret && config.tiktok_shop?.serviceId),
+      environment: 'US',
+    },
+    temu: {
+      configured: Boolean(config.temu?.appKey && config.temu?.appSecret),
+      environment: 'US',
+    },
   })
 })
 
 // GET /api/shops/oauth/connect/:marketplace — Generate OAuth connect URL
 router.get('/oauth/connect/:marketplace', requireRole('super_admin'), (req, res) => {
   try {
-    const { marketplace } = req.params
+    const marketplace = canonicalMarketplace(req.params.marketplace)
+    if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
     const state = req.query.state || `${marketplace}-${Date.now()}`
     const url = marketplaceManager.getAuthUrl(marketplace, state)
     res.json({ url, state })
@@ -83,23 +101,26 @@ router.get('/oauth/connect/:marketplace', requireRole('super_admin'), (req, res)
 // POST /api/shops/oauth/callback/:marketplace — Exchange code and connect shop
 router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (req, res) => {
   try {
-    const { marketplace } = req.params
-    const { code, shopName, externalShopId } = req.body
+    const marketplace = canonicalMarketplace(req.params.marketplace)
+    if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
+    const { code, shopName } = req.body
     if (!code) return res.status(400).json({ error: 'Authorization code is required' })
 
     const tokenData = await marketplaceManager.exchangeCode(marketplace, code)
-
-    let filter = externalShopId ? { marketplace, externalShopId } : { marketplace }
+    const existingMarketShop = tokenData.externalShopId
+      ? null
+      : await Shop.findOne({ marketplace }).select('externalShopId')
+    const externalShopId = tokenData.externalShopId || req.body.externalShopId || existingMarketShop?.externalShopId || `${marketplace}-us`
+    const filter = { marketplace, externalShopId }
     const existingShop = await Shop.findOne(filter)
-    if (!existingShop && !externalShopId) {
-      filter = { marketplace, externalShopId: `${marketplace}-${Date.now()}` }
-    }
 
     const shop = await Shop.findOneAndUpdate(
       existingShop ? { _id: existingShop._id } : filter,
       {
-        name: shopName || existingShop?.name || `${marketplace.toUpperCase()} Store`,
+        name: shopName || tokenData.shopName || existingShop?.name || `${config[marketplace]?.name || marketplace} Store`,
         marketplace,
+        externalShopId,
+        shopCipher: tokenData.shopCipher,
         status: 'connected',
         auth: {
           accessTokenEnc: tokenData.access_token || tokenData.accessToken,

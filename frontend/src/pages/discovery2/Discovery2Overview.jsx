@@ -1,43 +1,35 @@
-import { StatCard } from '../../components/ui/Card'
+const METRICS = [
+  { key: 'totalRecommendations', label: 'Recommendations' },
+  { key: 'highScoreCount', label: 'High potential' },
+  { key: 'totalReports', label: 'Research runs' },
+  { key: 'lastRun', label: 'Last run' },
+]
 
 export default function Discovery2Overview({ stats = {}, loading = false }) {
-  const {
-    totalReports = 0,
-    totalRecommendations = 0,
-    highScoreCount = 0,
-    lastRunDate = null,
-  } = stats
+  const lastRun = stats.lastRunDate
+    ? new Date(stats.lastRunDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'None yet'
 
-  const formattedDate = lastRunDate
-    ? new Date(lastRunDate).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : 'No runs yet'
+  const values = {
+    totalRecommendations: stats.totalRecommendations ?? 0,
+    highScoreCount: stats.highScoreCount ?? 0,
+    totalReports: stats.totalReports ?? 0,
+    lastRun,
+  }
 
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <StatCard
-        label="Total Recommendations"
-        value={loading ? '…' : totalRecommendations}
-        sub="Across Analyzed Runs"
-      />
-      <StatCard
-        label="High Potential (≥80)"
-        value={loading ? '…' : highScoreCount}
-        sub="Top Tier Opportunity Score"
-      />
-      <StatCard
-        label="Research Reports"
-        value={loading ? '…' : totalReports}
-        sub="Multi-Marketplace Runs"
-      />
-      <StatCard
-        label="Last Research Run"
-        value={loading ? '…' : formattedDate}
-        sub="Latest Market Scan"
-      />
-    </div>
+    <dl className="grid grid-cols-2 overflow-hidden rounded-2xl border border-gray-200 bg-white sm:grid-cols-4">
+      {METRICS.map((metric, index) => (
+        <div
+          key={metric.key}
+          className={`px-4 py-3 ${index % 2 === 1 ? 'border-l border-gray-200' : ''} ${index >= 2 ? 'border-t border-gray-200 sm:border-t-0' : ''} ${index >= 2 ? 'sm:border-l' : ''}`}
+        >
+          <dt className="text-xs font-medium text-gray-500">{metric.label}</dt>
+          <dd className="mt-1 truncate text-2xl font-bold tracking-tight text-gray-900">
+            {loading ? '…' : values[metric.key]}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

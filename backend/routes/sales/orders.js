@@ -4,6 +4,7 @@ const { paging, sortOf, paged } = require('../../utils/query')
 const Order = require('../../models/Order')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('orders'))
@@ -16,7 +17,9 @@ router.get('/', async (req, res) => {
   try {
     const filter = { ...shopFilter(req, Order) }
     if (req.query.marketplace && req.query.marketplace !== 'all') {
-      filter.marketplace = req.query.marketplace
+      const marketplace = canonicalMarketplace(req.query.marketplace)
+      if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
+      filter.marketplace = marketplace
     }
     if (req.query.shopId) {
       if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === req.query.shopId)) {
@@ -70,7 +73,9 @@ router.post('/sync', async (req, res) => {
     } else if (req.body.shopId) {
       filter._id = req.body.shopId
     } else if (req.body.marketplace) {
-      filter.marketplace = req.body.marketplace
+      const marketplace = canonicalMarketplace(req.body.marketplace)
+      if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
+      filter.marketplace = marketplace
     }
 
     const shops = await Shop.find(filter)

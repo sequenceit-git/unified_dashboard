@@ -5,6 +5,7 @@ const shopSchema = new mongoose.Schema(
     name: { type: String, required: true },
     marketplace: { type: String, enum: ['ebay', 'temu', 'tiktok_shop'], required: true },
     externalShopId: { type: String, required: true },
+    shopCipher: { type: String },
     auth: {
       accessTokenEnc: { type: String, select: false },
       refreshTokenEnc: { type: String, select: false },

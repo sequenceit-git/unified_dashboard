@@ -12,7 +12,7 @@ import { useApi } from '../../hooks/useApi'
 const ROUTES = [
   ['dashboard', 'Dashboard'],
   ['analytics', 'Analytics'],
-  ['market-research', 'Product Discover 2'],
+  ['market-research', 'Product Discovery'],
   ['products', 'Products'],
   ['inventory', 'Inventory'],
   ['orders', 'Orders'],
