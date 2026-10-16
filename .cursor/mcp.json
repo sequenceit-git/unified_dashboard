@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "ebay-api": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@ebay/npm-public-api-mcp"],
+      "envFile": "${workspaceFolder}/backend/.env",
+      "env": {
+        "EBAY_TOKEN_TYPE": "application",
+        "EBAY_API_ENV": "production"
+      }
+    }
+  }
+}

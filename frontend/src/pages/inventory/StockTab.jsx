@@ -7,7 +7,7 @@ import Pagination from '../../components/ui/Pagination'
 import RowMenu from '../../components/ui/RowMenu'
 import SearchInput from '../../components/ui/SearchInput'
 
-export default function StockTab({ onAdjust, refreshKey }) {
+export default function StockTab({ marketplace, onAdjust, refreshKey }) {
   const { token, isAdmin } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -21,7 +21,7 @@ export default function StockTab({ onAdjust, refreshKey }) {
     setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/products${queryString({ q, sort, page, limit: 15 })}`, token)
+      const res = await api.get(`/api/products${queryString({ marketplace, q, sort, page, limit: 15 })}`, token)
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
@@ -35,7 +35,7 @@ export default function StockTab({ onAdjust, refreshKey }) {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, sort, page, refreshKey])
+  }, [marketplace, q, sort, page, refreshKey])
 
   return (
     <Card>

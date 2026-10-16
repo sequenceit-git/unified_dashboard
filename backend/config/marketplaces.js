@@ -30,6 +30,28 @@ const MARKETPLACE_CONFIG = {
       'https://api.ebay.com/oauth/api_scope/sell.finances',
     ],
   },
+  tiktok_shop: {
+    name: 'TikTok Shop',
+    appKey: process.env.TIKTOK_SHOP_APP_KEY || '',
+    appSecret: process.env.TIKTOK_SHOP_APP_SECRET || '',
+    serviceId: process.env.TIKTOK_SHOP_SERVICE_ID || '',
+    apiBaseUrl: 'https://open-api.tiktokglobalshop.com',
+    authUrl: 'https://services.us.tiktokshop.com/open/authorize',
+    tokenUrl: 'https://auth.tiktok-shops.com/api/v2/token/get',
+    refreshUrl: 'https://auth.tiktok-shops.com/api/v2/token/refresh',
+  },
+  temu: {
+    name: 'Temu',
+    appKey: process.env.TEMU_APP_KEY || '',
+    appSecret: process.env.TEMU_APP_SECRET || '',
+    region: 'us',
+    apiBaseUrl: 'https://openapi-b-us.temu.com/openapi/router',
+    authUrl: 'https://seller.temu.com/open-platform/client-manage/authorization',
+    get redirectUri() {
+      const client = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim()
+      return `${client}/oauth/temu/callback`
+    },
+  },
 }
 
 module.exports = MARKETPLACE_CONFIG

@@ -1,12 +1,16 @@
 import { useAuth } from '../../auth/AuthContext'
+import { queryString } from '../../lib/api'
 import Badge from '../../components/ui/Badge'
 import Card from '../../components/ui/Card'
 import DataTable from '../../components/ui/DataTable'
 import { useApi } from '../../hooks/useApi'
 
-export default function LowStockTab({ refreshKey }) {
+export default function LowStockTab({ marketplace, refreshKey }) {
   const { token } = useAuth()
-  const { data, loading, error, refetch } = useApi(token ? '/api/inventory/low-stock' : null, [refreshKey])
+  const { data, loading, error, refetch } = useApi(
+    token ? `/api/inventory/low-stock${queryString({ marketplace })}` : null,
+    [refreshKey, marketplace],
+  )
 
   return (
     <Card>

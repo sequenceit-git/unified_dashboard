@@ -38,7 +38,39 @@ router.get('/overview', async (req, res) => {
       entries.map(async ([name, model]) => [name, await model.countDocuments(shopFilter(req, model))]),
     )
     const counts = Object.fromEntries(results)
-    const responseData = { db: 'unified_dashboard', counts }
+    const since = new Date(Date.now() - 30 * 86400000)
+    const orderFilter = shopFilter(req, resources.orders)
+    const listingFilter = shopFilter(req, resources.listings)
+    const [connectedShops, revenueRows, readyToShip, liveListings] = await Promise.all([
+      resources.shops.find({ status: 'connected' }).select('marketplace').lean(),
+      resources.orders.aggregate([
+        {
+          $match: {
+            ...orderFilter,
+            placedAt: { $gte: since },
+            status: { $nin: ['cancelled', 'refunded'] },
+          },
+        },
+        { $group: { _id: null, revenue: { $sum: '$totals.total' } } },
+      ]),
+      resources.orders.countDocuments({
+        ...orderFilter,
+        status: { $in: ['pending', 'paid', 'processing'] },
+      }),
+      resources.listings.countDocuments({ ...listingFilter, status: 'live' }),
+    ])
+    const connectedMarkets = new Set(connectedShops.map((shop) => shop.marketplace))
+    const responseData = {
+      db: 'unified_dashboard',
+      counts,
+      unified: {
+        connected: ['ebay', 'tiktok_shop', 'temu'].filter((id) => connectedMarkets.has(id)).length,
+        marketplaces: 3,
+        revenue: +(revenueRows[0]?.revenue || 0).toFixed(2),
+        readyToShip,
+        liveListings,
+      },
+    }
     overviewCache = { timestamp: now, data: responseData, userId: userKey }
     res.json(responseData)
   } catch (err) {

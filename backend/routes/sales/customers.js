@@ -4,6 +4,7 @@ const { paging, sortOf, paged } = require('../../utils/query')
 const Conversation = require('../../models/Conversation')
 const Customer = require('../../models/Customer')
 const Order = require('../../models/Order')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('customers'))
@@ -17,6 +18,8 @@ function scope(req) {
 router.get('/', async (req, res) => {
   try {
     const filter = { ...scope(req) }
+    const marketplace = canonicalMarketplace(req.query.marketplace)
+    if (marketplace) filter['identities.marketplace'] = marketplace
     if (req.query.q) {
       const q = req.query.q.trim()
       filter.$or = [

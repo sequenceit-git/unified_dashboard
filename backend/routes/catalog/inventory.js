@@ -5,6 +5,7 @@ const InventoryLog = require('../../models/InventoryLog')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
 const marketplaceManager = require('../../services/marketplace')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inventory'))
@@ -13,11 +14,14 @@ router.use(requireAuth, loadAccess, requireMainRoute('inventory'))
 // GET /api/inventory/low-stock
 router.get('/low-stock', async (req, res) => {
   try {
-    const productIds = req.user.role === 'sub_admin'
-      ? await require('../../models/Listing').find({ shopId: { $in: req.allowedShopIds } }).distinct('productId')
-      : null
+    const listingFilter = {}
+    if (req.user.role === 'sub_admin') listingFilter.shopId = { $in: req.allowedShopIds }
+    const marketplace = canonicalMarketplace(req.query.marketplace)
+    if (marketplace) listingFilter.marketplace = marketplace
     const filter = { $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
-    if (productIds) filter._id = { $in: productIds }
+    if (Object.keys(listingFilter).length) {
+      filter._id = { $in: await Listing.find(listingFilter).distinct('productId') }
+    }
     const docs = await Product.find(filter)
       .sort({ stock: 1 })
       .limit(100)
@@ -31,6 +35,11 @@ router.get('/low-stock', async (req, res) => {
 router.get('/logs', async (req, res) => {
   try {
     const filter = {}
+    if (req.query.marketplace) {
+      const marketplace = canonicalMarketplace(req.query.marketplace)
+      if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
+      filter.shopId = { $in: await Listing.find({ marketplace }).distinct('shopId') }
+    }
     if (req.query.productId) filter.productId = req.query.productId
     if (req.query.shopId) filter.shopId = req.query.shopId
     if (req.query.reason) filter.reason = req.query.reason
@@ -135,7 +144,10 @@ router.post('/adjust', requireRole('super_admin'), async (req, res) => {
 // POST /api/inventory/sync — push all live product inventory levels to connected marketplace listings
 router.post('/sync', requireRole('super_admin'), async (req, res) => {
   try {
-    const listings = await Listing.find({ status: 'live' }).populate('productId').populate('shopId')
+    const listingFilter = { status: 'live' }
+    const marketplace = canonicalMarketplace(req.body?.marketplace)
+    if (marketplace) listingFilter.marketplace = marketplace
+    const listings = await Listing.find(listingFilter).populate('productId').populate('shopId')
     let successCount = 0
     let failCount = 0
 

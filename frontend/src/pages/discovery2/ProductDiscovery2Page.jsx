@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  FiPlus,
   FiTrendingUp,
   FiCheckCircle,
   FiDownload,
-  FiFilter,
 } from 'react-icons/fi'
 import { TbBrandOpenai } from 'react-icons/tb'
 import { useAuth } from '../../auth/AuthContext'
@@ -196,24 +194,9 @@ export default function ProductDiscovery2Page() {
     return (r?.category || r?.metrics?.category || '').trim()
   }
 
-  // Categories list: Start with 'All', then collect all distinct categories in the report, supplemented by standard defaults
-  const activeReportCategories = Array.from(
-    new Set(recommendations.map(getOppCategory).filter(Boolean))
-  )
-
-  const DEFAULT_CATEGORIES = [
-    'Home & Kitchen',
-    'Electronics',
-    'Sports & Fitness',
-    'Beauty & Personal Care',
-    'Accessories',
-    'Pet Supplies',
-  ]
-
-  // Combine unique categories found + defaults, preserving nice order
   const dynamicCategories = [
     'All',
-    ...Array.from(new Set([...activeReportCategories, ...DEFAULT_CATEGORIES])),
+    ...Array.from(new Set(recommendations.map(getOppCategory).filter(Boolean))),
   ]
 
   // Count items per category in current report (normalized lowercase comparison)
@@ -241,41 +224,35 @@ export default function ProductDiscovery2Page() {
     (r) => (r._id === pollingId || r.status === 'running' || r.status === 'queued')
   )
 
+  const openLaunch = () => {
+    setIsModalOpen(true)
+    setModalError('')
+  }
+
+  const runInProgress = selectedReport?.status === 'running' || selectedReport?.status === 'queued'
+  const hasResults = filteredRecommendations.length > 0
+
   return (
-    <div className="space-y-6">
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-sm ring-1 ring-emerald-500/20">
-              <TbBrandOpenai size={20} />
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="page-heading text-2xl font-bold text-gray-900 sm:text-3xl">Product Discovery</h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-700/10">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+              ChatGPT
             </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-700/10">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                ChatGPT Powered
-              </span>
-              <span className="hidden text-xs text-gray-400 sm:inline">•</span>
-              <span className="hidden text-xs font-medium text-gray-500 sm:inline">
-                Autonomous Multi-Marketplace Intelligence
-              </span>
-            </div>
           </div>
-          <h1 className="page-heading mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">
-            Product Discovery 2
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Real-time market signals, profit margin analytics, and multi-channel opportunity discovery.
+          <p className="mt-1 max-w-xl text-sm text-gray-500">
+            Scan marketplaces, compare margins, and save the products worth listing.
           </p>
         </div>
 
         {isAdmin && (
-          <div className="flex items-center gap-2">
-            <Button onClick={() => { setIsModalOpen(true); setModalError('') }} size="md" className="flex items-center gap-2">
-              <TbBrandOpenai size={17} />
-              <span>Launch AI Research</span>
-            </Button>
-          </div>
+          <Button onClick={openLaunch} size="md" className="flex items-center gap-2 self-start sm:self-auto">
+            <TbBrandOpenai size={17} />
+            <span>Launch AI Research</span>
+          </Button>
         )}
       </div>
 
@@ -300,9 +277,7 @@ export default function ProductDiscovery2Page() {
       {/* ── KPI Overview ─────────────────────────────────────────────────── */}
       <Discovery2Overview stats={overviewStats} loading={loadingReports} />
 
-      {/* ── Main Layout: Sidebar (Dates) + Content (Product Cards) ────────── */}
-      <div className="flex flex-col gap-6 md:flex-row">
-        {/* Left inner sidebar with date list */}
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs sm:p-5">
         <Discovery2Sidebar
           reports={reports}
           selectedReportId={selectedReportId}
@@ -312,123 +287,99 @@ export default function ProductDiscovery2Page() {
           }}
         />
 
-        {/* Right product opportunities content */}
-        <div className="min-w-0 flex-1 space-y-4">
-          {/* Controls bar: Category filter pills + Export buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3.5 shadow-xs">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 mr-1">
-                <FiFilter size={13} />
-                <span>Category:</span>
-              </span>
-              {dynamicCategories.map((cat) => {
-                const count = cat === 'All' ? recommendations.length : (categoryCounts[cat] || categoryCounts[cat.toLowerCase()] || 0)
-                const isSelected = activeCategoryFilter.toLowerCase() === cat.toLowerCase()
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategoryFilter(cat)}
-                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                      isSelected
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <span>{cat}</span>
-                    {count > 0 && (
-                      <span
-                        className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                          isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'
+        {reports.length === 0 && !loadingReports ? (
+          <div className="flex flex-col items-center px-4 py-14 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-indigo-50 text-indigo-700">
+              <FiTrendingUp size={22} />
+            </span>
+            <h2 className="mt-4 text-lg font-bold text-gray-900">No research runs yet</h2>
+            <p className="mt-1 max-w-md text-sm text-gray-500">
+              Start a run to scan marketplaces and rank products by demand and margin.
+            </p>
+            {isAdmin && (
+              <Button onClick={openLaunch} className="mt-5 flex items-center gap-2">
+                <TbBrandOpenai size={17} />
+                Launch AI Research
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className={reports.length ? 'mt-5 border-t border-gray-100 pt-5' : ''}>
+            {hasResults && (
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {dynamicCategories.map((cat) => {
+                    const count = cat === 'All' ? recommendations.length : (categoryCounts[cat] || categoryCounts[cat.toLowerCase()] || 0)
+                    const isSelected = activeCategoryFilter.toLowerCase() === cat.toLowerCase()
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setActiveCategoryFilter(cat)}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                          isSelected ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
+                        {cat}
+                        {count > 0 ? ` ${count}` : ''}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => handleExport('csv')} className="flex items-center gap-1.5">
+                    <FiDownload size={13} />
+                    CSV
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => handleExport('xlsx')} className="flex items-center gap-1.5">
+                    <FiDownload size={13} />
+                    Excel
+                  </Button>
+                </div>
+              </div>
+            )}
 
-              {/* Download CSV button right beside categories (placeholder) */}
-              <button
-                type="button"
-                onClick={() => handleExport('csv')}
-                className="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-100 transition shadow-2xs"
-                title="Download CSV for current report"
-              >
-                <FiDownload size={13} className="text-gray-500" />
-                <span>Download CSV</span>
-              </button>
-            </div>
+            {selectedReport && (
+              <p className="mb-4 text-xs text-gray-500">
+                {new Date(selectedReport.createdAt).toLocaleString()}
+                {' · '}
+                {selectedReport.params?.categories?.join(', ') || 'All categories'}
+                {' · '}
+                {filteredRecommendations.length} {filteredRecommendations.length === 1 ? 'product' : 'products'}
+              </p>
+            )}
 
-            {recommendations.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleExport('xlsx')}
-                  className="flex items-center gap-1.5"
-                >
-                  <FiDownload size={13} />
-                  <span>Excel (.xlsx)</span>
-                </Button>
+            {loadingRecs || loadingReports ? (
+              <div className="py-16 text-center">
+                <Spinner />
+                <p className="mt-2 text-xs text-gray-500">Loading recommendations…</p>
+              </div>
+            ) : !hasResults ? (
+              <EmptyState
+                message={
+                  runInProgress
+                    ? 'This run is still scanning. Products will show up here when it finishes.'
+                    : activeCategoryFilter !== 'All'
+                      ? `No products in ${activeCategoryFilter}.`
+                      : 'This run did not return any products.'
+                }
+              />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredRecommendations.map((opp) => (
+                  <OpportunityCard2
+                    key={opp._id || `${opp.rank}-${opp.title || opp.productName}`}
+                    opportunity={opp}
+                    reportId={selectedReportId}
+                    onAddToCatalog={handleAddToCatalog}
+                    isAdmin={isAdmin}
+                  />
+                ))}
               </div>
             )}
           </div>
-
-          {/* Selected run metadata notice */}
-          {selectedReport && (
-            <div className="rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-purple-50/50 p-4 text-xs text-indigo-950 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="font-bold text-indigo-700 uppercase tracking-wider text-[11px] block">
-                  Report Run Details
-                </span>
-                <span className="text-gray-600">
-                  Triggered on {new Date(selectedReport.createdAt).toLocaleString()} • Target categories:{' '}
-                  <strong>{selectedReport.params?.categories?.join(', ') || 'All'}</strong>
-                </span>
-              </div>
-              <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800">
-                {filteredRecommendations.length} {filteredRecommendations.length === 1 ? 'Product' : 'Products'}
-              </span>
-            </div>
-          )}
-
-          {/* Cards Grid */}
-          {loadingRecs ? (
-            <div className="py-16 text-center">
-              <Spinner />
-              <p className="mt-2 text-xs text-gray-500">Loading product recommendations…</p>
-            </div>
-          ) : filteredRecommendations.length === 0 ? (
-            <EmptyState
-              title={
-                selectedReport?.status === 'running' || selectedReport?.status === 'queued'
-                  ? 'AI Agent is actively discovering opportunities…'
-                  : 'No product recommendations found'
-              }
-              message={
-                selectedReport?.status === 'running' || selectedReport?.status === 'queued'
-                  ? 'The agentic loop is evaluating margins and ranking top candidates above. Your product cards will render automatically once complete.'
-                  : reports.length === 0
-                  ? 'Launch your first AI Research Run to discover opportunities.'
-                  : 'No products match the selected category filter.'
-              }
-            />
-          ) : (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {filteredRecommendations.map((opp) => (
-                <OpportunityCard2
-                  key={opp._id || `${opp.rank}-${opp.title || opp.productName}`}
-                  opportunity={opp}
-                  reportId={selectedReportId}
-                  onAddToCatalog={handleAddToCatalog}
-                  isAdmin={isAdmin}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </section>
 
       {/* ── Modal Pop-up for New Run ──────────────────────────────────────── */}
       <NewRunModal

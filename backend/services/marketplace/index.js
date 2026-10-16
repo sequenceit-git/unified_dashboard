@@ -4,6 +4,8 @@
  */
 
 const ebay = require('./ebay')
+const tiktokShop = require('./tiktok')
+const temu = require('./temu')
 const config = require('../../config/marketplaces')
 const Order = require('../../models/Order')
 const Customer = require('../../models/Customer')
@@ -14,6 +16,8 @@ const Listing = require('../../models/Listing')
 
 const marketplaceServices = {
   ebay,
+  tiktok_shop: tiktokShop,
+  temu,
 }
 
 class UnifiedMarketplaceManager {
@@ -67,18 +71,18 @@ class UnifiedMarketplaceManager {
       throw new Error(`Shop "${shop.name}" does not have an active ${shop.marketplace} token. Please connect your store via OAuth first.`)
     }
 
-    return service.createListing(token, product, options)
+    return service.createListing(token, product, { ...options, shop })
   }
 
 
   /**
    * Pushes stock updates to a connected marketplace
    */
-  async pushStock(shop, { sku, quantity }) {
-    const service = this.getService('ebay')
+  async pushStock(shop, { sku, quantity, externalListingId }) {
+    const service = this.getService(shop.marketplace)
     const token = shop.auth?.accessTokenEnc || ''
     if (!token) return { success: false, reason: 'unauthorized_shop' }
-    return service.updateStock(token, sku, quantity)
+    return service.updateStock(token, sku, quantity, { shop, externalListingId })
   }
 
   /**
@@ -91,7 +95,10 @@ class UnifiedMarketplaceManager {
     }
 
     const token = shop.auth.accessTokenEnc
-    const service = this.getService('ebay')
+    const service = this.getService(shop.marketplace)
+    if (typeof service.createShippingFulfillment !== 'function') {
+      return { pushed: false, note: `${shop.marketplace} shipping push is not available` }
+    }
 
     await service.createShippingFulfillment(token, order.externalOrderId, {
       carrier,
@@ -112,6 +119,9 @@ class UnifiedMarketplaceManager {
       startedAt: new Date(),
     })
 
+    if (shop._id && !shop.auth?.accessTokenEnc) {
+      shop = await Shop.findById(shop._id).select('+auth.accessTokenEnc +auth.refreshTokenEnc')
+    }
     const token = shop.auth?.accessTokenEnc || ''
     if (!token) {
       syncLog.status = 'partial'
@@ -124,6 +134,7 @@ class UnifiedMarketplaceManager {
     let rawOrders = []
     try {
       const service = this.getService(shop.marketplace)
+      let updatedCount = 0
       if (shop.marketplace === 'ebay') {
         const res = await service.getOrders(token, { limit: 50 })
         rawOrders = (res.orders || []).map((o) => ({
@@ -145,6 +156,9 @@ class UnifiedMarketplaceManager {
             unitPrice: parseFloat(li.lineItemCost?.value || 0),
           })),
         }))
+      } else {
+        const res = await service.getOrders(token, { limit: 50, shop })
+        rawOrders = res.orders || []
       }
 
       let createdCount = 0
@@ -293,18 +307,19 @@ class UnifiedMarketplaceManager {
   /**
    * Pushes price update to marketplace
    */
-  async pushPrice(shop, { sku, price }) {
+  async pushPrice(shop, { sku, price, externalListingId }) {
     const token = shop.auth?.accessTokenEnc || ''
     if (!token) return { success: false, reason: 'unauthorized_shop' }
-    const service = this.getService('ebay')
-    return service.updatePrice(token, sku, price)
+    const service = this.getService(shop.marketplace)
+    return service.updatePrice(token, sku, price, 'USD', { shop, externalListingId })
   }
 
   /**
    * Looks up categories via eBay Taxonomy API
    */
   async getCategories(shop, query = 'General') {
-    const service = this.getService('ebay')
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getCategories !== 'function') return []
     const token = shop.auth?.accessTokenEnc || ''
     return service.getCategories(token, query)
   }
@@ -313,7 +328,8 @@ class UnifiedMarketplaceManager {
    * Looks up category attribute schema via eBay Taxonomy API
    */
   async getCategoryAttributes(shop, categoryId) {
-    const service = this.getService('ebay')
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getItemAspects !== 'function') return []
     const token = shop.auth?.accessTokenEnc || ''
     return service.getItemAspects(token, categoryId)
   }
@@ -327,7 +343,10 @@ class UnifiedMarketplaceManager {
       return { success: false, note: 'Shop not connected or credentials missing' }
     }
     const token = shop.auth.accessTokenEnc
-    const service = this.getService('ebay')
+    const service = this.getService(shop.marketplace)
+    if (typeof service.issueRefund !== 'function') {
+      return { success: false, note: `${shop.marketplace} refunds are not available from this connector` }
+    }
     return service.issueRefund(token, order.externalOrderId, { reason, comment, amount })
   }
 
@@ -358,28 +377,46 @@ class UnifiedMarketplaceManager {
    * Automatically populates the Products catalog and Listings tab!
    */
   async syncListingsForShop(shop) {
+    if (shop._id && !shop.auth?.accessTokenEnc) {
+      shop = await Shop.findById(shop._id).select('+auth.accessTokenEnc +auth.refreshTokenEnc')
+    }
     const token = shop.auth?.accessTokenEnc || ''
     if (!token) {
       return { synced: 0, reason: 'No active access token' }
     }
 
-    const service = this.getService('ebay')
+    const service = this.getService(shop.marketplace)
     let rawItems = []
 
     try {
-      const res = await service.getInventory(token, { limit: 50 })
-      rawItems = (res.inventoryItems || []).map((item) => ({
-        sku: item.sku,
-        title: item.product?.title || `eBay Item ${item.sku}`,
-        description: item.product?.description || '',
-        price: Number(item.product?.aspects?.Price?.[0] || 19.99),
-        stock: Number(item.availability?.shipToLocationAvailability?.quantity || 10),
-        images: item.product?.imageUrls || [],
-        weight: Number(item.packageWeightAndSize?.weight?.value || 1),
-        category: item.product?.aspects?.Category?.[0] || 'General',
-        brand: item.product?.aspects?.Brand?.[0] || 'Generic',
-        externalListingId: `ebay-item-${item.sku}`,
-      }))
+      const res = await service.getInventory(token, { limit: 50, shop })
+      rawItems = (res.inventoryItems || []).map((item) => (
+        item.title
+          ? {
+              sku: item.sku,
+              title: item.title,
+              description: item.description || '',
+              price: Number(item.price || 0),
+              stock: Number(item.stock || 0),
+              images: item.images || [],
+              weight: Number(item.weight || 1),
+              category: item.category || 'General',
+              brand: item.brand || shop.name,
+              externalListingId: item.externalListingId,
+            }
+          : {
+              sku: item.sku,
+              title: item.product?.title || `eBay Item ${item.sku}`,
+              description: item.product?.description || '',
+              price: Number(item.product?.aspects?.Price?.[0] || 19.99),
+              stock: Number(item.availability?.shipToLocationAvailability?.quantity || 10),
+              images: item.product?.imageUrls || [],
+              weight: Number(item.packageWeightAndSize?.weight?.value || 1),
+              category: item.product?.aspects?.Category?.[0] || 'General',
+              brand: item.product?.aspects?.Brand?.[0] || 'Generic',
+              externalListingId: `ebay-item-${item.sku}`,
+            }
+      ))
 
       let createdProducts = 0
       let updatedListings = 0
