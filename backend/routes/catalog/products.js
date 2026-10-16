@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
     const filter = {}
     if (req.query.status) filter.status = req.query.status
     if (req.query.category) filter.category = req.query.category
+    if (req.query.source) filter.source = req.query.source
     if (req.query.q) {
       const q = req.query.q.trim()
       filter.$or = [

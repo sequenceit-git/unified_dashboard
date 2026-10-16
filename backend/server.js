@@ -54,7 +54,25 @@ app.use('/api/customers', customerRoutes)
 app.use('/api/inbox', inboxRoutes)
 app.use('/api/research', researchRoutes)
 
-connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(() => {
+connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
+  // Sweep stale/orphaned running or queued reports left behind by server restart
+  try {
+    const ResearchReport2 = require('./models/ResearchReport2')
+    const staleResult = await ResearchReport2.updateMany(
+      { status: { $in: ['running', 'queued'] } },
+      {
+        status: 'failed',
+        error: 'Job interrupted due to server reboot. Please re-trigger run.',
+        finishedAt: new Date(),
+      },
+    )
+    if (staleResult.modifiedCount > 0) {
+      console.log(`[Research] Cleaned up ${staleResult.modifiedCount} stale research run(s).`)
+    }
+  } catch (err) {
+    console.warn('[Research] Stale reports cleanup check warning:', err.message)
+  }
+
   const marketplaceManager = require('./services/marketplace')
   marketplaceManager.autoConnectFromEnv().catch((err) => {
     console.warn('Auto-connect from ENV warning:', err.message)

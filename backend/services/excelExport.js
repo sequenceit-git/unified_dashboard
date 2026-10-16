@@ -1,11 +1,13 @@
 /**
  * Excel Export Service
  *
- * Generates a styled .xlsx file from ProductRecommendation documents.
+ * Generates a styled .xlsx file from ResearchReport2 opportunities.
  * Returns a Buffer that can be streamed directly to the HTTP response.
  *
- * Columns: Rank | Product Name | Category | Marketplace | Price | Monthly Sales |
- *          Monthly Revenue | Rating | Review Count | Competition | Profit Margin | Score | Reason | URL
+ * Columns mirror the CSV catalog export exactly so both downloads stay in sync:
+ * sku | title | description | category | brand | basePrice | currency | stock |
+ * lowStockThreshold | weight | status | source | sourceUrl | listingUrl | otherUrl |
+ * estimatedMarginPercent | opportunityScore
  */
 
 const ExcelJS = require('exceljs')
@@ -19,28 +21,71 @@ const SCORE_HIGH  = 'D1FAE5' // emerald-100
 const SCORE_MED   = 'FEF3C7' // amber-100
 const SCORE_LOW   = 'FEE2E2' // red-100
 
-// ─── Column definitions ───────────────────────────────────────────────────────
+// ─── Column definitions (same order/names as CSV export) ─────────────────────
 const COLUMNS = [
-  { header: 'Rank',                    key: 'rank',                      width: 7  },
-  { header: 'Product Name',            key: 'productName',               width: 42 },
-  { header: 'Category',               key: 'category',                  width: 20 },
-  { header: 'Marketplace',             key: 'marketplace',               width: 16 },
-  { header: 'Price (USD)',             key: 'price',                     width: 12 },
-  { header: 'Est. Monthly Sales',      key: 'estimatedMonthlySales',     width: 18 },
-  { header: 'Est. Monthly Revenue',    key: 'estimatedMonthlyRevenue',   width: 20 },
-  { header: 'Rating',                  key: 'rating',                    width: 10 },
-  { header: 'Review Count',            key: 'reviewCount',               width: 14 },
-  { header: 'Competition',             key: 'competitionLevel',          width: 14 },
-  { header: 'Profit Margin (%)',       key: 'estimatedProfitMarginPercent', width: 16 },
-  { header: 'Opportunity Score',       key: 'opportunityScore',          width: 18 },
-  { header: 'Recommendation Reason',  key: 'recommendationReason',      width: 60 },
-  { header: 'Product URL',             key: 'productUrl',                width: 60 },
+  { header: 'sku',                    key: 'sku',                    width: 22 },
+  { header: 'title',                  key: 'title',                  width: 42 },
+  { header: 'description',            key: 'description',            width: 60 },
+  { header: 'category',               key: 'category',               width: 20 },
+  { header: 'brand',                  key: 'brand',                  width: 16 },
+  { header: 'basePrice',              key: 'basePrice',              width: 12 },
+  { header: 'currency',               key: 'currency',               width: 10 },
+  { header: 'stock',                  key: 'stock',                  width: 10 },
+  { header: 'lowStockThreshold',      key: 'lowStockThreshold',      width: 16 },
+  { header: 'weight',                 key: 'weight',                 width: 10 },
+  { header: 'status',                 key: 'status',                 width: 12 },
+  { header: 'source',                 key: 'source',                 width: 14 },
+  { header: 'sourceUrl',              key: 'sourceUrl',              width: 50 },
+  { header: 'listingUrl',             key: 'listingUrl',             width: 50 },
+  { header: 'otherUrl',               key: 'otherUrl',               width: 50 },
+  { header: 'estimatedMarginPercent', key: 'estimatedMarginPercent', width: 20 },
+  { header: 'opportunityScore',       key: 'opportunityScore',       width: 18 },
 ]
 
+const LAST_COL_LETTER = 'Q' // 17 columns (A–Q)
+
+// Build one export row using the exact same mapping as the CSV download,
+// so xlsx and csv outputs never drift apart.
+function buildExportRow(rec, i, timestampSuffix) {
+  const title = rec.title || rec.productName || ''
+  const category = rec.category || rec.metrics?.category || ''
+  const basePrice = rec.metrics?.price != null ? rec.metrics.price : (rec.price ?? rec.metrics?.averagePrice ?? '')
+  const description = rec.aiNotes || rec.recommendationReason || ''
+  const sourceUrl = rec.sourceUrl || rec.sourcing?.buyUrl || ''
+  const listingUrl = rec.listingUrl || rec.productUrl || ''
+  const otherUrl = rec.validation?.otherUrl || ''
+  const margin = rec.estimatedMargin != null ? rec.estimatedMargin : (rec.estimatedProfitMarginPercent ?? '')
+  const score = rec.opportunityScore ?? ''
+
+  // Preview SKU consistent with Product model pattern (same as CSV export)
+  const catClean = (category || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'GEN'
+  const sku = `BOT-${catClean}-${timestampSuffix}${i + 1}`
+
+  return {
+    sku,
+    title,
+    description,
+    category,
+    brand: '',
+    basePrice: basePrice !== '' ? Number(basePrice) : '',
+    currency: 'USD',
+    stock: 0,
+    lowStockThreshold: 5,
+    weight: 1,
+    status: 'draft',
+    source: 'research_bot',
+    sourceUrl,
+    listingUrl,
+    otherUrl,
+    estimatedMarginPercent: margin !== '' ? Number(margin) : '',
+    opportunityScore: score !== '' ? Number(score) : '',
+  }
+}
+
 /**
- * Generate an Excel workbook buffer from an array of ProductRecommendation docs.
+ * Generate an Excel workbook buffer from an array of opportunity docs.
  *
- * @param {Array}  recommendations - Array of ProductRecommendation Mongoose documents or plain objects
+ * @param {Array}  recommendations - Array of ResearchReport2 opportunity subdocs or plain objects
  * @param {object} meta            - { categories, niche, generatedAt }
  * @returns {Promise<Buffer>}      - xlsx file as a Buffer
  */
@@ -51,14 +96,14 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
   workbook.created = new Date()
   workbook.modified = new Date()
 
-  // ── Sheet 1: Product Recommendations ──────────────────────────────────────
+  // ── Sheet 1: Product Recommendations (catalog-import shape) ─────────────────
   const sheet = workbook.addWorksheet('Product Recommendations', {
     pageSetup: { fitToPage: true, fitToWidth: 1, orientation: 'landscape' },
     views: [{ state: 'frozen', ySplit: 3 }],
   })
 
   // ── Title row ──────────────────────────────────────────────────────────────
-  sheet.mergeCells('A1:N1')
+  sheet.mergeCells(`A1:${LAST_COL_LETTER}1`)
   const titleCell = sheet.getCell('A1')
   titleCell.value =
     `AI Market Research — Product Recommendations` +
@@ -70,7 +115,7 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
   sheet.getRow(1).height = 30
 
   // ── Sub-title row ──────────────────────────────────────────────────────────
-  sheet.mergeCells('A2:N2')
+  sheet.mergeCells(`A2:${LAST_COL_LETTER}2`)
   const subCell = sheet.getCell('A2')
   subCell.value =
     `Generated: ${meta.generatedAt ? new Date(meta.generatedAt).toLocaleString('en-US') : new Date().toLocaleString('en-US')}` +
@@ -102,66 +147,49 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
   }
 
   // ── Data rows ──────────────────────────────────────────────────────────────
+  const timestampSuffix = Date.now().toString().slice(-4)
+  const URL_COLS = { sourceUrl: 13, listingUrl: 14, otherUrl: 15 }
+
   recommendations.forEach((rec, i) => {
     const rowIndex = i + 4  // rows 1-3 are title/subtitle/header
     const row = sheet.getRow(rowIndex)
     const isOdd = i % 2 === 0
+    const data = buildExportRow(rec, i, timestampSuffix)
 
-    row.values = [
-      rec.rank,
-      rec.productName,
-      rec.category,
-      rec.marketplace,
-      rec.price != null ? rec.price : '—',
-      rec.estimatedMonthlySales != null ? rec.estimatedMonthlySales : '—',
-      rec.estimatedMonthlyRevenue != null ? rec.estimatedMonthlyRevenue : '—',
-      rec.rating != null ? rec.rating : '—',
-      rec.reviewCount != null ? rec.reviewCount : '—',
-      rec.competitionLevel || '—',
-      rec.estimatedProfitMarginPercent != null ? rec.estimatedProfitMarginPercent : '—',
-      rec.opportunityScore != null ? rec.opportunityScore : '—',
-      rec.recommendationReason || '',
-      rec.productUrl || '',
-    ]
+    row.values = COLUMNS.map((c) => data[c.key])
 
     // Base row styling
     row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isOdd ? ROW_ODD : ROW_EVEN } }
     row.alignment = { vertical: 'top', wrapText: true }
     row.height = 60
 
-    // Make URL cell a clickable hyperlink
-    if (rec.productUrl) {
-      const urlCell = row.getCell(14) // Product URL column
-      urlCell.value = {
-        text: rec.productUrl,
-        hyperlink: rec.productUrl,
+    // Make URL cells clickable hyperlinks
+    for (const [key, colNum] of Object.entries(URL_COLS)) {
+      const url = data[key]
+      if (url) {
+        const urlCell = row.getCell(colNum)
+        urlCell.value = { text: url, hyperlink: url }
+        urlCell.font = { color: { argb: '4F46E5' }, underline: true }
       }
-      urlCell.font = { color: { argb: '4F46E5' }, underline: true }
     }
 
-    // Color-code opportunity score cell
-    const score = rec.opportunityScore ?? 0
-    const scoreBg = score >= 70 ? SCORE_HIGH : score >= 45 ? SCORE_MED : SCORE_LOW
-    const scoreCell = row.getCell(12)
+    // Color-code opportunity score cell (col 17)
+    const numericScore = typeof data.opportunityScore === 'number' ? data.opportunityScore : 0
+    const scoreBg = numericScore >= 70 ? SCORE_HIGH : numericScore >= 45 ? SCORE_MED : SCORE_LOW
+    const scoreCell = row.getCell(17)
     scoreCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: scoreBg } }
     scoreCell.font = { bold: true }
     scoreCell.alignment = { horizontal: 'center', vertical: 'middle' }
 
     // Format numeric cells
-    const priceCell = row.getCell(5)
-    if (rec.price != null) {
-      priceCell.numFmt = '"$"#,##0.00'
+    if (data.basePrice !== '') {
+      row.getCell(6).numFmt = '"$"#,##0.00'
     }
-    const revenueCell = row.getCell(7)
-    if (rec.estimatedMonthlyRevenue != null) {
-      revenueCell.numFmt = '"$"#,##0'
-    }
-    const marginCell = row.getCell(11)
-    if (rec.estimatedProfitMarginPercent != null) {
-      marginCell.numFmt = '0.0"%"'
+    if (data.estimatedMarginPercent !== '') {
+      row.getCell(16).numFmt = '0.0"%"'
     }
 
-    // Center rank column
+    // Center sku column
     row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
   })
 
@@ -181,10 +209,10 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
   const avgScore = validRecs.length
     ? Math.round(validRecs.reduce((s, r) => s + r.opportunityScore, 0) / validRecs.length)
     : 0
+  const marginOf = (r) => r.estimatedMargin ?? r.estimatedProfitMarginPercent ?? 0
   const avgMargin = validRecs.length
-    ? (validRecs.reduce((s, r) => s + (r.estimatedProfitMarginPercent || 0), 0) / validRecs.length).toFixed(1)
+    ? (validRecs.reduce((s, r) => s + Number(marginOf(r)), 0) / validRecs.length).toFixed(1)
     : 0
-  const totalRevenue = recommendations.reduce((s, r) => s + (r.estimatedMonthlyRevenue || 0), 0)
   const topRec = recommendations[0]
 
   const summaryData = [
@@ -193,8 +221,7 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
     ['Total Recommendations',    recommendations.length],
     ['Average Opportunity Score', `${avgScore} / 100`],
     ['Average Profit Margin',    `${avgMargin}%`],
-    ['Est. Total Monthly Revenue', `$${totalRevenue.toLocaleString()}`],
-    ['Top Recommendation',       topRec?.productName || '—'],
+    ['Top Recommendation',       topRec?.title || topRec?.productName || '—'],
     ['Top Score',                topRec?.opportunityScore != null ? `${topRec.opportunityScore}/100` : '—'],
     ['Generated At',             meta.generatedAt ? new Date(meta.generatedAt).toLocaleString('en-US') : new Date().toLocaleString('en-US')],
   ]
@@ -209,4 +236,4 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
   return buffer
 }
 
-module.exports = { generateRecommendationsExcel }
+module.exports = { generateRecommendationsExcel, buildExportRow }

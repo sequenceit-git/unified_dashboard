@@ -6,10 +6,7 @@ import CustomersPage from './pages/customers/CustomersPage'
 import InboxPage from './pages/inbox/InboxPage'
 import InventoryPage from './pages/inventory/InventoryPage'
 import Login from './pages/auth/Login'
-import MarketAnalysisPage from './pages/market-research/subpages/MarketAnalysisPage'
-import MarketResearchPage from './pages/market-research/MarketResearchPage'
-import ProductRecommendationsPage from './pages/market-research/subpages/ProductRecommendationsPage'
-import ResearchReportDetailPage from './pages/market-research/subpages/ResearchReportDetailPage'
+import ProductDiscovery2Page from './pages/discovery2/ProductDiscovery2Page'
 import OrdersPage from './pages/orders/OrdersPage'
 import Overview from './pages/dashboard/Overview'
 import ProductsPage from './pages/products/ProductsPage'
@@ -47,10 +44,7 @@ export default function App() {
         <Route path="/discovery" element={<RouteAccess route="discovery"><ProductDiscoveryPage /></RouteAccess>} />
         <Route path="/" element={<RouteAccess route="dashboard"><Overview /></RouteAccess>} />
         <Route path="/analytics" element={<RouteAccess route="analytics"><AnalyticsPage /></RouteAccess>} />
-        <Route path="/market-research" element={<RouteAccess route="market-research"><MarketResearchPage /></RouteAccess>} />
-        <Route path="/market-research/:reportId/analysis" element={<RouteAccess route="market-research"><MarketAnalysisPage /></RouteAccess>} />
-        <Route path="/market-research/:reportId/recommendations" element={<RouteAccess route="market-research"><ProductRecommendationsPage /></RouteAccess>} />
-        <Route path="/market-research/:reportId/report" element={<RouteAccess route="market-research"><ResearchReportDetailPage /></RouteAccess>} />
+        <Route path="/market-research" element={<RouteAccess route="market-research"><ProductDiscovery2Page /></RouteAccess>} />
         <Route path="/products" element={<RouteAccess route="products"><ProductsPage /></RouteAccess>} />
         <Route path="/inventory" element={<RouteAccess route="inventory"><InventoryPage /></RouteAccess>} />
         <Route path="/orders" element={<RouteAccess route="orders"><OrdersPage /></RouteAccess>} />
