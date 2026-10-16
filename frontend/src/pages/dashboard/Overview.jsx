@@ -21,8 +21,12 @@ export default function Overview() {
   const cards = [
     { label: 'Shops connected', value: `${unified.connected ?? 0} / 3`, sub: 'eBay, TikTok Shop, and Temu' },
     { label: 'Combined revenue', value: revenue, sub: 'Last 30 days across all shops' },
+    { label: 'Orders', value: unified.orders30 ?? 0, sub: 'Placed in the last 30 days' },
+    { label: 'Buyers', value: unified.buyers ?? 0, sub: 'Customers across all shops' },
     { label: 'Ready to ship', value: unified.readyToShip ?? 0, sub: 'Paid or processing on any shop' },
     { label: 'Live listings', value: unified.liveListings ?? 0, sub: 'Active on any marketplace' },
+    { label: 'Open messages', value: unified.openInbox ?? 0, sub: 'Inbox threads still waiting' },
+    { label: 'Low stock', value: unified.lowStock ?? 0, sub: 'At or below the stock threshold' },
   ]
 
   return (
