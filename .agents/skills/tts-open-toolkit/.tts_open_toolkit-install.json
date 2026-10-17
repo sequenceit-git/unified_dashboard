@@ -1,0 +1,11 @@
+{
+  "name": "tts-open-toolkit",
+  "source": {
+    "type": "bundled",
+    "name": "tts-open-toolkit"
+  },
+  "version": 1,
+  "tool": "tts_open_toolkit",
+  "installedAt": "2026-10-16T16:16:07.540Z",
+  "installedHash": "1b47c8655e9de258d21eb07f658bf35f0de69be35a6e9a5879aae85f098f0b3a"
+}

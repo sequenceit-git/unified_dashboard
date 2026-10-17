@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "ebay-api": {
+      "command": "cmd.exe",
+      "args": ["/c", "npx", "-y", "@ebay/npm-public-api-mcp"],
+      "env": {
+        "EBAY_TOKEN_TYPE": "application",
+        "EBAY_API_ENV": "production"
+      }
+    }
+  }
+}

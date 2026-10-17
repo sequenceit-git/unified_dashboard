@@ -1,0 +1,11 @@
+{
+  "name": "tts-seller-university-basic-knowledge-index",
+  "source": {
+    "type": "bundled",
+    "name": "tts-seller-university-basic-knowledge-index"
+  },
+  "version": 1,
+  "tool": "tts_open_toolkit",
+  "installedAt": "2026-10-16T16:16:07.674Z",
+  "installedHash": "35752bdf00e3889c0bb32d0350c602c2d7cd66f7182ffed73585f02b90275894"
+}
