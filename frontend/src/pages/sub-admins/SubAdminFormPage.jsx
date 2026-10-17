@@ -18,6 +18,7 @@ const ROUTES = [
   ['orders', 'Orders'],
   ['customers', 'Customers'],
   ['inbox', 'Inbox'],
+  ['customer-support', 'Customer Support AI'],
 ]
 
 const EMPTY_FORM = {

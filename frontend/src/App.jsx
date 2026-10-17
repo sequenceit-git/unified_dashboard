@@ -14,6 +14,8 @@ import OAuthCallback from './pages/auth/OAuthCallback'
 import ProductDiscoveryPage from './pages/discovery/ProductDiscoveryPage'
 import SubAdminFormPage from './pages/sub-admins/SubAdminFormPage'
 import SubAdminManagementPage from './pages/sub-admins/SubAdminManagementPage'
+import AgentSettingsPage from './pages/support/AgentSettingsPage'
+import ChatSandboxPage from './pages/support/ChatSandboxPage'
 
 function PublicOnly({ children }) {
   const { token } = useAuth()
@@ -50,6 +52,8 @@ export default function App() {
         <Route path="/orders" element={<RouteAccess route="orders"><OrdersPage /></RouteAccess>} />
         <Route path="/customers" element={<RouteAccess route="customers"><CustomersPage /></RouteAccess>} />
         <Route path="/inbox" element={<RouteAccess route="inbox"><InboxPage /></RouteAccess>} />
+        <Route path="/support/chat-sandbox" element={<RouteAccess route="customer-support"><ChatSandboxPage /></RouteAccess>} />
+        <Route path="/support/settings" element={<RouteAccess route="customer-support"><AgentSettingsPage /></RouteAccess>} />
         <Route path="/sub-admins" element={<AdminOnly><SubAdminManagementPage /></AdminOnly>} />
         <Route path="/sub-admins/new" element={<AdminOnly><SubAdminFormPage /></AdminOnly>} />
         <Route path="/sub-admins/:id/edit" element={<AdminOnly><SubAdminFormPage /></AdminOnly>} />

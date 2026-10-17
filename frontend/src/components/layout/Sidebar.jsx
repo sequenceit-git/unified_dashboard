@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { FiChevronDown } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
 
 const LINKS = [
@@ -13,9 +15,24 @@ const LINKS = [
   { to: '/customers', label: 'Customers', route: 'customers' },
 ]
 
+const SUPPORT_LINKS = [
+  { to: '/support/chat-sandbox', label: 'Chat Sandbox' },
+  { to: '/support/settings', label: 'AI Agent Settings' },
+]
+
 export default function Sidebar({ open, onClose }) {
   const { hasRoute, isAdmin } = useAuth()
+  const location = useLocation()
   const visibleLinks = LINKS.filter((link) => hasRoute(link.route))
+
+  const showSupport = hasRoute('customer-support')
+  const supportActive = location.pathname.startsWith('/support')
+  const [supportOpen, setSupportOpen] = useState(supportActive)
+
+  useEffect(() => {
+    if (supportActive) setSupportOpen(true)
+  }, [supportActive])
+
   return (
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm lg:hidden" onClick={onClose} />}
@@ -40,6 +57,46 @@ export default function Sidebar({ open, onClose }) {
               {l.label}
             </NavLink>
           ))}
+
+          {showSupport && (
+            <div>
+              <button
+                type="button"
+                aria-expanded={supportOpen}
+                onClick={() => setSupportOpen((value) => !value)}
+                className={`flex w-full items-center justify-between px-12 py-4 text-left text-[15px] font-semibold transition ${
+                  supportActive ? 'text-[#4F46E5]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span>Customer Support AI</span>
+                <FiChevronDown
+                  size={16}
+                  className={`shrink-0 transition-transform duration-200 ${supportOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {supportOpen && (
+                <div className="pb-1">
+                  {SUPPORT_LINKS.map((l) => (
+                    <NavLink
+                      key={l.to}
+                      to={l.to}
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        `block w-full py-3 pl-14 pr-8 text-sm font-medium transition ${
+                          isActive
+                            ? 'border-r-2 border-[#4F46E5] bg-indigo-50/70 text-[#4F46E5]'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                        }`
+                      }
+                    >
+                      {l.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {isAdmin && (
             <NavLink
               to="/sub-admins"
