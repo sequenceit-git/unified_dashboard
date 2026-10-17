@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { useShopSection } from '../../hooks/useShopSection'
 import { api, queryString } from '../../lib/api'
-import { MARKETPLACES } from '../../lib/marketplaces'
 import Button from '../../components/ui/Button'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import { Select } from '../../components/ui/Input'
 import Pagination from '../../components/ui/Pagination'
-import Tabs from '../../components/ui/Tabs'
 import { useApi } from '../../hooks/useApi'
 import ConversationList from './ConversationList'
 import ThreadView from './ThreadView'
 
 export default function InboxPage() {
   const { token } = useAuth()
-  const [marketplace, setMarketplace] = useState('all')
+  const section = useShopSection()
+  const location = useLocation()
+  const marketplace = section?.marketplace
   const [status, setStatus] = useState('open')
   const [page, setPage] = useState(1)
   const [convos, setConvos] = useState([])
@@ -26,20 +28,16 @@ export default function InboxPage() {
 
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = useMemo(() => shopsRes.data || [], [shopsRes.data])
-  const availableMarketplaces = useMemo(() => [
-    MARKETPLACES[0],
-    ...MARKETPLACES.slice(1).filter((market) => shops.some((shop) => shop.marketplace === market.id)),
-  ], [shops])
   const shopIds = useMemo(
-    () => (marketplace === 'all' ? [] : shops.filter((s) => s.marketplace === marketplace).map((s) => s._id)),
+    () => shops.filter((shop) => shop.marketplace === marketplace).map((shop) => shop._id),
     [shops, marketplace],
   )
-  const noShopForTab = marketplace !== 'all' && !shopsRes.loading && shopIds.length === 0
+  const noShopForTab = Boolean(marketplace) && !shopsRes.loading && shopIds.length === 0
 
   const handleSyncInbox = async () => {
     setSyncing(true)
     try {
-      await api.post('/api/inbox/sync', {}, token)
+      await api.post('/api/inbox/sync', { marketplace }, token)
       await fetchConvos()
     } catch (err) {
       setError(`Sync failed: ${err.message}`)
@@ -50,7 +48,7 @@ export default function InboxPage() {
 
 
   const fetchConvos = async () => {
-    if (shopsRes.loading) return
+    if (!marketplace || shopsRes.loading) return
     if (noShopForTab) {
       setConvos([])
       setMeta({ page: 1, pages: 1, total: 0 })
@@ -93,10 +91,16 @@ export default function InboxPage() {
 
   useEffect(() => { fetchConvos() }, [marketplace, status, page, shopsRes.loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (!section) {
+    const params = new URLSearchParams(location.search)
+    params.set('shop', 'ebay')
+    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
+  }
+
   return (
     <div className="flex h-[calc(100vh-4rem-3rem)] min-h-[480px] flex-col">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold">Inbox</h1>
+        <h1 className="text-2xl font-bold">{section.label} inbox</h1>
         <div className="flex items-center gap-2">
           <div className="w-[140px]">
             <Select
@@ -111,16 +115,11 @@ export default function InboxPage() {
         </div>
       </div>
 
-      <Tabs
-        tabs={availableMarketplaces}
-        active={marketplace}
-        onChange={(m) => { setMarketplace(m); setPage(1); setMobileThread(false) }}
-      />
       <div className="mt-3 flex min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className={`flex w-full min-h-0 flex-col border-r border-gray-200 sm:w-[320px] sm:shrink-0 ${mobileThread ? 'hidden sm:flex' : 'flex'}`}>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading || shopsRes.loading ? <Spinner /> : error ? <ErrorState message={error} onRetry={fetchConvos} /> :
-              convos.length === 0 ? <EmptyState message={noShopForTab ? 'No shop connected for this marketplace' : 'No conversations'} /> : (
+              convos.length === 0 ? <EmptyState message={noShopForTab ? `Connect ${section.label} in Settings` : 'No conversations'} /> : (
                 <ConversationList convos={convos} activeId={activeId} onSelect={(id) => { setActiveId(id); setMobileThread(true) }} />
               )}
           </div>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { useShopSection } from '../../hooks/useShopSection'
 import { api, queryString } from '../../lib/api'
-import { MARKETPLACES } from '../../lib/marketplaces'
+import { marketplaceLabel } from '../../lib/marketplaces'
 import Badge, { statusColor } from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -9,20 +11,21 @@ import DataTable from '../../components/ui/DataTable'
 import { Select } from '../../components/ui/Input'
 import Pagination from '../../components/ui/Pagination'
 import SearchInput from '../../components/ui/SearchInput'
-import Tabs from '../../components/ui/Tabs'
 import OrderDrawer from './OrderDrawer'
 
 const STATUSES = ['all', 'pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'returned', 'refunded']
 
 export default function OrdersPage() {
   const { token } = useAuth()
+  const section = useShopSection()
+  const location = useLocation()
+  const marketplace = section?.marketplace
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMessage, setSyncMessage] = useState('')
   const [error, setError] = useState('')
-  const [marketplace, setMarketplace] = useState('all')
   const [status, setStatus] = useState('all')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('-placedAt')
@@ -31,6 +34,7 @@ export default function OrdersPage() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   const fetchRows = async () => {
+    if (!marketplace) return
     setLoading(true)
     setError('')
     try {
@@ -48,7 +52,7 @@ export default function OrdersPage() {
     setSyncing(true)
     setSyncMessage('')
     try {
-      const res = await api.post('/api/orders/sync', { marketplace: marketplace !== 'all' ? marketplace : undefined }, token)
+      const res = await api.post('/api/orders/sync', { marketplace }, token)
       const totalSynced = res.results?.reduce((acc, r) => acc + (r.synced || 0), 0) || 0
       setSyncMessage(`Sync completed: ${totalSynced} orders updated from marketplaces`)
       setRefreshKey((k) => k + 1)
@@ -71,18 +75,23 @@ export default function OrdersPage() {
     setSelectedId(full)
   }
 
+  if (!section) {
+    const params = new URLSearchParams(location.search)
+    params.set('shop', 'ebay')
+    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold">Orders</h1>
+          <h1 className="text-2xl font-bold">{section.label} orders</h1>
           {syncMessage && <p className="text-xs text-emerald-600 font-medium">{syncMessage}</p>}
         </div>
         <Button onClick={handleSyncOrders} disabled={syncing} size="sm">
-          {syncing ? 'Syncing...' : '↻ Sync Marketplaces'}
+          {syncing ? 'Syncing...' : `Sync ${section.label}`}
         </Button>
       </div>
-      <Tabs tabs={MARKETPLACES} active={marketplace} onChange={(m) => { setMarketplace(m); setPage(1) }} />
       <Card>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row">
 
@@ -92,7 +101,7 @@ export default function OrdersPage() {
         <DataTable
           columns={[
             { key: 'externalOrderId', label: 'Order' },
-            { key: 'marketplace', label: 'Market' },
+            { key: 'marketplace', label: 'Market', render: (row) => marketplaceLabel(row.marketplace) },
             { key: 'buyer', label: 'Buyer', render: (r) => r.buyer?.name || '—' },
             { key: 'total', label: 'Total', sortable: true, sortKey: 'totals.total', render: (r) => `$${r.totals?.total?.toFixed(2)}` },
             { key: 'status', label: 'Status', render: (r) => <Badge color={statusColor(r.status)}>{r.status}</Badge> },

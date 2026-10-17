@@ -4,6 +4,7 @@ const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../..
 const Order = require('../../models/Order')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('analytics'))
@@ -22,9 +23,8 @@ function match(req, extra = {}) {
 }
 
 function marketplaceFilter(req) {
-  return req.query.marketplace && req.query.marketplace !== 'all'
-    ? { marketplace: req.query.marketplace }
-    : {}
+  const marketplace = canonicalMarketplace(req.query.marketplace)
+  return marketplace ? { marketplace } : {}
 }
 
 // GET /api/analytics/summary?from=&to=
@@ -61,9 +61,7 @@ router.get('/summary', async (req, res) => {
 // GET /api/analytics/revenue?from=&to=&marketplace=
 router.get('/revenue', async (req, res) => {
   try {
-    const extra = req.query.marketplace && req.query.marketplace !== 'all'
-      ? { marketplace: req.query.marketplace }
-      : {}
+    const extra = marketplaceFilter(req)
     const rows = await Order.aggregate([
       { $match: match(req, extra) },
       {
@@ -132,9 +130,12 @@ router.get('/products', async (req, res) => {
 router.get('/inventory', async (req, res) => {
   try {
     const filter = { $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
-    if (req.user.role === 'sub_admin') {
-      const productIds = await Listing.find({ shopId: { $in: req.allowedShopIds } }).distinct('productId')
-      filter._id = { $in: productIds }
+    const marketplace = canonicalMarketplace(req.query.marketplace)
+    const listingFilter = {}
+    if (req.user.role === 'sub_admin') listingFilter.shopId = { $in: req.allowedShopIds }
+    if (marketplace) listingFilter.marketplace = marketplace
+    if (Object.keys(listingFilter).length) {
+      filter._id = { $in: await Listing.find(listingFilter).distinct('productId') }
     }
     const low = await Product.find(filter)
       .select('sku title stock lowStockThreshold')

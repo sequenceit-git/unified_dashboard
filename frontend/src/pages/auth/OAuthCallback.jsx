@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
+import { canonicalShopMarketplace } from '../../lib/shops'
 import { Spinner } from '../../components/ui/Feedback'
 
 export default function OAuthCallback() {
@@ -10,9 +11,9 @@ export default function OAuthCallback() {
   const { token } = useAuth()
   const [error, setError] = useState('')
 
+  const { marketplace: marketplaceParam } = useParams()
   const code = searchParams.get('code')
-  const state = searchParams.get('state') || ''
-  const marketplace = 'ebay'
+  const marketplace = canonicalShopMarketplace(marketplaceParam)
 
   useEffect(() => {
     async function exchange() {
@@ -23,7 +24,7 @@ export default function OAuthCallback() {
 
       try {
         await api.post(`/api/shops/oauth/callback/${marketplace}`, { code }, token)
-        navigate(`/?connected=${marketplace}`, { replace: true })
+        navigate(`/settings?connected=${marketplace}`, { replace: true })
       } catch (err) {
         setError(err.message || 'Failed to exchange authorization code')
       }
@@ -39,7 +40,7 @@ export default function OAuthCallback() {
           <h2 className="text-lg font-bold text-red-800">Connection Failed</h2>
           <p className="mt-2 text-sm text-red-600">{error}</p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/settings')}
             className="mt-4 rounded-lg bg-red-700 px-4 py-2 text-xs font-semibold text-white hover:bg-red-800"
           >
             Back to Dashboard

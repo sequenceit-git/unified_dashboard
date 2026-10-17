@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { useShopSection } from '../../hooks/useShopSection'
 import { api, queryString } from '../../lib/api'
 import Card from '../../components/ui/Card'
 import DataTable from '../../components/ui/DataTable'
@@ -9,6 +11,9 @@ import CustomerDrawer from './CustomerDrawer'
 
 export default function CustomersPage() {
   const { token } = useAuth()
+  const section = useShopSection()
+  const location = useLocation()
+  const marketplace = section?.marketplace
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
   const [loading, setLoading] = useState(true)
@@ -19,10 +24,11 @@ export default function CustomersPage() {
   const [selected, setSelected] = useState(null)
 
   const fetchRows = async () => {
+    if (!marketplace) return
     setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/customers${queryString({ q, sort, page, limit: 15 })}`, token)
+      const res = await api.get(`/api/customers${queryString({ marketplace, q, sort, page, limit: 15 })}`, token)
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
@@ -36,15 +42,21 @@ export default function CustomersPage() {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, sort, page])
+  }, [marketplace, q, sort, page])
 
   const open = async (row) => {
     setSelected(await api.get(`/api/customers/${row._id}`, token))
   }
 
+  if (!section) {
+    const params = new URLSearchParams(location.search)
+    params.set('shop', 'ebay')
+    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
+  }
+
   return (
     <div className="space-y-3">
-      <h1 className="text-2xl font-bold">Customers</h1>
+      <h1 className="text-2xl font-bold">{section.label} customers</h1>
       <Card>
         <div className="mb-3">
           <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search name, email, phone…" />

@@ -5,6 +5,7 @@ const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
 
@@ -37,6 +38,17 @@ router.get('/', async (req, res) => {
     if (req.query.stock === 'out') filter.stock = 0
     const ids = await scopedIds(req)
     if (ids) filter._id = { $in: ids }
+    if (req.query.marketplace && !req.query.shop) {
+      const marketplace = canonicalMarketplace(req.query.marketplace)
+      if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
+      const rows = await Listing.find({ marketplace }).select('productId')
+      let productIds = rows.map((row) => row.productId)
+      if (ids) {
+        const allowed = new Set(ids.map(String))
+        productIds = productIds.filter((id) => allowed.has(String(id)))
+      }
+      filter._id = { $in: productIds }
+    }
     if (req.query.shop) {
       const shopId = req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === req.query.shop)
         ? null

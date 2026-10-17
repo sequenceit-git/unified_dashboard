@@ -3,16 +3,24 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { FiChevronDown } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
 
-const LINKS = [
-  { to: '/discovery', label: 'Product Discovery', route: 'discovery' },
+const TOP_LINKS = [
+  { to: '/market-research', label: 'Product Discovery', route: 'market-research' },
   { to: '/', label: 'Overview', route: 'dashboard', end: true },
-  { to: '/analytics', label: 'Analytics', route: 'analytics' },
-  { to: '/market-research', label: 'Product Discover 2', route: 'market-research' },
-  { to: '/inbox', label: 'Inbox', route: 'inbox' },
-  { to: '/products', label: 'Products', route: 'products' },
-  { to: '/inventory', label: 'Inventory', route: 'inventory' },
-  { to: '/orders', label: 'Orders', route: 'orders' },
-  { to: '/customers', label: 'Customers', route: 'customers' },
+]
+
+const SHOP_SECTIONS = [
+  { id: 'ebay', label: 'eBay', storageKey: 'sidebar-ebay-open', defaultOpen: true },
+  { id: 'tiktok', label: 'TikTok Shop', storageKey: 'sidebar-tiktok-open', defaultOpen: false },
+  { id: 'temu', label: 'Temu Shop', storageKey: 'sidebar-temu-open', defaultOpen: false },
+]
+
+const SHOP_LINKS = [
+  { path: '/analytics', label: 'Analytics', route: 'analytics' },
+  { path: '/inbox', label: 'Inbox', route: 'inbox' },
+  { path: '/products', label: 'Products', route: 'products' },
+  { path: '/inventory', label: 'Inventory', route: 'inventory' },
+  { path: '/orders', label: 'Orders', route: 'orders' },
+  { path: '/customers', label: 'Customers', route: 'customers' },
 ]
 
 const SUPPORT_LINKS = [
@@ -98,18 +106,22 @@ export default function Sidebar({ open, onClose }) {
           )}
 
           {isAdmin && (
-            <NavLink
-              to="/sub-admins"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `block w-full px-12 py-4 text-[15px] font-semibold transition ${
-                  isActive ? 'bg-[#4F46E5] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`
-              }
-            >
+            <NavItem to="/sub-admins" onClose={onClose}>
               Sub-admins
-            </NavLink>
+            </NavItem>
           )}
+          <NavLink
+            to="/settings"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex w-full items-center gap-2 px-8 py-4 text-[15px] font-semibold transition ${
+                isActive ? 'bg-[#4F46E5] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`
+            }
+          >
+            <FiSettings size={16} />
+            Settings
+          </NavLink>
         </nav>
       </aside>
     </>

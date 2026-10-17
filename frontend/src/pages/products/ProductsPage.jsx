@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import { MARKETPLACES } from '../../lib/marketplaces'
+import { useShopSection } from '../../hooks/useShopSection'
 import Button from '../../components/ui/Button'
-import Tabs from '../../components/ui/Tabs'
 import { useApi } from '../../hooks/useApi'
 import BulkModal from './BulkModal'
 import CatalogTab from './CatalogTab'
@@ -11,7 +11,9 @@ import ProductModal from './ProductModal'
 
 export default function ProductsPage() {
   const { isAdmin, token } = useAuth()
-  const [marketplace, setMarketplace] = useState('all')
+  const section = useShopSection()
+  const location = useLocation()
+  const marketplace = section?.marketplace
   const [editing, setEditing] = useState(null)
   const [showNew, setShowNew] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
@@ -20,12 +22,11 @@ export default function ProductsPage() {
 
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = shopsRes.data || []
-  const availableMarketplaces = [
-    MARKETPLACES[0],
-    ...MARKETPLACES.slice(1).filter((market) => shops.some((shop) => shop.marketplace === market.id)),
-  ]
-  const shopIds = marketplace === 'all' ? [] : shops.filter((s) => s.marketplace === marketplace).map((s) => s._id)
-  const noShopForTab = marketplace !== 'all' && !shopsRes.loading && shopIds.length === 0
+  const shopIds = useMemo(
+    () => shops.filter((shop) => shop.marketplace === marketplace).map((shop) => shop._id),
+    [shops, marketplace],
+  )
+  const noShopForTab = !shopsRes.loading && shopIds.length === 0
 
   const saved = () => {
     setEditing(null)
@@ -35,10 +36,16 @@ export default function ProductsPage() {
     setRefreshKey((k) => k + 1)
   }
 
+  if (!section) {
+    const params = new URLSearchParams(location.search)
+    params.set('shop', 'ebay')
+    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
+  }
+
   return (
     <div className="flex flex-col">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold">Products</h1>
+        <h1 className="text-2xl font-bold">{section.label} products</h1>
         {isAdmin && (
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setShowBulk(true)}>Bulk upload</Button>
@@ -46,11 +53,6 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
-      <Tabs
-        tabs={availableMarketplaces}
-        active={marketplace}
-        onChange={setMarketplace}
-      />
       <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="p-4">
           <CatalogTab
@@ -59,7 +61,7 @@ export default function ProductsPage() {
             refreshKey={refreshKey}
             shopIds={shopIds}
             disabled={noShopForTab}
-            disabledMessage="No shop connected for this marketplace"
+            disabledMessage={`Connect ${section.label} in Settings to see its products`}
           />
         </div>
       </div>

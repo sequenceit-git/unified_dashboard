@@ -11,7 +11,7 @@ import { useApi } from '../../hooks/useApi'
 const ROUTE_LABELS = {
   dashboard: 'Dashboard',
   analytics: 'Analytics',
-  'market-research': 'Product Discover 2',
+  'market-research': 'Product Discovery',
   products: 'Products',
   inventory: 'Inventory',
   orders: 'Orders',

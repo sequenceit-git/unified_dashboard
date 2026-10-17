@@ -38,7 +38,66 @@ router.get('/overview', async (req, res) => {
       entries.map(async ([name, model]) => [name, await model.countDocuments(shopFilter(req, model))]),
     )
     const counts = Object.fromEntries(results)
-    const responseData = { db: 'unified_dashboard', counts }
+    const since = new Date(Date.now() - 30 * 86400000)
+    const orderFilter = shopFilter(req, resources.orders)
+    const listingFilter = shopFilter(req, resources.listings)
+    const buyerFilter = req.user.role === 'sub_admin'
+      ? { 'identities.shopId': { $in: req.allowedShopIds || [] } }
+      : {}
+    const lowStockPromise = (async () => {
+      const filter = { $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
+      if (req.user.role === 'sub_admin') {
+        const productIds = await resources.listings
+          .find({ shopId: { $in: req.allowedShopIds || [] } })
+          .distinct('productId')
+        filter._id = { $in: productIds }
+      }
+      return resources.products.countDocuments(filter)
+    })()
+    const [connectedShops, revenueRows, readyToShip, liveListings, orders30, buyers, openInbox, lowStock] = await Promise.all([
+      resources.shops.find({ status: 'connected' }).select('marketplace').lean(),
+      resources.orders.aggregate([
+        {
+          $match: {
+            ...orderFilter,
+            placedAt: { $gte: since },
+            status: { $nin: ['cancelled', 'refunded'] },
+          },
+        },
+        { $group: { _id: null, revenue: { $sum: '$totals.total' } } },
+      ]),
+      resources.orders.countDocuments({
+        ...orderFilter,
+        status: { $in: ['pending', 'paid', 'processing'] },
+      }),
+      resources.listings.countDocuments({ ...listingFilter, status: 'live' }),
+      resources.orders.countDocuments({
+        ...orderFilter,
+        placedAt: { $gte: since },
+      }),
+      resources.customers.countDocuments(buyerFilter),
+      resources.conversations.countDocuments({
+        ...shopFilter(req, resources.conversations),
+        status: 'open',
+      }),
+      lowStockPromise,
+    ])
+    const connectedMarkets = new Set(connectedShops.map((shop) => shop.marketplace))
+    const responseData = {
+      db: 'unified_dashboard',
+      counts,
+      unified: {
+        connected: ['ebay', 'tiktok_shop', 'temu'].filter((id) => connectedMarkets.has(id)).length,
+        marketplaces: 3,
+        revenue: +(revenueRows[0]?.revenue || 0).toFixed(2),
+        orders30,
+        buyers,
+        readyToShip,
+        liveListings,
+        openInbox,
+        lowStock,
+      },
+    }
     overviewCache = { timestamp: now, data: responseData, userId: userKey }
     res.json(responseData)
   } catch (err) {

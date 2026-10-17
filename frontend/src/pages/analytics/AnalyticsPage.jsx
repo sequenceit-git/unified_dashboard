@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { useShopSection } from '../../hooks/useShopSection'
 import { queryString } from '../../lib/api'
-import { MARKETPLACES } from '../../lib/marketplaces'
 import { StatCard } from '../../components/ui/Card'
 import { Select } from '../../components/ui/Input'
-import Tabs from '../../components/ui/Tabs'
 import { useApi } from '../../hooks/useApi'
 import MarketplaceChart from './MarketplaceChart'
 import RevenueChart from './RevenueChart'
@@ -35,8 +35,10 @@ function toIsoSafe(dateStr, isEnd = false) {
 
 export default function AnalyticsPage() {
   const { token } = useAuth()
+  const section = useShopSection()
+  const location = useLocation()
+  const marketplace = section?.marketplace
   const [days, setDays] = useState('30')
-  const [marketplace, setMarketplace] = useState('all')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
 
@@ -54,21 +56,18 @@ export default function AnalyticsPage() {
   const revenue = useApi(token ? `/api/analytics/revenue${queryString({ from, to, marketplace })}` : null)
   const markets = useApi(token ? `/api/analytics/marketplaces${queryString({ from, to, marketplace })}` : null)
   const top = useApi(token ? `/api/analytics/products${queryString({ from, to, marketplace, limit: 10 })}` : null)
-  const inv = useApi(token ? '/api/analytics/inventory' : null)
-  const shopsRes = useApi(token ? '/api/shops' : null)
+  const inv = useApi(token && marketplace ? `/api/analytics/inventory${queryString({ marketplace })}` : null)
 
-  const availableMarketplaces = useMemo(() => {
-    const shops = shopsRes.data || []
-    return [
-      MARKETPLACES[0],
-      ...MARKETPLACES.slice(1).filter((market) => shops.some((shop) => shop.marketplace === market.id)),
-    ]
-  }, [shopsRes.data])
+  if (!section) {
+    const params = new URLSearchParams(location.search)
+    params.set('shop', 'ebay')
+    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
+  }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold">Analytics</h1>
+        <h1 className="text-2xl font-bold">{section.label} analytics</h1>
         <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-3">
           <Select
             value={days}
@@ -103,7 +102,6 @@ export default function AnalyticsPage() {
         <StatCard label="Low stock" value={inv.loading ? '…' : (inv.data?.lowCount ?? 0)} sub={inv.data ? `${inv.data.outCount ?? 0} out of stock` : ''} />
       </div>
 
-      <Tabs tabs={availableMarketplaces} active={marketplace} onChange={setMarketplace} />
       <RevenueChart data={revenue.data} />
 
       <div className="grid gap-3 lg:grid-cols-2">
