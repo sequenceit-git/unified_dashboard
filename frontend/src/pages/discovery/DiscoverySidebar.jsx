@@ -7,7 +7,7 @@ const STATUS_DOT = {
   failed: 'bg-red-500',
 }
 
-export default function Discovery2Sidebar({
+export default function DiscoverySidebar({
   reports = [],
   selectedReportId = null,
   onSelectReport = () => {},

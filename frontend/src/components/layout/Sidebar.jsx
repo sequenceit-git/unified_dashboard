@@ -31,7 +31,7 @@ const SUPPORT_LINKS = [
 export default function Sidebar({ open, onClose }) {
   const { hasRoute, isAdmin } = useAuth()
   const location = useLocation()
-  const visibleLinks = LINKS.filter((link) => hasRoute(link.route))
+  const visibleLinks = TOP_LINKS.filter((link) => hasRoute(link.route))
 
   const showSupport = hasRoute('customer-support')
   const supportActive = location.pathname.startsWith('/support')

@@ -1,9 +1,6 @@
-const discoveryAgent = require('./discoveryAgent')
-const marketAnalyzer = require('./marketAnalyzer')
-const { runDiscoveryAgentTwo } = require('./discoveryagenttwo/discoveryAgentTwo')
+const { runDiscoveryAgent, runDiscoveryAgentTwo } = require('./discovery/discoveryAgent')
 
 module.exports = {
-  discoveryAgent,
-  marketAnalyzer,
+  runDiscoveryAgent,
   runDiscoveryAgentTwo,
 }

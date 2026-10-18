@@ -5,7 +5,7 @@ const METRICS = [
   { key: 'lastRun', label: 'Last run' },
 ]
 
-export default function Discovery2Overview({ stats = {}, loading = false }) {
+export default function DiscoveryOverview({ stats = {}, loading = false }) {
   const lastRun = stats.lastRunDate
     ? new Date(stats.lastRunDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'None yet'

@@ -237,10 +237,10 @@ Write 1-2 concise, factual sentences explaining the single strongest reason to s
 }
 
 /**
- * Main Agent Runner for Product Discovery 2
+ * Main Agent Runner for Product Discovery
  */
-async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions = '', minMargin: directMinMargin, marketplaces, reportId, user }) {
-  console.log(`[DiscoveryAgent2] Starting run for reportId: ${reportId}, categories: [${categories.join(', ')}]`)
+async function runDiscoveryAgent({ categories = [], niche = '', instructions = '', minMargin: directMinMargin, marketplaces, reportId, user }) {
+  console.log(`[DiscoveryAgent] Starting run for reportId: ${reportId}, categories: [${categories.join(', ')}]`)
 
   const client = getOpenAIClient()
   const minMarginThreshold = Number(directMinMargin) || 15
@@ -462,5 +462,6 @@ async function runDiscoveryAgentTwo({ categories = [], niche = '', instructions 
 }
 
 module.exports = {
-  runDiscoveryAgentTwo,
+  runDiscoveryAgent,
+  runDiscoveryAgentTwo: runDiscoveryAgent,
 }

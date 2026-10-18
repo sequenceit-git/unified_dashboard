@@ -6,9 +6,9 @@ import CustomersPage from './pages/customers/CustomersPage'
 import InboxPage from './pages/inbox/InboxPage'
 import InventoryPage from './pages/inventory/InventoryPage'
 import Login from './pages/auth/Login'
-import ProductDiscovery2Page from './pages/discovery2/ProductDiscovery2Page'
 import OrdersPage from './pages/orders/OrdersPage'
 import Overview from './pages/dashboard/Overview'
+import ProductDiscoveryPage from './pages/discovery/ProductDiscoveryPage'
 import ProductsPage from './pages/products/ProductsPage'
 import OAuthCallback from './pages/auth/OAuthCallback'
 import SettingsPage from './pages/settings/SettingsPage'
@@ -46,7 +46,7 @@ export default function App() {
         <Route path="/discovery" element={<Navigate to="/market-research" replace />} />
         <Route path="/" element={<RouteAccess route="dashboard"><Overview /></RouteAccess>} />
         <Route path="/analytics" element={<RouteAccess route="analytics"><AnalyticsPage /></RouteAccess>} />
-        <Route path="/market-research" element={<RouteAccess route="market-research"><ProductDiscovery2Page /></RouteAccess>} />
+        <Route path="/market-research" element={<RouteAccess route="market-research"><ProductDiscoveryPage /></RouteAccess>} />
         <Route path="/products" element={<RouteAccess route="products"><ProductsPage /></RouteAccess>} />
         <Route path="/inventory" element={<RouteAccess route="inventory"><InventoryPage /></RouteAccess>} />
         <Route path="/orders" element={<RouteAccess route="orders"><OrdersPage /></RouteAccess>} />
