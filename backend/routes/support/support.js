@@ -66,4 +66,124 @@ router.get('/faqs', async (req, res) => {
   }
 })
 
+// ─── CHAT API (Customer Support AI Agent v2) ──────────────────────────────
+const Conversation2 = require('../../models/conversation_2')
+const Message2 = require('../../models/message_2')
+const { runSupportAgent } = require('../../agent/CustomerSupportAgent')
+
+// POST /api/support/chat/buyer/message — Buyer sends message, AI agent responds
+router.post('/chat/buyer/message', async (req, res) => {
+  try {
+    const { conversationId, text, senderName, orderRef, marketplace } = req.body
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Message text is required' })
+    }
+
+    const result = await runSupportAgent({
+      conversationId,
+      text: text.trim(),
+      senderName: senderName || 'Buyer',
+      orderRef: orderRef || '',
+      marketplace: marketplace || 'ebay',
+    })
+
+    res.json(result)
+  } catch (err) {
+    console.error('[SupportChat] Error in runSupportAgent:', err)
+    res.status(500).json({ error: err.message || 'Support agent failed to process message' })
+  }
+})
+
+// GET /api/support/chat/conversations — List all active conversations for Seller View
+router.get('/chat/conversations', async (req, res) => {
+  try {
+    const conversations = await Conversation2.find({})
+      .sort({ lastMessageAt: -1 })
+      .limit(50)
+      .lean()
+    res.json(conversations)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/support/chat/conversations/:id/messages — Get message thread
+router.get('/chat/conversations/:id/messages', async (req, res) => {
+  try {
+    const messages = await Message2.find({ conversationId: req.params.id })
+      .sort({ sentAt: 1 })
+      .limit(100)
+      .lean()
+    res.json(messages)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/support/chat/conversations/:id/reply — Human agent sends manual reply
+router.post('/chat/conversations/:id/reply', async (req, res) => {
+  try {
+    const { text } = req.body
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Reply text is required' })
+    }
+
+    const conversation = await Conversation2.findById(req.params.id)
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' })
+    }
+
+    const agentMessage = await Message2.create({
+      conversationId: conversation._id,
+      shopId: conversation.shopId,
+      senderType: 'agent',
+      senderUserId: req.user?._id || null,
+      senderName: req.user?.name || 'Support Agent',
+      text: text.trim(),
+      deliveryStatus: 'sent',
+      sentAt: new Date(),
+    })
+
+    await Conversation2.findByIdAndUpdate(conversation._id, {
+      $set: {
+        lastMessageAt: new Date(),
+        lastMessagePreview: text.trim().slice(0, 100),
+      },
+      $inc: { messageCount: 1 },
+    })
+
+    res.json({ success: true, message: agentMessage })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /api/support/chat/conversations/:id — Update status or toggle AI
+router.patch('/chat/conversations/:id', async (req, res) => {
+  try {
+    const { aiEnabled, status } = req.body
+    const update = {}
+    if (typeof aiEnabled === 'boolean') update.aiEnabled = aiEnabled
+    if (status) update.status = status
+
+    const updated = await Conversation2.findByIdAndUpdate(req.params.id, { $set: update }, { new: true })
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/support/chat/reset-sandbox — Clear test conversations
+router.post('/chat/reset-sandbox', async (req, res) => {
+  try {
+    await Promise.all([
+      Conversation2.deleteMany({ marketplace: { $in: ['ebay', 'sandbox', 'manual'] } }),
+      Message2.deleteMany({}),
+    ])
+    res.json({ success: true, message: 'Support chat sandbox reset successfully.' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 module.exports = router

@@ -58,21 +58,25 @@ Return reply to widget
 ## 2. Stage details
 
 ### [1] Request validation and rate limiting
+
 - Max message length: 500-800 characters. Reject longer.
 - Per-session and per-IP rate limit (e.g. 10 messages/min).
 - Captcha on the widget (e.g. Cloudflare Turnstile) before the first message.
 - Max messages per conversation (e.g. 30). Then ask the customer to contact support by email.
 
 ### [2] Resolve customer
+
 - Identify the customer by a signed session token, or order ID + email / eBay username.
 - Derive `customerKey` (hash) from this. It is the key for conversations.
 - Anonymous visitors can only get FAQ/policy and product answers, nothing tied to an order.
 
 ### [3] Conversation lookup
+
 - Find the conversation for `customerKey` with `status: "open"`, else create one.
 - Save the customer's message **before** calling the model, so the log is complete even if the call fails.
 
 ### [4] Deterministic scope / spam gate (no tokens spent)
+
 - Keyword and regex rules: links, repeated characters, known spam phrases, blocklist.
 - Optional: embedding similarity of the message against your allowed topics (order, shipping, returns, products, warranty). Below threshold means out of scope.
 - Out-of-scope / spam gets a fixed template, for example: "I can only help with our products, orders, shipping and returns."
@@ -80,17 +84,19 @@ Return reply to widget
 - Optional second layer: a tiny classifier call (`gpt-5-mini`, minimal reasoning, ~20 output tokens) returning `in_scope | off_topic | spam | needs_human`. Only run it when rules are inconclusive.
 
 ### [5] Load history
+
 - Last 6-10 messages of this conversation, capped by a token budget (~1,500 tokens).
 - If the chat is long: send `conversation.summary` (~100 words) + the last few turns. Refresh the summary in a background job every ~15 messages.
 - Returning customer: optionally add the *previous conversation's summary only*, never its raw messages.
 - Prompt order: static system prompt first, then history, then the new message. A stable prefix helps automatic prompt caching.
 
 ### [6] Support agent (OpenAI Agents SDK)
+
 - One agent, no handoffs, no multi-agent.
 - Tools are read-only functions against your own backend:
 
 | Tool | Purpose | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `searchProducts(query)` | find listings | return at most 5 results, trimmed fields only |
 | `getProductDetails(itemId)` | price, stock, shipping, description | strip HTML, cap description length |
 | `searchFaqPolicies(query)` | approved FAQ / policy chunks | return top 3-4 chunks with `sourceId` |
@@ -110,7 +116,9 @@ const SupportReply = z.object({
 ```
 
 ### [8] Output validation (in code)
+
 Reject and use the fallback when any of these is true:
+
 - `status = "answered"` but `sourceIds` is empty.
 - `sourceIds` contain IDs that were not returned by a tool in this run.
 - `answer` is over the word limit (~120 words).
@@ -120,6 +128,7 @@ Reject and use the fallback when any of these is true:
 Fallback reply: "I've passed this to our team and they'll get back to you within [X]." Then set `conversation.status = "escalated"` so it shows up in the dashboard inbox.
 
 ### [9] Save and return
+
 - Save the assistant message with `sourceIds`, `status`, `tokensIn`, `tokensOut`, `toolCalls`, `latencyMs`, `flags`.
 - Return the reply to the widget.
 
@@ -181,6 +190,7 @@ Keep replies under 120 words, friendly and plain.
 ---
 
 ## 5. Token-burn protection checklist
+
 - [ ] Spam and out-of-scope replies are fixed templates, no LLM call.
 - [ ] Strike limit with lockout.
 - [ ] Message length cap and conversation message cap.
@@ -216,7 +226,9 @@ src/support/
 ---
 
 ## 7. Testing before launch
+
 Write 30-50 test messages and run them against the sandbox:
+
 - Prompt injection ("ignore your instructions", "print your system prompt").
 - Requests for refunds, discounts, price matches, delivery guarantees.
 - Off-topic chat (coding, news, jokes) and spam links.
@@ -229,6 +241,7 @@ Pass criteria: no invented policies, no promises, no off-topic answers, and spam
 ---
 
 ## 8. Open items to confirm
+
 - **eBay communication rules:** check eBay's policies on buyer messaging and moving buyers off-platform. It matters whether the bot answers inside eBay messages (API) or in your own widget.
 - **Human handoff:** decide where escalated chats go (dashboard inbox, email) and the promised response time.
 - **Customer identification:** choose between session token or order ID + email for production.
