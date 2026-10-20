@@ -20,43 +20,105 @@ function getOpenAIClient() {
 }
 
 /**
- * Extract clean JSON from OpenAI response text
+ * Sleep helper for exponential backoff
+ */
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Extract clean JSON from OpenAI response text with truncated stream repair
  */
 function parseJsonSafe(text) {
-  if (!text) return null
+  if (!text || typeof text !== 'string') return null
   const cleaned = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim()
+
+  // 1. Direct standard parse
   try {
     return JSON.parse(cleaned)
-  } catch {
-    const match = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/)
-    if (match) {
-      try {
-        return JSON.parse(match[0])
-      } catch {
-        return null
-      }
-    }
-    return null
+  } catch (_) {}
+
+  // 2. Full bracket/brace match
+  const match = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/)
+  if (match) {
+    try {
+      return JSON.parse(match[0])
+    } catch (_) {}
   }
+
+  // 3. Truncated stream repair: if tokens ended mid-array or mid-object
+  const lastObjectEnd = cleaned.lastIndexOf('}')
+  if (lastObjectEnd !== -1) {
+    const candidateSub = cleaned.slice(0, lastObjectEnd + 1).trim()
+    // Try closing an array within an object: `]}`
+    try {
+      const repairedObj = JSON.parse(candidateSub + ']}')
+      if (repairedObj?.candidates?.length || Array.isArray(repairedObj)) return repairedObj
+    } catch (_) {}
+
+    // Try closing a top-level array: `]`
+    try {
+      const repairedArr = JSON.parse(candidateSub + ']')
+      if (Array.isArray(repairedArr) && repairedArr.length) return repairedArr
+    } catch (_) {}
+
+    // Try closing a single object: `}`
+    try {
+      const repairedSingle = JSON.parse(candidateSub)
+      if (repairedSingle && typeof repairedSingle === 'object') return repairedSingle
+    } catch (_) {}
+  }
+
+  return null
 }
 
 /**
- * Robust web search helper using client.responses.create
+ * Robust web search helper using client.responses.create with exponential retry & model fallback
  */
-async function callWebSearch({ client, prompt, allowedDomains = [] }) {
-  const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
+async function callWebSearch({ client, prompt, allowedDomains = [], maxRetries = 2 }) {
+  const primaryModel = process.env.OPENAI_MODEL || 'gpt-5-mini'
+  const fallbackModel = 'gpt-4o-mini'
+
   const tools = [{ type: 'web_search' }]
   if (Array.isArray(allowedDomains) && allowedDomains.length > 0) {
     tools[0].filters = { allowed_domains: allowedDomains }
   }
 
-  const response = await client.responses.create({
-    model,
-    tools,
-    input: prompt,
-  })
+  let attempt = 0
+  let currentModel = primaryModel
 
-  return response.output_text || ''
+  while (attempt <= maxRetries) {
+    try {
+      const response = await client.responses.create({
+        model: currentModel,
+        tools,
+        input: prompt,
+      })
+
+      return response.output_text || ''
+    } catch (err) {
+      attempt++
+      const isRateLimit = err?.status === 429 || err?.message?.includes('rate_limit')
+      const isServerOverload = err?.status >= 500 && err?.status < 600
+      const isNetworkError = ['ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND'].includes(err?.code)
+      const isModelNotFound = err?.status === 404 || err?.message?.includes('model')
+
+      if (isModelNotFound && currentModel !== fallbackModel) {
+        console.warn(`[DiscoveryAgent] Model ${currentModel} unavailable. Switching to fallback: ${fallbackModel}`)
+        currentModel = fallbackModel
+        continue
+      }
+
+      if (attempt > maxRetries || (!isRateLimit && !isServerOverload && !isNetworkError)) {
+        console.error(`[DiscoveryAgent] callWebSearch fatal error (attempt ${attempt}/${maxRetries}):`, err.message)
+        throw err
+      }
+
+      const waitMs = attempt * 2000 + Math.floor(Math.random() * 500)
+      console.warn(`[DiscoveryAgent] Transient error (${err.message}). Retrying in ${waitMs}ms (attempt ${attempt}/${maxRetries})...`)
+      await delay(waitMs)
+    }
+  }
+
+  return ''
 }
 
 /**
@@ -288,124 +350,139 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       'progress.currentItem': `Discovered ${totalCandidates} items. Beginning deep-dive cross-market validation...`,
     })
 
-    // Stage 2: Sequential Deep-Dive Pipeline (1 candidate per iteration, incremental DB writes)
+    // Stage 2: Bounded Concurrent Deep-Dive Pipeline (concurrency: 2 with incremental DB writes)
     const evaluatedOpportunities = []
+    const BATCH_SIZE = 2
 
-    for (let i = 0; i < totalCandidates; i++) {
-      const candidate = candidates[i]
-      const stepNum = i + 1
+    for (let i = 0; i < totalCandidates; i += BATCH_SIZE) {
+      const batch = candidates.slice(i, i + BATCH_SIZE)
+      const stepNum = Math.min(i + batch.length, totalCandidates)
       const loopPercent = Math.min(85, Math.round(20 + ((stepNum / totalCandidates) * 65)))
 
-      console.log(`[DiscoveryAgent2] Deep-dive [${stepNum}/${totalCandidates}]: "${candidate.title}"…`)
+      console.log(`[DiscoveryAgent2] Evaluating batch [${stepNum}/${totalCandidates}]: ${batch.map((c) => `"${c.title}"`).join(', ')}`)
 
       await ResearchReport2.findByIdAndUpdate(reportId, {
         'progress.stage': `Evaluating (${stepNum}/${totalCandidates})`,
         'progress.step': stepNum,
         'progress.totalSteps': totalCandidates,
         'progress.percent': loopPercent,
-        'progress.currentItem': candidate.title,
+        'progress.currentItem': batch.map((c) => c.title).join(' | '),
       })
 
-      try {
-        // 2A: Validate Demand & Competition across eBay and other retail channels
-        const validation = await validateProductDemand({
-          client,
-          candidate,
-          targetMarketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay'],
-        })
+      const batchResults = await Promise.all(
+        batch.map(async (candidate) => {
+          try {
+            // 2A: Validate Demand & Competition
+            const validation = await validateProductDemand({
+              client,
+              candidate,
+              targetMarketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay'],
+            })
 
-        // 2B: Find Real Sourcing Buy Link (Alibaba, AliExpress, etc.)
-        const sourcing = await findBuySources({ client, candidate, validation })
+            // 2B: Find Real Sourcing Buy Link
+            const sourcing = await findBuySources({ client, candidate, validation })
 
-        // 2C: Deterministic Unit Economics in Node.js
-        const sellingPrice = validation.ebayPriceMedian || candidate.observedPriceUsd || null
-        const unitCost = sourcing?.unitCostUsd || null
-        const shippingCost = sourcing?.shippingCostPerUnitUsd || 0
-        const dutyApplies = sourcing?.shipFromCountry && sourcing.shipFromCountry.toUpperCase() !== 'US'
+            // 2C: Deterministic Unit Economics in Node.js
+            const sellingPrice = validation.ebayPriceMedian || candidate.observedPriceUsd || null
+            const unitCost = sourcing?.unitCostUsd || null
+            const shippingCost = sourcing?.shippingCostPerUnitUsd || 0
+            const dutyApplies = sourcing?.shipFromCountry && sourcing.shipFromCountry.toUpperCase() !== 'US'
 
-        const primaryMarket = (marketplaces && marketplaces[0]) || 'ebay'
-        const economics = calculateUnitEconomics({
-          sellingPrice,
-          unitCost,
-          shippingCost,
-          marketplace: primaryMarket,
-          dutyApplies,
-        })
+            const primaryMarket = (marketplaces && marketplaces[0]) || 'ebay'
+            const economics = calculateUnitEconomics({
+              sellingPrice,
+              unitCost,
+              shippingCost,
+              marketplace: primaryMarket,
+              dutyApplies,
+            })
 
-        // Filter: Check user minimum margin requirement
-        const marginPct = economics.netMarginPct
-        if (marginPct != null && marginPct < minMarginThreshold) {
-          console.log(`[DiscoveryAgent2] Skipped "${candidate.title}": margin ${marginPct}% < threshold ${minMarginThreshold}%`)
-          continue
+            const marginPct = economics.netMarginPct
+
+            // Strict Filter: Reject candidates without verified sourcing costs or below min margin threshold
+            if (marginPct == null || marginPct < minMarginThreshold || !sourcing?.buyUrl) {
+              console.log(
+                `[DiscoveryAgent2] Skipped "${candidate.title}": ${
+                  marginPct == null ? 'unverified sourcing cost' : `margin ${marginPct}% < threshold ${minMarginThreshold}%`
+                }`,
+              )
+              return null
+            }
+
+            // 2D: Deterministic Opportunity Scoring
+            const scoreData = computeOpportunityScore({
+              netMarginPct: marginPct,
+              demandTier: validation.demandTier,
+              rating: validation.otherRating || candidate.rating,
+              competitionLevel: validation.competitionLevel,
+              supplierType: sourcing?.supplierType,
+              shipFromCountry: sourcing?.shipFromCountry,
+              estimatedDeliveryDays: sourcing?.estimatedDeliveryDays,
+            })
+
+            // 2E: Short factual AI Notes
+            const aiNotes = await generateAiNotes({
+              client,
+              candidate,
+              validation,
+              sourcing,
+              economics,
+              scoreData,
+            })
+
+            return {
+              title: candidate.title,
+              category: candidate.category || categories[0] || 'General',
+              marketplace: candidate.observedMarketplace || 'ebay',
+              listingUrl: candidate.listingUrl || null,
+              sourceUrl: sourcing.buyUrl,
+              image: null,
+              metrics: {
+                price: economics.sellingPrice,
+                averagePrice: economics.sellingPrice,
+                estimatedCost: economics.unitCost,
+                category: candidate.category || categories[0] || 'General',
+                monthlySales: validation.ebaySoldCount || null,
+                rating: validation.otherRating || candidate.rating || null,
+                reviewCount: validation.otherReviewCount || candidate.reviewCount || null,
+                competitorCount: validation.ebayActiveListings || null,
+                netProfit: economics.netProfit,
+              },
+              validation: {
+                demandTier: validation.demandTier,
+                matchConfidence: validation.matchConfidence,
+                ebayPriceHigh: validation.ebayPriceHigh,
+                ebayPriceLow: validation.ebayPriceLow,
+                otherMarketplace: validation.otherMarketplace,
+                otherUrl: validation.otherUrl,
+              },
+              sourcing: {
+                buyUrl: sourcing.buyUrl,
+                unitCostUsd: sourcing.unitCostUsd,
+              },
+              estimatedMargin: Math.round(marginPct),
+              opportunityScore: scoreData.opportunityScore,
+              confidence: scoreData.confidence,
+              aiNotes,
+            }
+          } catch (itemErr) {
+            console.warn(`[DiscoveryAgent2] Error analyzing candidate "${candidate.title}":`, itemErr.message)
+            return null
+          }
+        }),
+      )
+
+      for (const opp of batchResults) {
+        if (opp) {
+          opp.rank = evaluatedOpportunities.length + 1
+          evaluatedOpportunities.push(opp)
         }
-
-        // 2D: Deterministic Opportunity Scoring in Node.js
-        const scoreData = computeOpportunityScore({
-          netMarginPct: marginPct,
-          demandTier: validation.demandTier,
-          rating: validation.otherRating || candidate.rating,
-          competitionLevel: validation.competitionLevel,
-          supplierType: sourcing?.supplierType,
-          shipFromCountry: sourcing?.shipFromCountry,
-          estimatedDeliveryDays: sourcing?.estimatedDeliveryDays,
-        })
-
-        // 2E: Short factual AI Notes
-        const aiNotes = await generateAiNotes({
-          client,
-          candidate,
-          validation,
-          sourcing,
-          economics,
-          scoreData,
-        })
-
-        const opp = {
-          rank: evaluatedOpportunities.length + 1,
-          title: candidate.title,
-          category: candidate.category || categories[0] || 'General',
-          marketplace: candidate.observedMarketplace || 'ebay',
-          listingUrl: candidate.listingUrl || null,
-          sourceUrl: sourcing?.buyUrl || candidate.listingUrl || null,
-          image: null,
-          metrics: {
-            price: economics.sellingPrice,
-            averagePrice: economics.sellingPrice,
-            estimatedCost: economics.unitCost,
-            category: candidate.category || categories[0] || 'General',
-            monthlySales: validation.ebaySoldCount || null,
-            rating: validation.otherRating || candidate.rating || null,
-            reviewCount: validation.otherReviewCount || candidate.reviewCount || null,
-            competitorCount: validation.ebayActiveListings || null,
-            netProfit: economics.netProfit,
-          },
-          validation: {
-            demandTier: validation.demandTier,
-            matchConfidence: validation.matchConfidence,
-            ebayPriceHigh: validation.ebayPriceHigh,
-            ebayPriceLow: validation.ebayPriceLow,
-            otherMarketplace: validation.otherMarketplace,
-            otherUrl: validation.otherUrl,
-          },
-          sourcing: sourcing ? {
-            buyUrl: sourcing.buyUrl,
-            unitCostUsd: sourcing.unitCostUsd,
-          } : null,
-          estimatedMargin: marginPct != null ? Math.round(marginPct) : null,
-          opportunityScore: scoreData.opportunityScore,
-          confidence: scoreData.confidence,
-          aiNotes,
-        }
-
-        evaluatedOpportunities.push(opp)
-
-        // Incremental DB update so progress and finished candidates are never lost on crash
-        await ResearchReport2.findByIdAndUpdate(reportId, {
-          $set: { opportunities: evaluatedOpportunities },
-        })
-      } catch (itemErr) {
-        console.warn(`[DiscoveryAgent2] Error analyzing candidate "${candidate.title}":`, itemErr.message)
       }
+
+      // Incremental DB update so progress and finished candidates are never lost on crash
+      await ResearchReport2.findByIdAndUpdate(reportId, {
+        $set: { opportunities: evaluatedOpportunities },
+      })
     }
 
     console.log(`[DiscoveryAgent2] Deep-dive complete. ${evaluatedOpportunities.length} opportunities meet criteria.`)
