@@ -4,15 +4,11 @@ import {
   FiSend,
   FiCheckCircle,
   FiAlertTriangle,
-  FiLock,
-  FiUnlock,
   FiRefreshCw,
   FiCpu,
-  FiUser,
   FiTool,
   FiFileText,
-  FiClock,
-  FiZap,
+  FiTrash2,
 } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
@@ -48,9 +44,12 @@ export default function SellerChatPage() {
     try {
       const data = await api.get('/api/support/chat/conversations', token)
       setConversations(data || [])
-      if (!selectedConvoId && data?.length > 0) {
-        setSelectedConvoId(data[0]._id)
-      }
+      // Functional update avoids the stale closure that used to reset the
+      // selected thread to the first item on every poll.
+      setSelectedConvoId((current) => {
+        if (!data?.length) return null
+        return data.some((convo) => convo._id === current) ? current : data[0]._id
+      })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -100,6 +99,7 @@ export default function SellerChatPage() {
     if (!replyText.trim() || !selectedConvoId || sendingReply) return
 
     setSendingReply(true)
+    setError(null)
     try {
       const res = await api.post(
         `/api/support/chat/conversations/${selectedConvoId}/reply`,
@@ -107,12 +107,21 @@ export default function SellerChatPage() {
         token,
       )
       if (res?.message) {
-        setMessages((prev) => [...prev, res.message])
+        setMessages((prev) => {
+          if (prev.some((message) => String(message._id) === String(res.message._id))) return prev
+          return [...prev, res.message]
+        })
         setReplyText('')
+        // A human reply pauses the AI for this thread.
+        setConversations((prev) =>
+          prev.map((convo) =>
+            convo._id === selectedConvoId ? { ...convo, aiEnabled: false } : convo,
+          ),
+        )
         fetchConversations()
       }
     } catch (err) {
-      alert(`Failed to send reply: ${err.message}`)
+      setError(`Failed to send reply: ${err.message}`)
     } finally {
       setSendingReply(false)
     }
@@ -121,6 +130,7 @@ export default function SellerChatPage() {
   const handleToggleAi = async () => {
     if (!selectedConvo) return
     const nextState = !selectedConvo.aiEnabled
+    setError(null)
     try {
       const updated = await api.patch(
         `/api/support/chat/conversations/${selectedConvo._id}`,
@@ -131,12 +141,13 @@ export default function SellerChatPage() {
         prev.map((c) => (c._id === updated._id ? { ...c, aiEnabled: updated.aiEnabled } : c)),
       )
     } catch (err) {
-      alert(`Failed to toggle AI: ${err.message}`)
+      setError(`Failed to toggle AI: ${err.message}`)
     }
   }
 
   const handleStatusChange = async (newStatus) => {
     if (!selectedConvo) return
+    setError(null)
     try {
       const updated = await api.patch(
         `/api/support/chat/conversations/${selectedConvo._id}`,
@@ -147,7 +158,25 @@ export default function SellerChatPage() {
         prev.map((c) => (c._id === updated._id ? { ...c, status: updated.status } : c)),
       )
     } catch (err) {
-      alert(`Failed to change status: ${err.message}`)
+      setError(`Failed to change status: ${err.message}`)
+    }
+  }
+
+  const handleResetSandbox = async () => {
+    const confirmed = window.confirm(
+      'Delete every sandbox conversation and message? This cannot be undone.',
+    )
+    if (!confirmed) return
+
+    setError(null)
+    try {
+      await api.post('/api/support/chat/reset-sandbox', {}, token)
+      setConversations([])
+      setSelectedConvoId(null)
+      setMessages([])
+      fetchConversations()
+    } catch (err) {
+      setError(`Failed to reset sandbox: ${err.message}`)
     }
   }
 
@@ -210,6 +239,14 @@ export default function SellerChatPage() {
           >
             <FiRefreshCw size={12} /> Refresh Threads
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleResetSandbox}
+            className="flex items-center gap-1.5 text-xs"
+          >
+            <FiTrash2 size={12} /> Reset Sandbox
+          </Button>
         </div>
       </div>
 
@@ -232,7 +269,7 @@ export default function SellerChatPage() {
             </div>
 
             <div className="flex items-center gap-1 text-[11px]">
-              {['all', 'open', 'escalated', 'closed'].map((st) => (
+              {['all', 'open', 'escalated', 'locked', 'closed'].map((st) => (
                 <button
                   key={st}
                   onClick={() => setFilterStatus(st)}
@@ -457,6 +494,18 @@ export default function SellerChatPage() {
                               </div>
                             )}
 
+                            {m.ai.flags?.length > 0 && (
+                              <div className="flex items-center gap-1 text-amber-700 flex-wrap">
+                                <FiAlertTriangle size={11} className="text-amber-500" />
+                                <span className="text-[10px] text-gray-400">Flags:</span>
+                                {m.ai.flags.map((flag) => (
+                                  <span key={flag} className="rounded bg-amber-50 px-1 py-0.5 text-[10px] text-amber-700">
+                                    {flag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
                             <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-gray-100">
                               <span>Tokens: In {m.ai.tokensIn || 0} / Out {m.ai.tokensOut || 0}</span>
                               {m.ai.latencyMs && <span>⚡ {(m.ai.latencyMs / 1000).toFixed(2)}s</span>}
@@ -490,6 +539,9 @@ export default function SellerChatPage() {
                   <span>Send Reply</span>
                 </Button>
               </form>
+              <p className="mt-1.5 px-1 text-[11px] text-gray-400">
+                Sending a human reply automatically pauses the AI for this thread.
+              </p>
             </div>
           </div>
         ) : (

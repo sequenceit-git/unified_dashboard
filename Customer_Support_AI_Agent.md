@@ -1,8 +1,26 @@
 # Customer Support AI Agent: Recommended Architecture (v2)
 
-Scope: a simple, guard-railed support bot for an eBay seller's inventory management platform (MERN backend). Model: `gpt-5-mini` via the OpenAI Agents SDK (JS/TS). No complex memory: conversations are saved as logs in MongoDB and the last few messages are reloaded on each turn.
+Scope: a simple, guard-railed support bot for an eBay seller's inventory management platform (MERN backend). Model: `gpt-5-mini`. The sandbox implementation uses the raw OpenAI JS SDK tool loop; the production target described below uses the OpenAI Agents SDK. No complex memory: conversations are saved as logs in MongoDB and the last few messages are reloaded on each turn.
 
 Design principle: **code controls the flow, the model only writes the answer.** Guardrails live in code, not only in the prompt.
+
+---
+
+## Sandbox implementation status (October 2026)
+
+The buyer/seller sandbox is implemented; production marketplace adapters are not. Current code differs from the target design in these ways:
+
+- **Endpoint:** `POST /api/support/chat/buyer/message` (the `/api/support/messages` path below is the production target).
+- **Model loop:** raw OpenAI SDK `chat.completions` tool loop with a strict JSON-schema reply, not the Agents SDK. `gpt-5-mini` is primary; `gpt-4o-mini` is the fallback.
+- **Models:** `Conversation2` / `Message2`, stored in `conversations_v2` / `messages_v2`, so the legacy `Conversation` / `Message` models stay untouched. Sandbox rows carry `channel: 'sandbox'`.
+- **Context:** the buyer page selects a real order and product from MongoDB. The conversation stores `orderRef`, `productId`, nullable `shopId`, `marketplace`, and `createdBy`.
+- **Tools:** `searchFaqPolicies`, `searchProducts`, `getProductDetails`, `getOrderDetails` — all read-only and scoped by the selected shop/marketplace.
+- **Guardrails:** deterministic spam/injection/dispute/courtesy gates; output checks for evidence, unknown source IDs, empty/long answers, blocked promise phrases, and external links/emails/phones. FAQs marked `human_required` always escalate; `assisted` answers are flagged for seller review.
+- **Limits:** in-memory per-IP/session rate limiter, 40 messages per conversation, 1-hour lock after 3 strikes, 24-hour lock at the message cap, 8-message / 1,500-token history budget.
+- **Seller controls:** human reply auto-pauses the AI, manual AI toggle, status changes, AI trace with tools/sources/flags/tokens, and a sandbox-only reset.
+- **Not implemented:** eBay/TikTok/Temu adapters, OAuth/webhooks, captcha, persistent (Redis) rate limiting, buyer identity verification, order ownership by authenticated buyer, and email notifications.
+
+The sections below describe the production target; keep the status above in mind when comparing them to the code.
 
 ---
 
@@ -12,7 +30,7 @@ Design principle: **code controls the flow, the model only writes the answer.** 
 Chat widget (Sandbox now, Production later)
         |
         v
-POST /api/support/messages
+POST /api/support/chat/buyer/message   (sandbox; /api/support/messages is the production target)
         |
         v
 [1] Request validation + rate limiting + captcha token
@@ -99,10 +117,11 @@ Return reply to widget
 | --- | --- | --- |
 | `searchProducts(query)` | find listings | return at most 5 results, trimmed fields only |
 | `getProductDetails(itemId)` | price, stock, shipping, description | strip HTML, cap description length |
-| `searchFaqPolicies(query)` | approved FAQ / policy chunks | return top 3-4 chunks with `sourceId` |
+| `searchFaqPolicies(query)` | approved FAQ / policy chunks | return top 3-4 chunks with `sourceId` and `handling` |
+| `getOrderDetails(orderRef)` | order status, carrier, tracking, line items | sandbox scoped by selected shop; production must verify buyer ownership |
 
 - There is **no** tool for refunds, cancellations, edits or discounts. Those requests become `escalate`.
-- If you later add order tools, check inside the tool that the order belongs to the resolved customer.
+- The sandbox includes `getOrderDetails`; it maps real `Order` fields (`externalOrderId`, `shipping.carrier`, `shipping.trackingNumber`, `totals.total`). Production must also verify the order belongs to the authenticated buyer before returning it.
 - Run limits: low/minimal reasoning effort, `max output tokens` set, max 3 tool turns. Verify exact option names in the SDK docs.
 
 ### [7] Structured output
@@ -206,7 +225,7 @@ Keep replies under 120 words, friendly and plain.
 
 ```
 src/support/
-  routes/support.routes.js        # POST /api/support/messages
+  routes/support.routes.js        # POST /api/support/chat/buyer/message   (sandbox; /api/support/messages is the production target)
   middleware/rateLimit.js
   middleware/captcha.js
   services/customer.service.js    # resolve customer

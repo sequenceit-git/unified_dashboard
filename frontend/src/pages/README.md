@@ -16,7 +16,8 @@ pages/
 ├── customers/       # CustomersPage.jsx + CustomerDrawer.jsx
 ├── inbox/           # InboxPage.jsx + ConversationList.jsx, ThreadView.jsx
 ├── support/         # Customer Support AI (route key: customer-support)
-│                    # ├─ ChatSandboxPage.jsx   (route: /support/chat-sandbox)
+│                    # ├─ BuyerChatPage.jsx    (route: /support/buyer-chat)
+│                    # ├─ SellerChatPage.jsx   (route: /support/seller-chat)
 │                    # └─ AgentSettingsPage.jsx (route: /support/settings)
 └── sub-admins/      # Super-admin only. SubAdminManagementPage.jsx, SubAdminFormPage.jsx
                      # (routes: /sub-admins, /sub-admins/new, /sub-admins/:id/edit)

@@ -2,7 +2,24 @@
 
 Goal: the smallest schema that supports the architecture in `Customer_Support_AI_Agent_v2.md`. Anything not used by the flow is left out and can be added later. `SupportPolicy`, `SupportFaq`, `Product` and `Order` stay as they are.
 
-Removed vs the earlier proposal: `primaryIntent`, `sentiment`, `handlingMode` (merged into `aiEnabled`), `unreadCount`, `productId`, card fields, `confidenceScore`, draft mode, and the `SupportAgentConfig` model (use a config file or env vars for now).
+Removed vs the earlier proposal: `primaryIntent`, `sentiment`, `handlingMode` (merged into `aiEnabled`), `unreadCount`, card fields, `confidenceScore`, draft mode, and the `SupportAgentConfig` model (use a config file or env vars for now).
+
+---
+
+## Sandbox implementation notes (October 2026)
+
+The sandbox keeps the legacy `Conversation` / `Message` models untouched and adds `Conversation2` / `Message2`, stored in `conversations_v2` / `messages_v2`. Differences from the slim proposal below:
+
+- `channel: ['sandbox', 'production']` (default `sandbox`) keeps test threads separate from future production threads.
+- `createdBy` (User) lets the buyer page resume only its own sandbox thread.
+- `productId` (Product) stores the product the buyer is asking about; it is injected into the agent context.
+- `shopId` is nullable because a sandbox thread may not belong to a connected marketplace shop.
+- `marketplace` also accepts `tiktok_shop` and `temu` for channel simulation.
+- `customerName`, `orderRef`, `messageCount`, and `lastMessagePreview` are used by the buyer/seller UI.
+- Indexes: `{ channel, createdBy, lastMessageAt }` and `{ channel, shopId, lastMessageAt }`.
+- The UI reads real orders/products through `GET /api/support/sandbox/context`.
+
+Production migration should merge these fields into the legacy `Conversation` / `Message` models, make `shopId` required for production rows, and keep sandbox rows out of marketplace sync jobs.
 
 ---
 

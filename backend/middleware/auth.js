@@ -50,7 +50,7 @@ async function loadAccess(req, res, next) {
       return next()
     }
 
-    const user = await User.findById(req.user.id).select('role mainRoutes status shopId isDeleted').lean()
+    const user = await User.findById(req.user.id).select('name email role mainRoutes status shopId isDeleted').lean()
     if (!user || user.isDeleted) {
       accessCache.delete(req.user.id)
       return res.status(401).json({ error: 'This account has been deleted. Contact your administrator.' })

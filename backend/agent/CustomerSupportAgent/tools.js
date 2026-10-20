@@ -1,15 +1,21 @@
 /**
- * Read-only tools for Customer Support AI Agent
- * (Customer_Support_AI_Agent v2)
+ * Read-only tools for the Customer Support AI Agent.
+ *
+ * Every tool is scoped to the sandbox conversation context:
+ *  - `shopId` narrows products/orders to the shop being simulated
+ *  - `marketplace` narrows policies/FAQs to the channel being simulated
+ *
+ * No tool can mutate data.
  */
 
 const SupportPolicy = require('../../models/SupportPolicy')
 const SupportFaq = require('../../models/SupportFaq')
 const Product = require('../../models/Product')
 const Order = require('../../models/Order')
+const Listing = require('../../models/Listing')
 
 /**
- * Strips HTML tags and excessive whitespace
+ * Strips HTML tags and excessive whitespace.
  */
 function stripHtml(text = '') {
   return String(text)
@@ -18,131 +24,268 @@ function stripHtml(text = '') {
     .trim()
 }
 
-/**
- * 1. Search approved store policies and FAQs
- */
-async function searchFaqPolicies(query) {
-  if (!query || typeof query !== 'string') return []
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
-  const terms = query.toLowerCase().split(/\s+/).filter((t) => t.length > 2)
-  const regexPatterns = terms.map((t) => new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'))
+function queryTerms(query) {
+  return String(query || '')
+    .toLowerCase()
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 2)
+}
+
+function patternsFor(terms) {
+  return terms.map((t) => new RegExp(escapeRegex(t), 'i'))
+}
+
+function includesTerm(haystack, term) {
+  return String(haystack || '').toLowerCase().includes(term)
+}
+
+/**
+ * Demo/sync test records are active in the catalog but should never be
+ * presented to a simulated buyer as real merchandise.
+ */
+function isTestProduct(product) {
+  const title = String(product?.title || '')
+  const sku = String(product?.sku || '')
+  return /test listing|do not bid|do not buy/i.test(title) || sku === '{sku}'
+}
+
+function scorePolicy(policy, terms) {
+  let score = 0
+  const phrase = terms.join(' ')
+  for (const term of terms) {
+    if (String(policy.code || '').toLowerCase() === term) score += 40
+    if (includesTerm(policy.title, term)) score += 14
+    if (includesTerm((policy.keywords || []).join(' '), term)) score += 9
+    if (includesTerm(policy.summary, term)) score += 4
+    if (includesTerm(policy.category, term)) score += 2
+    if (includesTerm((policy.rules || []).map((r) => `${r.title} ${r.detail}`).join(' '), term)) score += 3
+  }
+  if (phrase && includesTerm(policy.title, phrase)) score += 25
+  return score
+}
+
+function scoreFaq(faq, terms) {
+  let score = 0
+  const phrase = terms.join(' ')
+  for (const term of terms) {
+    if (String(faq.code || '').toLowerCase() === term) score += 40
+    if (includesTerm(faq.question, term)) score += 14
+    if (includesTerm((faq.keywords || []).join(' '), term)) score += 9
+    if (includesTerm(faq.answer, term)) score += 4
+    if (includesTerm(faq.category, term)) score += 2
+  }
+  if (phrase && includesTerm(faq.question, phrase)) score += 25
+  return score
+}
+
+function policyContent(policy) {
+  const parts = [policy.summary]
+  for (const rule of policy.rules || []) {
+    if (rule?.title && rule?.detail) parts.push(`${rule.title}: ${rule.detail}`)
+  }
+  if (policy.exceptions?.length) parts.push(`Exceptions: ${policy.exceptions.join('; ')}`)
+  return stripHtml(parts.filter(Boolean).join(' ')).slice(0, 700)
+}
+
+function marketplaceClause(marketplace) {
+  const values = [marketplace, 'all'].filter(Boolean)
+  return {
+    $or: [
+      { marketplaces: { $in: values } },
+      { marketplaces: { $exists: false } },
+      { marketplaces: { $size: 0 } },
+    ],
+  }
+}
+
+/**
+ * 1. Search approved store policies and FAQs.
+ * Returns the highest-scoring chunks instead of the first N documents.
+ */
+async function searchFaqPolicies(query, { marketplace = 'ebay' } = {}) {
+  const terms = queryTerms(query)
+  if (!terms.length) return []
+
+  // Retrieval synonym for the off-platform-payment scam FAQ. A buyer may say
+  // "off platform" while the approved FAQ says "pay outside the marketplace".
+  const lowerQuery = String(query || '').toLowerCase()
+  if (/(off[- ]platform|pay outside|outside the marketplace|pay you directly|direct payment|asked me to pay)/.test(lowerQuery)) {
+    for (const extra of ['scam', 'phishing', 'marketplace']) {
+      if (!terms.includes(extra)) terms.push(extra)
+    }
+  }
+
+  const regexes = patternsFor(terms)
+  const channelClause = marketplaceClause(marketplace)
 
   const [policies, faqs] = await Promise.all([
     SupportPolicy.find({
       status: 'active',
-      $or: [
-        { title: { $in: regexPatterns } },
-        { summary: { $in: regexPatterns } },
-        { category: { $in: regexPatterns } },
-        { 'sections.body': { $in: regexPatterns } },
+      $and: [
+        {
+          $or: [
+            { code: { $in: regexes } },
+            { title: { $in: regexes } },
+            { summary: { $in: regexes } },
+            { keywords: { $in: regexes } },
+            { category: { $in: regexes } },
+            { 'rules.title': { $in: regexes } },
+            { 'rules.detail': { $in: regexes } },
+            { responseTemplate: { $in: regexes } },
+          ],
+        },
+        channelClause,
       ],
     })
-      .limit(3)
+      .limit(40)
       .lean(),
     SupportFaq.find({
       status: 'active',
-      $or: [
-        { question: { $in: regexPatterns } },
-        { answer: { $in: regexPatterns } },
-        { category: { $in: regexPatterns } },
-        { tags: { $in: terms } },
+      $and: [
+        {
+          $or: [
+            { code: { $in: regexes } },
+            { question: { $in: regexes } },
+            { answer: { $in: regexes } },
+            { keywords: { $in: regexes } },
+            { category: { $in: regexes } },
+          ],
+        },
+        channelClause,
       ],
     })
-      .limit(3)
+      .limit(40)
       .lean(),
   ])
 
-  const results = []
+  const rankedPolicies = policies
+    .map((policy) => ({ policy, score: scorePolicy(policy, terms) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
 
-  for (const p of policies) {
-    const bodySnippet = p.sections?.map((s) => `${s.heading}: ${s.body}`).join('\n') || p.summary || ''
-    results.push({
-      sourceId: `policy:${p.slug || p._id}`,
-      type: 'policy',
-      title: p.title,
-      category: p.category,
-      content: stripHtml(bodySnippet).slice(0, 500),
-    })
-  }
+  const rankedFaqs = faqs
+    .map((faq) => ({ faq, score: scoreFaq(faq, terms) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
 
-  for (const f of faqs) {
-    results.push({
-      sourceId: `faq:${f.slug || f._id}`,
-      type: 'faq',
-      title: f.question,
-      category: f.category,
-      content: stripHtml(f.answer).slice(0, 400),
-    })
-  }
-
-  // If strict term matching yielded nothing, return top 3 standard general policies
-  if (results.length === 0) {
-    const generalPolicies = await SupportPolicy.find({ status: 'active' }).limit(3).lean()
-    for (const p of generalPolicies) {
-      results.push({
-        sourceId: `policy:${p.slug || p._id}`,
+  const combined = [
+    ...rankedPolicies.map(({ policy, score }) => ({
+      score,
+      result: {
+        sourceId: `policy:${policy.code || policy._id}`,
         type: 'policy',
-        title: p.title,
-        category: p.category,
-        content: stripHtml(p.summary || p.sections?.[0]?.body || '').slice(0, 400),
-      })
-    }
-  }
+        title: policy.title,
+        category: policy.category,
+        content: policyContent(policy),
+      },
+    })),
+    ...rankedFaqs.map(({ faq, score }) => ({
+      score,
+      result: {
+        sourceId: `faq:${faq.code || faq._id}`,
+        type: 'faq',
+        title: faq.question,
+        category: faq.category,
+        handling: faq.handling || 'auto',
+        content: stripHtml(faq.answer).slice(0, 500),
+      },
+    })),
+  ]
 
-  return results.slice(0, 4)
+  return combined
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((row) => row.result)
 }
 
 /**
- * 2. Search products catalog (read-only)
+ * 2. Search the product catalog (active products only).
  */
-async function searchProducts(query) {
-  if (!query || typeof query !== 'string') return []
+async function searchProducts(query, { shopId = null } = {}) {
+  const terms = queryTerms(query)
+  if (!terms.length) return []
 
-  const terms = query.toLowerCase().split(/\s+/).filter((t) => t.length > 2)
-  const regexPatterns = terms.map((t) => new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'))
-
-  const products = await Product.find({
-    status: { $in: ['active', 'published', 'draft'] },
+  const regexes = patternsFor(terms)
+  const filter = {
+    status: 'active',
     $or: [
-      { title: { $in: regexPatterns } },
-      { category: { $in: regexPatterns } },
-      { brand: { $in: regexPatterns } },
-      { sku: { $in: regexPatterns } },
-      { tags: { $in: terms } },
+      { title: { $in: regexes } },
+      { category: { $in: regexes } },
+      { brand: { $in: regexes } },
+      { sku: { $in: regexes } },
+      { description: { $in: regexes } },
     ],
-  })
+  }
+
+  if (shopId) {
+    const ids = await Listing.find({ shopId }).distinct('productId')
+    filter._id = { $in: ids }
+  }
+
+  const products = await Product.find(filter)
     .select('_id title basePrice currency stock category sku brand')
-    .limit(5)
+    .limit(30)
     .lean()
 
-  return products.map((prod) => ({
-    sourceId: `item:${prod._id}`,
-    sku: prod.sku,
-    title: prod.title,
-    price: `${prod.currency || 'USD'} ${prod.basePrice || 0}`,
-    stock: prod.stock ?? 'in-stock',
-    category: prod.category || 'General',
+  const ranked = products
+    .filter((product) => !isTestProduct(product))
+    .map((product) => {
+      let score = 0
+      for (const term of terms) {
+        if (includesTerm(product.title, term)) score += 10
+        if (includesTerm(product.sku, term)) score += 8
+        if (includesTerm(product.brand, term)) score += 5
+        if (includesTerm(product.category, term)) score += 3
+      }
+      return { product, score }
+    })
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+
+  return ranked.map(({ product }) => ({
+    sourceId: `item:${product._id}`,
+    sku: product.sku,
+    title: product.title,
+    price: `${product.currency || 'USD'} ${product.basePrice ?? 0}`,
+    stock: product.stock ?? 0,
+    category: product.category || 'General',
   }))
 }
 
 /**
- * 3. Get detailed product specs
+ * 3. Get detailed product specs.
  */
-async function getProductDetails(itemId) {
+async function getProductDetails(itemId, { shopId = null } = {}) {
   if (!itemId) return { error: 'itemId is required' }
 
-  let product = null
   const cleanedId = String(itemId).replace(/^item:/, '').trim()
+  let product = null
 
-  if (cleanedId.match(/^[0-9a-fA-F]{24}$/)) {
+  if (/^[0-9a-fA-F]{24}$/.test(cleanedId)) {
     product = await Product.findById(cleanedId).lean()
   }
   if (!product) {
     product = await Product.findOne({ sku: cleanedId }).lean()
   }
-
   if (!product) {
     return { error: `Product not found for ID or SKU: ${cleanedId}` }
+  }
+
+  if (isTestProduct(product)) {
+    return { error: 'This product is a test record and is not available to buyers.' }
+  }
+
+  if (shopId) {
+    const listed = await Listing.exists({ productId: product._id, shopId })
+    if (!listed) return { error: 'This product is not listed in the selected shop.' }
   }
 
   return {
@@ -150,8 +293,8 @@ async function getProductDetails(itemId) {
     sku: product.sku,
     title: product.title,
     brand: product.brand,
-    price: `${product.currency || 'USD'} ${product.basePrice}`,
-    stock: product.stock,
+    price: `${product.currency || 'USD'} ${product.basePrice ?? 0}`,
+    stock: product.stock ?? 0,
     category: product.category,
     description: stripHtml(product.description || '').slice(0, 400),
     attributes: product.attributes || {},
@@ -159,49 +302,45 @@ async function getProductDetails(itemId) {
 }
 
 /**
- * 4. Look up order details and tracking status
+ * 4. Look up an order and its tracking status.
+ *
+ * Field names match backend/models/Order.js exactly:
+ *   externalOrderId, status, shipping.carrier, shipping.trackingNumber, totals.total
  */
-async function getOrderDetails(orderRef) {
+async function getOrderDetails(orderRef, { shopId = null } = {}) {
   if (!orderRef) return { error: 'orderRef is required' }
 
   const queryRef = String(orderRef).trim().replace(/^#/, '')
+  const filter = { externalOrderId: queryRef }
+  if (shopId) filter.shopId = shopId
 
-  const order = await Order.findOne({
-    $or: [
-      { orderNumber: queryRef },
-      { orderNumber: `#${queryRef}` },
-      { externalOrderId: queryRef },
-      { 'customer.email': queryRef.toLowerCase() },
-    ],
-  }).lean()
+  let order = await Order.findOne(filter).lean()
 
   if (!order) {
-    // If it's a simulated order reference (e.g. from the test prompt), give a realistic simulated carrier status
-    if (queryRef.includes('112-2938471') || queryRef.includes('1001') || queryRef.includes('TK-88214')) {
-      return {
-        sourceId: `order:${queryRef}`,
-        orderRef: queryRef,
-        status: 'in_transit',
-        carrier: 'USPS Priority Mail',
-        trackingNumber: '9400111899223190412849',
-        lastScanLocation: 'USPS Regional Facility, Houston TX',
-        lastScanDate: 'In transit to next facility (updated 24h ago)',
-        estimatedDelivery: 'Within 1-2 business days',
-        items: [{ title: 'Ergonomic Desk Lamp', quantity: 1 }],
-      }
-    }
-    return { error: `Order #${queryRef} not found in store database.` }
+    // eBay order IDs are sometimes shown with a leading '#' or mixed case.
+    order = await Order.findOne({
+      ...(shopId ? { shopId } : {}),
+      externalOrderId: { $regex: `^${escapeRegex(queryRef)}$`, $options: 'i' },
+    }).lean()
+  }
+
+  if (!order) {
+    return { error: `Order #${queryRef} was not found in the selected shop.` }
   }
 
   return {
-    sourceId: `order:${order.orderNumber || order._id}`,
-    orderRef: order.orderNumber,
-    status: order.fulfillmentStatus || order.status || 'processing',
-    carrier: order.trackingCarrier || 'Standard Shipping',
-    trackingNumber: order.trackingNumber || 'Pending assignment',
-    totalAmount: `${order.currency || 'USD'} ${order.totalAmount || 0}`,
-    items: (order.items || []).map((i) => ({ title: i.title, quantity: i.quantity })),
-    createdAt: order.createdAt,
+    sourceId: `order:${order.externalOrderId}`,
+    orderRef: order.externalOrderId,
+    status: order.status,
+    carrier: order.shipping?.carrier || 'Not assigned',
+    trackingNumber: order.shipping?.trackingNumber || 'Pending assignment',
+    totalAmount: `${order.totals?.currency || 'USD'} ${order.totals?.total ?? 0}`,
+    items: (order.items || []).map((item) => ({
+      title: item.title,
+      sku: item.sku,
+      quantity: item.quantity,
+    })),
+    placedAt: order.placedAt || order.createdAt,
   }
 }
 
