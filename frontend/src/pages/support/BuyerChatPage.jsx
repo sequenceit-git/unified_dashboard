@@ -34,32 +34,45 @@ const MARKETPLACES = [
   { value: 'temu', label: 'Temu' },
 ]
 
-function initials(name = 'Buyer') {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
-export default function BuyerChatPage() {
+export default function BuyerChatPage({
+  persona = 'jane_doe',
+  buyerName = 'Jane Doe',
+  pageTitle = 'Buyer Chat 1',
+}) {
   const { token, user } = useAuth()
-  const storageKey = user?._id ? `support_active_convo_id_${user._id}` : 'support_active_convo_id'
+  const baseStorageKey = user?._id ? `support_active_convo_id_${user._id}_${persona}` : `support_active_convo_id_${persona}`
+  const lastContextKey = user?._id ? `support_last_context_${user._id}_${persona}` : null
+
+  // Restore the last product channel this persona was viewing.
+  const [initialContext] = useState(() => {
+    if (!lastContextKey) return { marketplace: 'ebay', productId: '' }
+    try {
+      const parsed = JSON.parse(localStorage.getItem(lastContextKey) || '{}')
+      return {
+        marketplace: MARKETPLACES.some((m) => m.value === parsed.marketplace)
+          ? parsed.marketplace
+          : 'ebay',
+        productId: /^[a-f0-9]{24}$/i.test(parsed.productId || '') ? parsed.productId : '',
+      }
+    } catch {
+      return { marketplace: 'ebay', productId: '' }
+    }
+  })
 
   const [conversationId, setConversationId] = useState(null)
   const [conversationStatus, setConversationStatus] = useState('open')
   const [messages, setMessages] = useState([WELCOME_MESSAGE])
   const [inputText, setInputText] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [threadLoading, setThreadLoading] = useState(true)
+  const pendingRef = useRef(0)
 
-  // Sandbox persona/context
-  const [buyerName, setBuyerName] = useState('Buyer')
+  // Sandbox context. Each marketplace + product is its own chat channel.
   const [orderRef, setOrderRef] = useState('')
   const [selectedOrderId, setSelectedOrderId] = useState('')
-  const [productId, setProductId] = useState('')
+  const [productId, setProductId] = useState(initialContext.productId)
   const [shopId, setShopId] = useState('')
-  const [marketplace, setMarketplace] = useState('ebay')
+  const [marketplace, setMarketplace] = useState(initialContext.marketplace)
 
   // Real DB data for the dropdowns
   const [orders, setOrders] = useState([])
@@ -68,6 +81,11 @@ export default function BuyerChatPage() {
   const [contextError, setContextError] = useState('')
 
   const messagesEndRef = useRef(null)
+  const conversationIdRef = useRef(null)
+  const threadSeqRef = useRef(0)
+
+  const contextStorageKey = `${baseStorageKey}_${marketplace}_${productId || 'none'}`
+  const loading = pendingCount > 0
 
   const selectedOrder = orders.find((order) => order._id === selectedOrderId)
   const selectedProduct = products.find((product) => product._id === productId)
@@ -76,6 +94,12 @@ export default function BuyerChatPage() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Remember the last channel so a reload resumes the same product thread.
+  useEffect(() => {
+    if (!lastContextKey) return
+    localStorage.setItem(lastContextKey, JSON.stringify({ marketplace, productId }))
+  }, [lastContextKey, marketplace, productId])
 
   // Load real orders + active products for the simulation selectors.
   useEffect(() => {
@@ -115,7 +139,7 @@ export default function BuyerChatPage() {
           senderName:
             m.senderName ||
             (m.senderType === 'customer'
-              ? 'Buyer'
+              ? buyerName
               : m.senderType === 'agent'
                 ? 'Support Specialist (Human)'
                 : 'Support Assistant (AI)'),
@@ -132,52 +156,58 @@ export default function BuyerChatPage() {
         console.error('Failed to load conversation thread:', err)
       }
     },
-    [token],
+    [token, buyerName],
   )
 
-  // On mount: resume the stored sandbox thread, or the newest one owned by
-  // this user. Never auto-resume another user's thread.
+  // When the product or marketplace changes, load that channel's own history.
+  // Nothing is carried over from the previous product thread.
   useEffect(() => {
     if (!token) return
+    const seq = ++threadSeqRef.current
     let cancelled = false
 
-    async function init() {
-      try {
-        const list = await api.get('/api/support/chat/conversations?mine=1', token)
-        if (cancelled) return
+    conversationIdRef.current = null
+    setConversationId(null)
+    setMessages([WELCOME_MESSAGE])
+    setConversationStatus('open')
+    setThreadLoading(true)
 
-        const stored = localStorage.getItem(storageKey)
+    async function loadChannelThread() {
+      try {
+        const params = new URLSearchParams({ mine: '1', persona, marketplace })
+        params.set('productId', productId || 'none')
+        const list = await api.get(`/api/support/chat/conversations?${params.toString()}`, token)
+        if (cancelled || seq !== threadSeqRef.current) return
+
+        const stored = localStorage.getItem(contextStorageKey)
         const convo =
           (stored && (list || []).find((item) => item._id === stored)) ||
           (list?.length ? list[0] : null)
 
         if (!convo) {
-          if (stored) localStorage.removeItem(storageKey)
-          setConversationId(null)
-          setMessages([WELCOME_MESSAGE])
-          setConversationStatus('open')
+          if (stored) localStorage.removeItem(contextStorageKey)
           return
         }
 
+        conversationIdRef.current = convo._id
         setConversationId(convo._id)
-        localStorage.setItem(storageKey, convo._id)
-        setBuyerName(convo.customerName || 'Buyer')
-        setOrderRef(convo.orderRef || '')
-        setProductId(convo.productId ? String(convo.productId) : '')
-        setShopId(convo.shopId ? String(convo.shopId) : '')
-        setMarketplace(convo.marketplace || 'ebay')
+        localStorage.setItem(contextStorageKey, convo._id)
         setConversationStatus(convo.status || 'open')
-        loadThread(convo._id)
+        setShopId((prev) => prev || (convo.shopId ? String(convo.shopId) : ''))
+        setOrderRef((prev) => prev || convo.orderRef || '')
+        await loadThread(convo._id)
       } catch (err) {
-        console.warn('Could not fetch conversations list:', err)
+        if (!cancelled) console.warn('Could not load product conversation:', err)
+      } finally {
+        if (!cancelled && seq === threadSeqRef.current) setThreadLoading(false)
       }
     }
 
-    init()
+    loadChannelThread()
     return () => {
       cancelled = true
     }
-  }, [token, storageKey, loadThread])
+  }, [token, persona, marketplace, productId, contextStorageKey, loadThread])
 
   // Match a loaded orderRef to the dropdown once context arrives.
   useEffect(() => {
@@ -192,10 +222,12 @@ export default function BuyerChatPage() {
     if (!products.some((product) => product._id === productId)) setProductId('')
   }, [products, productId])
 
-  // Poll messages so seller replies appear promptly.
+  // Poll messages so seller replies appear promptly. Pause while the local
+  // batch is still waiting, otherwise the optimistic messages would vanish.
   useEffect(() => {
     if (!conversationId) return
     const interval = setInterval(() => {
+      if (pendingRef.current > 0) return
       loadThread(conversationId)
     }, 3000)
     return () => clearInterval(interval)
@@ -210,7 +242,8 @@ export default function BuyerChatPage() {
         const convo = (list || []).find((item) => item._id === conversationId)
         if (!convo) {
           // The seller may have reset the sandbox. Start a clean local thread.
-          localStorage.removeItem(storageKey)
+          localStorage.removeItem(contextStorageKey)
+          conversationIdRef.current = null
           setConversationId(null)
           setMessages([WELCOME_MESSAGE])
           setConversationStatus('open')
@@ -222,11 +255,21 @@ export default function BuyerChatPage() {
       }
     }, 8000)
     return () => clearInterval(interval)
-  }, [conversationId, token, storageKey])
+  }, [conversationId, token, contextStorageKey])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages, loading])
+
+  const startPending = () => {
+    pendingRef.current += 1
+    setPendingCount(pendingRef.current)
+  }
+
+  const endPending = () => {
+    pendingRef.current = Math.max(0, pendingRef.current - 1)
+    setPendingCount(pendingRef.current)
+  }
 
   const handleOrderSelect = (id) => {
     setSelectedOrderId(id)
@@ -238,7 +281,6 @@ export default function BuyerChatPage() {
     }
 
     setOrderRef(order.externalOrderId || '')
-    setBuyerName(order.buyer?.name || 'Buyer')
     if (order.shopId) setShopId(String(order.shopId))
 
     const firstItem = (order.items || []).find(
@@ -259,19 +301,30 @@ export default function BuyerChatPage() {
       return
     }
 
-    // A product from another shop cannot share the selected order's shop
-    // context. Clear the order so product tools stay correctly scoped.
-    if (
+    // A product from another shop, or one that is not part of the selected
+    // order, must not inherit the order's shop context.
+    const inOrder =
+      selectedOrder &&
+      (selectedOrder.items || []).some((item) => item.productId && String(item.productId) === id)
+    const differentShop =
       selectedOrder &&
       product.shopId &&
       selectedOrder.shopId &&
       String(product.shopId) !== String(selectedOrder.shopId)
-    ) {
+
+    if (selectedOrder && (!inOrder || differentShop)) {
       setSelectedOrderId('')
       setOrderRef('')
     }
 
     if (product.shopId) setShopId(String(product.shopId))
+  }
+
+  const handleMarketplaceChange = (value) => {
+    setMarketplace(value)
+    // Marketplace channels are separate threads; drop the other channel's order.
+    setSelectedOrderId('')
+    setOrderRef('')
   }
 
   const quickPrompts = useMemo(() => {
@@ -318,28 +371,28 @@ export default function BuyerChatPage() {
 
   const handleSend = async (overrideText = null) => {
     const textToSend = (overrideText || inputText).trim()
-    if (!textToSend || loading || isLocked) return
+    if (!textToSend || isLocked || threadLoading) return
 
-    const userMessageId = `user-${Date.now()}`
+    const userMessageId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     const newUserMsg = {
       id: userMessageId,
       senderType: 'customer',
-      senderName: buyerName || 'Buyer',
+      senderName: buyerName,
       text: textToSend,
       sentAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
 
     setMessages((prev) => [...prev, newUserMsg])
     if (!overrideText) setInputText('')
-    setLoading(true)
+    startPending()
 
     try {
       const res = await api.post(
         '/api/support/chat/buyer/message',
         {
-          conversationId,
+          conversationId: conversationIdRef.current,
           text: textToSend,
-          senderName: buyerName || 'Buyer',
+          persona,
           orderRef: orderRef.trim(),
           productId: productId || null,
           shopId: shopId || null,
@@ -349,8 +402,9 @@ export default function BuyerChatPage() {
       )
 
       if (res?.conversationId) {
+        conversationIdRef.current = res.conversationId
         setConversationId(res.conversationId)
-        localStorage.setItem(storageKey, res.conversationId)
+        localStorage.setItem(contextStorageKey, res.conversationId)
       }
       if (res?.conversationStatus) setConversationStatus(res.conversationStatus)
 
@@ -368,6 +422,7 @@ export default function BuyerChatPage() {
       }
 
       setMessages((prev) => {
+        // Every request in the same batch receives the same AI reply.
         if (prev.some((message) => message.id === aiReply.id)) return prev
         return [...prev, aiReply]
       })
@@ -381,12 +436,13 @@ export default function BuyerChatPage() {
       }
       setMessages((prev) => [...prev, errorMsg])
     } finally {
-      setLoading(false)
+      endPending()
     }
   }
 
   const handleNewConversation = () => {
-    localStorage.removeItem(storageKey)
+    localStorage.removeItem(contextStorageKey)
+    conversationIdRef.current = null
     setConversationId(null)
     setMessages([WELCOME_MESSAGE])
     setConversationStatus('open')
@@ -413,13 +469,14 @@ export default function BuyerChatPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Buyer Chat Simulation</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">{pageTitle} Simulation</h1>
             <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200">
-              {marketplaceLabel(marketplace)} Sandbox
+              {buyerName} · {marketplaceLabel(marketplace)} Sandbox
             </span>
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            Simulates a real {marketplaceLabel(marketplace)} buyer using actual orders and products from the dashboard database.
+            Simulates a real {marketplaceLabel(marketplace)} buyer. Each product and channel keeps its own
+            chat history, loaded from the dashboard database.
           </p>
         </div>
 
@@ -429,6 +486,7 @@ export default function BuyerChatPage() {
               variant="secondary"
               size="sm"
               onClick={() => loadThread(conversationId)}
+              disabled={threadLoading}
               className="flex items-center gap-1.5 text-xs"
             >
               <FiRefreshCw size={12} /> Sync Messages
@@ -438,6 +496,7 @@ export default function BuyerChatPage() {
             variant="secondary"
             size="sm"
             onClick={handleNewConversation}
+            disabled={loading || threadLoading}
             className="flex items-center gap-1.5 text-xs"
           >
             <FiTrash2 size={13} /> New Conversation
@@ -451,13 +510,10 @@ export default function BuyerChatPage() {
           <label className="text-xs font-semibold text-gray-600">Simulated Buyer</label>
           <div className="mt-1 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-800">
             <FiUser size={13} className="shrink-0 text-gray-400" />
-            <input
-              value={buyerName}
-              onChange={(e) => setBuyerName(e.target.value)}
-              className="w-full bg-transparent font-medium outline-none"
-              placeholder="e.g. Jessica Miller"
-              maxLength={80}
-            />
+            <span className="w-full truncate font-medium">{buyerName}</span>
+            <span className="shrink-0 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+              Fixed
+            </span>
           </div>
         </div>
 
@@ -469,12 +525,12 @@ export default function BuyerChatPage() {
               value={selectedOrderId}
               onChange={(e) => handleOrderSelect(e.target.value)}
               className="w-full min-w-0 bg-transparent font-medium outline-none"
-              disabled={contextLoading}
+              disabled={contextLoading || loading || threadLoading}
             >
               <option value="">No order (general inquiry)</option>
               {orders.map((order) => (
                 <option key={order._id} value={order._id}>
-                  #{order.externalOrderId} — {order.buyer?.name || 'Buyer'} — {order.status}
+                  #{order.externalOrderId} — {order.status}
                 </option>
               ))}
             </select>
@@ -482,16 +538,16 @@ export default function BuyerChatPage() {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-600">Product Context</label>
+          <label className="text-xs font-semibold text-gray-600">Product Channel</label>
           <div className="mt-1 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-800">
             <FiPackage size={13} className="shrink-0 text-gray-400" />
             <select
               value={productId}
               onChange={(e) => handleProductSelect(e.target.value)}
               className="w-full min-w-0 bg-transparent font-medium outline-none"
-              disabled={contextLoading}
+              disabled={contextLoading || loading || threadLoading}
             >
-              <option value="">No specific product</option>
+              <option value="">No product (general thread)</option>
               {products.map((product) => (
                 <option key={product._id} value={product._id}>
                   {product.title} — {product.sku}
@@ -507,8 +563,9 @@ export default function BuyerChatPage() {
             <FiGlobe size={13} className="shrink-0 text-gray-400" />
             <select
               value={marketplace}
-              onChange={(e) => setMarketplace(e.target.value)}
+              onChange={(e) => handleMarketplaceChange(e.target.value)}
               className="w-full min-w-0 bg-transparent font-medium outline-none"
+              disabled={loading || threadLoading}
             >
               {MARKETPLACES.map((channel) => (
                 <option key={channel.value} value={channel.value}>
@@ -521,16 +578,22 @@ export default function BuyerChatPage() {
       </div>
 
       {/* Selected context summary */}
-      {(selectedOrder || selectedProduct || contextError) && (
+      {(orderRef || selectedProduct || contextError) && (
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
-          {selectedOrder && (
+          {orderRef && (
             <span className="rounded-full bg-white px-2 py-1 ring-1 ring-inset ring-gray-200">
-              Order #{selectedOrder.externalOrderId} · {selectedOrder.buyer?.name || 'Buyer'} · {selectedOrder.status}
+              Order #{orderRef}
+              {selectedOrder ? ` · ${selectedOrder.status}` : ''}
             </span>
           )}
-          {selectedProduct && (
+          <span className="rounded-full bg-white px-2 py-1 ring-1 ring-inset ring-gray-200">
+            {selectedProduct
+              ? `${selectedProduct.title} · ${selectedProduct.sku || 'No SKU'}`
+              : 'General thread (no product)'}
+          </span>
+          {conversationId && (
             <span className="rounded-full bg-white px-2 py-1 ring-1 ring-inset ring-gray-200">
-              {selectedProduct.title} · {selectedProduct.sku || 'No SKU'}
+              {threadLoading ? 'Loading thread…' : 'History scoped to this product/channel'}
             </span>
           )}
           {contextError && <span className="text-red-600">{contextError}</span>}
@@ -560,6 +623,13 @@ export default function BuyerChatPage() {
       <div className="flex min-h-[480px] flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         {/* Messages thread */}
         <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/60 p-4">
+          {threadLoading && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Spinner size="sm" />
+              <span>Loading this product's conversation…</span>
+            </div>
+          )}
+
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -637,7 +707,7 @@ export default function BuyerChatPage() {
           {loading && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Spinner size="sm" />
-              <span>AI Agent checking store policies, orders &amp; catalog…</span>
+              <span>AI Agent is reading your messages (a few seconds are grouped into one reply)…</span>
             </div>
           )}
 
@@ -654,7 +724,7 @@ export default function BuyerChatPage() {
                 key={prompt.label}
                 type="button"
                 onClick={() => handleSend(prompt.text)}
-                disabled={loading || isLocked}
+                disabled={threadLoading || isLocked}
                 className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50"
               >
                 <Icon size={12} />
@@ -671,23 +741,30 @@ export default function BuyerChatPage() {
               e.preventDefault()
               handleSend()
             }}
-            className="flex items-center gap-2"
+            className="flex items-end gap-2"
           >
-            <input
+            <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSend()
+                }
+              }}
+              rows={2}
               placeholder={
                 isLocked
                   ? 'Conversation locked — start a new conversation'
-                  : 'Type a buyer question (e.g. tracking, returns, product specs)…'
+                  : 'Type a buyer message (Enter to send, Shift+Enter for a new line)…'
               }
               maxLength={800}
-              disabled={loading || isLocked}
-              className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 shadow-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50"
+              disabled={threadLoading || isLocked}
+              className="flex-1 resize-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 shadow-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50"
             />
             <Button
               type="submit"
-              disabled={!inputText.trim() || loading || isLocked}
+              disabled={!inputText.trim() || threadLoading || isLocked}
               className="flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold"
             >
               <FiSend size={13} />
@@ -697,7 +774,7 @@ export default function BuyerChatPage() {
           <div className="mt-1.5 flex justify-between px-1 text-[11px] text-gray-400">
             <span>
               {selectedOrder ? `Order #${selectedOrder.externalOrderId}` : 'No order selected'} ·{' '}
-              {selectedProduct ? selectedProduct.title : 'No product selected'}
+              {selectedProduct ? selectedProduct.title : 'General thread'}
             </span>
             <span>{inputText.length} / 800 characters</span>
           </div>

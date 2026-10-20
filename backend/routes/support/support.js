@@ -18,6 +18,11 @@ router.use(requireAuth, loadAccess, requireMainRoute('customer-support'))
 const SANDBOX_CHANNEL = 'sandbox'
 const VALID_MARKETPLACES = ['ebay', 'tiktok_shop', 'temu', 'sandbox', 'manual']
 const VALID_STATUSES = ['open', 'escalated', 'closed', 'locked']
+const DEFAULT_PERSONA = 'jane_doe'
+const SUPPORT_PERSONAS = {
+  jane_doe: 'Jane Doe',
+  john_dutch: 'John Dutch',
+}
 
 /**
  * Sandbox conversations include legacy rows created before `channel` existed.
@@ -38,15 +43,144 @@ function scopeClause(req) {
   }
 }
 
-function conversationFilter(req, extra = {}) {
+function normalizePersona(value) {
+  const persona = String(value || DEFAULT_PERSONA).trim().toLowerCase()
+  return SUPPORT_PERSONAS[persona] ? persona : null
+}
+
+function personaClause(persona) {
+  if (!persona) return null
+  // Legacy sandbox rows predate sandboxPersona and belong to Jane.
+  if (persona === DEFAULT_PERSONA) {
+    return { $or: [{ sandboxPersona: DEFAULT_PERSONA }, { sandboxPersona: { $exists: false } }] }
+  }
+  return { sandboxPersona: persona }
+}
+
+function productClause(productId) {
+  if (productId === undefined || productId === null || productId === '') return null
+  if (productId === 'none') return { productId: null }
+  return { productId }
+}
+
+function conversationFilter(req, extra = {}, scope = {}) {
   const clauses = [sandboxClause()]
-  const scope = scopeClause(req)
-  if (scope) clauses.push(scope)
+  const access = scopeClause(req)
+  if (access) clauses.push(access)
+
+  const persona = personaClause(scope.persona)
+  if (persona) clauses.push(persona)
+  if (scope.marketplace) clauses.push({ marketplace: scope.marketplace })
+  const product = productClause(scope.productId)
+  if (product) clauses.push(product)
+
   return { ...extra, $and: clauses }
 }
 
 function validObjectId(value) {
   return mongoose.isValidObjectId(value)
+}
+
+function conversationContext(conversation) {
+  return {
+    persona: conversation.sandboxPersona || DEFAULT_PERSONA,
+    marketplace: conversation.marketplace || 'ebay',
+    productId: conversation.productId ? String(conversation.productId) : '',
+  }
+}
+
+function conversationMatchesContext(conversation, { persona, marketplace, productId }) {
+  const current = conversationContext(conversation)
+  return (
+    current.persona === persona &&
+    current.marketplace === marketplace &&
+    current.productId === String(productId || '')
+  )
+}
+
+/**
+ * Buyer messages are aggregated per chat channel (persona + marketplace +
+ * product). Each channel owns an independent timer, queue and in-flight turn,
+ * so one slow AI reply never batches or blocks another product thread.
+ */
+const buyerBatches = new Map()
+
+function enqueueBuyerBatch(key, payload) {
+  return new Promise((resolve, reject) => {
+    let batch = buyerBatches.get(key)
+    if (!batch) {
+      batch = { items: [], firstAt: Date.now(), timer: null, processing: false }
+      buyerBatches.set(key, batch)
+    }
+
+    batch.items.push({ payload, resolve, reject })
+
+    const elapsed = Date.now() - batch.firstAt
+    if (elapsed >= supportLimits.debounceMaxWaitMs) {
+      flushBuyerBatch(key, batch)
+      return
+    }
+
+    if (batch.timer) clearTimeout(batch.timer)
+    const wait = Math.min(supportLimits.debounceWindowMs, supportLimits.debounceMaxWaitMs - elapsed)
+    batch.timer = setTimeout(() => flushBuyerBatch(key, batch), wait)
+    batch.timer.unref?.()
+  })
+}
+
+async function flushBuyerBatch(key, batch) {
+  if (batch.timer) {
+    clearTimeout(batch.timer)
+    batch.timer = null
+  }
+  if (batch.processing) return
+  if (!batch.items.length) {
+    buyerBatches.delete(key)
+    return
+  }
+
+  batch.processing = true
+  const items = batch.items
+  batch.items = []
+  batch.firstAt = Date.now()
+  const first = items[0]?.payload
+
+  try {
+    const result = await runSupportAgent({
+      conversationId: first.conversationId,
+      texts: items.map((item) => item.payload.text),
+      senderName: first.senderName,
+      persona: first.persona,
+      orderRef: first.orderRef,
+      productId: first.productId,
+      shopId: first.shopId,
+      marketplace: first.marketplace,
+      createdBy: first.createdBy,
+      channel: SANDBOX_CHANNEL,
+    })
+    for (const item of items) item.resolve(result)
+  } catch (err) {
+    console.error('[SupportChat] Batched agent run failed:', err)
+    for (const item of items) item.reject(err)
+  } finally {
+    batch.processing = false
+    if (batch.items.length) {
+      if (batch.timer) clearTimeout(batch.timer)
+      batch.firstAt = Date.now()
+      batch.timer = setTimeout(() => flushBuyerBatch(key, batch), supportLimits.debounceWindowMs)
+      batch.timer.unref?.()
+    } else {
+      buyerBatches.delete(key)
+    }
+  }
+}
+
+function buyerRateKey(req) {
+  const body = req.body || {}
+  if (body.conversationId) return `convo:${body.conversationId}`
+  const persona = normalizePersona(body.persona) || DEFAULT_PERSONA
+  const marketplace = body.marketplace || 'ebay'
+  return `draft:${req.authUser?._id || req.ip}:${persona}:${marketplace}:${body.productId || 'none'}`
 }
 
 function isTestProduct(product) {
@@ -210,14 +344,14 @@ const buyerIpLimiter = createRateLimiter({
 const buyerSessionLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: supportLimits.rateLimit.perSessionPerMin,
-  keyGenerator: (req) => `session:${req.body?.conversationId || req.ip}`,
+  keyGenerator: (req) => `session:${buyerRateKey(req)}`,
   message: 'This conversation is sending messages too quickly. Please wait a moment.',
 })
 
 const buyerHourlyLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: supportLimits.rateLimit.perSessionPerHour,
-  keyGenerator: (req) => `hour:${req.body?.conversationId || req.ip}`,
+  keyGenerator: (req) => `hour:${buyerRateKey(req)}`,
   message: 'This conversation has reached its hourly message limit. Please contact support directly.',
 })
 
@@ -226,12 +360,17 @@ router.post('/chat/buyer/message', buyerIpLimiter, buyerSessionLimiter, buyerHou
     const {
       conversationId,
       text,
-      senderName,
       orderRef,
       productId,
       shopId,
-      marketplace,
     } = req.body || {}
+
+    const persona = normalizePersona(req.body?.persona)
+    if (!persona) {
+      return res.status(400).json({ error: 'Unknown sandbox buyer persona.' })
+    }
+    const senderName = SUPPORT_PERSONAS[persona]
+    const marketplace = req.body?.marketplace || 'ebay'
 
     if (typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({ error: 'Message text is required' })
@@ -241,13 +380,10 @@ router.post('/chat/buyer/message', buyerIpLimiter, buyerSessionLimiter, buyerHou
         error: `Message exceeds the maximum length (${supportLimits.maxMessageChars} characters).`,
       })
     }
-    if (senderName && (typeof senderName !== 'string' || senderName.length > 80)) {
-      return res.status(400).json({ error: 'Buyer name must be 80 characters or fewer.' })
-    }
     if (orderRef && (typeof orderRef !== 'string' || orderRef.length > 80)) {
       return res.status(400).json({ error: 'Order reference is invalid.' })
     }
-    if (marketplace && !VALID_MARKETPLACES.includes(marketplace)) {
+    if (!VALID_MARKETPLACES.includes(marketplace)) {
       return res.status(400).json({ error: 'Unknown marketplace channel.' })
     }
     if (productId && !validObjectId(productId)) {
@@ -269,23 +405,35 @@ router.post('/chat/buyer/message', buyerIpLimiter, buyerSessionLimiter, buyerHou
       const existing = await Conversation2.findOne(
         conversationFilter(req, { _id: conversationId }),
       )
-        .select('_id')
+        .select('_id sandboxPersona marketplace productId')
         .lean()
       if (!existing) {
         return res.status(404).json({ error: 'Conversation not found in this sandbox.' })
       }
+      if (!conversationMatchesContext(existing, { persona, marketplace, productId })) {
+        return res.status(409).json({
+          error: 'This chat belongs to a different buyer or product channel. Switch back to that product or start a new conversation.',
+        })
+      }
     }
 
-    const result = await runSupportAgent({
+    // Messages arriving inside the quiet window are stored individually and
+    // answered with one AI turn. Requests without a conversation share a
+    // channel-scoped draft key so the first batch creates only one thread.
+    const batchKey = conversationId
+      ? `convo:${conversationId}`
+      : `draft:${req.authUser?._id || req.ip}:${persona}:${marketplace}:${productId || 'none'}:${shopId || 'none'}:${orderRef || 'none'}`
+
+    const result = await enqueueBuyerBatch(batchKey, {
       conversationId: conversationId || null,
       text: text.trim(),
-      senderName: senderName || 'Buyer',
+      senderName,
+      persona,
       orderRef: orderRef || '',
       productId: productId || null,
       shopId: shopId || null,
-      marketplace: marketplace || 'ebay',
+      marketplace,
       createdBy: req.authUser?._id || null,
-      channel: SANDBOX_CHANNEL,
     })
 
     res.json(result)
@@ -302,12 +450,52 @@ router.get('/chat/conversations', async (req, res) => {
     // The buyer page passes ?mine=1 so it always resumes its own thread.
     if (req.query.mine === '1') extra.createdBy = req.authUser?._id || null
 
-    const conversations = await Conversation2.find(conversationFilter(req, extra))
+    const scope = {}
+    if (req.query.persona !== undefined) {
+      const persona = normalizePersona(req.query.persona)
+      if (!persona) return res.status(400).json({ error: 'Unknown sandbox buyer persona.' })
+      scope.persona = persona
+    }
+    if (req.query.marketplace) {
+      if (!VALID_MARKETPLACES.includes(req.query.marketplace)) {
+        return res.status(400).json({ error: 'Unknown marketplace channel.' })
+      }
+      scope.marketplace = req.query.marketplace
+    }
+    if (req.query.productId !== undefined) {
+      const requested = String(req.query.productId || 'none')
+      if (requested !== 'none' && !validObjectId(requested)) {
+        return res.status(400).json({ error: 'Invalid product ID.' })
+      }
+      scope.productId = requested
+    }
+
+    const conversations = await Conversation2.find(conversationFilter(req, extra, scope))
       .sort({ lastMessageAt: -1 })
       .limit(50)
       .lean()
 
-    res.json(conversations)
+    // Attach the product title so the seller can tell per-product threads apart.
+    const productIds = [...new Set(conversations.map((c) => c.productId).filter(Boolean).map(String))]
+    const products = productIds.length
+      ? await Product.find({ _id: { $in: productIds } }).select('title sku').lean()
+      : []
+    const productById = new Map(products.map((product) => [String(product._id), product]))
+
+    res.json(
+      conversations.map((conversation) => {
+        const product = conversation.productId ? productById.get(String(conversation.productId)) : null
+        const persona = conversation.sandboxPersona || DEFAULT_PERSONA
+        return {
+          ...conversation,
+          productId: conversation.productId ? String(conversation.productId) : null,
+          productTitle: product?.title || null,
+          productSku: product?.sku || null,
+          sandboxPersona: persona,
+          personaName: SUPPORT_PERSONAS[persona] || null,
+        }
+      }),
+    )
   } catch (err) {
     console.error('[Support] conversations failed:', err)
     res.status(500).json({ error: 'Failed to load conversations' })

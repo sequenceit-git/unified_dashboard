@@ -13,10 +13,12 @@ The buyer/seller sandbox is implemented; production marketplace adapters are not
 - **Endpoint:** `POST /api/support/chat/buyer/message` (the `/api/support/messages` path below is the production target).
 - **Model loop:** raw OpenAI SDK `chat.completions` tool loop with a strict JSON-schema reply, not the Agents SDK. `gpt-5-mini` is primary; `gpt-4o-mini` is the fallback.
 - **Models:** `Conversation2` / `Message2`, stored in `conversations_v2` / `messages_v2`, so the legacy `Conversation` / `Message` models stay untouched. Sandbox rows carry `channel: 'sandbox'`.
-- **Context:** the buyer page selects a real order and product from MongoDB. The conversation stores `orderRef`, `productId`, nullable `shopId`, `marketplace`, and `createdBy`.
+- **Context:** the buyer page selects a real order and product from MongoDB. The conversation stores `orderRef`, `productId`, nullable `shopId`, `marketplace`, `createdBy`, and `sandboxPersona`. Each marketplace + product is a separate chat channel, so switching products loads only that product's history.
+- **Fixed buyers:** Buyer Chat 1 is always Jane Doe and Buyer Chat 2 is always John Dutch. The server maps the persona to the display name, so a client cannot rename the buyer mid-thread.
 - **Tools:** `searchFaqPolicies`, `searchProducts`, `getProductDetails`, `getOrderDetails` — all read-only and scoped by the selected shop/marketplace.
 - **Guardrails:** deterministic spam/injection/dispute/courtesy gates; output checks for evidence, unknown source IDs, empty/long answers, blocked promise phrases, and external links/emails/phones. FAQs marked `human_required` always escalate; `assisted` answers are flagged for seller review.
-- **Limits:** in-memory per-IP/session rate limiter, 40 messages per conversation, 1-hour lock after 3 strikes, 24-hour lock at the message cap, 8-message / 1,500-token history budget.
+- **Message batching:** buyer messages are aggregated per conversation/product in a 2.5-second quiet window (max 8 seconds) and answered with one AI turn. Every message is still stored individually; each channel has its own timer, queue, and in-flight turn.
+- **Limits:** in-memory per-IP/session rate limiter keyed per conversation or persona + marketplace + product, 40 messages per conversation, 1-hour lock after 3 strikes, 24-hour lock at the message cap, 8-message / 1,500-token history budget.
 - **Seller controls:** human reply auto-pauses the AI, manual AI toggle, status changes, AI trace with tools/sources/flags/tokens, and a sandbox-only reset.
 - **Not implemented:** eBay/TikTok/Temu adapters, OAuth/webhooks, captcha, persistent (Redis) rate limiting, buyer identity verification, order ownership by authenticated buyer, and email notifications.
 

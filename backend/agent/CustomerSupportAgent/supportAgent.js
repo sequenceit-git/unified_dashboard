@@ -380,6 +380,7 @@ async function finishFixedReply({
   status = 'fixed_reply',
   flags = [],
   conversationUpdate = {},
+  customerMessageCount = 1,
   startTime,
 }) {
   const update = {
@@ -390,7 +391,7 @@ async function finishFixedReply({
 
   await Conversation2.findByIdAndUpdate(conversation._id, {
     $set: update,
-    $inc: { messageCount: 2 },
+    $inc: { messageCount: customerMessageCount + 1 },
   })
 
   const aiMessage = await saveAssistantMessage({
@@ -420,7 +421,9 @@ async function finishFixedReply({
 async function runSupportAgent({
   conversationId,
   text,
+  texts,
   senderName = 'Buyer',
+  persona = 'jane_doe',
   orderRef = '',
   productId = null,
   shopId = null,
@@ -429,8 +432,14 @@ async function runSupportAgent({
   channel = 'sandbox',
 }) {
   const startTime = Date.now()
-  const cleanText = String(text || '').trim()
-  if (!cleanText) throw new Error('Message text is required')
+  const messageTexts = (Array.isArray(texts) ? texts : [text])
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+  if (!messageTexts.length) throw new Error('Message text is required')
+
+  // Combined text is used only for the deterministic inbound gate. Each
+  // message is still stored as its own row.
+  const cleanText = messageTexts.join('\n')
 
   // [1] Conversation lookup or creation.
   let conversation = null
@@ -442,6 +451,7 @@ async function runSupportAgent({
     conversation = await Conversation2.create({
       marketplace: marketplace || 'ebay',
       channel: channel || 'sandbox',
+      sandboxPersona: persona || 'jane_doe',
       createdBy: createdBy || null,
       shopId: shopId || null,
       customerName: senderName || 'Buyer',
@@ -454,6 +464,7 @@ async function runSupportAgent({
   } else {
     const updates = { channel: channel || conversation.channel || 'sandbox' }
     if (senderName) updates.customerName = senderName
+    if (!conversation.sandboxPersona) updates.sandboxPersona = persona || 'jane_doe'
     if (orderRef !== undefined && orderRef !== null) updates.orderRef = String(orderRef)
     if (productId !== undefined) updates.productId = productId || null
     if (shopId) updates.shopId = shopId
@@ -474,11 +485,15 @@ async function runSupportAgent({
     Object.assign(conversation, updates)
   }
 
-  // Save the customer's message immediately, before any model call.
-  const customerMessage = await createCustomerMessage(conversation, cleanText, senderName)
+  // Save every customer message immediately, before any model call.
+  const customerMessages = []
+  for (const messageText of messageTexts) {
+    customerMessages.push(await createCustomerMessage(conversation, messageText, senderName))
+  }
+  const customerMessageCount = customerMessages.length
 
   // [2] Hard message cap.
-  if ((conversation.messageCount || 0) >= limits.maxMessagesPerConversation) {
+  if ((conversation.messageCount || 0) + customerMessageCount > limits.maxMessagesPerConversation) {
     return finishFixedReply({
       conversation,
       text: limits.fixedReplies.locked,
@@ -488,11 +503,32 @@ async function runSupportAgent({
         lockedUntil: new Date(Date.now() + limits.maxMessagesLockDurationMs),
         escalationReason: 'Conversation message limit reached',
       },
+      customerMessageCount,
       startTime,
     })
   }
 
   // [4] Deterministic scope / spam gate.
+  // If every message in the batch is only a greeting or acknowledgement, reply
+  // with the canned small-talk response instead of paying for an AI turn.
+  const perMessageChecks = messageTexts.map((messageText) =>
+    evaluateInboundMessage(messageText, conversation),
+  )
+  const allSmallTalk = perMessageChecks.every(
+    (check) => !check.allowed && (check.flag === 'greeting' || check.flag === 'courtesy'),
+  )
+  if (allSmallTalk) {
+    const smallTalk =
+      perMessageChecks.find((check) => check.flag === 'greeting') || perMessageChecks[0]
+    return finishFixedReply({
+      conversation,
+      text: smallTalk.fixedReply,
+      flags: [smallTalk.flag],
+      customerMessageCount,
+      startTime,
+    })
+  }
+
   const inboundCheck = evaluateInboundMessage(cleanText, conversation)
   if (!inboundCheck.allowed) {
     if (inboundCheck.flag === 'conversation_locked') {
@@ -500,6 +536,7 @@ async function runSupportAgent({
         conversation,
         text: inboundCheck.fixedReply,
         flags: [inboundCheck.flag],
+        customerMessageCount,
         startTime,
       })
     }
@@ -520,6 +557,7 @@ async function runSupportAgent({
       text: inboundCheck.fixedReply,
       flags: [inboundCheck.flag],
       conversationUpdate,
+      customerMessageCount,
       startTime,
     })
   }
@@ -534,6 +572,7 @@ async function runSupportAgent({
         status: 'escalated',
         escalationReason: 'Dispute or legal keyword flagged',
       },
+      customerMessageCount,
       startTime,
     })
   }
@@ -544,6 +583,7 @@ async function runSupportAgent({
       conversation,
       text: limits.fixedReplies.ai_disabled,
       flags: ['ai_disabled'],
+      customerMessageCount,
       startTime,
     })
   }
@@ -570,6 +610,7 @@ async function runSupportAgent({
         status: 'escalated',
         escalationReason: 'AI provider unavailable',
       },
+      customerMessageCount,
       startTime,
     })
   }
@@ -655,6 +696,7 @@ async function runSupportAgent({
         status: 'escalated',
         escalationReason: `AI provider error: ${String(err.message || err).slice(0, 160)}`,
       },
+      customerMessageCount,
       startTime,
     })
   }
@@ -716,7 +758,7 @@ async function runSupportAgent({
 
   await Conversation2.findByIdAndUpdate(conversation._id, {
     $set: conversationUpdate,
-    $inc: { messageCount: 2 },
+    $inc: { messageCount: customerMessageCount + 1 },
   })
 
   return {

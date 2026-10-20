@@ -185,6 +185,7 @@ export default function SellerChatPage() {
       !searchQuery ||
       c.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.orderRef?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.productTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.lastMessagePreview?.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = filterStatus === 'all' || c.status === filterStatus
@@ -333,6 +334,15 @@ export default function SellerChatPage() {
                           </span>
                         )}
 
+                        {convo.productTitle && (
+                          <span
+                            className="truncate text-[10px] font-semibold text-indigo-600"
+                            title={convo.productTitle}
+                          >
+                            {convo.productTitle}
+                          </span>
+                        )}
+
                         {convo.offTopicStrikes > 0 && (
                           <span className="rounded bg-red-100 px-1 py-0.2 text-[10px] font-bold text-red-700">
                             {convo.offTopicStrikes} strike{convo.offTopicStrikes > 1 ? 's' : ''}
@@ -370,6 +380,11 @@ export default function SellerChatPage() {
                   </div>
                   <p className="text-xs text-gray-500">
                     Order Ref: <span className="font-semibold text-gray-700">{selectedConvo.orderRef || 'General Inquiry'}</span>
+                    {' · '}
+                    Product:{' '}
+                    <span className="font-semibold text-gray-700">
+                      {selectedConvo.productTitle || 'General thread'}
+                    </span>
                   </p>
                 </div>
               </div>

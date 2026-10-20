@@ -24,7 +24,8 @@ const SHOP_LINKS = [
 ]
 
 const SUPPORT_LINKS = [
-  { to: '/support/buyer-chat', label: 'Buyer Chat (Simulated)' },
+  { to: '/support/buyer-chat', label: 'Buyer Chat 1 (Jane Doe)' },
+  { to: '/support/buyer-chat-2', label: 'Buyer Chat 2 (John Dutch)' },
   { to: '/support/seller-chat', label: 'Seller Chat (Agent View)' },
   { to: '/support/settings', label: 'AI Agent Settings' },
 ]

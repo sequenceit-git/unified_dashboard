@@ -12,6 +12,8 @@ const conversationSchema = new mongoose.Schema(
     channel: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
     // Who started the sandbox conversation (useful for scoping the buyer view).
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Fixed sandbox buyer. Each persona keeps a separate chat history.
+    sandboxPersona: { type: String, default: 'jane_doe' },
 
     // Customer reference
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', default: null },
@@ -54,5 +56,12 @@ conversationSchema.index({ shopId: 1, status: 1, lastMessageAt: -1 })
 conversationSchema.index({ customerId: 1, status: 1 })
 conversationSchema.index({ channel: 1, createdBy: 1, lastMessageAt: -1 })
 conversationSchema.index({ channel: 1, shopId: 1, lastMessageAt: -1 })
+conversationSchema.index({
+  channel: 1,
+  sandboxPersona: 1,
+  marketplace: 1,
+  productId: 1,
+  lastMessageAt: -1,
+})
 
 module.exports = mongoose.models.Conversation2 || mongoose.model('Conversation2', conversationSchema, 'conversations_v2')

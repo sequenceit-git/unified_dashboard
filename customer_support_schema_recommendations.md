@@ -12,11 +12,12 @@ The sandbox keeps the legacy `Conversation` / `Message` models untouched and add
 
 - `channel: ['sandbox', 'production']` (default `sandbox`) keeps test threads separate from future production threads.
 - `createdBy` (User) lets the buyer page resume only its own sandbox thread.
-- `productId` (Product) stores the product the buyer is asking about; it is injected into the agent context.
+- `sandboxPersona` (`jane_doe` / `john_dutch`) gives each fixed simulated buyer a separate history.
+- `productId` (Product) stores the product the buyer is asking about; it is injected into the agent context. Each marketplace + product pair is treated as its own chat channel.
 - `shopId` is nullable because a sandbox thread may not belong to a connected marketplace shop.
 - `marketplace` also accepts `tiktok_shop` and `temu` for channel simulation.
 - `customerName`, `orderRef`, `messageCount`, and `lastMessagePreview` are used by the buyer/seller UI.
-- Indexes: `{ channel, createdBy, lastMessageAt }` and `{ channel, shopId, lastMessageAt }`.
+- Indexes: `{ channel, createdBy, lastMessageAt }`, `{ channel, shopId, lastMessageAt }`, and `{ channel, sandboxPersona, marketplace, productId, lastMessageAt }`.
 - The UI reads real orders/products through `GET /api/support/sandbox/context`.
 
 Production migration should merge these fields into the legacy `Conversation` / `Message` models, make `shopId` required for production rows, and keep sandbox rows out of marketplace sync jobs.

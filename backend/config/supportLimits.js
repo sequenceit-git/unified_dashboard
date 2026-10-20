@@ -5,6 +5,9 @@
 module.exports = {
   maxMessageChars: 800,
   maxMessagesPerConversation: 40,
+  // Buyer messages are aggregated per conversation/product before one AI turn.
+  debounceWindowMs: 2500,
+  debounceMaxWaitMs: 8000,
   rateLimit: {
     perSessionPerMin: 10,
     perSessionPerHour: 40,
