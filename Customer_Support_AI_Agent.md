@@ -19,7 +19,7 @@ The buyer/seller sandbox is implemented; production marketplace adapters are not
 - **Guardrails:** deterministic spam/injection/dispute/courtesy gates; output checks for evidence, unknown source IDs, empty/long answers, blocked promise phrases, and external links/emails/phones. FAQs marked `human_required` always escalate; `assisted` answers are flagged for seller review.
 - **Message batching:** buyer messages are aggregated per conversation/product in a 2.5-second quiet window (max 8 seconds) and answered with one AI turn. Every message is still stored individually; each channel has its own timer, queue, and in-flight turn.
 - **Limits:** in-memory per-IP/session rate limiter keyed per conversation or persona + marketplace + product, 40 messages per conversation, 1-hour lock after 3 strikes, 24-hour lock at the message cap, 8-message / 1,500-token history budget.
-- **Seller controls:** human reply auto-pauses the AI, manual AI toggle, status changes, AI trace with tools/sources/flags/tokens, and a sandbox-only reset.
+- **Seller controls:** the seller view groups threads by customer, then by product channel, and only shows channels the buyer has actually written to. Human reply auto-pauses the AI, manual AI toggle, status changes, AI trace with tools/sources/flags/tokens, and a sandbox-only reset.
 - **Not implemented:** eBay/TikTok/Temu adapters, OAuth/webhooks, captcha, persistent (Redis) rate limiting, buyer identity verification, order ownership by authenticated buyer, and email notifications.
 
 The sections below describe the production target; keep the status above in mind when comparing them to the code.

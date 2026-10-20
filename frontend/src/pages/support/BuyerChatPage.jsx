@@ -179,10 +179,14 @@ export default function BuyerChatPage({
         const list = await api.get(`/api/support/chat/conversations?${params.toString()}`, token)
         if (cancelled || seq !== threadSeqRef.current) return
 
+        // Only resume a channel the buyer has actually written to.
+        const eligible = (list || []).filter(
+          (item) => item.customerMessageCount === undefined || item.customerMessageCount > 0,
+        )
         const stored = localStorage.getItem(contextStorageKey)
         const convo =
-          (stored && (list || []).find((item) => item._id === stored)) ||
-          (list?.length ? list[0] : null)
+          (stored && eligible.find((item) => item._id === stored)) ||
+          (eligible.length ? eligible[0] : null)
 
         if (!convo) {
           if (stored) localStorage.removeItem(contextStorageKey)

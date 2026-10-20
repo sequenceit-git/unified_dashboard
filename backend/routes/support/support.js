@@ -482,10 +482,24 @@ router.get('/chat/conversations', async (req, res) => {
       : []
     const productById = new Map(products.map((product) => [String(product._id), product]))
 
+    // The seller view only lists product threads where the buyer actually sent
+    // something. Count real customer messages, not AI/seller replies.
+    const conversationIds = conversations.map((c) => c._id)
+    const customerCounts = conversationIds.length
+      ? await Message2.aggregate([
+          { $match: { conversationId: { $in: conversationIds }, senderType: 'customer' } },
+          { $group: { _id: '$conversationId', count: { $sum: 1 } } },
+        ])
+      : []
+    const customerCountById = new Map(
+      customerCounts.map((row) => [String(row._id), row.count || 0]),
+    )
+
     res.json(
       conversations.map((conversation) => {
         const product = conversation.productId ? productById.get(String(conversation.productId)) : null
         const persona = conversation.sandboxPersona || DEFAULT_PERSONA
+        const customerMessageCount = customerCountById.get(String(conversation._id)) || 0
         return {
           ...conversation,
           productId: conversation.productId ? String(conversation.productId) : null,
@@ -493,6 +507,8 @@ router.get('/chat/conversations', async (req, res) => {
           productSku: product?.sku || null,
           sandboxPersona: persona,
           personaName: SUPPORT_PERSONAS[persona] || null,
+          customerMessageCount,
+          hasCustomerMessage: customerMessageCount > 0,
         }
       }),
     )
