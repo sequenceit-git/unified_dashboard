@@ -9,7 +9,6 @@ import {
   FiTool,
   FiFileText,
   FiTrash2,
-  FiChevronDown,
 } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
@@ -38,7 +37,7 @@ export default function SellerChatPage() {
   const [sendingReply, setSendingReply] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [expandedBuyers, setExpandedBuyers] = useState(() => new Set())
+  const [selectedBuyerKey, setSelectedBuyerKey] = useState(null)
   const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
 
@@ -188,26 +187,11 @@ export default function SellerChatPage() {
     }
   }
 
-  const filteredConversations = useMemo(() => {
-    const query = searchQuery.toLowerCase()
-    return conversations.filter((convo) => {
-      const matchesSearch =
-        !query ||
-        convo.customerName?.toLowerCase().includes(query) ||
-        convo.personaName?.toLowerCase().includes(query) ||
-        convo.orderRef?.toLowerCase().includes(query) ||
-        convo.productTitle?.toLowerCase().includes(query) ||
-        convo.lastMessagePreview?.toLowerCase().includes(query)
-
-      const matchesStatus = filterStatus === 'all' || convo.status === filterStatus
-      return matchesSearch && matchesStatus
-    })
-  }, [conversations, searchQuery, filterStatus])
-
-  // Customer list first; each customer expands into their product threads.
+  // Group every buyer-active thread by customer. The customer column and the
+  // product-thread column stay side by side, independent of the chat column.
   const buyerGroups = useMemo(() => {
     const groups = new Map()
-    for (const convo of filteredConversations) {
+    for (const convo of conversations) {
       const persona = convo.sandboxPersona || 'legacy'
       const key = `${persona}:${convo.customerName || 'Buyer'}`
       if (!groups.has(key)) {
@@ -230,37 +214,75 @@ export default function SellerChatPage() {
     return Array.from(groups.values()).sort(
       (a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0),
     )
-  }, [filteredConversations])
+  }, [conversations])
 
-  // Keep the selected thread's customer open. Search/status filters expand all
-  // matching customers so the product threads are immediately visible.
+  const filteredBuyerGroups = useMemo(() => {
+    const query = searchQuery.toLowerCase()
+    if (!query) return buyerGroups
+    return buyerGroups.filter(
+      (group) =>
+        group.name.toLowerCase().includes(query) ||
+        group.conversations.some(
+          (convo) =>
+            convo.orderRef?.toLowerCase().includes(query) ||
+            convo.productTitle?.toLowerCase().includes(query) ||
+            convo.lastMessagePreview?.toLowerCase().includes(query),
+        ),
+    )
+  }, [buyerGroups, searchQuery])
+
+  const selectedBuyer = buyerGroups.find((group) => group.key === selectedBuyerKey) || null
+
+  const selectedThreads = useMemo(() => {
+    if (!selectedBuyer) return []
+    const query = searchQuery.toLowerCase()
+    const customerMatches = selectedBuyer.name.toLowerCase().includes(query)
+    return selectedBuyer.conversations.filter((convo) => {
+      if (filterStatus !== 'all' && convo.status !== filterStatus) return false
+      if (!query || customerMatches) return true
+      return (
+        convo.orderRef?.toLowerCase().includes(query) ||
+        convo.productTitle?.toLowerCase().includes(query) ||
+        convo.lastMessagePreview?.toLowerCase().includes(query)
+      )
+    })
+  }, [selectedBuyer, filterStatus, searchQuery])
+
+  // If a status/search filter hides the open thread, move to the first visible
+  // thread for the same customer instead of leaving a mismatched chat pane.
   useEffect(() => {
-    if (!buyerGroups.length) return
-    if (searchQuery || filterStatus !== 'all') {
-      setExpandedBuyers((prev) => {
-        const next = new Set(prev)
-        for (const group of buyerGroups) next.add(group.key)
-        return next
-      })
-      return
-    }
+    if (!selectedThreads.length) return
+    if (selectedThreads.some((convo) => convo._id === selectedConvoId)) return
+    setSelectedConvoId(selectedThreads[0]._id)
+  }, [selectedThreads, selectedConvoId])
 
+  // Follow the selected thread, and recover if a search hides the current buyer.
+  useEffect(() => {
     const selected = conversations.find((convo) => convo._id === selectedConvoId)
     if (!selected) return
     const key = `${selected.sandboxPersona || 'legacy'}:${selected.customerName || 'Buyer'}`
-    setExpandedBuyers((prev) => {
-      if (prev.has(key)) return prev
-      return new Set(prev).add(key)
-    })
-  }, [buyerGroups, conversations, selectedConvoId, searchQuery, filterStatus])
+    setSelectedBuyerKey((current) => (current === key ? current : key))
+  }, [conversations, selectedConvoId])
 
-  const toggleBuyerGroup = (key) => {
-    setExpandedBuyers((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+  useEffect(() => {
+    if (!filteredBuyerGroups.length) return
+    if (filteredBuyerGroups.some((group) => group.key === selectedBuyerKey)) return
+    const next = filteredBuyerGroups[0]
+    setSelectedBuyerKey(next.key)
+    setSelectedConvoId((current) =>
+      next.conversations.some((convo) => convo._id === current)
+        ? current
+        : next.conversations[0]?._id || null,
+    )
+  }, [filteredBuyerGroups, selectedBuyerKey])
+
+  const handleSelectBuyer = (group) => {
+    setSelectedBuyerKey(group.key)
+    setSelectedConvoId((current) =>
+      group.conversations.some((convo) => convo._id === current)
+        ? current
+        : group.conversations[0]?._id || null,
+    )
   }
 
   const getStatusColor = (status) => {
@@ -324,23 +346,106 @@ export default function SellerChatPage() {
 
       {error && <ErrorState message={error} onRetry={fetchConversations} />}
 
-      {/* 2-Column Chat Workspace */}
-      <div className="grid min-h-[560px] flex-1 grid-cols-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm lg:grid-cols-[340px_minmax(0,1fr)]">
-        {/* Left Column: Conversations List */}
+      {/* 3-Column Chat Workspace: customers | product threads | chat */}
+      <div className="grid min-h-[560px] flex-1 grid-cols-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm lg:grid-cols-[210px_300px_minmax(0,1fr)]">
+        {/* Column 1: Customers */}
         <div className="flex min-h-0 flex-col border-b border-gray-200 lg:border-b-0 lg:border-r">
-          {/* Search & Filter Header */}
-          <div className="border-b border-gray-100 p-3 space-y-2">
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-700">
-              <FiSearch size={14} className="text-gray-400 shrink-0" />
+          <div className="border-b border-gray-100 p-3">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700">
+              <FiSearch size={14} className="shrink-0 text-gray-400" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search customer, product, order #…"
-                className="w-full bg-transparent outline-none"
+                placeholder="Search customers, products..."
+                className="w-full min-w-0 bg-transparent outline-none"
               />
             </div>
 
-            <div className="flex items-center gap-1 text-[11px]">
+            <div className="mt-2 flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              <span>Customers</span>
+              <span>{filteredBuyerGroups.length}</span>
+            </div>
+          </div>
+
+          <div className="max-h-[280px] min-h-0 flex-1 overflow-y-auto lg:max-h-none">
+            {filteredBuyerGroups.length === 0 ? (
+              <div className="p-6 text-center text-xs text-gray-400">
+                {buyerGroups.length === 0 ? 'No customer messages found.' : 'No customers match this search.'}
+                {buyerGroups.length === 0 && (
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Send a message from a <span className="font-semibold">Buyer Chat</span> tab to start a product thread.
+                  </p>
+                )}
+              </div>
+            ) : (
+              filteredBuyerGroups.map((group) => {
+                const isActive = group.key === selectedBuyerKey
+                const hasSelectedThread = group.conversations.some(
+                  (convo) => convo._id === selectedConvoId,
+                )
+                return (
+                  <button
+                    key={group.key}
+                    onClick={() => handleSelectBuyer(group)}
+                    className={`flex w-full items-center gap-2.5 border-l-4 px-3 py-3 text-left transition ${
+                      isActive
+                        ? 'border-indigo-600 bg-indigo-50/70'
+                        : 'border-transparent hover:bg-gray-50'
+                    }`}
+                  >
+                    <span
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold ${
+                        isActive ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {initials(group.name)}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-xs font-bold text-gray-900">{group.name}</p>
+                        <span className="shrink-0 text-[10px] text-gray-400">
+                          {new Date(group.lastMessageAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
+                          {group.conversations.length} thread
+                          {group.conversations.length > 1 ? 's' : ''}
+                        </span>
+                        {hasSelectedThread && (
+                          <span className="text-[10px] font-semibold text-indigo-600">open</span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Column 2: Product threads for the selected customer */}
+        <div className="flex min-h-0 flex-col border-b border-gray-200 lg:border-b-0 lg:border-r">
+          <div className="border-b border-gray-100 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  Product threads
+                </p>
+                <p className="truncate text-xs font-bold text-gray-900">
+                  {selectedBuyer?.name || 'Select a customer'}
+                </p>
+              </div>
+              <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
+                {selectedThreads.length}
+              </span>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-1 text-[11px]">
               {['all', 'open', 'escalated', 'locked', 'closed'].map((st) => (
                 <button
                   key={st}
@@ -355,148 +460,86 @@ export default function SellerChatPage() {
                 </button>
               ))}
             </div>
-
-            <div className="flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-              <span>Customers</span>
-              <span>{buyerGroups.length}</span>
-            </div>
           </div>
 
-          {/* Conversations Scroll: customer → product thread list */}
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {buyerGroups.length === 0 ? (
-              <div className="p-8 text-center text-xs text-gray-400">
-                No customer messages found.
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Send a message from a <span className="font-semibold">Buyer Chat</span> tab to start a product thread.
-                </p>
+          <div className="max-h-[320px] min-h-0 flex-1 space-y-1 overflow-y-auto p-2 lg:max-h-none">
+            {!selectedBuyer ? (
+              <div className="p-6 text-center text-xs text-gray-400">
+                Select a customer to see their product threads.
+              </div>
+            ) : selectedThreads.length === 0 ? (
+              <div className="p-6 text-center text-xs text-gray-400">
+                No {filterStatus === 'all' ? '' : `${filterStatus} `}threads for this customer.
               </div>
             ) : (
-              buyerGroups.map((group) => {
-                const isExpanded = expandedBuyers.has(group.key)
-                const selectedInGroup = group.conversations.some(
-                  (convo) => convo._id === selectedConvoId,
-                )
+              selectedThreads.map((convo) => {
+                const isSelected = convo._id === selectedConvoId
                 return (
-                  <div key={group.key} className="border-b border-gray-100 last:border-b-0">
-                    <button
-                      onClick={() => toggleBuyerGroup(group.key)}
-                      className={`flex w-full items-center gap-3 px-3.5 py-3 text-left transition ${
-                        selectedInGroup ? 'bg-indigo-50/60' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <span
-                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold ${
-                          selectedInGroup ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
-                        }`}
-                      >
-                        {initials(group.name)}
-                      </span>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-xs font-bold text-gray-900">{group.name}</p>
-                          <span className="shrink-0 text-[10px] text-gray-400">
-                            {new Date(group.lastMessageAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center gap-1.5">
-                          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
-                            {group.conversations.length} product thread
-                            {group.conversations.length > 1 ? 's' : ''}
-                          </span>
-                          {selectedInGroup && (
-                            <span className="text-[10px] font-semibold text-indigo-600">active</span>
-                          )}
-                        </div>
+                  <button
+                    key={convo._id}
+                    onClick={() => setSelectedConvoId(convo._id)}
+                    className={`w-full rounded-lg border px-2.5 py-2 text-left transition ${
+                      isSelected
+                        ? 'border-indigo-300 bg-indigo-50/60 shadow-sm ring-1 ring-indigo-200'
+                        : 'border-transparent bg-white hover:border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p
+                          className={`truncate text-[11px] font-bold ${
+                            isSelected ? 'text-indigo-700' : 'text-gray-800'
+                          }`}
+                          title={convo.productTitle || 'General thread'}
+                        >
+                          {convo.productTitle || 'General thread'}
+                        </p>
+                        <p className="mt-0.5 truncate text-[10px] text-gray-400">
+                          {convo.productSku || 'No SKU'}
+                        </p>
                       </div>
-
-                      <FiChevronDown
-                        size={14}
-                        className={`shrink-0 text-gray-400 transition-transform ${
-                          isExpanded ? '' : '-rotate-90'
-                        }`}
-                      />
-                    </button>
-
-                    {isExpanded && (
-                      <div className="space-y-1 bg-gray-50/70 px-2 pb-2">
-                        {group.conversations.map((convo) => {
-                          const isSelected = convo._id === selectedConvoId
-                          return (
-                            <button
-                              key={convo._id}
-                              onClick={() => setSelectedConvoId(convo._id)}
-                              className={`w-full rounded-lg border px-2.5 py-2 text-left transition ${
-                                isSelected
-                                  ? 'border-indigo-300 bg-white shadow-sm ring-1 ring-indigo-200'
-                                  : 'border-transparent bg-white/70 hover:border-gray-200 hover:bg-white'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p
-                                    className={`truncate text-[11px] font-bold ${
-                                      isSelected ? 'text-indigo-700' : 'text-gray-800'
-                                    }`}
-                                    title={convo.productTitle || 'General thread'}
-                                  >
-                                    {convo.productTitle || 'General thread'}
-                                  </p>
-                                  <p className="mt-0.5 truncate text-[10px] text-gray-400">
-                                    {convo.productSku || 'No SKU'}
-                                  </p>
-                                </div>
-                                <span className="shrink-0 text-[9px] text-gray-400">
-                                  {new Date(convo.lastMessageAt).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </span>
-                              </div>
-
-                              <div className="mt-1 flex flex-wrap items-center gap-1">
-                                <Badge color={marketplaceBadgeColor(convo.marketplace)}>
-                                  {marketplaceLabel(convo.marketplace)}
-                                </Badge>
-                                <Badge color={getStatusColor(convo.status)}>{convo.status}</Badge>
-                                {convo.orderRef && (
-                                  <span className="truncate text-[9px] font-semibold text-gray-500">
-                                    #{convo.orderRef}
-                                  </span>
-                                )}
-                                {convo.aiEnabled === false && (
-                                  <span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold text-amber-700">
-                                    AI paused
-                                  </span>
-                                )}
-                                {convo.offTopicStrikes > 0 && (
-                                  <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-700">
-                                    {convo.offTopicStrikes} strike
-                                    {convo.offTopicStrikes > 1 ? 's' : ''}
-                                  </span>
-                                )}
-                              </div>
-
-                              <p className="mt-1 truncate text-[10px] text-gray-500">
-                                {convo.lastMessagePreview || 'New inquiry'}
-                              </p>
-                            </button>
-                          )
+                      <span className="shrink-0 text-[9px] text-gray-400">
+                        {new Date(convo.lastMessageAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
-                      </div>
-                    )}
-                  </div>
+                      </span>
+                    </div>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <Badge color={marketplaceBadgeColor(convo.marketplace)}>
+                        {marketplaceLabel(convo.marketplace)}
+                      </Badge>
+                      <Badge color={getStatusColor(convo.status)}>{convo.status}</Badge>
+                      {convo.orderRef && (
+                        <span className="truncate text-[9px] font-semibold text-gray-500">
+                          #{convo.orderRef}
+                        </span>
+                      )}
+                      {convo.aiEnabled === false && (
+                        <span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold text-amber-700">
+                          AI paused
+                        </span>
+                      )}
+                      {convo.offTopicStrikes > 0 && (
+                        <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-700">
+                          {convo.offTopicStrikes} strike
+                          {convo.offTopicStrikes > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="mt-1 truncate text-[10px] text-gray-500">
+                      {convo.lastMessagePreview || 'New inquiry'}
+                    </p>
+                  </button>
                 )
               })
             )}
           </div>
         </div>
 
-        {/* Right Column: Selected Thread & Controls */}
+        {/* Column 3: Selected Thread & Controls */}
         {selectedConvo ? (
           <div className="flex min-h-0 flex-col">
             {/* Thread Header & Action Bar */}
