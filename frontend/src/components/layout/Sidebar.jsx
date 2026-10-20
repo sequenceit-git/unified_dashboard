@@ -1,33 +1,71 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { FiChevronDown, FiSettings } from 'react-icons/fi'
+import {
+  FiChevronDown,
+  FiSettings,
+  FiCompass,
+  FiHome,
+  FiShoppingBag,
+  FiMusic,
+  FiTag,
+  FiBarChart2,
+  FiInbox,
+  FiPackage,
+  FiLayers,
+  FiShoppingCart,
+  FiUsers,
+  FiHeadphones,
+  FiUser,
+  FiUserCheck,
+  FiMessageSquare,
+  FiCpu,
+  FiShield,
+} from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
 
 const TOP_LINKS = [
-  { to: '/market-research', label: 'Product Discovery', route: 'market-research' },
-  { to: '/', label: 'Overview', route: 'dashboard', end: true },
+  { to: '/market-research', label: 'Product Discovery', route: 'market-research', icon: FiCompass },
+  { to: '/', label: 'Overview', route: 'dashboard', end: true, icon: FiHome },
 ]
 
 const SHOP_SECTIONS = [
-  { id: 'ebay', label: 'eBay', storageKey: 'sidebar-ebay-open', defaultOpen: true },
-  { id: 'tiktok', label: 'TikTok Shop', storageKey: 'sidebar-tiktok-open', defaultOpen: false },
-  { id: 'temu', label: 'Temu Shop', storageKey: 'sidebar-temu-open', defaultOpen: false },
+  {
+    id: 'ebay',
+    label: 'eBay',
+    icon: FiShoppingBag,
+    storageKey: 'sidebar-ebay-open',
+    defaultOpen: true,
+  },
+  {
+    id: 'tiktok',
+    label: 'TikTok Shop',
+    icon: FiMusic,
+    storageKey: 'sidebar-tiktok-open',
+    defaultOpen: false,
+  },
+  {
+    id: 'temu',
+    label: 'Temu Shop',
+    icon: FiTag,
+    storageKey: 'sidebar-temu-open',
+    defaultOpen: false,
+  },
 ]
 
 const SHOP_LINKS = [
-  { path: '/analytics', label: 'Analytics', route: 'analytics' },
-  { path: '/inbox', label: 'Inbox', route: 'inbox' },
-  { path: '/products', label: 'Products', route: 'products' },
-  { path: '/inventory', label: 'Inventory', route: 'inventory' },
-  { path: '/orders', label: 'Orders', route: 'orders' },
-  { path: '/customers', label: 'Customers', route: 'customers' },
+  { path: '/analytics', label: 'Analytics', route: 'analytics', icon: FiBarChart2 },
+  { path: '/inbox', label: 'Inbox', route: 'inbox', icon: FiInbox },
+  { path: '/products', label: 'Products', route: 'products', icon: FiPackage },
+  { path: '/inventory', label: 'Inventory', route: 'inventory', icon: FiLayers },
+  { path: '/orders', label: 'Orders', route: 'orders', icon: FiShoppingCart },
+  { path: '/customers', label: 'Customers', route: 'customers', icon: FiUsers },
 ]
 
 const SUPPORT_LINKS = [
-  { to: '/support/buyer-chat', label: 'Buyer Chat 1 (Jane Doe)' },
-  { to: '/support/buyer-chat-2', label: 'Buyer Chat 2 (John Dutch)' },
-  { to: '/support/seller-chat', label: 'Seller Chat (Agent View)' },
-  { to: '/support/settings', label: 'AI Agent Settings' },
+  { to: '/support/buyer-chat', label: 'Buyer Chat 1 (Jane Doe)', icon: FiUser },
+  { to: '/support/buyer-chat-2', label: 'Buyer Chat 2 (John Dutch)', icon: FiUserCheck },
+  { to: '/support/seller-chat', label: 'Seller Chat (Agent View)', icon: FiMessageSquare },
+  { to: '/support/settings', label: 'AI Agent Settings', icon: FiCpu },
 ]
 
 function readOpen(storageKey, defaultOpen) {
@@ -40,16 +78,41 @@ function readOpen(storageKey, defaultOpen) {
 }
 
 function itemClass(nested, on) {
-  return `block w-full text-[15px] font-semibold transition ${
-    nested ? 'py-3 pl-14 pr-6' : 'px-8 py-4'
+  return `flex w-full items-center gap-3 text-[15px] font-semibold transition-colors lg:gap-0 lg:justify-center lg:group-hover:justify-start lg:group-hover:gap-3 ${
+    nested
+      ? 'py-3 pl-14 pr-6 lg:px-0 lg:group-hover:pl-14 lg:group-hover:pr-6'
+      : 'px-8 py-4 lg:px-0 lg:group-hover:px-8'
   } ${on ? 'bg-[#4F46E5] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`
 }
 
-function NavItem({ to, end, onClose, nested, active, children }) {
+function ItemLabel({ children }) {
+  return (
+    <span className="min-w-0 truncate text-left transition-all duration-200 lg:max-w-0 lg:opacity-0 lg:group-hover:max-w-[180px] lg:group-hover:opacity-100">
+      {children}
+    </span>
+  )
+}
+
+function NavItem({ to, end, onClose, nested, active, icon: Icon, children }) {
+  const label = typeof children === 'string' ? children : undefined
+  const content = (
+    <>
+      {Icon && <Icon size={18} className="shrink-0" />}
+      <ItemLabel>{children}</ItemLabel>
+    </>
+  )
+
   if (active !== undefined) {
     return (
-      <Link to={to} onClick={onClose} aria-current={active ? 'page' : undefined} className={itemClass(nested, active)}>
-        {children}
+      <Link
+        to={to}
+        onClick={onClose}
+        title={label}
+        aria-label={label}
+        aria-current={active ? 'page' : undefined}
+        className={itemClass(nested, active)}
+      >
+        {content}
       </Link>
     )
   }
@@ -59,9 +122,11 @@ function NavItem({ to, end, onClose, nested, active, children }) {
       to={to}
       end={end}
       onClick={onClose}
+      title={label}
+      aria-label={label}
       className={({ isActive }) => itemClass(nested, isActive)}
     >
-      {children}
+      {content}
     </NavLink>
   )
 }
@@ -75,6 +140,7 @@ function shopLinkActive(pathname, search, link) {
 function ShopGroup({ section, links, pathname, search, onClose }) {
   const active = links.some((link) => shopLinkActive(pathname, search, link))
   const [open, setOpen] = useState(() => readOpen(section.storageKey, section.defaultOpen))
+  const Icon = section.icon
 
   const toggle = () => {
     setOpen((current) => {
@@ -93,16 +159,21 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
       <button
         type="button"
         onClick={toggle}
+        title={section.label}
+        aria-label={section.label}
         aria-expanded={open}
         aria-controls={`${section.id}-shop-nav`}
-        className={`flex w-full items-center justify-between px-8 py-3 text-left transition hover:bg-slate-100 ${
+        className={`flex w-full items-center gap-3 px-8 py-3 text-left transition-colors hover:bg-slate-100 lg:gap-0 lg:justify-center lg:px-0 lg:group-hover:justify-start lg:group-hover:gap-3 lg:group-hover:px-8 ${
           !open && active ? 'bg-indigo-50' : ''
         }`}
       >
-        <span className="text-[15px] font-bold text-slate-900">{section.label}</span>
+        <Icon size={18} className="shrink-0 text-slate-500" />
+        <ItemLabel>{section.label}</ItemLabel>
         <FiChevronDown
           size={16}
-          className={`shrink-0 text-slate-400 transition-transform ${open ? '' : '-rotate-90'}`}
+          className={`ml-auto shrink-0 text-slate-400 transition-transform lg:ml-0 lg:w-0 lg:opacity-0 lg:group-hover:ml-auto lg:group-hover:w-4 lg:group-hover:opacity-100 ${
+            open ? '' : '-rotate-90'
+          }`}
         />
       </button>
       {open && (
@@ -113,6 +184,7 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
               to={link.to}
               onClose={onClose}
               nested
+              icon={link.icon}
               active={shopLinkActive(pathname, search, link)}
             >
               {link.label}
@@ -149,20 +221,28 @@ export default function Sidebar({ open, onClose }) {
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed bottom-0 left-0 top-16 z-40 w-64 transform border-r border-[#E2E8F0] bg-white p-0 text-[#0F172A] shadow-2xl transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
+        className={`group fixed bottom-0 left-0 top-16 z-40 w-64 transform overflow-x-hidden border-r border-[#E2E8F0] bg-white p-0 text-[#0F172A] shadow-2xl transition-[transform,width] duration-200 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:w-[72px] lg:shrink-0 lg:translate-x-0 lg:shadow-none lg:hover:w-64 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <nav className="h-full w-full overflow-y-auto pt-6">
+        <nav className="h-full w-full overflow-y-auto overflow-x-hidden pt-6">
           {topLinks.map((link) => (
-            <NavItem key={link.to} to={link.to} end={link.end} onClose={onClose}>
+            <NavItem
+              key={link.to}
+              to={link.to}
+              end={link.end}
+              onClose={onClose}
+              icon={link.icon}
+            >
               {link.label}
             </NavItem>
           ))}
 
           {shopSections.length > 0 && (
             <div className="mt-2">
-              <p className="px-8 pb-1 pt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Shop</p>
+              <p className="overflow-hidden px-8 pb-1 pt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-all duration-200 lg:max-h-0 lg:px-0 lg:pb-0 lg:pt-0 lg:opacity-0 lg:group-hover:max-h-10 lg:group-hover:px-8 lg:group-hover:pb-1 lg:group-hover:pt-5 lg:group-hover:opacity-100">
+                Shop
+              </p>
               {shopSections.map((section) => (
                 <ShopGroup
                   key={section.id}
@@ -180,23 +260,35 @@ export default function Sidebar({ open, onClose }) {
             <div className="mt-2 border-t border-slate-100 pt-2">
               <button
                 type="button"
+                title="Customer Support AI"
+                aria-label="Customer Support AI"
                 aria-expanded={supportOpen}
                 aria-controls="support-nav"
                 onClick={() => setSupportOpen((value) => !value)}
-                className={`flex w-full items-center justify-between px-8 py-3 text-left transition hover:bg-slate-100 ${
+                className={`flex w-full items-center gap-3 px-8 py-3 text-left transition-colors hover:bg-slate-100 lg:gap-0 lg:justify-center lg:px-0 lg:group-hover:justify-start lg:group-hover:gap-3 lg:group-hover:px-8 ${
                   !supportOpen && supportActive ? 'bg-indigo-50' : ''
                 }`}
               >
-                <span className="text-[15px] font-bold text-slate-900">Customer Support AI</span>
+                <FiHeadphones size={18} className="shrink-0 text-slate-500" />
+                <ItemLabel>Customer Support AI</ItemLabel>
                 <FiChevronDown
                   size={16}
-                  className={`shrink-0 text-slate-400 transition-transform ${supportOpen ? '' : '-rotate-90'}`}
+                  className={`ml-auto shrink-0 text-slate-400 transition-transform lg:ml-0 lg:w-0 lg:opacity-0 lg:group-hover:ml-auto lg:group-hover:w-4 lg:group-hover:opacity-100 ${
+                    supportOpen ? '' : '-rotate-90'
+                  }`}
                 />
               </button>
               {supportOpen && (
                 <div id="support-nav">
                   {SUPPORT_LINKS.map((link) => (
-                    <NavItem key={link.to} to={link.to} onClose={onClose} nested active={pathname === link.to}>
+                    <NavItem
+                      key={link.to}
+                      to={link.to}
+                      onClose={onClose}
+                      nested
+                      icon={link.icon}
+                      active={pathname === link.to}
+                    >
                       {link.label}
                     </NavItem>
                   ))}
@@ -206,22 +298,14 @@ export default function Sidebar({ open, onClose }) {
           )}
 
           {isAdmin && (
-            <NavItem to="/sub-admins" onClose={onClose}>
+            <NavItem to="/sub-admins" onClose={onClose} icon={FiShield}>
               Sub-admins
             </NavItem>
           )}
-          <NavLink
-            to="/settings"
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex w-full items-center gap-2 px-8 py-4 text-[15px] font-semibold transition ${
-                isActive ? 'bg-[#4F46E5] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`
-            }
-          >
-            <FiSettings size={16} />
+
+          <NavItem to="/settings" onClose={onClose} icon={FiSettings}>
             Settings
-          </NavLink>
+          </NavItem>
         </nav>
       </aside>
     </>

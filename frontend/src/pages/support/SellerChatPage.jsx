@@ -62,16 +62,19 @@ export default function SellerChatPage() {
     }
   }
 
-  const fetchMessages = async (convoId) => {
+  const fetchMessages = async (convoId, { silent = false } = {}) => {
     if (!convoId) return
-    setLoadingMessages(true)
+    if (!silent) setLoadingMessages(true)
     try {
       const data = await api.get(`/api/support/chat/conversations/${convoId}/messages`, token)
-      setMessages(data || [])
+      setMessages((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(data || [])) return prev
+        return data || []
+      })
     } catch (err) {
-      setError(err.message)
+      if (!silent) setError(err.message)
     } finally {
-      setLoadingMessages(false)
+      if (!silent) setLoadingMessages(false)
     }
   }
 
@@ -87,7 +90,7 @@ export default function SellerChatPage() {
     if (selectedConvoId) {
       fetchMessages(selectedConvoId)
       const interval = setInterval(() => {
-        fetchMessages(selectedConvoId)
+        fetchMessages(selectedConvoId, { silent: true })
       }, 3000)
       return () => clearInterval(interval)
     }

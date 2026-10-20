@@ -129,7 +129,7 @@ export default function BuyerChatPage({
 
   // Load message thread from the database.
   const loadThread = useCallback(
-    async (convoId) => {
+    async (convoId, { silent = false } = {}) => {
       if (!convoId || !token) return
       try {
         const msgs = await api.get(`/api/support/chat/conversations/${convoId}/messages`, token)
@@ -151,9 +151,12 @@ export default function BuyerChatPage({
           flags: m.ai?.flags || [],
           sentAt: new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }))
-        setMessages([WELCOME_MESSAGE, ...formatted])
+        const nextMessages = [WELCOME_MESSAGE, ...formatted]
+        setMessages((prev) =>
+          JSON.stringify(prev) === JSON.stringify(nextMessages) ? prev : nextMessages,
+        )
       } catch (err) {
-        console.error('Failed to load conversation thread:', err)
+        if (!silent) console.error('Failed to load conversation thread:', err)
       }
     },
     [token, buyerName],
@@ -232,7 +235,7 @@ export default function BuyerChatPage({
     if (!conversationId) return
     const interval = setInterval(() => {
       if (pendingRef.current > 0) return
-      loadThread(conversationId)
+      loadThread(conversationId, { silent: true })
     }, 3000)
     return () => clearInterval(interval)
   }, [conversationId, loadThread])
