@@ -23,7 +23,7 @@ const STOCK = [
   { value: 'out', label: 'Out of stock' },
 ]
 
-export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], disabled = false, disabledMessage = '' }) {
+export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '', disabled = false, disabledMessage = '' }) {
   const { token, isAdmin } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -47,36 +47,20 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
     setLoading(true)
     setError('')
     try {
-      const base = {
-        q,
-        status,
-        category,
-        stock,
-        sort,
-        page,
-        limit: 15,
-        ...(source !== 'all' ? { source } : {}),
-      }
-      let res
-      if (shopIds.length <= 1) {
-        res = await api.get(
-          `/api/products${queryString({ ...base, shop: shopIds[0] })}`,
-          token,
-        )
-      } else {
-        const parts = await Promise.all(
-          shopIds.map((id) =>
-            api.get(`/api/products${queryString({ ...base, shop: id })}`, token),
-          ),
-        )
-        const seen = new Map()
-        for (const p of parts) {
-          for (const r of p.data || []) {
-            if (!seen.has(r._id)) seen.set(r._id, r)
-          }
-        }
-        res = { data: [...seen.values()], page: 1, pages: 1, total: seen.size }
-      }
+      const res = await api.get(
+        `/api/products${queryString({
+          q,
+          status,
+          category,
+          stock,
+          sort,
+          page,
+          limit: 15,
+          marketplace,
+          ...(source !== 'all' ? { source } : {}),
+        })}`,
+        token,
+      )
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
@@ -90,7 +74,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, status, source, category, stock, sort, page, refreshKey, disabled, shopIds.join(',')])
+  }, [q, status, source, category, stock, sort, page, refreshKey, disabled, marketplace])
 
   const toggleSort = (key) => {
     setSort((s) => (s === key ? `-${key}` : key))
@@ -98,7 +82,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
   }
 
   const remove = async (id) => {
-    if (!window.confirm('Archive this product?')) return
+    if (!window.confirm('Delete this product? This cannot be undone.')) return
     await api.del(`/api/products/${id}`, token)
     fetchRows()
   }
@@ -143,7 +127,8 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
           },
           { key: 'sku', label: 'SKU', sortable: true },
           { key: 'title', label: 'Title', sortable: true },
-          { key: 'basePrice', label: 'Price', sortable: true, render: (r) => `$${r.basePrice}` },
+          { key: 'basePrice', label: 'Price', sortable: true, render: (r) => (r.basePrice != null ? `$${Number(r.basePrice).toFixed(2)}` : '—') },
+          { key: 'costPrice', label: 'Base price', sortable: true, render: (r) => (r.costPrice != null && r.costPrice !== '' ? `$${Number(r.costPrice).toFixed(2)}` : '—') },
           {
             key: 'stock', label: 'Stock', sortable: true,
             render: (r) => <span className={r.stock <= r.lowStockThreshold ? 'font-bold text-red-600' : ''}>{r.stock}</span>,
@@ -175,7 +160,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, shopIds = [], d
                   items={[
                     { label: 'Edit', onClick: () => onEdit(r) },
                     { label: 'List on shop', onClick: () => onList(r) },
-                    { label: 'Archive', danger: true, onClick: () => remove(r._id) },
+                    { label: 'Delete', danger: true, onClick: () => remove(r._id) },
                   ]}
                 />
               </span>

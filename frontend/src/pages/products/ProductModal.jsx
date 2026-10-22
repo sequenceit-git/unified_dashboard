@@ -13,6 +13,7 @@ const EMPTY = {
   category: '',
   brand: '',
   basePrice: '',
+  costPrice: '',
   stock: 0,
   lowStockThreshold: 5,
   status: 'draft',
@@ -52,6 +53,7 @@ export default function ProductModal({ product, onClose, onSaved }) {
       const body = {
         ...form,
         basePrice: Number(form.basePrice),
+        costPrice: form.costPrice === '' || form.costPrice == null ? null : Number(form.costPrice),
         stock: Number(form.stock),
         lowStockThreshold: Number(form.lowStockThreshold),
         weight: Number(form.weight) || 1,
@@ -107,6 +109,7 @@ export default function ProductModal({ product, onClose, onSaved }) {
               <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600">Pricing & Inventory</h3>
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Price ($) *" type="number" step="0.01" value={form.basePrice} onChange={set('basePrice')} required />
+                <Input label="Base price ($)" type="number" step="0.01" value={form.costPrice ?? ''} onChange={set('costPrice')} placeholder="Cost before selling" />
                 <Input label="Stock Quantity *" type="number" value={form.stock} onChange={set('stock')} required />
                 <Input label="Low-stock Alert" type="number" value={form.lowStockThreshold} onChange={set('lowStockThreshold')} />
                 <Select

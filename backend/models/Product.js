@@ -19,6 +19,7 @@ const productSchema = new mongoose.Schema(
     brand: { type: String },
     images: [{ type: String }],
     basePrice: { type: Number },
+    costPrice: { type: Number, default: null },
     currency: { type: String, default: 'USD' },
     stock: { type: Number, default: 0 },
     lowStockThreshold: { type: Number, default: 5 },

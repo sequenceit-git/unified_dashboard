@@ -63,7 +63,8 @@ export default function ListingsTab() {
                     },
                     { key: 'sku', label: 'SKU' },
                     { key: 'title', label: 'Title' },
-                    { key: 'basePrice', label: 'Price', render: (r) => `$${r.basePrice}` },
+                    { key: 'basePrice', label: 'Price', render: (r) => (r.basePrice != null ? `$${Number(r.basePrice).toFixed(2)}` : '—') },
+                    { key: 'costPrice', label: 'Base price', render: (r) => (r.costPrice != null && r.costPrice !== '' ? `$${Number(r.costPrice).toFixed(2)}` : '—') },
                     { key: 'status', label: 'Status', render: (r) => <Badge color={statusColor(r.status)}>{r.status}</Badge> },
                   ]}
                   rows={prods.data?.data || []}

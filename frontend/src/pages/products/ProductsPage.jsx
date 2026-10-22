@@ -1,16 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import Button from '../../components/ui/Button'
-import { useApi } from '../../hooks/useApi'
 import BulkModal from './BulkModal'
 import CatalogTab from './CatalogTab'
 import ListModal from './ListModal'
 import ProductModal from './ProductModal'
 
 export default function ProductsPage() {
-  const { isAdmin, token } = useAuth()
+  const { isAdmin } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
   const [editing, setEditing] = useState(null)
@@ -18,14 +17,6 @@ export default function ProductsPage() {
   const [showBulk, setShowBulk] = useState(false)
   const [listing, setListing] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
-
-  const shopsRes = useApi(token ? '/api/shops' : null)
-  const shops = shopsRes.data || []
-  const shopIds = useMemo(
-    () => shops.filter((shop) => shop.marketplace === marketplace).map((shop) => shop._id),
-    [shops, marketplace],
-  )
-  const noShopForTab = !shopsRes.loading && shopIds.length === 0
 
   const saved = () => {
     setEditing(null)
@@ -54,9 +45,7 @@ export default function ProductsPage() {
             onEdit={setEditing}
             onList={setListing}
             refreshKey={refreshKey}
-            shopIds={shopIds}
-            disabled={noShopForTab}
-            disabledMessage={`Connect ${section.label} in Settings to see its products`}
+            marketplace={marketplace}
           />
         </div>
       </div>

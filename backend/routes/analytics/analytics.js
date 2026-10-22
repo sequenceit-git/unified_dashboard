@@ -46,11 +46,55 @@ router.get('/summary', async (req, res) => {
       { $match: m },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ])
+    const [profitAgg] = await Order.aggregate([
+      { $match: m },
+      { $unwind: { path: '$items', preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: 'products',
+          let: { productId: '$items.productId', sku: '$items.sku' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $and: [{ $ne: ['$$productId', null] }, { $eq: ['$_id', '$$productId'] }] },
+                    { $and: [{ $ne: ['$$sku', null] }, { $eq: ['$sku', '$$sku'] }] },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'product',
+        },
+      },
+      { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: null,
+          profit: {
+            $sum: {
+              $multiply: [
+                { $ifNull: ['$items.quantity', 0] },
+                {
+                  $subtract: [
+                    { $ifNull: ['$items.unitPrice', { $ifNull: ['$product.basePrice', 0] }] },
+                    { $ifNull: ['$product.costPrice', 0] },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+    ])
     res.json({
       revenue: +(agg?.revenue || 0).toFixed(2),
       orders: agg?.orders || 0,
       items: agg?.items || 0,
       avgOrder: agg?.orders ? +((agg.revenue || 0) / agg.orders).toFixed(2) : 0,
+      profit: +((profitAgg?.profit) || 0).toFixed(2),
       byStatus: Object.fromEntries(byStatus.map((s) => [s._id, s.count])),
     })
   } catch (err) {

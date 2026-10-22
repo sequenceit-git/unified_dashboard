@@ -11,7 +11,7 @@ const router = express.Router()
 
 router.use(requireAuth, loadAccess, requireMainRoute('products'))
 
-const SORTABLE = ['createdAt', 'title', 'basePrice', 'stock']
+const SORTABLE = ['createdAt', 'title', 'basePrice', 'costPrice', 'stock']
 
 // Sub-admins see products through listings of their own shop (schema note 6).
 async function scopedIds(req) {
@@ -140,16 +140,13 @@ router.patch('/:id', requireRole('super_admin'), async (req, res) => {
   }
 })
 
-// DELETE /api/products/:id — archive by default, ?hard=true to remove
+// DELETE /api/products/:id — remove the product and its shop listings
 router.delete('/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    if (req.query.hard === 'true') {
-      await Product.findByIdAndDelete(req.params.id)
-      return res.json({ deleted: true })
-    }
-    const doc = await Product.findByIdAndUpdate(req.params.id, { status: 'archived' }, { new: true })
+    const doc = await Product.findByIdAndDelete(req.params.id)
     if (!doc) return res.status(404).json({ error: 'Not found' })
-    res.json(doc)
+    await Listing.deleteMany({ productId: doc._id })
+    res.json({ deleted: true })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

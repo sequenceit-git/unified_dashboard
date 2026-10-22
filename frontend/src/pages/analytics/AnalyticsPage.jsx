@@ -90,10 +90,15 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label="Revenue" value={summary.loading ? '…' : `$${(summary.data?.revenue ?? 0).toFixed(2)}`} />
         <StatCard label="Orders" value={summary.loading ? '…' : (summary.data?.orders ?? 0)} />
         <StatCard label="Avg order" value={summary.loading ? '…' : `$${(summary.data?.avgOrder ?? 0).toFixed(2)}`} />
+        <StatCard
+          label="Profit"
+          value={summary.loading ? '…' : `$${(summary.data?.profit ?? 0).toFixed(2)}`}
+          sub="Sell price − base price"
+        />
         <StatCard label="Low stock" value={inv.loading ? '…' : (inv.data?.lowCount ?? 0)} sub={inv.data ? `${inv.data.outCount ?? 0} out of stock` : ''} />
       </div>
 
