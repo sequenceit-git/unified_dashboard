@@ -7,7 +7,7 @@ description: Validate one candidate product's demand, competition and customer s
 
 ## Purpose
 
-Take ONE candidate and check whether it truly sells, and at what price, on the client's channels.
+Take ONE candidate and check whether it truly sells in the United States. Collect one verified product-page link on each of eBay, Amazon, Walmart, and Temu. Do not use other countries.
 
 ## Steps
 
@@ -34,4 +34,5 @@ matchConfidence, description, highlights[], specs[{name, value}], imageUrls[], e
 ## Hard rules
 
 - Every number must come from a page you opened, and its URL must be returned. If not found, null.
+- listingLinks has at most one URL per site: ebay.com/itm, amazon.com/dp, walmart.com/ip, temu.com goods page. Omit a site when you cannot open a real product page. Never return search pages or non-US domains.
 - Suggested sell price is the eBay median, not the Amazon price.

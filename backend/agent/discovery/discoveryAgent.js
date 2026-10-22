@@ -10,6 +10,21 @@ const OpenAI = require('openai')
 const ResearchReport2 = require('../../models/ResearchReport2')
 const { skillManager } = require('./skills/index')
 const { computeOpportunityScore } = require('./economics')
+const { productImages } = require('./listingImage')
+const { placeOf, validatedUsListings } = require('./usListings')
+
+async function updateWhileRunning(reportId, update) {
+  const result = await ResearchReport2.updateOne(
+    { _id: reportId, status: { $in: ['queued', 'running'] } },
+    update,
+  )
+  return result.matchedCount > 0
+}
+
+async function stoppedByUser(reportId) {
+  const report = await ResearchReport2.findById(reportId).select('status')
+  return !report || report.status === 'stopped' || report.status === 'stopping'
+}
 
 function getOpenAIClient() {
   const apiKey = (process.env.OPENAI_API || process.env.OPENAI_API_KEY || '').trim()
@@ -214,12 +229,13 @@ ${niche ? `Niche Focus: "${niche}".` : ''}
 Current Year: ${currentYear}.
 
 RULES:
-1. Search real product listings on allowed domains: ${allowedDomains.join(', ')}. Prefer best-seller lists, movers, hot badges, and listings with high sold or bought counts.
-2. Do not search for suppliers, wholesalers, factories, or unit cost.
-3. Do not fabricate or estimate prices. If not observable, set observedPriceUsd to null.
-4. Every URL must be a real retail listing you visited or searched. Never use placeholders.
-5. demandSignalText must quote the visible sales signal, such as "12k sold" or "Best Seller".
-6. Open the listing page. Copy what the product is, its feature bullets, and the specification rows you can see. Leave a spec null only when the page does not show it.
+1. United States only. Use ebay.com, amazon.com, walmart.com, and temu.com. Do not use other countries such as ebay.co.uk, amazon.co.uk, amazon.ca, or walmart.ca. Prices are USD.
+2. Search real product listings on those US sites. Prefer best-seller lists, movers, hot badges, and listings with high sold or bought counts.
+3. Do not search for suppliers, wholesalers, factories, or unit cost.
+4. Do not fabricate or estimate prices. If not observable, set observedPriceUsd to null.
+5. Every URL must be a United States product page you opened: ebay.com/itm/..., amazon.com/dp/..., walmart.com/ip/..., or a temu.com goods page. Never use search pages, homepages, or placeholders.
+6. demandSignalText must quote the visible sales signal, such as "12k sold" or "Best Seller".
+7. Open the listing page. Copy what the product is, its feature bullets, and the specification rows you can see. Leave a spec null only when the page does not show it.
 
 Return ONLY a valid JSON object matching this schema:
 {
@@ -247,7 +263,7 @@ Find 10 to 15 distinct best-selling or viral products now. Skip anything that is
   const rawText = await callWebSearch({ client, prompt, allowedDomains })
   const parsed = parseJsonSafe(rawText)
   const list = parsed?.candidates || (Array.isArray(parsed) ? parsed : [])
-  return Array.isArray(list) ? list : []
+  return (Array.isArray(list) ? list : []).filter((candidate) => placeOf(candidate?.listingUrl))
 }
 
 /**
@@ -269,11 +285,12 @@ Listing to open first: ${candidate.listingUrl || 'search for the title'}
 Client Target Selling Marketplaces: ${targetMarketplaces.join(', ')}
 
 TASK:
-1. Open the listing above and copy the product information shown on the page: description, feature bullets, and specification table.
-2. Search ebay.com for exact or equivalent listings. Record active listing count, median sold price, and sold counts if visible.
-3. Cross-check against amazon.com, walmart.com, or temu.com for the same product's demand, ratings, and review volume.
-4. Set demandTier: "High" | "Medium" | "Low" | "Unknown".
-5. Set demandEvidence: "measured" | "inferred".
+1. United States only. Open ebay.com, amazon.com, walmart.com, and temu.com. Ignore every other country site.
+2. Open the listing above and copy the product information shown on the page: description, feature bullets, and specification table.
+3. Find this same product on all four US sites. Return one product-page URL per site in listingLinks: eBay (/itm/id), Amazon (/dp/ASIN), Walmart (/ip/id), and Temu (goods page). If a site has no listing, omit that site. Do not invent URLs.
+4. Record eBay active listing count, median sold price, and sold counts if visible.
+5. Set demandTier: "High" | "Medium" | "Low" | "Unknown".
+6. Set demandEvidence: "measured" | "inferred".
 Do not invent specifications. If a spec is not on the page, omit it.
 
 Return ONLY a valid JSON object with:
@@ -294,7 +311,7 @@ Return ONLY a valid JSON object with:
   "specs": [{ "name": "string", "value": "string" }],
   "imageUrls": ["string (product image URLs seen on the listings, up to 4)"],
   "listingLinks": [
-    { "marketplace": "string", "url": "string", "price": number or null }
+    { "marketplace": "ebay" | "amazon" | "walmart" | "temu", "url": "https US product page", "price": number or null }
   ],
   "demandTier": "High" | "Medium" | "Low" | "Unknown",
   "demandEvidence": "measured" | "inferred",
@@ -321,15 +338,15 @@ ${skillPrompt}
 
 FACTS:
 Product: "${candidate.title}"
-Retail price: $${sellingPrice || 'N/A'}
-Sold signal: ${candidate.demandSignalText || validation.ebaySoldCount || 'Not stated'}
-Opportunity Score: ${scoreData.opportunityScore}/100 (${scoreData.confidence} confidence)
-Demand Tier: ${validation.demandTier || 'Unknown'}
-Rating: ${validation.otherRating || candidate.rating || 'Unknown'}
-Top Complaints: ${(validation.topComplaints || []).join(', ') || 'None reported'}
+Listed price: $${sellingPrice || 'N/A'}
+Best-seller signal: ${candidate.demandSignalText || 'Not stated'}
+Units sold: ${validation.ebaySoldCount || 'Not stated'}
+Demand: ${validation.demandTier || 'Unknown'}
+Rating: ${validation.otherRating || candidate.rating || 'Unknown'} (${validation.otherReviewCount || candidate.reviewCount || 'unknown'} reviews)
+Score: ${scoreData.opportunityScore}/100
 
 TASK:
-Write 1-2 concise, factual sentences explaining why this product is best selling or viral, and the single biggest risk. Do not mention suppliers, wholesale cost, or profit margin. Use ONLY extracted facts.`
+Write 1-2 concise sentences on why this is a top-selling product. Cite the sold count or best-seller label, the rating, the demand, and the listed price. Do not mention profit, margin, unit cost, wholesale, or suppliers.`
 
   const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
   try {
@@ -351,26 +368,33 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
 
   const client = getOpenAIClient()
 
-  // Update report to running with initial progress
-  await ResearchReport2.findByIdAndUpdate(reportId, {
-    status: 'running',
-    startedAt: new Date(),
-    progress: {
-      stage: 'Scanning Marketplaces',
-      step: 1,
-      totalSteps: 15,
-      percent: 5,
-      currentItem: `Initializing Web Search across ${categories.join(', ')}...`,
+  const started = await updateWhileRunning(reportId, {
+    $set: {
+      status: 'running',
+      startedAt: new Date(),
+      progress: {
+        stage: 'Scanning Marketplaces',
+        step: 1,
+        totalSteps: 15,
+        percent: 5,
+        currentItem: `Initializing Web Search across ${categories.join(', ')}...`,
+      },
     },
   })
+  if (!started) return { reportId, status: 'stopped' }
 
   try {
+    if (await stoppedByUser(reportId)) return { reportId, status: 'stopped' }
+
     // Stage 1: Live Web Search across target marketplaces
-    await ResearchReport2.findByIdAndUpdate(reportId, {
-      'progress.stage': 'Scanning Marketplaces',
-      'progress.percent': 10,
-      'progress.currentItem': 'Searching best sellers and viral products on eBay, Amazon, Walmart, Temu, and TikTok Shop...',
+    const scanning = await updateWhileRunning(reportId, {
+      $set: {
+        'progress.stage': 'Scanning Marketplaces',
+        'progress.percent': 10,
+        'progress.currentItem': 'Searching best sellers and viral products on eBay, Amazon, Walmart, Temu, and TikTok Shop...',
+      },
     })
+    if (!scanning) return { reportId, status: 'stopped' }
 
     const candidates = await discoverCandidates({
       client,
@@ -385,32 +409,41 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       throw new Error('No candidate products found via live web search. Please try another category or niche.')
     }
 
+    if (await stoppedByUser(reportId)) return { reportId, status: 'stopped' }
+
     const totalCandidates = candidates.length
-    await ResearchReport2.findByIdAndUpdate(reportId, {
-      'progress.stage': 'Evaluating Products',
-      'progress.totalSteps': totalCandidates,
-      'progress.percent': 20,
-      'progress.currentItem': `Found ${totalCandidates} products. Checking which ones are actually selling...`,
+    const evaluating = await updateWhileRunning(reportId, {
+      $set: {
+        'progress.stage': 'Evaluating Products',
+        'progress.totalSteps': totalCandidates,
+        'progress.percent': 20,
+        'progress.currentItem': `Found ${totalCandidates} products. Checking which ones are actually selling...`,
+      },
     })
+    if (!evaluating) return { reportId, status: 'stopped' }
 
     // Stage 2: Bounded Concurrent Deep-Dive Pipeline (concurrency: 2 with incremental DB writes)
     const evaluatedOpportunities = []
     const BATCH_SIZE = 2
 
     for (let i = 0; i < totalCandidates; i += BATCH_SIZE) {
+      if (await stoppedByUser(reportId)) return { reportId, status: 'stopped' }
       const batch = candidates.slice(i, i + BATCH_SIZE)
       const stepNum = Math.min(i + batch.length, totalCandidates)
       const loopPercent = Math.min(85, Math.round(20 + ((stepNum / totalCandidates) * 65)))
 
       console.log(`[DiscoveryAgent2] Evaluating batch [${stepNum}/${totalCandidates}]: ${batch.map((c) => `"${c.title}"`).join(', ')}`)
 
-      await ResearchReport2.findByIdAndUpdate(reportId, {
-        'progress.stage': `Evaluating (${stepNum}/${totalCandidates})`,
-        'progress.step': stepNum,
-        'progress.totalSteps': totalCandidates,
-        'progress.percent': loopPercent,
-        'progress.currentItem': batch.map((c) => c.title).join(' | '),
+      const progressSaved = await updateWhileRunning(reportId, {
+        $set: {
+          'progress.stage': `Evaluating (${stepNum}/${totalCandidates})`,
+          'progress.step': stepNum,
+          'progress.totalSteps': totalCandidates,
+          'progress.percent': loopPercent,
+          'progress.currentItem': batch.map((c) => c.title).join(' | '),
+        },
       })
+      if (!progressSaved) return { reportId, status: 'stopped' }
 
       const batchResults = await Promise.all(
         batch.map(async (candidate) => {
@@ -422,21 +455,26 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
               targetMarketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay'],
             })
 
-            const listingUrl = candidate.listingUrl || validation.ebaySourceUrl || validation.otherUrl || null
-            if (!listingUrl) {
-              console.log(`[DiscoveryAgent2] Skipped "${candidate.title}": no live retail listing`)
+            const sources = await validatedUsListings([
+              { url: candidate.listingUrl, price: candidate.observedPriceUsd },
+              { url: validation.ebaySourceUrl, price: validation.ebayPriceMedian },
+              { url: validation.otherUrl, price: null },
+              ...(Array.isArray(validation.listingLinks) ? validation.listingLinks : []),
+            ])
+            if (!sources.length) {
+              console.log(`[DiscoveryAgent2] Skipped "${candidate.title}": no verified US listing`)
               return null
             }
+            const listingUrl = sources.find((source) => source.label === 'eBay')?.url || sources[0].url
 
             const sellingPrice = validation.ebayPriceMedian || candidate.observedPriceUsd || null
             const scoreData = computeOpportunityScore({
-              netMarginPct: null,
               demandTier: validation.demandTier,
               rating: validation.otherRating || candidate.rating,
-              competitionLevel: validation.competitionLevel,
-              supplierType: null,
-              shipFromCountry: null,
-              estimatedDeliveryDays: null,
+              soldCount: validation.ebaySoldCount,
+              demandSignal: candidate.demandSignalText,
+              price: sellingPrice,
+              highDefectRisk: validation.highDefectRisk,
             })
 
             const aiNotes = await generateAiNotes({
@@ -459,19 +497,14 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
               ...normalizeSpecs(candidate.specs),
             ])
 
-            const images = uniqueUrls([
-              ...(Array.isArray(candidate.imageUrls) ? candidate.imageUrls : []),
-              ...(Array.isArray(validation.imageUrls) ? validation.imageUrls : []),
-            ])
-            const sources = uniqueSources([
-              linkOf(candidate.observedMarketplace || 'Listing', candidate.listingUrl, 'listing', candidate.observedPriceUsd),
-              linkOf('eBay', validation.ebaySourceUrl, 'listing', validation.ebayPriceMedian),
-              linkOf(validation.otherMarketplace || 'Other marketplace', validation.otherUrl, 'listing', null),
-              ...(Array.isArray(validation.listingLinks) ? validation.listingLinks : []).map((link) => (
-                linkOf(link?.marketplace || 'Listing', link?.url, 'listing', link?.price)
-              )),
-            ])
-
+            const images = await productImages({
+              hinted: [
+                ...(Array.isArray(candidate.imageUrls) ? candidate.imageUrls : []),
+                ...(Array.isArray(validation.imageUrls) ? validation.imageUrls : []),
+              ],
+              pages: [listingUrl, candidate.listingUrl, validation.ebaySourceUrl, validation.otherUrl],
+              title: candidate.title,
+            })
             return {
               title: candidate.title,
               brand: candidate.brand || validation.brand || '',
@@ -523,20 +556,24 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
         }
       }
 
-      // Incremental DB update so progress and finished candidates are never lost on crash
-      await ResearchReport2.findByIdAndUpdate(reportId, {
+      const saved = await updateWhileRunning(reportId, {
         $set: { opportunities: evaluatedOpportunities },
       })
+      if (!saved) return { reportId, status: 'stopped' }
     }
+
+    if (await stoppedByUser(reportId)) return { reportId, status: 'stopped' }
 
     console.log(`[DiscoveryAgent2] Deep-dive complete. ${evaluatedOpportunities.length} opportunities meet criteria.`)
 
-    // Stage 3: Rank top 10-20 by Opportunity Score
-    await ResearchReport2.findByIdAndUpdate(reportId, {
-      'progress.stage': 'Scoring & Ranking',
-      'progress.percent': 90,
-      'progress.currentItem': 'Sorting and finalizing top ranked opportunities...',
+    const ranking = await updateWhileRunning(reportId, {
+      $set: {
+        'progress.stage': 'Scoring & Ranking',
+        'progress.percent': 90,
+        'progress.currentItem': 'Sorting and finalizing top ranked opportunities...',
+      },
     })
+    if (!ranking) return { reportId, status: 'stopped' }
 
     const demandRank = { high: 3, medium: 2, low: 1 }
     evaluatedOpportunities.sort((a, b) => {
@@ -556,20 +593,23 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       candidates.length
     } candidates and ranked the top ${topOpportunities.length} products.`
 
-    await ResearchReport2.findByIdAndUpdate(reportId, {
-      status: 'completed',
-      reportDate: completionDate,
-      finishedAt: new Date(),
-      opportunities: topOpportunities,
-      summary: summaryNarrative,
-      progress: {
-        stage: 'Completed',
-        step: totalCandidates,
-        totalSteps: totalCandidates,
-        percent: 100,
-        currentItem: `${topOpportunities.length} opportunities verified & saved.`,
+    const finished = await updateWhileRunning(reportId, {
+      $set: {
+        status: 'completed',
+        reportDate: completionDate,
+        finishedAt: new Date(),
+        opportunities: topOpportunities,
+        summary: summaryNarrative,
+        progress: {
+          stage: 'Completed',
+          step: totalCandidates,
+          totalSteps: totalCandidates,
+          percent: 100,
+          currentItem: `${topOpportunities.length} opportunities verified & saved.`,
+        },
       },
     })
+    if (!finished) return { reportId, status: 'stopped' }
 
     console.log(`[DiscoveryAgent2] Run completed successfully! ${topOpportunities.length} opportunities saved.`)
     return {
@@ -579,10 +619,12 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
     }
   } catch (err) {
     console.error(`[DiscoveryAgent2] Run failed for reportId ${reportId}:`, err)
-    await ResearchReport2.findByIdAndUpdate(reportId, {
-      status: 'failed',
-      finishedAt: new Date(),
-      error: err.message,
+    await updateWhileRunning(reportId, {
+      $set: {
+        status: 'failed',
+        finishedAt: new Date(),
+        error: err.message,
+      },
     })
     throw err
   }

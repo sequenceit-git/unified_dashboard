@@ -7,7 +7,7 @@ description: Find best-selling and viral products on US marketplaces (eBay, Amaz
 
 ## Context
 
-Client sells in the United States. Prices in USD. Look only at live retail listings for products that are already selling well or going viral. Do not look for wholesale suppliers, factories, or buy-cost pages.
+Client sells in the United States only. Prices in USD. Use only ebay.com, amazon.com, walmart.com, and temu.com product pages. Do not use other countries. Look only at live retail listings for products that are already selling well or going viral. Do not look for wholesale suppliers, factories, or buy-cost pages.
 
 ## Inputs (provided by the runner)
 

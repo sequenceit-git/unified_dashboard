@@ -28,25 +28,16 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
       : null
   const sellPrice = sellPriceNum != null ? `$${sellPriceNum.toFixed(2)}` : '—'
 
-  const costNum = opportunity.metrics?.estimatedCost != null ? Number(opportunity.metrics.estimatedCost) : null
-  const cost = costNum != null ? `$${costNum.toFixed(2)}` : null
-
-  const netProfitNum = opportunity.metrics?.netProfit != null ? Number(opportunity.metrics.netProfit) : null
-  const netProfit = netProfitNum != null ? `$${netProfitNum.toFixed(2)}` : null
-
-  const margin = opportunity.estimatedMargin != null
-    ? opportunity.estimatedMargin
-    : opportunity.estimatedProfitMarginPercent != null
-      ? opportunity.estimatedProfitMarginPercent
-      : null
-
   const monthlySales = opportunity.metrics?.monthlySales || opportunity.metrics?.salesVolume || opportunity.estimatedMonthlySales
   const competition = opportunity.competitionLevel || (opportunity.metrics?.competitorCount ? `${opportunity.metrics.competitorCount} sellers` : 'Medium')
   const rating = opportunity.rating ?? opportunity.metrics?.rating ?? null
   const reviewCount = opportunity.reviewCount ?? opportunity.metrics?.reviewCount ?? null
-  const rationale = opportunity.aiNotes || opportunity.recommendationReason || ''
+  const storedNotes = opportunity.aiNotes || opportunity.recommendationReason || ''
+  const rationale = /margin|profit|unit cost|landed|supplier|sourcing|wholesale/i.test(storedNotes) ? '' : storedNotes
   
   const marketplaceUrl = opportunity.listingUrl || ''
+  const rawImage = opportunity.image || (Array.isArray(opportunity.images) ? opportunity.images.find(Boolean) : '')
+  const imageUrl = rawImage ? String(rawImage).replace(/\/s-l\d+\./i, '/s-l960.') : ''
 
   // Confidence & defect risk signals
   const confidence = opportunity.confidence || 'unverified'
@@ -103,18 +94,21 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
           </div>
         </div>
 
-        {/* Product Image + Title & Financial Metrics */}
-        <div className="flex gap-4">
-          {opportunity.image && (
+        <div className="overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+          {imageUrl ? (
             <img
-              src={opportunity.image}
-              alt={title}
-              className="h-20 w-20 shrink-0 rounded-lg object-cover border border-gray-100"
-              onError={(e) => {
-                e.target.style.display = 'none'
-              }}
+              src={imageUrl}
+              alt=""
+              className="aspect-[4/3] w-full object-cover"
             />
+          ) : (
+            <div className="grid aspect-[4/3] w-full place-items-center px-4 text-center text-xs text-gray-400">
+              No product image
+            </div>
           )}
+        </div>
+
+        <div>
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-sm font-semibold text-gray-900" title={title}>
               {title}
@@ -133,21 +127,11 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
             )}
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
               <span>
-                Sell: <strong className="text-gray-900">{sellPrice}</strong>
+                Price: <strong className="text-gray-900">{sellPrice}</strong>
               </span>
-              {cost && (
-                <span>
-                  Cost: <strong className="text-gray-900">{cost}</strong>
-                </span>
-              )}
-              {netProfit && (
-                <span className="flex items-center text-emerald-700 font-medium">
-                  Profit: <strong className="ml-0.5">{netProfit}</strong>
-                </span>
-              )}
-              {margin != null && (
-                <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                  +{margin}%
+              {opportunity.demandSignal && (
+                <span className="rounded bg-indigo-50 px-1.5 py-0.5 font-semibold text-indigo-700">
+                  {opportunity.demandSignal}
                 </span>
               )}
             </div>

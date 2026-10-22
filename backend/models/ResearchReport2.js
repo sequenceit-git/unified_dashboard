@@ -56,7 +56,7 @@ const report2Schema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['queued', 'running', 'completed', 'failed'],
+      enum: ['queued', 'running', 'stopping', 'stopped', 'completed', 'failed'],
       default: 'queued',
     },
     progress: {

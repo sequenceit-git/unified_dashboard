@@ -16,17 +16,18 @@ The backend computes the score from structured fields. The model only writes `ai
 
 ## Weights (sum 100)
 
-- Net profit margin: 35 (>=40%: 35, 30-39%: 28, 20-29%: 18)
-- Demand: 25 (High 25, Medium 15, Low 5, Unknown 0)
-- Rating and sentiment: 15 (rating >=4.5 and no defect risk: 15; 4.0-4.4: 10; <4.0 or highDefectRisk: 3)
-- Competition on eBay: 15 (few active listings and price room: 15; moderate: 8; crowded or price-war: 2)
-- Sourcing reliability: 10 (US or manufacturer source with delivery <= 10 days: 10; overseas with 10-25 days: 5; slow or retail-only: 0)
+Score only how well the product is already selling. Do not score margin, unit cost, or suppliers.
+
+- Demand: 40 (High 40, Medium 24, Low 8, Unknown 0)
+- Rating: 30 (>=4.5: 30; 4.0-4.4: 20; below 4.0: 8; subtract 8 when defect risk is high)
+- Sold evidence: 30 (1,000+ sold: 30; 100+: 22; any sold count: 12; a visible best-seller or viral label with no count: 15)
 
 ## Confidence
 
-Count required fields that are null. Cap the score at 60 if any of price, margin, or demand is missing, and set confidence = low | medium | high. Do not clamp to a minimum.
+Cap the score at 55 and set confidence to low when two or more of demand, rating, sold evidence, or price are missing.
 
 ## aiNotes (1-2 sentences)
 
 - Use only fields already extracted. No new facts.
-- State the single strongest reason to buy and the single biggest risk.
+- Name the selling evidence: sold count or best-seller label, rating, demand, and the listed price.
+- Do not mention profit, margin, unit cost, wholesale, or suppliers.

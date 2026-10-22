@@ -16,7 +16,7 @@ import ProductDetailModal from './ProductDetailModal'
 import NewRunModal from './NewRunModal'
 import AgentProgressBar from './AgentProgressBar'
 
-const TERMINAL_STATUSES = new Set(['completed', 'failed'])
+const TERMINAL_STATUSES = new Set(['completed', 'failed', 'stopped'])
 const POLL_INTERVAL_MS = 2500
 
 export default function ProductDiscoveryPage() {
@@ -36,6 +36,7 @@ export default function ProductDiscoveryPage() {
   const [notification, setNotification] = useState('')
   const [pollingId, setPollingId] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [stopping, setStopping] = useState(false)
 
   // ── Load all reports ─────────────────────────────────────────────────────
   const loadReports = useCallback(async () => {
@@ -73,7 +74,12 @@ export default function ProductDiscoveryPage() {
           if (data.status === 'completed') {
             setNotification('Research run completed! New opportunities are ready.')
             setTimeout(() => setNotification(''), 5000)
-            // Force recs to reload by briefly resetting selectedReportId
+            setSelectedReportId(null)
+            setTimeout(() => setSelectedReportId(data._id), 50)
+          }
+          if (data.status === 'stopped') {
+            setNotification('Search stopped. Products found so far were saved.')
+            setTimeout(() => setNotification(''), 5000)
             setSelectedReportId(null)
             setTimeout(() => setSelectedReportId(data._id), 50)
           }
@@ -162,6 +168,42 @@ export default function ProductDiscoveryPage() {
   }
 
   // ── Add Opportunity to Product Catalog ────────────────────────────────────
+  const handleStop = async () => {
+    if (!activeRunningReport || stopping) return
+    setStopping(true)
+    try {
+      const data = await api.post(`/api/research/stop/${activeRunningReport._id}`, {}, token)
+      setReports((prev) => prev.map((item) => (item._id === data._id ? { ...item, ...data } : item)))
+      setPollingId(null)
+      setNotification('Search stopped. Products found so far were saved.')
+      setTimeout(() => setNotification(''), 5000)
+      setSelectedReportId(null)
+      setTimeout(() => setSelectedReportId(data._id), 50)
+    } catch (err) {
+      alert(err.message || 'Could not stop this search.')
+      loadReports()
+    } finally {
+      setStopping(false)
+    }
+  }
+
+  const handleDeleteReport = async (report) => {
+    const when = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'this'
+    if (!window.confirm(`Delete the research run from ${when}?`)) return
+    try {
+      await api.del(`/api/research/reports/${report._id}`, token)
+      const remaining = reports.filter((item) => item._id !== report._id)
+      setReports(remaining)
+      if (selectedReportId === report._id) {
+        setSelectedReportId(remaining[0]?._id || null)
+        setRecommendations([])
+        setSelectedProduct(null)
+      }
+    } catch (err) {
+      alert(err.message || 'Could not delete this research run.')
+    }
+  }
+
   const handleListShop = async ({ reportId, rank, title, price, stock, marketplace }) => {
     try {
       const res = await api.post(
@@ -262,7 +304,7 @@ export default function ProductDiscoveryPage() {
 
       {/* ── Active Agent Workflow Loading Bar ────────────────────────────── */}
       {activeRunningReport && (
-        <AgentProgressBar report={activeRunningReport} />
+        <AgentProgressBar report={activeRunningReport} onStop={handleStop} stopping={stopping} />
       )}
 
       {/* ── Notification Banner ──────────────────────────────────────────── */}
@@ -289,6 +331,7 @@ export default function ProductDiscoveryPage() {
             setSelectedReportId(id)
             setActiveCategoryFilter('All')
           }}
+          onDeleteReport={handleDeleteReport}
         />
 
         {reports.length === 0 && !loadingReports ? (
@@ -363,9 +406,11 @@ export default function ProductDiscoveryPage() {
                 message={
                   runInProgress
                     ? 'This run is still scanning. Products will show up here when it finishes.'
-                    : activeCategoryFilter !== 'All'
-                      ? `No products in ${activeCategoryFilter}.`
-                      : 'This run did not return any products.'
+                    : selectedReport?.status === 'stopped'
+                      ? 'This search was stopped before any products were saved.'
+                      : activeCategoryFilter !== 'All'
+                        ? `No products in ${activeCategoryFilter}.`
+                        : 'This run did not return any products.'
                 }
               />
             ) : (

@@ -8,6 +8,7 @@ const Listing = require('../../models/Listing')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
+const { productImages } = require('../../agent/discovery/listingImage')
 
 const SHOP_LABELS = {
   ebay: 'eBay',
@@ -42,6 +43,17 @@ router.get('/recommendations/:reportId', async (req, res) => {
       return res.status(404).json({ error: 'Report not found' })
     }
     const docs = report.opportunities || []
+    let imagesAdded = false
+    await Promise.all(docs.map(async (opp) => {
+      if (opp.image) return
+      const pages = [opp.listingUrl, ...(opp.sources || []).map((source) => source.url)].filter(Boolean)
+      const images = await productImages({ hinted: opp.images || [], pages, title: opp.title })
+      if (!images.length) return
+      opp.image = images[0]
+      opp.images = images
+      imagesAdded = true
+    }))
+    if (imagesAdded) await report.save()
     res.json(docs)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -196,6 +208,64 @@ router.get('/export/:reportId', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`)
     res.setHeader('Content-Length', buffer.length)
     res.send(buffer)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ─── POST /api/research/stop/:reportId — stop a search that is still running ─
+router.post('/stop/:reportId', async (req, res) => {
+  try {
+    const { reportId } = req.params
+    if (!mongoose.isValidObjectId(reportId)) {
+      return res.status(400).json({ error: 'Invalid report ID' })
+    }
+
+    const current = await ResearchReport2.findById(reportId).select('status opportunities')
+    if (!current) {
+      return res.status(404).json({ error: 'Report not found' })
+    }
+    if (!['queued', 'running', 'stopping'].includes(current.status)) {
+      return res.status(409).json({ error: 'This search has already finished.', status: current.status })
+    }
+
+    const found = current.opportunities?.length || 0
+    const stopped = await ResearchReport2.findOneAndUpdate(
+      { _id: reportId, status: { $in: ['queued', 'running', 'stopping'] } },
+      {
+        $set: {
+          status: 'stopped',
+          finishedAt: new Date(),
+          summary: found
+            ? `Search stopped. ${found} product${found === 1 ? '' : 's'} saved.`
+            : 'Search stopped before any products were saved.',
+          'progress.stage': 'Stopped',
+          'progress.currentItem': 'Search stopped. Products found so far were saved.',
+        },
+      },
+      { new: true },
+    )
+    if (!stopped) {
+      return res.status(409).json({ error: 'This search has already finished.' })
+    }
+    res.json(stopped)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ─── DELETE /api/research/reports/:reportId — remove a saved research run ────
+router.delete('/reports/:reportId', async (req, res) => {
+  try {
+    const { reportId } = req.params
+    if (!mongoose.isValidObjectId(reportId)) {
+      return res.status(400).json({ error: 'Invalid report ID' })
+    }
+    const report = await ResearchReport2.findByIdAndDelete(reportId)
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' })
+    }
+    res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

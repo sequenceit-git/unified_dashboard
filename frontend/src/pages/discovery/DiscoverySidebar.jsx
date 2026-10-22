@@ -1,16 +1,18 @@
-import { FiClock } from 'react-icons/fi'
+import { FiClock, FiTrash2 } from 'react-icons/fi'
 
 const STATUS_DOT = {
   completed: 'bg-emerald-500',
   running: 'bg-blue-500',
   queued: 'bg-amber-500',
   failed: 'bg-red-500',
+  stopped: 'bg-gray-400',
 }
 
 export default function DiscoverySidebar({
   reports = [],
   selectedReportId = null,
   onSelectReport = () => {},
+  onDeleteReport = () => {},
 }) {
   if (!reports.length) return null
 
@@ -31,10 +33,17 @@ export default function DiscoverySidebar({
           const dot = STATUS_DOT[report.status] || 'bg-gray-300'
 
           return (
-            <button
+            <div
               key={report._id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => onSelectReport(report._id)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  onSelectReport(report._id)
+                }
+              }}
               aria-pressed={isSelected}
               className={`flex w-44 shrink-0 flex-col rounded-xl border px-3 py-2.5 text-left transition ${
                 isSelected
@@ -44,14 +53,28 @@ export default function DiscoverySidebar({
             >
               <span className="flex items-center justify-between gap-2">
                 <span className={`text-sm font-semibold ${isSelected ? 'text-indigo-950' : 'text-gray-900'}`}>{formattedDate}</span>
-                <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} title={report.status || 'unknown'} />
+                <span className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} title={report.status || 'unknown'} />
+                  <button
+                    type="button"
+                    aria-label={`Delete ${formattedDate} research run`}
+                    title="Delete this research run"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onDeleteReport(report)
+                    }}
+                    className="rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <FiTrash2 size={13} />
+                  </button>
+                </span>
               </span>
               <span className="mt-1 truncate text-xs text-gray-500">{catLabel}</span>
               <span className="mt-1 flex items-center gap-1 text-[11px] text-gray-400">
                 <FiClock size={11} />
                 {formattedTime}
               </span>
-            </button>
+            </div>
           )
         })}
       </div>

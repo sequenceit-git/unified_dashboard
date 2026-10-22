@@ -1,7 +1,7 @@
-import { FiActivity, FiCpu, FiCheck, FiLoader } from 'react-icons/fi'
+import { FiLoader } from 'react-icons/fi'
 import { TbBrandOpenai } from 'react-icons/tb'
 
-export default function AgentProgressBar({ report }) {
+export default function AgentProgressBar({ report, onStop, stopping = false }) {
   if (!report) return null
 
   const isQueued = report.status === 'queued'
@@ -49,6 +49,14 @@ export default function AgentProgressBar({ report }) {
               {totalSteps > 0 ? `Item ${step} of ${totalSteps}` : 'Processing loop'}
             </div>
           </div>
+          <button
+            type="button"
+            onClick={onStop}
+            disabled={stopping || !onStop}
+            className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
+          >
+            {stopping ? 'Stopping…' : 'Stop search'}
+          </button>
         </div>
       </div>
 

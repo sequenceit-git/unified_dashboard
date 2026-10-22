@@ -15,10 +15,35 @@ function pushUrl(list, url) {
   list.push(href)
 }
 
+const US_PLACES = [
+  { id: 'ebay', label: 'eBay' },
+  { id: 'amazon', label: 'Amazon' },
+  { id: 'walmart', label: 'Walmart' },
+  { id: 'temu', label: 'Temu' },
+]
+
+function usPlace(url) {
+  let parsed
+  try {
+    parsed = new URL(String(url || '').trim())
+  } catch {
+    return null
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null
+  const host = parsed.hostname.replace(/^www\./i, '').toLowerCase()
+  const path = `${parsed.pathname}${parsed.search}`
+  if (host === 'ebay.com' && /\/itm\/(?:[^/]+\/)?\d{9,}/i.test(parsed.pathname)) return 'ebay'
+  if (host === 'amazon.com' && /\/(?:dp|gp\/product)\/[A-Z0-9]{10}/i.test(parsed.pathname)) return 'amazon'
+  if (host === 'walmart.com' && /\/ip\/(?:[^/]+\/)?\d{5,}/i.test(parsed.pathname)) return 'walmart'
+  if (host === 'temu.com' && /(?:goods\.html|[?&]goods_id=|-g-\d+)/i.test(path)) return 'temu'
+  return null
+}
+
 function pushSource(list, source) {
   const href = typeof source?.url === 'string' ? source.url.trim() : ''
-  if (!/^https?:\/\//i.test(href) || list.some((item) => item.url === href)) return
-  list.push({ ...source, url: href })
+  const place = usPlace(href)
+  if (!place || list.some((item) => item.place === place)) return
+  list.push({ ...source, url: href, place, label: US_PLACES.find((item) => item.id === place).label })
 }
 
 export function productFacts(opportunity) {
@@ -37,9 +62,10 @@ export function productFacts(opportunity) {
   })
   pushSource(sources, { label: 'eBay', url: opportunity.validation?.ebaySourceUrl, kind: 'listing' })
 
+  const byPlace = new Map(sources.map((source) => [source.place, source]))
   return {
     images,
-    sources: sources.filter((source) => source.kind !== 'supplier'),
+    places: US_PLACES.map((place) => byPlace.get(place.id) || { place: place.id, label: place.label, url: '' }),
     description: opportunity.description || '',
   }
 }
@@ -62,17 +88,16 @@ export default function ProductDetailModal({ opportunity, onClose }) {
   const description = facts.description
   const highlights = Array.isArray(opportunity.highlights) ? opportunity.highlights.filter(Boolean) : []
   const specs = Array.isArray(opportunity.specs) ? opportunity.specs.filter((spec) => spec?.name && spec?.value) : []
-  const notes = opportunity.aiNotes || opportunity.recommendationReason || ''
+  const storedNotes = opportunity.aiNotes || opportunity.recommendationReason || ''
+  const notes = /margin|profit|unit cost|landed|supplier|sourcing|wholesale/i.test(storedNotes) ? '' : storedNotes
   const complaints = Array.isArray(opportunity.validation?.topComplaints) ? opportunity.validation.topComplaints : []
   const sell = money(opportunity.price ?? opportunity.metrics?.averagePrice ?? opportunity.metrics?.price)
-  const cost = money(opportunity.metrics?.estimatedCost)
-  const profit = money(opportunity.metrics?.netProfit)
   const low = money(opportunity.validation?.ebayPriceLow)
   const high = money(opportunity.validation?.ebayPriceHigh)
   const rating = opportunity.rating ?? opportunity.metrics?.rating
   const reviews = opportunity.reviewCount ?? opportunity.metrics?.reviewCount
   const monthly = opportunity.metrics?.monthlySales || opportunity.metrics?.salesVolume || opportunity.estimatedMonthlySales
-  const image = facts.images[activeImage] || facts.images[0]
+  const image = String(facts.images[activeImage] || facts.images[0] || '').replace(/\/s-l\d+\./i, '/s-l960.')
 
   return (
     <Modal title={title} onClose={onClose} size="5xl">
@@ -143,10 +168,7 @@ export default function ProductDetailModal({ opportunity, onClose }) {
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <Fact label="Sell price" value={sell} />
-            <Fact label="Selling signal" value={opportunity.demandSignal} />
-            <Fact label="Unit cost" value={cost} />
-            <Fact label="Net profit" value={profit} />
-            <Fact label="Margin" value={opportunity.estimatedMargin != null ? `${opportunity.estimatedMargin}%` : null} />
+            <Fact label="Best seller" value={opportunity.demandSignal} />
             <Fact label="Price range" value={low || high ? `${low || '—'} – ${high || '—'}` : null} />
             <Fact label="Monthly sales" value={monthly != null ? `${Number(monthly).toLocaleString()} units` : null} />
             <Fact label="Competition" value={opportunity.validation?.competitionLevel || opportunity.competitionLevel} />
@@ -175,29 +197,28 @@ export default function ProductDetailModal({ opportunity, onClose }) {
 
       <section className="mt-6 border-t border-gray-100 pt-5">
         <h3 className="text-sm font-bold text-gray-900">Where it is selling</h3>
-        {facts.sources.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">No live listings were saved for this result.</p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {facts.sources.map((source) => (
-              <li key={source.url} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {source.label || 'Source'}
-                    <span className="ml-2 text-xs font-medium uppercase text-gray-400">Listing</span>
-                  </p>
-                  <p className="truncate text-xs text-gray-500">{source.url}</p>
-                </div>
+        <p className="mt-1 text-xs text-gray-500">Four United States listing pages. A link is shown only when it is a real product page on that site.</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {facts.places.map((source) => (
+            <li key={source.place} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900">
+                  {source.label}
+                  <span className="ml-2 text-xs font-medium uppercase text-gray-400">US</span>
+                </p>
+                <p className="truncate text-xs text-gray-500">{source.url || 'No verified US listing'}</p>
+              </div>
+              {source.url ? (
                 <div className="flex shrink-0 items-center gap-3">
                   {money(source.price) && <span className="text-sm font-semibold text-gray-800">{money(source.price)}</span>}
                   <a href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
                     Open <FiExternalLink size={14} />
                   </a>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              ) : null}
+            </li>
+          ))}
+        </ul>
       </section>
     </Modal>
   )
