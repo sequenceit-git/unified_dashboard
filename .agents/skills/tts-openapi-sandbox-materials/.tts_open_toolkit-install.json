@@ -1,0 +1,11 @@
+{
+  "name": "tts-openapi-sandbox-materials",
+  "source": {
+    "type": "bundled",
+    "name": "tts-openapi-sandbox-materials"
+  },
+  "version": 1,
+  "tool": "tts_open_toolkit",
+  "installedAt": "2026-10-16T16:16:07.661Z",
+  "installedHash": "e794b3969d6ebc226ac64c402da5f6c92f6424821286422c29bd4a0a86f158e5"
+}

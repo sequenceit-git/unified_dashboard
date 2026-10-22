@@ -22,5 +22,6 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea
 
-Skills_to_collect.md
+.agents
+discovery_agent_cost_report.md
 Ai_agent_audit-report.md

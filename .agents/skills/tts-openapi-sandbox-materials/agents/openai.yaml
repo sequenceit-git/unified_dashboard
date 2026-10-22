@@ -1,0 +1,4 @@
+interface:
+  display_name: "TTS OpenAPI Sandbox Materials"
+  short_description: "Build OpenAPI test materials with sandbox commands"
+  default_prompt: "Use $tts-openapi-sandbox-materials to prepare an order in the required sandbox state for OpenAPI testing."

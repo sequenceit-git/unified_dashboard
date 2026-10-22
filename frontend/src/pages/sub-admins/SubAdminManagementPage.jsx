@@ -17,6 +17,7 @@ const ROUTE_LABELS = {
   orders: 'Orders',
   customers: 'Customers',
   inbox: 'Inbox',
+  'customer-support': 'Customer Support AI',
 }
 
 function AccessPill({ children }) {

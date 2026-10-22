@@ -16,8 +16,14 @@ const DEFAULT_OPTIONS = {
     const status = err.status || err.statusCode
     if (status === 429) return true // rate limit
     if (status >= 500) return true  // server error
-    // Network-level errors
+    // Network-level errors (OpenAI SDK wraps the fetch failure, so inspect the
+    // nested cause as well as the top-level SDK error).
     if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') return true
+    if (err.name === 'APIConnectionTimeoutError' || err.name === 'APIConnectionError') return true
+    if (err.constructor?.name === 'APIConnectionTimeoutError' || err.constructor?.name === 'APIConnectionError') return true
+    if (err.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || err.cause?.code === 'ECONNRESET') return true
+    if (err.cause?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || err.cause?.cause?.code === 'ECONNRESET') return true
+    if (/request timed out|fetch failed|connect timeout|network error/i.test(String(err.message || ''))) return true
     return false
   },
 }

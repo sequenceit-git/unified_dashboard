@@ -2,9 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const { requireAuth, loadAccess, requireMainRoute, requireRole } = require('../../middleware/auth')
 const ResearchReport2 = require('../../models/ResearchReport2')
-const Product = require('../../models/Product')
-const { runDiscoveryAgentTwo } = require('../../agent/discoveryagenttwo/discoveryAgentTwo')
-const { generateRecommendationsExcel } = require('../../services/excelExport')
+const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('market-research'))
@@ -270,7 +268,7 @@ router.post('/generate', async (req, res) => {
 
     // Run the agent asynchronously
     setImmediate(() => {
-      runDiscoveryAgentTwo({
+      runDiscoveryAgent({
         categories,
         niche: niche?.trim() || '',
         instructions: instructions?.trim() || '',
