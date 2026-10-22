@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import Button from '../../components/ui/Button'
 import { useApi } from '../../hooks/useApi'
@@ -12,7 +12,6 @@ import ProductModal from './ProductModal'
 export default function ProductsPage() {
   const { isAdmin, token } = useAuth()
   const section = useShopSection()
-  const location = useLocation()
   const marketplace = section?.marketplace
   const [editing, setEditing] = useState(null)
   const [showNew, setShowNew] = useState(false)
@@ -36,11 +35,7 @@ export default function ProductsPage() {
     setRefreshKey((k) => k + 1)
   }
 
-  if (!section) {
-    const params = new URLSearchParams(location.search)
-    params.set('shop', 'ebay')
-    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
-  }
+  if (!section) return <RequireShopSection />
 
   return (
     <div className="flex flex-col">

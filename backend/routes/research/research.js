@@ -2,7 +2,18 @@ const express = require('express')
 const mongoose = require('mongoose')
 const { requireAuth, loadAccess, requireMainRoute, requireRole } = require('../../middleware/auth')
 const ResearchReport2 = require('../../models/ResearchReport2')
+const Product = require('../../models/Product')
+const Shop = require('../../models/Shop')
+const Listing = require('../../models/Listing')
+const marketplaceManager = require('../../services/marketplace')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
+
+const SHOP_LABELS = {
+  ebay: 'eBay',
+  tiktok_shop: 'TikTok Shop',
+  temu: 'Temu Shop',
+}
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('market-research'))
@@ -201,7 +212,7 @@ router.get('/export/:reportId', async (req, res) => {
 //
 router.post('/generate', async (req, res) => {
   try {
-    const { categories: rawCategories, category, niche, instructions, minMargin, targetMarketplaces: rawTargetMarketplaces } = req.body
+    const { categories: rawCategories, category, niche, instructions, targetMarketplaces: rawTargetMarketplaces } = req.body
 
     // Accept both { categories: [...] } and legacy { category: "..." }
     const categories = Array.isArray(rawCategories) && rawCategories.length
@@ -238,8 +249,6 @@ router.post('/generate', async (req, res) => {
       ? rawTargetMarketplaces.map((m) => String(m).toLowerCase().trim()).filter((m) => validMarkets.includes(m))
       : ['ebay']
 
-    const parsedMinMargin = Number(minMargin) || 15
-
     // Create the parent ResearchReport2 record initially with reportDate = null
     const report = await ResearchReport2.create({
       runBy: req.user?.id || null,
@@ -251,7 +260,6 @@ router.post('/generate', async (req, res) => {
         category: categories[0],
         keywords: niche ? [niche] : [],
         instructions: instructions?.trim() || '',
-        minMargin: parsedMinMargin,
       },
       status: 'queued',
       startedAt: new Date(),
@@ -272,7 +280,6 @@ router.post('/generate', async (req, res) => {
         categories,
         niche: niche?.trim() || '',
         instructions: instructions?.trim() || '',
-        minMargin: parsedMinMargin,
         marketplaces: targetMarketplaces,
         reportId: report._id,
         user: req.user,
@@ -288,9 +295,13 @@ router.post('/generate', async (req, res) => {
 // ─── POST /api/research/add-to-catalog — convert opportunity to catalog product
 router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
   try {
-    const { reportId, rank, title, price, stock, description } = req.body
+    const { reportId, rank, title, price, stock, description, marketplace: rawMarketplace } = req.body
+    const marketplace = canonicalMarketplace(rawMarketplace)
     if (!reportId || rank == null) {
       return res.status(400).json({ error: 'reportId and rank are required' })
+    }
+    if (!marketplace) {
+      return res.status(400).json({ error: 'Select eBay, TikTok Shop, or Temu Shop' })
     }
 
     const report = await ResearchReport2.findById(reportId)
@@ -303,12 +314,7 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
       return res.status(404).json({ error: `Opportunity with rank ${rank} not found in report` })
     }
 
-    if (opp.addedProductId) {
-      const existingProduct = await Product.findById(opp.addedProductId)
-      if (existingProduct) {
-        return res.json({ product: existingProduct, alreadyAdded: true })
-      }
-    }
+    let product = opp.addedProductId ? await Product.findById(opp.addedProductId) : null
 
     // Generate collision-resistant unique SKU with crypto random suffix
     const catPrefix = (opp.metrics?.category || opp.category || 'GEN')
@@ -324,35 +330,100 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
     // Safely default stock to 0 to prevent ghost marketplace listing
     const safeStock = stock != null ? Number(stock) : 0
 
-    const product = await Product.create({
-      sku,
-      title: title || opp.title,
-      description:
-        description ||
-        `${opp.title}. Discovered and evaluated by Discovery Agent Two with an opportunity score of ${opp.opportunityScore || 75}/100 and estimated margin of ${opp.estimatedMargin || 15}%.`,
-      category: opp.metrics?.category || opp.category || 'General',
-      brand: opp.brand || 'Unbranded',
-      images: opp.image ? [opp.image] : [],
-      basePrice: sellingPrice,
-      stock: safeStock,
-      lowStockThreshold: 10,
-      status: 'draft',
-      source: 'research_bot',
-      sourceReportId: report._id,
-      attributes: {
-        aiOpportunityScore: opp.opportunityScore,
-        estimatedMargin: opp.estimatedMargin,
-        targetMarketplace: opp.marketplace,
-        sourceUrl: opp.sourceUrl,
-        listingUrl: opp.listingUrl,
-        estimatedCost: estCost,
-      },
-    })
+    const savedImages = Array.isArray(opp.images) && opp.images.length
+      ? opp.images
+      : opp.image
+        ? [opp.image]
+        : []
 
-    opp.addedProductId = product._id
+    if (!product) {
+      product = await Product.create({
+        sku,
+        title: title || opp.title,
+        description: description || opp.description || opp.title,
+        category: opp.metrics?.category || opp.category || 'General',
+        brand: opp.brand || 'Unbranded',
+        images: savedImages,
+        basePrice: sellingPrice,
+        stock: safeStock,
+        lowStockThreshold: 10,
+        status: 'draft',
+        source: 'research_bot',
+        sourceReportId: report._id,
+        attributes: {
+          aiOpportunityScore: opp.opportunityScore,
+          targetMarketplace: marketplace,
+          listingUrl: opp.listingUrl,
+          estimatedCost: estCost,
+        },
+      })
+      opp.addedProductId = product._id
+    }
+
+    const listed = new Set(opp.listedShops || [])
+    listed.add(marketplace)
+    opp.listedShops = [...listed]
     await report.save()
 
-    res.status(201).json({ product, alreadyAdded: false })
+    const shopLabel = SHOP_LABELS[marketplace] || marketplace
+    const shop = await Shop.findOne({ marketplace }).select('+auth.accessTokenEnc')
+    let listing = null
+    let publishError = ''
+    if (shop) {
+      try {
+        const publishRes = await marketplaceManager.publishListing(shop, product, {
+          price: sellingPrice,
+          title: product.title,
+          description: product.description,
+          images: product.images,
+          brand: product.brand,
+          condition: 'NEW',
+        })
+        listing = await Listing.findOneAndUpdate(
+          { productId: product._id, shopId: shop._id },
+          {
+            productId: product._id,
+            shopId: shop._id,
+            marketplace,
+            ...(publishRes?.externalListingId ? { externalListingId: publishRes.externalListingId } : {}),
+            price: sellingPrice,
+            status: publishRes?.status || 'pending',
+            syncError: null,
+            lastSyncedAt: new Date(),
+          },
+          { new: true, upsert: true, runValidators: true },
+        )
+      } catch (apiErr) {
+        publishError = apiErr.message
+        listing = await Listing.findOneAndUpdate(
+          { productId: product._id, shopId: shop._id },
+          {
+            productId: product._id,
+            shopId: shop._id,
+            marketplace,
+            price: sellingPrice,
+            status: 'error',
+            syncError: publishError,
+            lastSyncedAt: new Date(),
+          },
+          { new: true, upsert: true, runValidators: true },
+        )
+      }
+    }
+
+    const message = !shop
+      ? `Saved for ${shopLabel}. Connect ${shopLabel} in Settings to publish the listing.`
+      : publishError
+        ? `Saved for ${shopLabel}. The shop has not published it yet.`
+        : `Listed on ${shopLabel}.`
+
+    res.status(201).json({
+      product,
+      listing,
+      listedShops: opp.listedShops,
+      shopConnected: Boolean(shop),
+      message,
+    })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

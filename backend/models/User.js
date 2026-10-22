@@ -3,13 +3,19 @@ const mongoose = require('mongoose')
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    username: { type: String, lowercase: true, trim: true, default: '' },
     email: { type: String, required: true, lowercase: true },
     profileImageUrl: { type: String, default: '' },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ['super_admin', 'sub_admin'], required: true },
     mainRoutes: {
       type: [String],
-      enum: ['discovery', 'dashboard', 'analytics', 'products', 'inventory', 'orders', 'customers', 'inbox', 'customer-support'],
+      enum: ['discovery', 'dashboard', 'analytics', 'market-research', 'products', 'inventory', 'orders', 'customers', 'inbox'],
+      default: [],
+    },
+    marketplaces: {
+      type: [String],
+      enum: ['ebay', 'tiktok_shop', 'temu'],
       default: [],
     },
     shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', default: null },
@@ -26,6 +32,10 @@ const userSchema = new mongoose.Schema(
 )
 
 userSchema.index({ email: 1 }, { unique: true })
+userSchema.index(
+  { username: 1 },
+  { unique: true, partialFilterExpression: { username: { $gt: '' } } },
+)
 userSchema.index({ shopId: 1, role: 1 })
 userSchema.index({ isDeleted: 1, role: 1 })
 

@@ -22,7 +22,6 @@ export default function NewRunModal({
   const [selectedCategories, setSelectedCategories] = useState(['Home & Kitchen'])
   const [categoryInput, setCategoryInput] = useState('')
   const [niche, setNiche] = useState('')
-  const [minMargin, setMinMargin] = useState('15')
   const [targetMarketplaces, setTargetMarketplaces] = useState(['ebay'])
   const [instructions, setInstructions] = useState('')
 
@@ -69,7 +68,6 @@ export default function NewRunModal({
       categories: finalCategories,
       niche: niche.trim(),
       targetMarketplaces,
-      minMargin: Number(minMargin) || 15,
       instructions: instructions.trim(),
     })
   }
@@ -84,7 +82,7 @@ export default function NewRunModal({
     <Modal title="Launch New Research Run" onClose={onClose} wide>
       <form onSubmit={handleSubmit}>
         <p className="text-sm text-gray-500">
-          Choose what to look for on the left, and where you sell on the right.
+          Choose a category on the left and the shops on the right. The search looks for best-selling and viral products.
         </p>
 
         {error && (
@@ -205,24 +203,6 @@ export default function NewRunModal({
                     </label>
                   )
                 })}
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <label className="text-xs font-semibold text-gray-700">Minimum net profit margin</label>
-                <span className="text-[11px] font-medium text-emerald-600">Strict filter</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="5"
-                  max="85"
-                  value={minMargin}
-                  onChange={(e) => setMinMargin(e.target.value)}
-                  className="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
-                <span className="text-xs text-gray-500">% after fees and landed cost</span>
               </div>
             </div>
 

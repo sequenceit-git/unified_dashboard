@@ -11,7 +11,7 @@ Take ONE candidate and check whether it truly sells, and at what price, on the c
 
 ## Steps
 
-1. Identity match: find the same or a directly equivalent product. Record matchConfidence: exact | equivalent | similar. Do not use "similar" listings for price evidence.
+1. Open the given listing first. Copy the product description, feature bullets, and specification table exactly as shown. Then identity-match the same product. Record matchConfidence: exact | equivalent | similar. Do not use "similar" listings for price evidence.
 2. eBay check (primary channel, always do this first):
    - Number of active listings, and low/median/high price among exact or equivalent items
    - Sold counts if visible; median sold price if visible
@@ -29,7 +29,7 @@ Always set demandEvidence: "measured" (a sold count or badge you saw) or "inferr
 
 ## Output (strict JSON, nulls allowed)
 
-matchConfidence, ebayActiveListings, ebayPriceLow, ebayPriceMedian, ebayPriceHigh, ebaySoldCount, ebaySourceUrl, otherMarketplace, otherRating, otherReviewCount, otherUrl, topComplaints[], highDefectRisk, demandTier, demandEvidence
+matchConfidence, description, highlights[], specs[{name, value}], imageUrls[], ebayActiveListings, ebayPriceLow, ebayPriceMedian, ebayPriceHigh, ebaySoldCount, ebaySourceUrl, otherMarketplace, otherRating, otherReviewCount, otherUrl, listingLinks[], topComplaints[], highDefectRisk, demandTier, demandEvidence
 
 ## Hard rules
 

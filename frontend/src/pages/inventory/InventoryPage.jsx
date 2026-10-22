@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import { api } from '../../lib/api'
 import Button from '../../components/ui/Button'
@@ -13,7 +13,6 @@ import StockTab from './StockTab'
 export default function InventoryPage() {
   const { token, isAdmin } = useAuth()
   const section = useShopSection()
-  const location = useLocation()
   const marketplace = section?.marketplace
   const [tab, setTab] = useState('stock')
   const [adjusting, setAdjusting] = useState(null)
@@ -41,11 +40,7 @@ export default function InventoryPage() {
     }
   }
 
-  if (!section) {
-    const params = new URLSearchParams(location.search)
-    params.set('shop', 'ebay')
-    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
-  }
+  if (!section) return <RequireShopSection />
 
   return (
     <div className="space-y-3">

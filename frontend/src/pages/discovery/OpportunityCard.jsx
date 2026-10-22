@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import Badge from '../../components/ui/Badge'
-import Button from '../../components/ui/Button'
 import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
-import { FiExternalLink, FiAlertTriangle, FiDollarSign, FiShoppingBag } from 'react-icons/fi'
+import { SHOP_SECTIONS } from '../../lib/shops'
+import { FiExternalLink, FiAlertTriangle } from 'react-icons/fi'
 
-export default function OpportunityCard({ opportunity, reportId, onAddToCatalog, isAdmin }) {
+export default function OpportunityCard({ opportunity, reportId, onListShop, onOpen, isAdmin }) {
   const [adding, setAdding] = useState(false)
-  const isAdded = Boolean(opportunity.addedProductId)
+  const listedShops = opportunity.listedShops || []
 
   const score = opportunity.opportunityScore ?? 75
   const scoreBadgeColor =
@@ -46,8 +46,6 @@ export default function OpportunityCard({ opportunity, reportId, onAddToCatalog,
   const reviewCount = opportunity.reviewCount ?? opportunity.metrics?.reviewCount ?? null
   const rationale = opportunity.aiNotes || opportunity.recommendationReason || ''
   
-  // Both URLs
-  const supplierUrl = opportunity.sourceUrl || opportunity.sourcing?.buyUrl || ''
   const marketplaceUrl = opportunity.listingUrl || ''
 
   // Confidence & defect risk signals
@@ -55,16 +53,19 @@ export default function OpportunityCard({ opportunity, reportId, onAddToCatalog,
   const highDefectRisk = opportunity.validation?.highDefectRisk
   const topComplaints = Array.isArray(opportunity.validation?.topComplaints) ? opportunity.validation.topComplaints : []
 
-  const handleAdd = async () => {
-    if (isAdded || adding || !onAddToCatalog) return
+  const handleList = async (event) => {
+    const marketplace = event.target.value
+    event.target.value = ''
+    if (!marketplace || adding || !onListShop || listedShops.includes(marketplace)) return
     setAdding(true)
     try {
-      await onAddToCatalog({
+      await onListShop({
         reportId,
         rank: opportunity.rank || 1,
         title,
         price: sellPriceNum != null ? sellPriceNum : 24.99,
         stock: 0,
+        marketplace,
       })
     } finally {
       setAdding(false)
@@ -72,7 +73,10 @@ export default function OpportunityCard({ opportunity, reportId, onAddToCatalog,
   }
 
   return (
-    <div className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-xs transition hover:shadow-md">
+    <div
+      className="flex cursor-pointer flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-xs transition hover:border-indigo-300 hover:shadow-md"
+      onClick={onOpen}
+    >
       <div className="space-y-4">
         {/* Header with Rank, Marketplace & Confidence */}
         <div className="flex items-center justify-between">
@@ -115,6 +119,18 @@ export default function OpportunityCard({ opportunity, reportId, onAddToCatalog,
             <h3 className="line-clamp-2 text-sm font-semibold text-gray-900" title={title}>
               {title}
             </h3>
+            {opportunity.description && (
+              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500">{opportunity.description}</p>
+            )}
+            {Array.isArray(opportunity.specs) && opportunity.specs.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {opportunity.specs.slice(0, 3).map((spec) => (
+                  <span key={`${spec.name}-${spec.value}`} className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+                    {spec.name}: {spec.value}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
               <span>
                 Sell: <strong className="text-gray-900">{sellPrice}</strong>
@@ -180,20 +196,11 @@ export default function OpportunityCard({ opportunity, reportId, onAddToCatalog,
       </div>
 
       {/* Footer Actions: Both Links (Marketplace + Supplier) and Add to Catalog */}
-      <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center gap-3">
-          {supplierUrl && (
-            <a
-              href={supplierUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
-              title="Open wholesale purchase / supplier listing"
-            >
-              <FiShoppingBag size={12} />
-              <span>Buy Link ↗</span>
-            </a>
-          )}
+          <button type="button" onClick={onOpen} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+            View details
+          </button>
           {marketplaceUrl && (
             <a
               href={marketplaceUrl}
@@ -209,16 +216,20 @@ export default function OpportunityCard({ opportunity, reportId, onAddToCatalog,
         </div>
 
         {isAdmin && (
-          <div>
-            {isAdded ? (
-              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                ✓ Added to Catalog
-              </span>
-            ) : (
-              <Button size="sm" onClick={handleAdd} disabled={adding}>
-                {adding ? 'Adding…' : '+ Add to Catalog'}
-              </Button>
-            )}
+          <div className="min-w-[150px]">
+            <select
+              value=""
+              onChange={handleList}
+              disabled={adding || listedShops.length === SHOP_SECTIONS.length}
+              className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-800 outline-none focus:border-indigo-500"
+            >
+              <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
+              {SHOP_SECTIONS.map((section) => (
+                <option key={section.id} value={section.marketplace} disabled={listedShops.includes(section.marketplace)}>
+                  {listedShops.includes(section.marketplace) ? `${section.label} · listed` : section.label}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>

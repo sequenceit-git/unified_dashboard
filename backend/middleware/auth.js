@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
 const UserShopAccess = require('../models/UserShopAccess')
+const Shop = require('../models/Shop')
 
 function signToken(user) {
   return jwt.sign(
@@ -50,7 +51,7 @@ async function loadAccess(req, res, next) {
       return next()
     }
 
-    const user = await User.findById(req.user.id).select('name email role mainRoutes status shopId isDeleted').lean()
+    const user = await User.findById(req.user.id).select('name email role mainRoutes marketplaces status shopId isDeleted').lean()
     if (!user || user.isDeleted) {
       accessCache.delete(req.user.id)
       return res.status(401).json({ error: 'This account has been deleted. Contact your administrator.' })
@@ -64,8 +65,16 @@ async function loadAccess(req, res, next) {
     if (user.role === 'super_admin') {
       allowedShopIds = null
     } else {
-      const access = await UserShopAccess.find({ userId: user._id }).select('shopId').lean()
-      allowedShopIds = access.length ? access.map((row) => row.shopId) : user.shopId ? [user.shopId] : []
+      const markets = Array.isArray(user.marketplaces) ? user.marketplaces : []
+      const [access, marketShops] = await Promise.all([
+        UserShopAccess.find({ userId: user._id }).select('shopId').lean(),
+        markets.length ? Shop.find({ marketplace: { $in: markets } }).select('_id').lean() : [],
+      ])
+      const ids = new Map()
+      for (const row of access) ids.set(String(row.shopId), row.shopId)
+      for (const shop of marketShops) ids.set(String(shop._id), shop._id)
+      if (!ids.size && user.shopId) ids.set(String(user.shopId), user.shopId)
+      allowedShopIds = [...ids.values()]
     }
     req.allowedShopIds = allowedShopIds
 

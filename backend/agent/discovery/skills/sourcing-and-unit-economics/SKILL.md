@@ -30,7 +30,6 @@ unitCostUsd, moq, shipFromCountry, estimatedDeliveryDays, shippingCostPerUnitUsd
 - TikTok Shop: 6% referral fee (confirm in Seller Center; reported 8% from Aug 2026) + mandatory TikTok fulfillment + creator commission + refund admin fee on returns
 - Temu seller fees: client to supply
 - Duties: country of origin China or other non-US means add an import duty line; de minimis is suspended
-- Default minimum net margin: 20% (configurable)
 
 ## Hard rules
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   FiChevronDown,
@@ -14,14 +14,10 @@ import {
   FiLayers,
   FiShoppingCart,
   FiUsers,
-  FiHeadphones,
-  FiUser,
-  FiUserCheck,
-  FiMessageSquare,
-  FiCpu,
   FiShield,
 } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
+import { allowedShopSections } from '../../hooks/useShopSection'
 
 const TOP_LINKS = [
   { to: '/market-research', label: 'Product Discovery', route: 'market-research', icon: FiCompass },
@@ -59,13 +55,6 @@ const SHOP_LINKS = [
   { path: '/inventory', label: 'Inventory', route: 'inventory', icon: FiLayers },
   { path: '/orders', label: 'Orders', route: 'orders', icon: FiShoppingCart },
   { path: '/customers', label: 'Customers', route: 'customers', icon: FiUsers },
-]
-
-const SUPPORT_LINKS = [
-  { to: '/support/buyer-chat', label: 'Buyer Chat 1 (Jane Doe)', icon: FiUser },
-  { to: '/support/buyer-chat-2', label: 'Buyer Chat 2 (John Dutch)', icon: FiUserCheck },
-  { to: '/support/seller-chat', label: 'Seller Chat (Agent View)', icon: FiMessageSquare },
-  { to: '/support/settings', label: 'AI Agent Settings', icon: FiCpu },
 ]
 
 function readOpen(storageKey, defaultOpen) {
@@ -197,10 +186,11 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
 }
 
 export default function Sidebar({ open, onClose }) {
-  const { hasRoute, isAdmin } = useAuth()
+  const { hasRoute, isAdmin, user } = useAuth()
   const { pathname, search } = useLocation()
   const topLinks = TOP_LINKS.filter((link) => hasRoute(link.route))
-  const shopSections = SHOP_SECTIONS.map((section) => ({
+  const allowedShopIds = new Set(allowedShopSections(user, isAdmin).map((section) => section.id))
+  const shopSections = SHOP_SECTIONS.filter((section) => allowedShopIds.has(section.id)).map((section) => ({
     ...section,
     links: SHOP_LINKS.filter((link) => hasRoute(link.route)).map((link) => ({
       ...link,
@@ -208,14 +198,6 @@ export default function Sidebar({ open, onClose }) {
       to: `${link.path}?shop=${section.id}`,
     })),
   })).filter((section) => section.links.length > 0)
-
-  const showSupport = hasRoute('customer-support')
-  const supportActive = pathname.startsWith('/support')
-  const [supportOpen, setSupportOpen] = useState(supportActive)
-
-  useEffect(() => {
-    if (supportActive) setSupportOpen(true)
-  }, [supportActive])
 
   return (
     <>
@@ -253,47 +235,6 @@ export default function Sidebar({ open, onClose }) {
                   onClose={onClose}
                 />
               ))}
-            </div>
-          )}
-
-          {showSupport && (
-            <div className="mt-2 border-t border-slate-100 pt-2">
-              <button
-                type="button"
-                title="Customer Support AI"
-                aria-label="Customer Support AI"
-                aria-expanded={supportOpen}
-                aria-controls="support-nav"
-                onClick={() => setSupportOpen((value) => !value)}
-                className={`flex w-full items-center gap-3 px-8 py-3 text-left transition-colors hover:bg-slate-100 lg:gap-0 lg:justify-center lg:px-0 lg:group-hover:justify-start lg:group-hover:gap-3 lg:group-hover:px-8 ${
-                  !supportOpen && supportActive ? 'bg-indigo-50' : ''
-                }`}
-              >
-                <FiHeadphones size={18} className="shrink-0 text-slate-500" />
-                <ItemLabel>Customer Support AI</ItemLabel>
-                <FiChevronDown
-                  size={16}
-                  className={`ml-auto shrink-0 text-slate-400 transition-transform lg:ml-0 lg:w-0 lg:opacity-0 lg:group-hover:ml-auto lg:group-hover:w-4 lg:group-hover:opacity-100 ${
-                    supportOpen ? '' : '-rotate-90'
-                  }`}
-                />
-              </button>
-              {supportOpen && (
-                <div id="support-nav">
-                  {SUPPORT_LINKS.map((link) => (
-                    <NavItem
-                      key={link.to}
-                      to={link.to}
-                      onClose={onClose}
-                      nested
-                      icon={link.icon}
-                      active={pathname === link.to}
-                    >
-                      {link.label}
-                    </NavItem>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 

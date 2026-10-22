@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import { api, queryString } from '../../lib/api'
 import Card from '../../components/ui/Card'
@@ -12,7 +12,6 @@ import CustomerDrawer from './CustomerDrawer'
 export default function CustomersPage() {
   const { token } = useAuth()
   const section = useShopSection()
-  const location = useLocation()
   const marketplace = section?.marketplace
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -48,11 +47,7 @@ export default function CustomersPage() {
     setSelected(await api.get(`/api/customers/${row._id}`, token))
   }
 
-  if (!section) {
-    const params = new URLSearchParams(location.search)
-    params.set('shop', 'ebay')
-    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
-  }
+  if (!section) return <RequireShopSection />
 
   return (
     <div className="space-y-3">

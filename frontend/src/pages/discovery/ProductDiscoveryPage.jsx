@@ -12,6 +12,7 @@ import { Spinner, EmptyState } from '../../components/ui/Feedback'
 import DiscoveryOverview from './DiscoveryOverview'
 import DiscoverySidebar from './DiscoverySidebar'
 import OpportunityCard from './OpportunityCard'
+import ProductDetailModal from './ProductDetailModal'
 import NewRunModal from './NewRunModal'
 import AgentProgressBar from './AgentProgressBar'
 
@@ -34,6 +35,7 @@ export default function ProductDiscoveryPage() {
   const [modalError, setModalError] = useState('')
   const [notification, setNotification] = useState('')
   const [pollingId, setPollingId] = useState(null)
+  const [selectedProduct, setSelectedProduct] = useState(null)
 
   // ── Load all reports ─────────────────────────────────────────────────────
   const loadReports = useCallback(async () => {
@@ -160,24 +162,26 @@ export default function ProductDiscoveryPage() {
   }
 
   // ── Add Opportunity to Product Catalog ────────────────────────────────────
-  const handleAddToCatalog = async ({ reportId, rank, title, price, stock }) => {
+  const handleListShop = async ({ reportId, rank, title, price, stock, marketplace }) => {
     try {
       const res = await api.post(
         '/api/research/add-to-catalog',
-        { reportId, rank, title, price, stock },
+        { reportId, rank, title, price, stock, marketplace },
         token,
       )
       if (res.product?._id) {
         setRecommendations((prev) =>
           prev.map((opp) =>
-            opp.rank === rank ? { ...opp, addedProductId: res.product._id } : opp,
+            opp.rank === rank
+              ? { ...opp, addedProductId: res.product._id, listedShops: res.listedShops || opp.listedShops }
+              : opp,
           ),
         )
-        setNotification(`"${title}" successfully added to Products catalog!`)
-        setTimeout(() => setNotification(''), 4000)
+        setNotification(res.message || `"${title}" saved.`)
+        setTimeout(() => setNotification(''), 5000)
       }
     } catch (err) {
-      alert(`Failed to add product to catalog: ${err.message}`)
+      alert(err.message)
     }
   }
 
@@ -244,7 +248,7 @@ export default function ProductDiscoveryPage() {
             </span>
           </div>
           <p className="mt-1 max-w-xl text-sm text-gray-500">
-            Scan marketplaces, compare margins, and save the products worth listing.
+            Find best-selling and viral products, then save the ones worth listing.
           </p>
         </div>
 
@@ -294,7 +298,7 @@ export default function ProductDiscoveryPage() {
             </span>
             <h2 className="mt-4 text-lg font-bold text-gray-900">No research runs yet</h2>
             <p className="mt-1 max-w-md text-sm text-gray-500">
-              Start a run to scan marketplaces and rank products by demand and margin.
+              Start a run to find best-selling and viral products.
             </p>
             {isAdmin && (
               <Button onClick={openLaunch} className="mt-5 flex items-center gap-2">
@@ -371,7 +375,8 @@ export default function ProductDiscoveryPage() {
                     key={opp._id || `${opp.rank}-${opp.title || opp.productName}`}
                     opportunity={opp}
                     reportId={selectedReportId}
-                    onAddToCatalog={handleAddToCatalog}
+                    onListShop={handleListShop}
+                    onOpen={() => setSelectedProduct(opp)}
                     isAdmin={isAdmin}
                   />
                 ))}
@@ -382,6 +387,10 @@ export default function ProductDiscoveryPage() {
       </section>
 
       {/* ── Modal Pop-up for New Run ──────────────────────────────────────── */}
+      {selectedProduct && (
+        <ProductDetailModal opportunity={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      )}
+
       <NewRunModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

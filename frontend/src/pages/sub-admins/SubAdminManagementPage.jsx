@@ -7,36 +7,23 @@ import Card from '../../components/ui/Card'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import Modal from '../../components/ui/Modal'
 import { useApi } from '../../hooks/useApi'
-
-const ROUTE_LABELS = {
-  dashboard: 'Dashboard',
-  analytics: 'Analytics',
-  'market-research': 'Product Discovery',
-  products: 'Products',
-  inventory: 'Inventory',
-  orders: 'Orders',
-  customers: 'Customers',
-  inbox: 'Inbox',
-  'customer-support': 'Customer Support AI',
-}
+import { PLATFORM_ROUTES, ROUTE_LABELS, SHOP_ROUTES } from '../../lib/access'
+import { SHOP_SECTIONS, shopSectionFromMarketplace } from '../../lib/shops'
 
 function AccessPill({ children }) {
   return <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{children}</span>
 }
 
+function choiceClass(on) {
+  return `flex cursor-pointer items-center gap-3 rounded-xl border p-3 ${on ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'}`
+}
+
 function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
-  const [shopIds, setShopIds] = useState(() => (user.shopIds || []).map(String))
+  const [marketplaces, setMarketplaces] = useState(() => user.marketplaces || [])
   const [mainRoutes, setMainRoutes] = useState(() => user.mainRoutes || [])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-
-  const shopGroups = shops.reduce((groups, shop) => {
-    const key = shop.marketplace
-    if (!groups[key]) groups[key] = []
-    groups[key].push(shop)
-    return groups
-  }, {})
 
   const toggle = (list, setList, value) => setList(
     list.includes(value) ? list.filter((item) => item !== value) : [...list, value],
@@ -44,11 +31,11 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
 
   const save = async () => {
     setError('')
-    if (!shopIds.length) return setError('Select at least one marketplace shop.')
-    if (!mainRoutes.length) return setError('Select at least one main route.')
+    if (!marketplaces.length) return setError('Select at least one shop.')
+    if (!mainRoutes.length) return setError('Select at least one section.')
     setBusy(true)
     try {
-      await api.patch(`/api/auth/users/${user._id}`, { shopIds, mainRoutes }, token)
+      await api.patch(`/api/auth/users/${user._id}`, { marketplaces, mainRoutes }, token)
       onSaved()
     } catch (e) {
       setError(e.message)
@@ -76,7 +63,7 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
       {confirmDelete ? (
         <div className="space-y-4 text-sm">
           <p className="rounded-lg bg-red-50 px-3 py-2 text-red-700">
-            Delete <span className="font-semibold">{user.name} ({user.email})</span>? The account
+            Delete <span className="font-semibold">{user.name} ({user.username || user.email})</span>? The account
             will be deactivated immediately and will no longer be able to log in. Its record is
             kept for audit history.
           </p>
@@ -89,21 +76,37 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
       ) : (
         <div className="space-y-5">
           <section>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Marketplace access</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {Object.entries(shopGroups).map(([marketplace, marketplaceShops]) => marketplaceShops.map((shop) => (
-                <label key={shop._id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 ${shopIds.includes(String(shop._id)) ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'}`}>
-                  <input type="checkbox" checked={shopIds.includes(String(shop._id))} onChange={() => toggle(shopIds, setShopIds, String(shop._id))} />
-                  <span><span className="block text-sm font-semibold">{shop.name}</span><span className="text-xs text-gray-500">{marketplace}</span></span>
-                </label>
-              )))}
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Shops</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {SHOP_SECTIONS.map((section) => {
+                const connected = shops.some((shop) => shop.marketplace === section.marketplace)
+                const on = marketplaces.includes(section.marketplace)
+                return (
+                  <label key={section.id} className={choiceClass(on)}>
+                    <input type="checkbox" checked={on} onChange={() => toggle(marketplaces, setMarketplaces, section.marketplace)} />
+                    <span>
+                      <span className="block text-sm font-semibold">{section.label}</span>
+                      <span className="text-xs text-gray-500">{connected ? 'Connected' : 'Not connected yet'}</span>
+                    </span>
+                  </label>
+                )
+              })}
             </div>
           </section>
           <section>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Main route access</p>
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Platform</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {PLATFORM_ROUTES.map(([value, label]) => (
+                <label key={value} className={choiceClass(mainRoutes.includes(value))}>
+                  <input type="checkbox" checked={mainRoutes.includes(value)} onChange={() => toggle(mainRoutes, setMainRoutes, value)} />
+                  <span className="text-sm font-semibold">{label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mb-2 mt-4 text-xs font-bold uppercase tracking-wide text-gray-400">Inside each assigned shop</p>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {Object.entries(ROUTE_LABELS).map(([value, label]) => (
-                <label key={value} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 ${mainRoutes.includes(value) ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'}`}>
+              {SHOP_ROUTES.map(([value, label]) => (
+                <label key={value} className={choiceClass(mainRoutes.includes(value))}>
                   <input type="checkbox" checked={mainRoutes.includes(value)} onChange={() => toggle(mainRoutes, setMainRoutes, value)} />
                   <span className="text-sm font-semibold">{label}</span>
                 </label>
@@ -129,7 +132,6 @@ export default function SubAdminManagementPage() {
   const usersRes = useApi(token ? '/api/auth/users' : null)
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = shopsRes.data || []
-  const shopMap = new Map(shops.map((shop) => [String(shop._id), shop]))
   const users = usersRes.data || []
   const [editing, setEditing] = useState(null)
 
@@ -147,7 +149,7 @@ export default function SubAdminManagementPage() {
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-indigo-600">Administration</p>
           <h1 className="mt-1 text-2xl font-bold">Sub-admin management</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage marketplace and main route access for your team.</p>
+          <p className="mt-1 text-sm text-gray-500">Assign eBay, TikTok Shop, and Temu, then choose the sections each person can open.</p>
         </div>
         <Link to="/sub-admins/new"><Button>Create sub-admin</Button></Link>
       </div>
@@ -155,7 +157,9 @@ export default function SubAdminManagementPage() {
       {users.length === 0 ? <EmptyState message="No sub-admin accounts yet." /> : (
         <div className="grid gap-4 lg:grid-cols-2">
           {users.map((user) => {
-            const assignedShops = (user.shopIds || []).map((id) => shopMap.get(String(id))).filter(Boolean)
+            const assignedShops = (user.marketplaces || [])
+              .map((marketplace) => shopSectionFromMarketplace(marketplace))
+              .filter(Boolean)
             return (
               <Card key={user._id} className="app-card-hover">
                 <div className="flex items-start justify-between gap-3">
@@ -169,20 +173,20 @@ export default function SubAdminManagementPage() {
                     )}
                     <div className="min-w-0">
                       <h2 className="truncate font-semibold text-gray-900">{user.name}</h2>
-                      <p className="truncate text-sm text-gray-500">{user.email}</p>
+                      <p className="truncate text-sm text-gray-500">{user.username || user.email}</p>
                     </div>
                   </div>
                   <Button variant="secondary" size="sm" onClick={() => setEditing(user)}>Edit</Button>
                 </div>
                 <div className="mt-5 space-y-4 text-sm">
                   <section>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Marketplace access</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Shops</p>
                     <div className="flex flex-wrap gap-2">
-                      {assignedShops.length ? assignedShops.map((shop) => <AccessPill key={shop._id}>{shop.name} · {shop.marketplace}</AccessPill>) : <span className="text-gray-400">None assigned</span>}
+                      {assignedShops.length ? assignedShops.map((shop) => <AccessPill key={shop.id}>{shop.label}</AccessPill>) : <span className="text-gray-400">None assigned</span>}
                     </div>
                   </section>
                   <section>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Main route access</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Sections</p>
                     <div className="flex flex-wrap gap-2">
                       {user.mainRoutes?.length ? user.mainRoutes.map((route) => <AccessPill key={route}>{ROUTE_LABELS[route] || route}</AccessPill>) : <span className="text-gray-400">None assigned</span>}
                     </div>

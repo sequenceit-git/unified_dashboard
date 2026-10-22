@@ -9,7 +9,7 @@
 const OpenAI = require('openai')
 const ResearchReport2 = require('../../models/ResearchReport2')
 const { skillManager } = require('./skills/index')
-const { calculateUnitEconomics, computeOpportunityScore } = require('./economics')
+const { computeOpportunityScore } = require('./economics')
 
 function getOpenAIClient() {
   const apiKey = (process.env.OPENAI_API || process.env.OPENAI_API_KEY || '').trim()
@@ -68,6 +68,74 @@ function parseJsonSafe(text) {
   }
 
   return null
+}
+
+function uniqueUrls(values) {
+  const seen = new Set()
+  const urls = []
+  for (const value of values) {
+    const url = typeof value === 'string' ? value.trim() : ''
+    if (!/^https?:\/\//i.test(url) || seen.has(url)) continue
+    seen.add(url)
+    urls.push(url)
+  }
+  return urls.slice(0, 8)
+}
+
+function linkOf(label, url, kind, price) {
+  const href = typeof url === 'string' ? url.trim() : ''
+  if (!/^https?:\/\//i.test(href)) return null
+  const amount = Number(price)
+  return {
+    label: label || (kind === 'supplier' ? 'Supplier' : 'Listing'),
+    url: href,
+    kind,
+    price: Number.isFinite(amount) ? amount : null,
+  }
+}
+
+function normalizeSpecs(value) {
+  const rows = []
+  const push = (name, raw) => {
+    const label = String(name || '').trim()
+    const specValue = raw == null ? '' : String(raw).trim()
+    if (!label || !specValue || rows.some((row) => row.name.toLowerCase() === label.toLowerCase())) return
+    rows.push({ name: label, value: specValue })
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (!item || typeof item !== 'object') continue
+      push(item.name || item.label || item.key, item.value)
+    }
+  } else if (value && typeof value === 'object') {
+    for (const [name, specValue] of Object.entries(value)) push(name, specValue)
+  }
+  return rows.slice(0, 12)
+}
+
+function normalizeHighlights(value) {
+  if (!Array.isArray(value)) return []
+  const seen = new Set()
+  const lines = []
+  for (const item of value) {
+    const line = String(item || '').trim()
+    const key = line.toLowerCase()
+    if (!line || seen.has(key)) continue
+    seen.add(key)
+    lines.push(line)
+  }
+  return lines.slice(0, 6)
+}
+
+function uniqueSources(links) {
+  const seen = new Set()
+  const sources = []
+  for (const link of links) {
+    if (!link?.url || seen.has(link.url)) continue
+    seen.add(link.url)
+    sources.push(link)
+  }
+  return sources
 }
 
 /**
@@ -140,21 +208,24 @@ async function discoverCandidates({ client, categories, niche, marketplaces = ['
 ${skillPrompt}
 
 TASK:
-Search live US marketplaces (${marketplaces.join(', ')}) to find in-demand, trending candidate products.
+Search live US retail marketplaces (${marketplaces.join(', ')}) for products that are best selling or going viral right now.
 Target Category: "${categories.join(', ')}".
 ${niche ? `Niche Focus: "${niche}".` : ''}
 Current Year: ${currentYear}.
 
 RULES:
-1. Search real product listings on allowed domains: ${allowedDomains.join(', ')}.
-2. Do not fabricate or estimate prices. If not observable, set observedPriceUsd to null.
-3. Every URL must be a real page you visited or searched. Never use placeholders.
+1. Search real product listings on allowed domains: ${allowedDomains.join(', ')}. Prefer best-seller lists, movers, hot badges, and listings with high sold or bought counts.
+2. Do not search for suppliers, wholesalers, factories, or unit cost.
+3. Do not fabricate or estimate prices. If not observable, set observedPriceUsd to null.
+4. Every URL must be a real retail listing you visited or searched. Never use placeholders.
+5. demandSignalText must quote the visible sales signal, such as "12k sold" or "Best Seller".
+6. Open the listing page. Copy what the product is, its feature bullets, and the specification rows you can see. Leave a spec null only when the page does not show it.
 
 Return ONLY a valid JSON object matching this schema:
 {
   "candidates": [
     {
-      "title": "string (specific product title)",
+      "title": "string (specific product title, not a category)",
       "brand": "string or null",
       "observedMarketplace": "ebay" | "amazon" | "walmart" | "temu" | "tiktok_shop",
       "listingUrl": "string (valid URL)",
@@ -162,12 +233,16 @@ Return ONLY a valid JSON object matching this schema:
       "demandSignalText": "string or null",
       "reviewCount": number or null,
       "rating": number or null,
-      "category": "string"
+      "category": "string",
+      "description": "string (2-4 sentences from the listing: what it is, what it does, and who it is for)",
+      "highlights": ["string (short feature bullet from the listing, up to 5)"],
+      "specs": [{ "name": "string (such as Material, Size, Color, Weight, Power)", "value": "string" }],
+      "imageUrls": ["string (direct product image URLs from the listing, up to 4)"]
     }
   ]
 }
 
-Find 10 to 15 distinct, trending candidate products now.`
+Find 10 to 15 distinct best-selling or viral products now. Skip anything that is only a supplier or wholesale page.`
 
   const rawText = await callWebSearch({ client, prompt, allowedDomains })
   const parsed = parseJsonSafe(rawText)
@@ -190,13 +265,16 @@ CANDIDATE TO VALIDATE:
 Title: "${candidate.title}"
 Category: "${candidate.category || ''}"
 Observed Price: $${candidate.observedPriceUsd || 'unknown'}
+Listing to open first: ${candidate.listingUrl || 'search for the title'}
 Client Target Selling Marketplaces: ${targetMarketplaces.join(', ')}
 
 TASK:
-1. Search ebay.com for exact or equivalent listings. Record active listing count, median sold price, and sold counts if visible.
-2. Cross-check against amazon.com, walmart.com, or temu.com to inspect overall market demand, ratings, and review volumes.
-3. Set demandTier: "High" | "Medium" | "Low" | "Unknown".
-4. Set demandEvidence: "measured" | "inferred".
+1. Open the listing above and copy the product information shown on the page: description, feature bullets, and specification table.
+2. Search ebay.com for exact or equivalent listings. Record active listing count, median sold price, and sold counts if visible.
+3. Cross-check against amazon.com, walmart.com, or temu.com for the same product's demand, ratings, and review volume.
+4. Set demandTier: "High" | "Medium" | "Low" | "Unknown".
+5. Set demandEvidence: "measured" | "inferred".
+Do not invent specifications. If a spec is not on the page, omit it.
 
 Return ONLY a valid JSON object with:
 {
@@ -211,6 +289,13 @@ Return ONLY a valid JSON object with:
   "otherRating": number or null,
   "otherReviewCount": number or null,
   "otherUrl": "string or null",
+  "description": "string (2-4 sentences from the listing about the product)",
+  "highlights": ["string (feature bullet, up to 5)"],
+  "specs": [{ "name": "string", "value": "string" }],
+  "imageUrls": ["string (product image URLs seen on the listings, up to 4)"],
+  "listingLinks": [
+    { "marketplace": "string", "url": "string", "price": number or null }
+  ],
   "demandTier": "High" | "Medium" | "Low" | "Unknown",
   "demandEvidence": "measured" | "inferred",
   "competitionLevel": "Low" | "Medium" | "High"
@@ -226,48 +311,9 @@ Return ONLY a valid JSON object with:
 }
 
 /**
- * Stage 2B: Search live buy sources & suppliers (Alibaba, US Wholesalers, AliExpress, Temu)
- */
-async function findBuySources({ client, candidate, validation }) {
-  const skillPrompt = skillManager.loadSkill('sourcing-and-unit-economics') || ''
-  const allowedDomains = ['alibaba.com', 'aliexpress.com', 'temu.com']
-
-  const prompt = `You are a Wholesale Sourcing Specialist with live web search.
-${skillPrompt}
-
-PRODUCT TO SOURCE:
-Title: "${candidate.title}"
-Category: "${candidate.category || ''}"
-Target Retail Price: $${validation.ebayPriceMedian || candidate.observedPriceUsd || 'unknown'}
-
-TASK:
-Search alibaba.com, domestic wholesalers, or suppliers to find inventory sourcing options.
-Extract verified buy unit cost and the real buy URL.
-
-HARD RULES:
-- Never invent prices. If not visible, return null.
-- Provide the real product buy URL.
-
-Return ONLY a valid JSON object with:
-{
-  "buySources": [
-    {
-      "unitCostUsd": number or null,
-      "buyUrl": "string (real verified URL)"
-    }
-  ]
-}`
-
-  const rawText = await callWebSearch({ client, prompt, allowedDomains })
-  const parsed = parseJsonSafe(rawText)
-  const sources = Array.isArray(parsed?.buySources) ? parsed.buySources : []
-  return sources.length > 0 ? sources[0] : null
-}
-
-/**
  * Stage 2C: Generate concise factual AI Notes
  */
-async function generateAiNotes({ client, candidate, validation, sourcing, economics, scoreData }) {
+async function generateAiNotes({ client, candidate, validation, sellingPrice, scoreData }) {
   const skillPrompt = skillManager.loadSkill('opportunity-scoring-rubric') || ''
 
   const prompt = `You are an E-Commerce Advisor synthesizing findings.
@@ -275,16 +321,15 @@ ${skillPrompt}
 
 FACTS:
 Product: "${candidate.title}"
-Target Selling Price: $${economics.sellingPrice || 'N/A'}
-Landed Cost: $${economics.landedCost || 'N/A'}
-Net Margin: ${economics.netMarginPct != null ? economics.netMarginPct + '%' : 'Unverified'}
+Retail price: $${sellingPrice || 'N/A'}
+Sold signal: ${candidate.demandSignalText || validation.ebaySoldCount || 'Not stated'}
 Opportunity Score: ${scoreData.opportunityScore}/100 (${scoreData.confidence} confidence)
 Demand Tier: ${validation.demandTier || 'Unknown'}
-Sourcing Supplier: ${sourcing?.supplierName || 'Not found'} (${sourcing?.shipFromCountry || 'Unknown'})
+Rating: ${validation.otherRating || candidate.rating || 'Unknown'}
 Top Complaints: ${(validation.topComplaints || []).join(', ') || 'None reported'}
 
 TASK:
-Write 1-2 concise, factual sentences explaining the single strongest reason to sell/buy and the single biggest risk. Use ONLY extracted facts.`
+Write 1-2 concise, factual sentences explaining why this product is best selling or viral, and the single biggest risk. Do not mention suppliers, wholesale cost, or profit margin. Use ONLY extracted facts.`
 
   const model = process.env.OPENAI_MODEL || 'gpt-5-mini'
   try {
@@ -294,19 +339,17 @@ Write 1-2 concise, factual sentences explaining the single strongest reason to s
     })
     return (res.output_text || '').trim()
   } catch {
-    return `Discovered on ${candidate.observedMarketplace || 'market'} with estimated ${economics.netMarginPct || 0}% net profit margin.`
+    return `Selling on ${candidate.observedMarketplace || 'the marketplace'}${candidate.demandSignalText ? `: ${candidate.demandSignalText}` : ''}.`
   }
 }
 
 /**
  * Main Agent Runner for Product Discovery
  */
-async function runDiscoveryAgent({ categories = [], niche = '', instructions = '', minMargin: directMinMargin, marketplaces, reportId, user }) {
+async function runDiscoveryAgent({ categories = [], niche = '', instructions = '', marketplaces, reportId, user }) {
   console.log(`[DiscoveryAgent] Starting run for reportId: ${reportId}, categories: [${categories.join(', ')}]`)
 
   const client = getOpenAIClient()
-  const minMarginThreshold = Number(directMinMargin) || 15
-  console.log(`[DiscoveryAgent2] Active minimum margin filter: ${minMarginThreshold}%`)
 
   // Update report to running with initial progress
   await ResearchReport2.findByIdAndUpdate(reportId, {
@@ -326,7 +369,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
     await ResearchReport2.findByIdAndUpdate(reportId, {
       'progress.stage': 'Scanning Marketplaces',
       'progress.percent': 10,
-      'progress.currentItem': `Searching live listings on eBay, Amazon, Walmart & Temu...`,
+      'progress.currentItem': 'Searching best sellers and viral products on eBay, Amazon, Walmart, Temu, and TikTok Shop...',
     })
 
     const candidates = await discoverCandidates({
@@ -347,7 +390,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       'progress.stage': 'Evaluating Products',
       'progress.totalSteps': totalCandidates,
       'progress.percent': 20,
-      'progress.currentItem': `Discovered ${totalCandidates} items. Beginning deep-dive cross-market validation...`,
+      'progress.currentItem': `Found ${totalCandidates} products. Checking which ones are actually selling...`,
     })
 
     // Stage 2: Bounded Concurrent Deep-Dive Pipeline (concurrency: 2 with incremental DB writes)
@@ -379,74 +422,77 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
               targetMarketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay'],
             })
 
-            // 2B: Find Real Sourcing Buy Link
-            const sourcing = await findBuySources({ client, candidate, validation })
-
-            // 2C: Deterministic Unit Economics in Node.js
-            const sellingPrice = validation.ebayPriceMedian || candidate.observedPriceUsd || null
-            const unitCost = sourcing?.unitCostUsd || null
-            const shippingCost = sourcing?.shippingCostPerUnitUsd || 0
-            const dutyApplies = sourcing?.shipFromCountry && sourcing.shipFromCountry.toUpperCase() !== 'US'
-
-            const primaryMarket = (marketplaces && marketplaces[0]) || 'ebay'
-            const economics = calculateUnitEconomics({
-              sellingPrice,
-              unitCost,
-              shippingCost,
-              marketplace: primaryMarket,
-              dutyApplies,
-            })
-
-            const marginPct = economics.netMarginPct
-
-            // Strict Filter: Reject candidates without verified sourcing costs or below min margin threshold
-            if (marginPct == null || marginPct < minMarginThreshold || !sourcing?.buyUrl) {
-              console.log(
-                `[DiscoveryAgent2] Skipped "${candidate.title}": ${
-                  marginPct == null ? 'unverified sourcing cost' : `margin ${marginPct}% < threshold ${minMarginThreshold}%`
-                }`,
-              )
+            const listingUrl = candidate.listingUrl || validation.ebaySourceUrl || validation.otherUrl || null
+            if (!listingUrl) {
+              console.log(`[DiscoveryAgent2] Skipped "${candidate.title}": no live retail listing`)
               return null
             }
 
-            // 2D: Deterministic Opportunity Scoring
+            const sellingPrice = validation.ebayPriceMedian || candidate.observedPriceUsd || null
             const scoreData = computeOpportunityScore({
-              netMarginPct: marginPct,
+              netMarginPct: null,
               demandTier: validation.demandTier,
               rating: validation.otherRating || candidate.rating,
               competitionLevel: validation.competitionLevel,
-              supplierType: sourcing?.supplierType,
-              shipFromCountry: sourcing?.shipFromCountry,
-              estimatedDeliveryDays: sourcing?.estimatedDeliveryDays,
+              supplierType: null,
+              shipFromCountry: null,
+              estimatedDeliveryDays: null,
             })
 
-            // 2E: Short factual AI Notes
             const aiNotes = await generateAiNotes({
               client,
               candidate,
               validation,
-              sourcing,
-              economics,
+              sellingPrice,
               scoreData,
             })
 
+            const description = [validation.description, candidate.description]
+              .map((text) => String(text || '').trim())
+              .sort((a, b) => b.length - a.length)[0] || ''
+            const highlights = normalizeHighlights([
+              ...(Array.isArray(validation.highlights) ? validation.highlights : []),
+              ...(Array.isArray(candidate.highlights) ? candidate.highlights : []),
+            ])
+            const specs = normalizeSpecs([
+              ...normalizeSpecs(validation.specs),
+              ...normalizeSpecs(candidate.specs),
+            ])
+
+            const images = uniqueUrls([
+              ...(Array.isArray(candidate.imageUrls) ? candidate.imageUrls : []),
+              ...(Array.isArray(validation.imageUrls) ? validation.imageUrls : []),
+            ])
+            const sources = uniqueSources([
+              linkOf(candidate.observedMarketplace || 'Listing', candidate.listingUrl, 'listing', candidate.observedPriceUsd),
+              linkOf('eBay', validation.ebaySourceUrl, 'listing', validation.ebayPriceMedian),
+              linkOf(validation.otherMarketplace || 'Other marketplace', validation.otherUrl, 'listing', null),
+              ...(Array.isArray(validation.listingLinks) ? validation.listingLinks : []).map((link) => (
+                linkOf(link?.marketplace || 'Listing', link?.url, 'listing', link?.price)
+              )),
+            ])
+
             return {
               title: candidate.title,
+              brand: candidate.brand || validation.brand || '',
+              description,
+              highlights,
+              specs,
+              demandSignal: candidate.demandSignalText || validation.demandSignalText || '',
               category: candidate.category || categories[0] || 'General',
               marketplace: candidate.observedMarketplace || 'ebay',
-              listingUrl: candidate.listingUrl || null,
-              sourceUrl: sourcing.buyUrl,
-              image: null,
+              listingUrl,
+              image: images[0] || null,
+              images,
+              sources,
               metrics: {
-                price: economics.sellingPrice,
-                averagePrice: economics.sellingPrice,
-                estimatedCost: economics.unitCost,
+                price: sellingPrice,
+                averagePrice: sellingPrice,
                 category: candidate.category || categories[0] || 'General',
                 monthlySales: validation.ebaySoldCount || null,
                 rating: validation.otherRating || candidate.rating || null,
                 reviewCount: validation.otherReviewCount || candidate.reviewCount || null,
                 competitorCount: validation.ebayActiveListings || null,
-                netProfit: economics.netProfit,
               },
               validation: {
                 demandTier: validation.demandTier,
@@ -455,12 +501,10 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
                 ebayPriceLow: validation.ebayPriceLow,
                 otherMarketplace: validation.otherMarketplace,
                 otherUrl: validation.otherUrl,
+                ebaySourceUrl: validation.ebaySourceUrl || null,
+                competitionLevel: validation.competitionLevel || null,
+                topComplaints: Array.isArray(validation.topComplaints) ? validation.topComplaints : [],
               },
-              sourcing: {
-                buyUrl: sourcing.buyUrl,
-                unitCostUsd: sourcing.unitCostUsd,
-              },
-              estimatedMargin: Math.round(marginPct),
               opportunityScore: scoreData.opportunityScore,
               confidence: scoreData.confidence,
               aiNotes,
@@ -494,7 +538,13 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       'progress.currentItem': 'Sorting and finalizing top ranked opportunities...',
     })
 
-    evaluatedOpportunities.sort((a, b) => (b.opportunityScore || 0) - (a.opportunityScore || 0))
+    const demandRank = { high: 3, medium: 2, low: 1 }
+    evaluatedOpportunities.sort((a, b) => {
+      const demandGap = (demandRank[String(b.validation?.demandTier || '').toLowerCase()] || 0)
+        - (demandRank[String(a.validation?.demandTier || '').toLowerCase()] || 0)
+      if (demandGap) return demandGap
+      return (b.opportunityScore || 0) - (a.opportunityScore || 0)
+    })
     const topOpportunities = evaluatedOpportunities.slice(0, 20).map((opp, idx) => ({
       ...opp,
       rank: idx + 1,
@@ -504,7 +554,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
     const completionDate = new Date().toISOString().slice(0, 10)
     const summaryNarrative = `Completed live market discovery across ${categories.join(', ')}. Discovered ${
       candidates.length
-    } candidates and ranked top ${topOpportunities.length} verified opportunities meeting the ≥${minMarginThreshold}% profit margin requirement.`
+    } candidates and ranked the top ${topOpportunities.length} products.`
 
     await ResearchReport2.findByIdAndUpdate(reportId, {
       status: 'completed',

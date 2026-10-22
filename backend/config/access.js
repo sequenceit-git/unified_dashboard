@@ -7,7 +7,6 @@ const MAIN_ROUTES = [
   'customers',
   'inbox',
   'market-research',
-  'customer-support',
 ]
 
 module.exports = { MAIN_ROUTES }

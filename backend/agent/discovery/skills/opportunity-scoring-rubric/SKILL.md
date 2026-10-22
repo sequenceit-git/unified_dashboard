@@ -12,7 +12,6 @@ The backend computes the score from structured fields. The model only writes `ai
 ## Gates (applied first, not scored)
 
 - restrictedFlag true -> exclude
-- netMarginPct below the minimum (default 20%) -> mark "unprofitable", exclude from top list
 - matchConfidence = similar or no eBay evidence -> mark "unverified"
 
 ## Weights (sum 100)

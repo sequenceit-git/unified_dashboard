@@ -1,13 +1,13 @@
 ---
 name: product-discovery-search
-description: Find in-demand candidate products on US marketplaces (eBay, Amazon, Walmart, Temu, TikTok Shop) that a US eBay/TikTok Shop/Temu seller could resell profitably.
+description: Find best-selling and viral products on US marketplaces (eBay, Amazon, Walmart, Temu, TikTok Shop). Do not search for suppliers.
 ---
 
 # Product Discovery Search
 
 ## Context
 
-Client is a US-based seller. Prices in USD, US marketplaces only. Sales channels: eBay (primary), TikTok Shop, Temu. Candidates may be observed on ANY popular marketplace, but must be sellable on at least one of the client's channels.
+Client sells in the United States. Prices in USD. Look only at live retail listings for products that are already selling well or going viral. Do not look for wholesale suppliers, factories, or buy-cost pages.
 
 ## Inputs (provided by the runner)
 
@@ -16,8 +16,8 @@ category, niche, observedMarketplace, currentYear, candidateCount
 ## Search rules
 
 - The runner already restricts domains. Do NOT use `site:` operators.
-- Queries should target real demand: "best selling <niche> <category>", "top rated <niche> <category> <currentYear>", "trending <niche> <category>".
-- Visit listing pages when possible; do not rely on search snippets for price or sales numbers.
+- Queries should target products people are already buying: "best selling <niche> <category>", "viral <niche> <category> <currentYear>", "trending <niche> <category>", "movers and shakers <category>".
+- Open the product listing. Copy the description, feature bullets, and visible specification rows (material, size, color, weight, power, compatibility, what is included). Do not rely on search snippets for price, sales numbers, or specs.
 
 ## Demand signals to capture (use whichever the marketplace shows)
 
@@ -34,7 +34,7 @@ category, niche, observedMarketplace, currentYear, candidateCount
 
 ## Output (one JSON object per candidate, strict schema)
 
-title, brand (nullable), observedMarketplace, listingUrl, observedPriceUsd, priceCheckedAt, demandSignalText (nullable, copied exactly), reviewCount (nullable), rating (nullable), category, restrictedFlag (bool + reason)
+title, brand (nullable), observedMarketplace, listingUrl, observedPriceUsd, demandSignalText (copied exactly), reviewCount, rating, category, description (2-4 sentences from the listing), highlights (up to 5), specs (name/value pairs from the page), imageUrls (up to 4), restrictedFlag (bool + reason)
 
 ## Hard rules
 

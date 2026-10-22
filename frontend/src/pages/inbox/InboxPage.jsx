@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import { api, queryString } from '../../lib/api'
 import Button from '../../components/ui/Button'
@@ -14,7 +14,6 @@ import ThreadView from './ThreadView'
 export default function InboxPage() {
   const { token } = useAuth()
   const section = useShopSection()
-  const location = useLocation()
   const marketplace = section?.marketplace
   const [status, setStatus] = useState('open')
   const [page, setPage] = useState(1)
@@ -91,11 +90,7 @@ export default function InboxPage() {
 
   useEffect(() => { fetchConvos() }, [marketplace, status, page, shopsRes.loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!section) {
-    const params = new URLSearchParams(location.search)
-    params.set('shop', 'ebay')
-    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
-  }
+  if (!section) return <RequireShopSection />
 
   return (
     <div className="flex h-[calc(100vh-4rem-3rem)] min-h-[480px] flex-col">

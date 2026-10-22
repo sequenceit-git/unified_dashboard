@@ -14,10 +14,6 @@ import OAuthCallback from './pages/auth/OAuthCallback'
 import SettingsPage from './pages/settings/SettingsPage'
 import SubAdminFormPage from './pages/sub-admins/SubAdminFormPage'
 import SubAdminManagementPage from './pages/sub-admins/SubAdminManagementPage'
-import AgentSettingsPage from './pages/support/AgentSettingsPage'
-import BuyerChatPage from './pages/support/BuyerChatPage'
-import BuyerChat2Page from './pages/support/BuyerChat2Page'
-import SellerChatPage from './pages/support/SellerChatPage'
 
 function PublicOnly({ children }) {
   const { token } = useAuth()
@@ -54,11 +50,6 @@ export default function App() {
         <Route path="/orders" element={<RouteAccess route="orders"><OrdersPage /></RouteAccess>} />
         <Route path="/customers" element={<RouteAccess route="customers"><CustomersPage /></RouteAccess>} />
         <Route path="/inbox" element={<RouteAccess route="inbox"><InboxPage /></RouteAccess>} />
-        <Route path="/support/chat-sandbox" element={<Navigate to="/support/buyer-chat" replace />} />
-        <Route path="/support/buyer-chat" element={<RouteAccess route="customer-support"><BuyerChatPage /></RouteAccess>} />
-        <Route path="/support/buyer-chat-2" element={<RouteAccess route="customer-support"><BuyerChat2Page /></RouteAccess>} />
-        <Route path="/support/seller-chat" element={<RouteAccess route="customer-support"><SellerChatPage /></RouteAccess>} />
-        <Route path="/support/settings" element={<RouteAccess route="customer-support"><AgentSettingsPage /></RouteAccess>} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/sub-admins" element={<AdminOnly><SubAdminManagementPage /></AdminOnly>} />
         <Route path="/sub-admins/new" element={<AdminOnly><SubAdminFormPage /></AdminOnly>} />

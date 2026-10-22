@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import { queryString } from '../../lib/api'
 import { StatCard } from '../../components/ui/Card'
@@ -36,7 +36,6 @@ function toIsoSafe(dateStr, isEnd = false) {
 export default function AnalyticsPage() {
   const { token } = useAuth()
   const section = useShopSection()
-  const location = useLocation()
   const marketplace = section?.marketplace
   const [days, setDays] = useState('30')
   const [customFrom, setCustomFrom] = useState('')
@@ -58,11 +57,7 @@ export default function AnalyticsPage() {
   const top = useApi(token ? `/api/analytics/products${queryString({ from, to, marketplace, limit: 10 })}` : null)
   const inv = useApi(token && marketplace ? `/api/analytics/inventory${queryString({ marketplace })}` : null)
 
-  if (!section) {
-    const params = new URLSearchParams(location.search)
-    params.set('shop', 'ebay')
-    return <Navigate to={`${location.pathname}?${params.toString()}`} replace />
-  }
+  if (!section) return <RequireShopSection />
 
   return (
     <div className="space-y-3">
