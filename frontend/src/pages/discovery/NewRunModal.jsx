@@ -155,7 +155,7 @@ export default function NewRunModal({
               US best sellers across 8 shops: eBay, Amazon, Walmart, Temu, TikTok Shop, Etsy, Wish, and US Shopify stores.
             </p>
             <p className="text-sm text-gray-600">
-              It returns the top 20 products, each with at least 4 confirmed US listings. List any of them in your eBay, TikTok Shop, or Temu shop from its card.
+              It ranks the top 20 best sellers and links every US shop where each one is listed. List any of them in your eBay, TikTok Shop, or Temu shop from its card.
             </p>
             <p className="flex items-center gap-1.5 text-xs text-indigo-700">
               <FiZap size={13} />

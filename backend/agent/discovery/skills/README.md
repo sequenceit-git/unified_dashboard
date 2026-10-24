@@ -20,8 +20,8 @@ skills/
 ## Run
 
 - **US only.** Web search is located in the US and restricted to the domains in `US_PLACES` (`usListings.js`): ebay.com, amazon.com, walmart.com, temu.com, tiktok.com (TikTok Shop US), etsy.com, and wish.com. Country paths such as `/uk/` are rejected. US Shopify stores are the eighth shop: they are only added as extra listings by the `findMoreListings` search, never used to discover products, and their evidence never raises a product's tier.
-- **Top 20.** `discoveryAgent.js` runs up to 4 search rounds (at most 80 candidates), skipping products already reviewed, until 20 products have 4 confirmed US listings each. Results are ranked by evidence tier, then score (`economics.js`).
-- **No unconfirmed links.** `usListings.js` re-checks every link before it is saved. eBay through the Browse API on EBAY_US; Shopify pages must also carry Product markup, a USD price, and Shopify markup; every other site by loading the page, which must stay on the same product ID, not be a bot wall or not-found page, and name the product. Unconfirmed links are dropped. A product needs 4 confirmed US listings (`MIN_SOURCES`); below that, one extra open search looks for more pages of the same product, and the product is dropped if it still has fewer than 4.
+- **Top 20.** `discoveryAgent.js` runs up to 4 search rounds (at most 80 candidates), skipping products already reviewed, until 20 products have at least one confirmed US listing. Results are ranked by evidence tier, then score, then the number of US shops the product is confirmed on (`economics.js`).
+- **No unconfirmed links.** `usListings.js` re-checks every link before it is saved. eBay through the Browse API on EBAY_US; Shopify pages must also carry Product markup, a USD price, and Shopify markup; every other site by loading the page, which must stay on the same product ID, not be a bot wall or not-found page, and name the product. Unconfirmed links are dropped. Every confirmed listing is attached, one per shop. If none is confirmed, one extra open search looks for pages of the same product, and the product is dropped if still none is confirmed.
 
 ## Memory and state
 

@@ -155,11 +155,18 @@ function computeOpportunityScore({
   }
 }
 
-/** Tier first (T1 strongest), then score. Products without a score sort last within their tier. */
+const shopCount = (opp) => new Set((opp.sources || []).map((source) => source.place)).size
+
+/**
+ * Tier first (T1 strongest), then score, then the number of US shops it is confirmed on.
+ * Products without a score sort last within their tier.
+ */
 function compareByEvidence(a, b) {
   const tierGap = (TIER_ORDER[a.evidenceTier] || 9) - (TIER_ORDER[b.evidenceTier] || 9)
   if (tierGap) return tierGap
-  return (b.opportunityScore ?? -1) - (a.opportunityScore ?? -1)
+  const scoreGap = (b.opportunityScore ?? -1) - (a.opportunityScore ?? -1)
+  if (scoreGap) return scoreGap
+  return shopCount(b) - shopCount(a)
 }
 
 module.exports = {
