@@ -282,7 +282,12 @@ router.delete('/reports/:reportId', async (req, res) => {
 //
 router.post('/generate', async (req, res) => {
   try {
-    const { categories: rawCategories, category, niche, instructions } = req.body
+    const { categories: rawCategories, category, niche, instructions, targetMarketplaces: rawTargetMarketplaces } = req.body
+
+    const validMarkets = ['ebay', 'tiktok', 'temu']
+    const targetMarketplaces = Array.isArray(rawTargetMarketplaces) && rawTargetMarketplaces.length
+      ? rawTargetMarketplaces.map((m) => String(m).toLowerCase().trim()).filter((m) => validMarkets.includes(m))
+      : ['ebay']
 
     // Accept both { categories: [...] } and legacy { category: "..." }
     const categories = Array.isArray(rawCategories) && rawCategories.length
@@ -318,6 +323,7 @@ router.post('/generate', async (req, res) => {
       trigger: 'manual',
       reportDate: null,
       params: {
+        marketplaces: targetMarketplaces,
         categories,
         category: categories[0],
         keywords: niche ? [niche] : [],
@@ -342,6 +348,7 @@ router.post('/generate', async (req, res) => {
         categories,
         niche: niche?.trim() || '',
         instructions: instructions?.trim() || '',
+        marketplaces: targetMarketplaces,
         reportId: report._id,
         user: req.user,
       }).catch((err) => {

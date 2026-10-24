@@ -146,6 +146,20 @@ function normalizeHighlights(value) {
   return lines.slice(0, 6)
 }
 
+const SOURCE_LABELS = {
+  ebay: 'eBay',
+  amazon: 'Amazon',
+  walmart: 'Walmart',
+  temu: 'Temu',
+  tiktok: 'TikTok Shop',
+  tiktok_shop: 'TikTok Shop',
+}
+
+function marketplaceLabel(id) {
+  const key = String(id || '').trim().toLowerCase()
+  return SOURCE_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Listing')
+}
+
 function uniqueSources(links) {
   const seen = new Set()
   const sources = []
@@ -211,7 +225,7 @@ async function callWebSearch({ client, prompt, allowedDomains = [], maxRetries =
 /**
  * Stage 1: Discover candidate products from target marketplaces using live Web Search
  */
-async function discoverCandidates({ client, categories, niche, marketplaces = ['ebay', 'amazon', 'walmart', 'temu'] }) {
+async function discoverCandidates({ client, categories, niche, marketplaces = ['ebay', 'amazon', 'walmart', 'temu'], count = 20, exclude = [] }) {
   const skillPrompt = skillManager.loadSkill('product-discovery-search') || ''
   const currentYear = new Date().getFullYear()
 
@@ -262,7 +276,9 @@ Return ONLY a valid JSON object matching this schema:
   ]
 }
 
-Find 10 to 15 distinct best-selling or viral products now. Skip anything that is only a supplier or wholesale page.`
+${exclude.length ? `Skip these products, already reviewed in this run: ${exclude.slice(0, 40).map((title) => `"${title}"`).join('; ')}.` : ''}
+
+Return ${count} distinct best-selling or viral products. Return fewer only when fewer real listings exist. Skip anything that is only a supplier or wholesale page.`
 
   const rawText = await callWebSearch({ client, prompt, allowedDomains })
   const parsed = parseJsonSafe(rawText)
@@ -385,7 +401,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       progress: {
         stage: 'Scanning Marketplaces',
         step: 1,
-        totalSteps: 15,
+        totalSteps: 20,
         percent: 5,
         currentItem: `Initializing Web Search across ${categories.join(', ')}...`,
       },
@@ -406,49 +422,73 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
     })
     if (!scanning) return { reportId, status: 'stopped' }
 
-    const candidates = await discoverCandidates({
-      client,
-      categories,
-      niche,
-      marketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay', 'amazon', 'walmart', 'temu'],
-    })
+    const TARGET_PRODUCTS = 20
+    const MAX_ROUNDS = 3
+    const searchMarkets = marketplaces && marketplaces.length ? marketplaces : ['ebay', 'amazon', 'walmart', 'temu']
+    const queue = []
+    const triedTitles = []
+    let discoveredCount = 0
+    let round = 0
 
-    console.log(`[DiscoveryAgent2] Discovered ${candidates.length} candidates via Web Search.`)
+    const fillQueue = async () => {
+      if (queue.length || round >= MAX_ROUNDS) return 0
+      round += 1
+      const needed = TARGET_PRODUCTS - evaluatedOpportunities.length
+      const found = await discoverCandidates({
+        client,
+        categories,
+        niche,
+        marketplaces: searchMarkets,
+        count: Math.min(TARGET_PRODUCTS, needed + 6),
+        exclude: triedTitles,
+      })
+      let added = 0
+      for (const candidate of found) {
+        const key = String(candidate?.title || '').trim().toLowerCase()
+        if (!key || triedTitles.some((title) => title.toLowerCase() === key)) continue
+        triedTitles.push(candidate.title)
+        queue.push(candidate)
+        added += 1
+      }
+      discoveredCount += added
+      console.log(`[DiscoveryAgent2] Round ${round}: ${found.length} found, ${added} new; ${evaluatedOpportunities.length}/${TARGET_PRODUCTS} saved.`)
+      return added
+    }
 
-    if (!candidates.length) {
+    const evaluatedOpportunities = []
+    const added = await fillQueue()
+    if (!added) {
       throw new Error('No candidate products found via live web search. Please try another category or niche.')
     }
 
     if (await stoppedByUser(reportId)) return { reportId, status: 'stopped' }
 
-    const totalCandidates = candidates.length
     const evaluating = await updateWhileRunning(reportId, {
       $set: {
         'progress.stage': 'Evaluating Products',
-        'progress.totalSteps': totalCandidates,
+        'progress.totalSteps': TARGET_PRODUCTS,
         'progress.percent': 20,
-        'progress.currentItem': `Found ${totalCandidates} products. Checking which ones are actually selling...`,
+        'progress.currentItem': `Found ${discoveredCount} products. Checking which ones are actually selling...`,
       },
     })
     if (!evaluating) return { reportId, status: 'stopped' }
 
-    // Stage 2: Bounded Concurrent Deep-Dive Pipeline (concurrency: 2 with incremental DB writes)
-    const evaluatedOpportunities = []
+    // Stage 2: two products at a time. Search again when confirmed products are still under 20.
     const BATCH_SIZE = 2
 
-    for (let i = 0; i < totalCandidates; i += BATCH_SIZE) {
+    while (queue.length && evaluatedOpportunities.length < TARGET_PRODUCTS) {
       if (await stoppedByUser(reportId)) return { reportId, status: 'stopped' }
-      const batch = candidates.slice(i, i + BATCH_SIZE)
-      const stepNum = Math.min(i + batch.length, totalCandidates)
-      const loopPercent = Math.min(85, Math.round(20 + ((stepNum / totalCandidates) * 65)))
+      const batch = queue.splice(0, BATCH_SIZE)
+      const savedCount = evaluatedOpportunities.length
+      const loopPercent = Math.min(85, Math.round(20 + ((savedCount / TARGET_PRODUCTS) * 65)))
 
-      console.log(`[DiscoveryAgent2] Evaluating batch [${stepNum}/${totalCandidates}]: ${batch.map((c) => `"${c.title}"`).join(', ')}`)
+      console.log(`[DiscoveryAgent2] Evaluating batch [${savedCount}/${TARGET_PRODUCTS} saved]: ${batch.map((c) => `"${c.title}"`).join(', ')}`)
 
       const progressSaved = await updateWhileRunning(reportId, {
         $set: {
-          'progress.stage': `Evaluating (${stepNum}/${totalCandidates})`,
-          'progress.step': stepNum,
-          'progress.totalSteps': totalCandidates,
+          'progress.stage': `Evaluating (${savedCount}/${TARGET_PRODUCTS} saved)`,
+          'progress.step': savedCount,
+          'progress.totalSteps': TARGET_PRODUCTS,
           'progress.percent': loopPercent,
           'progress.currentItem': batch.map((c) => c.title).join(' | '),
         },
@@ -465,14 +505,24 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
               targetMarketplaces: marketplaces && marketplaces.length ? marketplaces : ['ebay'],
             })
 
-            const sources = await validatedUsListings([
-              { url: candidate.listingUrl, price: candidate.observedPriceUsd },
-              { url: validation.ebaySourceUrl, price: validation.ebayPriceMedian },
-              { url: validation.otherUrl, price: null },
+            const rawLinks = [
+              { url: candidate.listingUrl, price: candidate.observedPriceUsd, marketplace: candidate.observedMarketplace },
+              { url: validation.ebaySourceUrl, price: validation.ebayPriceMedian, marketplace: 'ebay' },
+              { url: validation.otherUrl, price: null, marketplace: validation.otherMarketplace },
               ...(Array.isArray(validation.listingLinks) ? validation.listingLinks : []),
+            ]
+            const verified = await validatedUsListings(rawLinks)
+            const sources = uniqueSources([
+              ...verified.map((source) => ({ ...source, verified: true })),
+              ...rawLinks.map((link) => linkOf(
+                marketplaceLabel(link.marketplace || link.label),
+                link.url,
+                'listing',
+                link.price,
+              )).filter(Boolean),
             ])
             if (!sources.length) {
-              console.log(`[DiscoveryAgent2] Skipped "${candidate.title}": no verified US listing`)
+              console.log(`[DiscoveryAgent2] Skipped "${candidate.title}": no source link`)
               return null
             }
             const listingUrl = sources.find((source) => source.label === 'eBay')?.url || sources[0].url
@@ -528,6 +578,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
               image: images[0] || null,
               images,
               sources,
+              linksVerified: sources.some((source) => source.verified),
               metrics: {
                 price: sellingPrice,
                 averagePrice: sellingPrice,
@@ -560,7 +611,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       )
 
       for (const opp of batchResults) {
-        if (opp) {
+        if (opp && evaluatedOpportunities.length < TARGET_PRODUCTS) {
           opp.rank = evaluatedOpportunities.length + 1
           evaluatedOpportunities.push(opp)
         }
@@ -570,6 +621,16 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
         $set: { opportunities: evaluatedOpportunities },
       })
       if (!saved) return { reportId, status: 'stopped' }
+
+      if (evaluatedOpportunities.length < TARGET_PRODUCTS && !queue.length) {
+        const searching = await updateWhileRunning(reportId, {
+          $set: {
+            'progress.currentItem': `${evaluatedOpportunities.length} of ${TARGET_PRODUCTS} confirmed. Searching for more products...`,
+          },
+        })
+        if (!searching) return { reportId, status: 'stopped' }
+        await fillQueue()
+      }
     }
 
     if (await stoppedByUser(reportId)) return { reportId, status: 'stopped' }
@@ -600,8 +661,8 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
     // Format date at completion: "YYYY-MM-DD" for accurate date-wise clustering
     const completionDate = new Date().toISOString().slice(0, 10)
     const summaryNarrative = `Completed live market discovery across ${categories.join(', ')}. Discovered ${
-      candidates.length
-    } candidates and ranked the top ${topOpportunities.length} products.`
+      discoveredCount
+    } candidates and ranked ${topOpportunities.length} of the top ${TARGET_PRODUCTS} products.`
 
     const finished = await updateWhileRunning(reportId, {
       $set: {
@@ -612,8 +673,8 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
         summary: summaryNarrative,
         progress: {
           stage: 'Completed',
-          step: totalCandidates,
-          totalSteps: totalCandidates,
+          step: topOpportunities.length,
+          totalSteps: TARGET_PRODUCTS,
           percent: 100,
           currentItem: `${topOpportunities.length} opportunities verified & saved.`,
         },

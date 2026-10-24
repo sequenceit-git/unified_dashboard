@@ -44,9 +44,8 @@ const COLUMNS = [
 
 const LAST_COL_LETTER = 'Q' // 17 columns (A–Q)
 
-/** Only links the agent confirmed live; older unconfirmed reports export blank link cells. */
+/** Listing pages saved with the product, whether or not a live US check confirmed them. */
 function verifiedLinks(rec) {
-  if (!rec.linksVerified) return { sourceUrl: '', listingUrl: '', otherUrl: '' }
   const urls = (rec.sources || []).map((source) => source?.url).filter(Boolean)
   const listingUrl = rec.listingUrl || urls[0] || ''
   return {

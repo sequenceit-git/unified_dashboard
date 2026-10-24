@@ -22,6 +22,7 @@ export default function NewRunModal({
   const [selectedCategories, setSelectedCategories] = useState(['Home & Kitchen'])
   const [categoryInput, setCategoryInput] = useState('')
   const [niche, setNiche] = useState('')
+  const [targetMarketplaces, setTargetMarketplaces] = useState(['ebay'])
   const [instructions, setInstructions] = useState('')
 
   if (!isOpen) return null
@@ -46,6 +47,17 @@ export default function NewRunModal({
     }
   }
 
+  const toggleMarketplace = (market) => {
+    setTargetMarketplaces((prev) => {
+      if (prev.includes(market)) {
+        // Prevent unchecking all
+        if (prev.length <= 1) return prev
+        return prev.filter((m) => m !== market)
+      }
+      return [...prev, market]
+    })
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     const finalCategories = [...selectedCategories]
@@ -55,15 +67,22 @@ export default function NewRunModal({
     onSubmit({
       categories: finalCategories,
       niche: niche.trim(),
+      targetMarketplaces,
       instructions: instructions.trim(),
     })
   }
+
+  const marketplaces = [
+    { id: 'ebay', label: 'eBay', defaultBadge: 'Default' },
+    { id: 'tiktok', label: 'TikTok Shop' },
+    { id: 'temu', label: 'Temu' },
+  ]
 
   return (
     <Modal title="Launch New Research Run" onClose={onClose} wide>
       <form onSubmit={handleSubmit}>
         <p className="text-sm text-gray-500">
-          Choose what to find. The search looks for best-selling US products on its own, not for one shop.
+          Choose a category on the left and the shops on the right. Each run looks for the top 20 best-selling and viral products.
         </p>
 
         {error && (
@@ -150,16 +169,46 @@ export default function NewRunModal({
           </div>
 
           <div className="space-y-4 border-t border-gray-100 pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">Where it searches</p>
-            <p className="text-sm text-gray-600">
-              US best sellers on eBay, Amazon, Walmart, and Temu.
-            </p>
-            <p className="text-sm text-gray-600">
-              It finds 10 to 15 best-selling or viral products and links the US listings it confirms. List any of them in your eBay, TikTok Shop, or Temu shop from its card.
-            </p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">Where to sell</p>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label className="text-xs font-semibold text-gray-700">Target marketplaces</label>
+                <span className="text-[11px] font-medium text-indigo-600">Also checks Amazon, Walmart, Alibaba</span>
+              </div>
+              <div className="grid gap-2">
+                {marketplaces.map((market) => {
+                  const isChecked = targetMarketplaces.includes(market.id)
+                  return (
+                    <label
+                      key={market.id}
+                      className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition ${
+                        isChecked
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-900'
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleMarketplace(market.id)}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="flex-1">{market.label}</span>
+                      {market.defaultBadge && (
+                        <span className="rounded bg-indigo-200/60 px-1.5 py-0.5 text-[10px] font-bold text-indigo-800">
+                          {market.defaultBadge}
+                        </span>
+                      )}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
             <p className="flex items-center gap-1.5 text-xs text-indigo-700">
               <FiZap size={13} />
-              Every source link is checked before it is shown.
+              At least one marketplace stays selected.
             </p>
           </div>
         </div>

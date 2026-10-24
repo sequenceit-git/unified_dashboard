@@ -17,8 +17,9 @@ function pushUrl(list, url) {
 
 function pushSource(list, source) {
   const href = typeof source?.url === 'string' ? source.url.trim() : ''
-  if (!/^https:\/\//i.test(href) || list.some((item) => item.url === href)) return
-  list.push({ ...source, url: href, label: source.label || marketplaceLabel(source.place) })
+  if (!/^https?:\/\//i.test(href) || list.some((item) => item.url === href)) return
+  const label = source.label || marketplaceLabel(source.place || source.marketplace)
+  list.push({ ...source, url: href, label: label && label !== 'undefined' ? label : 'Listing' })
 }
 
 export function productFacts(opportunity) {
@@ -28,9 +29,19 @@ export function productFacts(opportunity) {
   ;(opportunity.sources || []).forEach((source) => pushUrl(images, source.imageUrl))
 
   const sources = []
-  if (opportunity.linksVerified) {
-    ;(opportunity.sources || []).forEach((source) => pushSource(sources, source))
-  }
+  ;(opportunity.sources || []).forEach((source) => pushSource(sources, source))
+  pushSource(sources, {
+    url: opportunity.listingUrl,
+    label: marketplaceLabel(opportunity.marketplace),
+    place: opportunity.marketplace,
+    price: opportunity.price ?? opportunity.metrics?.price,
+  })
+  const validation = opportunity.validation || {}
+  pushSource(sources, { url: validation.ebaySourceUrl, label: 'eBay', place: 'ebay' })
+  pushSource(sources, { url: validation.otherUrl, label: marketplaceLabel(validation.otherMarketplace), place: validation.otherMarketplace })
+  ;(Array.isArray(validation.listingLinks) ? validation.listingLinks : []).forEach((link) => {
+    pushSource(sources, { url: link?.url, label: marketplaceLabel(link?.marketplace), place: link?.marketplace, price: link?.price })
+  })
 
   return {
     images,
@@ -179,9 +190,7 @@ export default function ProductDetailModal({ opportunity, onClose }) {
       <section className="mt-6 border-t border-gray-100 pt-5">
         <h3 className="text-sm font-bold text-gray-900">Where it is selling</h3>
         <p className="mt-1 text-xs text-gray-500">
-          {opportunity.linksVerified
-            ? 'United States product pages confirmed live for this product when the search ran.'
-            : 'Links from this older search were not confirmed. Run a new search to get verified US links.'}
+          Listing pages the search found for this product.
         </p>
         {facts.places.length ? (
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -190,7 +199,6 @@ export default function ProductDetailModal({ opportunity, onClose }) {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-900">
                     {source.label}
-                    <span className="ml-2 text-xs font-medium uppercase text-gray-400">US</span>
                   </p>
                   <p className="truncate text-xs text-gray-500">{source.url}</p>
                 </div>
@@ -204,7 +212,7 @@ export default function ProductDetailModal({ opportunity, onClose }) {
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-gray-500">No verified US listing.</p>
+          <p className="mt-3 text-sm text-gray-500">No source link was saved for this product.</p>
         )}
       </section>
     </Modal>
