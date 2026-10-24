@@ -9,7 +9,7 @@ services:
       - mongodb-data:/data/db
     ports:
       # Expose to localhost only on server host (secure, not exposed to public WAN)
-      - "127.0.0.1:27017:27017"
+      - "127.0.0.1:${MONGO_HOST_PORT:-27018}:27017"
     networks:
       - internal-net
     healthcheck:
