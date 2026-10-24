@@ -219,7 +219,7 @@ Return ${count} distinct products if that many have ${storefronts ? 'a visible b
 }
 
 /** Stage 2: validation gates G1 to G10 and up to one US product page per marketplace for one candidate. */
-async function validateProductDemand({ client, candidate, sellingShops }) {
+async function validateProductDemand({ client, candidate }) {
   const prompt = `You are a marketplace best-seller validator with live web search. Follow the master skill below; the stage skill after it is Stage 2 of that procedure (validation gates G1 to G10).
 ${skillManager.promptFor('cross-market-validation')}
 
@@ -229,7 +229,6 @@ Category: "${candidate.category || ''}"
 Observed price: $${candidate.observedPriceUsd ?? 'unknown'}
 Stage 1 demand wording: ${candidate.demandSignalText || 'none'} (tier ${candidate.evidenceTier || 'unknown'}, scope ${candidate.metricScope || 'unknown'})
 Listing to open first: ${candidate.listingUrl}
-The client sells on: ${sellingShops.join(', ')}
 
 TASK:
 1. United States only: ${SITE_LIST}${placeOf(candidate.listingUrl) ? '' : ', plus the independent store above'}. Ignore every other country and site.
@@ -312,8 +311,8 @@ Write 1-2 concise sentences on the selling evidence. Name the tier in plain word
 }
 
 /** Stages 2 and 3 for one candidate. Returns null when no US listing is confirmed or a gate drops it. */
-async function evaluateCandidate({ client, candidate, categories, sellingShops }) {
-  const validation = await validateProductDemand({ client, candidate, sellingShops })
+async function evaluateCandidate({ client, candidate, categories }) {
+  const validation = await validateProductDemand({ client, candidate })
   const complianceFlags = Array.isArray(validation.complianceFlags) ? validation.complianceFlags.filter(Boolean) : []
   if (complianceFlags.length) {
     console.log(`[DiscoveryAgent] Skipped "${candidate.title}": compliance flags ${complianceFlags.join(', ')}`)
@@ -415,11 +414,10 @@ async function evaluateCandidate({ client, candidate, categories, sellingShops }
 }
 
 /** Runs search rounds until TARGET_PRODUCTS confirmed products are saved, then ranks them. */
-async function runDiscoveryAgent({ categories = [], niche = '', instructions = '', marketplaces, reportId }) {
+async function runDiscoveryAgent({ categories = [], niche = '', instructions = '', reportId }) {
   console.log(`[DiscoveryAgent] Starting run for reportId: ${reportId}, categories: [${categories.join(', ')}]`)
 
   const client = getOpenAIClient()
-  const sellingShops = marketplaces && marketplaces.length ? marketplaces : ['ebay']
 
   const started = await updateWhileRunning(reportId, {
     $set: {
@@ -490,7 +488,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
             return { record, reused: true }
           }
           try {
-            return { record: await evaluateCandidate({ client, candidate, categories, sellingShops }), reused: false }
+            return { record: await evaluateCandidate({ client, candidate, categories }), reused: false }
           } catch (err) {
             console.warn(`[DiscoveryAgent] Error analyzing "${candidate.title}":`, err.message)
             return null

@@ -21,7 +21,7 @@ End-to-end flow from **Launch AI Research** on the Product Discovery page (`/mar
 
 ## 1. Launch (frontend)
 
-`NewRunModal.jsx` collects categories, an optional niche, custom instructions, and the shops the client sells on (eBay by default, plus TikTok Shop and Temu). The selling shops are passed to Stage 2 as context; they do not limit where research looks.
+`NewRunModal.jsx` collects categories, an optional niche, and custom instructions. Research does not depend on any of the client's shops; each result is listed in eBay, TikTok Shop, or Temu afterwards from its card.
 
 ## 2. Route (`backend/routes/research/research.js`)
 
