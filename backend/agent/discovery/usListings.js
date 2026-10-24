@@ -27,26 +27,14 @@ const ID_PATTERNS = {
 const COUNTRY_PATH = /^\/[a-z]{2}(?:-[a-z]{2})?\//i
 
 /**
- * Storefront platforms from the master skill (section 1.2). Each store runs on its own domain, so a
- * store page is recognised by the platform's markup, not by its URL.
+ * Shopify, the eighth shop. Each Shopify store runs on its own domain, so a store page is
+ * recognised by Shopify's markup, not by its URL.
  */
 const STOREFRONTS = [
   { id: 'shopify', label: 'Shopify', mark: /cdn\.shopify\.com|Shopify\.theme|shopify-section/i },
-  { id: 'bigcommerce', label: 'BigCommerce', mark: /cdn\d*\.bigcommerce\.com|BCData/i },
-  { id: 'magento', label: 'Adobe Commerce / Magento', mark: /text\/x-magento-init|Magento_[A-Z]|mage\/cookies/ },
-  { id: 'salesforce', label: 'Salesforce Commerce Cloud', mark: /demandware|dwanalytics/i },
-  { id: 'vtex', label: 'VTEX', mark: /vteximg\.com|vtexassets\.com|vtexcommercestable/i },
-  { id: 'wix', label: 'Wix', mark: /static\.wixstatic\.com|wix-ecommerce|wixstores/i },
-  { id: 'squarespace', label: 'Squarespace', mark: /static1\.squarespace\.com|assets\.squarespace\.com|SQUARESPACE_CONTEXT/i },
-  { id: 'square', label: 'Square', mark: /editmysite\.com|squarecdn\.com/i },
-  { id: 'ecwid', label: 'Ecwid by Lightspeed', mark: /app\.ecwid\.com|ecwid-productBrowser/i },
-  { id: 'shift4shop', label: 'Shift4Shop', mark: /3dcart|shift4shop/i },
-  { id: 'prestashop', label: 'PrestaShop', mark: /prestashop/i },
-  { id: 'opencart', label: 'OpenCart', mark: /route=product\/product|catalog\/view\/theme/i },
-  { id: 'woocommerce', label: 'WooCommerce', mark: /wp-content\/plugins\/woocommerce|woocommerce-product|wc-block-/i },
 ]
 
-const MAX_STORE_SOURCES = 3
+const MAX_STORE_SOURCES = 1
 const MARKETPLACE_HOST = /(?:^|\.)(?:ebay|amazon|walmart|temu|tiktok|etsy|wish|aliexpress|alibaba)\.[a-z.]+$/i
 const US_FRIENDLY_TLDS = new Set(['us', 'co', 'io'])
 const STORE_NON_PRODUCT = /^\/(?:$|search|collections\/?$|cart|account|blogs?\/|pages\/|policies\/)|[?&](?:q|s|search)=/i
@@ -95,11 +83,6 @@ function storeHostOf(url) {
   if (tld.length === 2 && !US_FRIENDLY_TLDS.has(tld)) return null
   if (STORE_NON_PRODUCT.test(`${parsed.pathname}${parsed.search}`)) return null
   return host
-}
-
-/** True for a URL the backend can try to confirm: a US marketplace product page or an independent store page. */
-function isCheckableUrl(url) {
-  return Boolean(placeOf(url) || storeHostOf(url))
 }
 
 /** Stable identity for a US product page, e.g. "ebay:267805925551" or "amazon:B0C1234567". */
@@ -204,7 +187,7 @@ async function pageMatches(url, title) {
   return Boolean(html) && namesProduct(pageTitleOf(html) || html, title)
 }
 
-/** Storefront platform of a live US store product page that names the product, or null. */
+/** Platform of a live US Shopify store product page that names the product, or null. */
 async function storefrontMatch(url, title) {
   const html = await loadPage(url, 1500000)
   if (!html || !PRODUCT_SCHEMA.test(html) || !USD_PRICE.test(html)) return null
@@ -214,7 +197,7 @@ async function storefrontMatch(url, title) {
 
 /**
  * Confirmed US product pages, in display order: at most one per marketplace, then up to
- * MAX_STORE_SOURCES independent stores on a known storefront platform. A link survives only when
+ * MAX_STORE_SOURCES Shopify store. A link survives only when
  * the page is live and names the product; unreachable, blocked, or mismatched pages are dropped.
  */
 async function validatedUsListings(links, title) {
@@ -262,9 +245,7 @@ module.exports = {
   US_PLACES,
   US_DOMAINS,
   PLACE_IDS,
-  STOREFRONTS,
   placeOf,
-  isCheckableUrl,
   listingKey,
   validatedUsListings,
 }

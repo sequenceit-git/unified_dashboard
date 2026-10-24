@@ -152,8 +152,7 @@ export default function NewRunModal({
           <div className="space-y-4 border-t border-gray-100 pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">Where it searches</p>
             <p className="text-sm text-gray-600">
-              US best sellers on eBay, Amazon, Walmart, Temu, TikTok Shop, Etsy, and Wish, plus independent US stores
-              on Shopify, WooCommerce, BigCommerce, and other store platforms.
+              US best sellers across 8 shops: eBay, Amazon, Walmart, Temu, TikTok Shop, Etsy, Wish, and US Shopify stores.
             </p>
             <p className="text-sm text-gray-600">
               It returns the top 20 products, each with at least 4 confirmed US listings. List any of them in your eBay, TikTok Shop, or Temu shop from its card.

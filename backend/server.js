@@ -17,6 +17,7 @@ const inventoryRoutes = require('./routes/catalog/inventory')
 const orderRoutes = require('./routes/sales/orders')
 const productRoutes = require('./routes/catalog/products')
 const researchRoutes = require('./routes/research/research')
+const settingsRoutes = require('./routes/system/settings')
 const shopRoutes = require('./routes/system/shops')
 const uploadRoutes = require('./routes/system/upload')
 
@@ -51,6 +52,7 @@ app.use('/api/orders', orderRoutes)
 app.use('/api/customers', customerRoutes)
 app.use('/api/inbox', inboxRoutes)
 app.use('/api/research', researchRoutes)
+app.use('/api/settings', settingsRoutes)
 
 connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   // Sweep stale/orphaned running or queued reports left behind by server restart

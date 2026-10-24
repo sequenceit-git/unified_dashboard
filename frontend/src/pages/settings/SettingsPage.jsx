@@ -8,6 +8,7 @@ import { useApi } from '../../hooks/useApi'
 import { api } from '../../lib/api'
 import { SHOP_SECTIONS } from '../../lib/shops'
 import { marketplaceLabel } from '../../lib/marketplaces'
+import AiAgentSettings from './AiAgentSettings'
 
 const CONNECTABLE = SHOP_SECTIONS.map((section) => ({ id: section.marketplace, label: section.label }))
 
@@ -89,7 +90,7 @@ export default function SettingsPage() {
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">Workspace</p>
         <h1 className="page-heading mt-1 text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="mt-2 text-sm text-gray-500">Connect marketplace shops that feed this dashboard.</p>
+        <p className="mt-2 text-sm text-gray-500">Connect marketplace shops and set up the AI agent.</p>
       </div>
 
       {message && (
@@ -166,6 +167,8 @@ export default function SettingsPage() {
           )
         })}
       </div>
+
+      {isAdmin && <AiAgentSettings />}
     </div>
   )
 }

@@ -14,18 +14,6 @@ const EXTRA_LABELS = {
   etsy: 'Etsy',
   wish: 'Wish',
   shopify: 'Shopify store',
-  bigcommerce: 'BigCommerce store',
-  magento: 'Magento store',
-  salesforce: 'Salesforce Commerce store',
-  vtex: 'VTEX store',
-  wix: 'Wix store',
-  squarespace: 'Squarespace store',
-  square: 'Square store',
-  ecwid: 'Ecwid store',
-  shift4shop: 'Shift4Shop store',
-  prestashop: 'PrestaShop store',
-  opencart: 'OpenCart store',
-  woocommerce: 'WooCommerce store',
 }
 
 export function marketplaceLabel(id) {

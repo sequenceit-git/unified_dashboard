@@ -9,7 +9,7 @@ This stage carries out section 4 steps 1 to 4 of the master skill `marketplace-b
 
 ## Scope (dashboard defaults, master section 12)
 
-United States only, USD. Open only US product pages on ebay.com, amazon.com, walmart.com, temu.com, tiktok.com (TikTok Shop), etsy.com, and wish.com, or, when the runner asks for storefronts, product pages of independent US stores on the master section 12 platforms (their own best-seller label is Tier 4). No other countries or country paths, no suppliers, wholesale, factories, or buy-cost pages. The runner asks for up to 25 candidates per round and repeats until 20 products are confirmed; it lists products already reviewed so you can skip them.
+United States only, USD. Open only US product pages on ebay.com, amazon.com, walmart.com, temu.com, tiktok.com (TikTok Shop), etsy.com, and wish.com. No other countries or country paths, no suppliers, wholesale, factories, or buy-cost pages. The runner asks for up to 25 candidates per round and repeats until 20 products are confirmed; it lists products already reviewed so you can skip them.
 
 ## Inputs (provided by the runner)
 

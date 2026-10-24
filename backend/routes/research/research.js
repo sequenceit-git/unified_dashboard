@@ -10,6 +10,7 @@ const { canonicalMarketplace } = require('../../utils/marketplace')
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 const { productImages } = require('../../agent/discovery/listingImage')
 const { generateRecommendationsExcel, verifiedLinks } = require('../../services/excelExport')
+const { getAiConfig } = require('../../services/aiSettings')
 
 const SHOP_LABELS = {
   ebay: 'eBay',
@@ -294,10 +295,9 @@ router.post('/generate', async (req, res) => {
       return res.status(400).json({ error: 'At least one product category is required' })
     }
 
-    // Check if OPENAI_API or OPENAI_API_KEY is configured
-    if (!process.env.OPENAI_API && !process.env.OPENAI_API_KEY) {
+    if (!(await getAiConfig()).apiKey) {
       return res.status(503).json({
-        error: 'OpenAI API key is not configured. Please set OPENAI_API in your environment variables.',
+        error: 'OpenAI API key is not configured. Add it in Settings > AI agent.',
       })
     }
 
