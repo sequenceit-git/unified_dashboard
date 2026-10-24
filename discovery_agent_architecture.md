@@ -7,7 +7,7 @@ End-to-end flow from **Launch AI Research** on the Product Discovery page (`/mar
          ▼
 [ routes/research/research.js ] ── creates ResearchReport (status: queued), replies 202
          ▼
-[ agent/discovery/discoveryAgent.js ]  up to 3 rounds, until 20 products are confirmed
+[ agent/discovery/discoveryAgent.js ]  up to 4 rounds (80 candidates), until 20 products are confirmed
          ├── Stage 1  discoverCandidates   US marketplaces search + independent US stores search (in parallel)
          ├── memory   evidenceMemory.js    reuse evidence observed in the last 24 hours
          ├── Stage 2  validateProductDemand gates G1–G10, description/specs, same product on other US sites
@@ -48,7 +48,7 @@ All web searches use a US location.
    - eBay: the item must exist through the official Browse API (EBAY_US), and its title must match.
    - Other marketplaces: the page must load (status 200), stay on the same product ID, not be a bot or not-found page, and name the product.
    - Stores: the same checks, plus Product markup, a USD price, and a known platform's markup.
-   - At most one page is kept per marketplace, plus up to three stores. A product with no confirmed page is dropped. Demand wording from an unconfirmed page is not used.
+   - At most one page is kept per marketplace, plus up to three stores. A product needs 4 confirmed US listings (`MIN_SOURCES`). With fewer, `findMoreListings` runs one open web search for more pages of the same product; if it still has fewer than 4, the product is dropped. Demand wording from an unconfirmed page is not used.
 5. **Scoring** (`economics.js`): the tier comes from the recorded fields. The score weights are sales 45, velocity 20, reviews 15, freshness 10, corroboration 10, with penalties for manipulation and unclear metrics. Results are ranked by tier first, then score.
 6. **Stage 3** writes a short note from the verified facts only.
 7. Each batch of 3 is appended with `$push`, so a stop or crash keeps what was found. A user stop is detected when `updateWhileRunning` matches nothing. On completion the report gets the ranked list, a summary of tier counts, and a note if fewer than 20 products were confirmed. On server boot, `stopping` runs become `stopped` and stale `queued`/`running` runs become `failed`.

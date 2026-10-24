@@ -156,7 +156,7 @@ export default function NewRunModal({
               on Shopify, WooCommerce, BigCommerce, and other store platforms.
             </p>
             <p className="text-sm text-gray-600">
-              It returns the top 20 products with confirmed US listings. List any of them in your eBay, TikTok Shop, or Temu shop from its card.
+              It returns the top 20 products, each with at least 4 confirmed US listings. List any of them in your eBay, TikTok Shop, or Temu shop from its card.
             </p>
             <p className="flex items-center gap-1.5 text-xs text-indigo-700">
               <FiZap size={13} />

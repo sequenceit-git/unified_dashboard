@@ -20,8 +20,8 @@ skills/
 ## Run
 
 - **US only.** Web search is located in the US and restricted to the domains in `US_PLACES` (`usListings.js`): ebay.com, amazon.com, walmart.com, temu.com, tiktok.com (TikTok Shop US), etsy.com, and wish.com. Country paths such as `/uk/` are rejected. A second Stage 1 search each round looks at independent US stores on the `STOREFRONTS` platforms (Shopify, WooCommerce, BigCommerce, and the rest of master section 1.2). Their evidence is Tier 4 and never raises a product's tier.
-- **Top 20.** `discoveryAgent.js` runs up to 3 search rounds (at most 60 candidates), skipping products already reviewed, until 20 products have a confirmed US listing. Results are ranked by evidence tier, then score (`economics.js`).
-- **No unconfirmed links.** `usListings.js` re-checks every link before it is saved. eBay through the Browse API on EBAY_US; store pages must also carry Product markup, a USD price, and a known platform's markup; every other site by loading the page, which must stay on the same product ID, not be a bot wall or not-found page, and name the product. Unconfirmed links are dropped; a product with none is dropped.
+- **Top 20.** `discoveryAgent.js` runs up to 4 search rounds (at most 80 candidates), skipping products already reviewed, until 20 products have 4 confirmed US listings each. Results are ranked by evidence tier, then score (`economics.js`).
+- **No unconfirmed links.** `usListings.js` re-checks every link before it is saved. eBay through the Browse API on EBAY_US; store pages must also carry Product markup, a USD price, and a known platform's markup; every other site by loading the page, which must stay on the same product ID, not be a bot wall or not-found page, and name the product. Unconfirmed links are dropped. A product needs 4 confirmed US listings (`MIN_SOURCES`); below that, one extra open search looks for more pages of the same product, and the product is dropped if it still has fewer than 4.
 
 ## Memory and state
 
