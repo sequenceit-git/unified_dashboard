@@ -185,7 +185,6 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
         )}
       </div>
 
-      {/* Footer Actions: Both Links (Marketplace + Supplier) and Add to Catalog */}
       <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center gap-3">
           <button type="button" onClick={onOpen} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">

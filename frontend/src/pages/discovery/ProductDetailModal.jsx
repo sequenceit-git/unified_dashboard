@@ -15,35 +15,10 @@ function pushUrl(list, url) {
   list.push(href)
 }
 
-const US_PLACES = [
-  { id: 'ebay', label: 'eBay' },
-  { id: 'amazon', label: 'Amazon' },
-  { id: 'walmart', label: 'Walmart' },
-  { id: 'temu', label: 'Temu' },
-]
-
-function usPlace(url) {
-  let parsed
-  try {
-    parsed = new URL(String(url || '').trim())
-  } catch {
-    return null
-  }
-  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null
-  const host = parsed.hostname.replace(/^www\./i, '').toLowerCase()
-  const path = `${parsed.pathname}${parsed.search}`
-  if (host === 'ebay.com' && /\/itm\/(?:[^/]+\/)?\d{9,}/i.test(parsed.pathname)) return 'ebay'
-  if (host === 'amazon.com' && /\/(?:dp|gp\/product)\/[A-Z0-9]{10}/i.test(parsed.pathname)) return 'amazon'
-  if (host === 'walmart.com' && /\/ip\/(?:[^/]+\/)?\d{5,}/i.test(parsed.pathname)) return 'walmart'
-  if (host === 'temu.com' && /(?:goods\.html|[?&]goods_id=|-g-\d+)/i.test(path)) return 'temu'
-  return null
-}
-
 function pushSource(list, source) {
   const href = typeof source?.url === 'string' ? source.url.trim() : ''
-  const place = usPlace(href)
-  if (!place || list.some((item) => item.place === place)) return
-  list.push({ ...source, url: href, place, label: US_PLACES.find((item) => item.id === place).label })
+  if (!/^https:\/\//i.test(href) || list.some((item) => item.url === href)) return
+  list.push({ ...source, url: href, label: source.label || marketplaceLabel(source.place) })
 }
 
 export function productFacts(opportunity) {
@@ -57,10 +32,9 @@ export function productFacts(opportunity) {
     ;(opportunity.sources || []).forEach((source) => pushSource(sources, source))
   }
 
-  const byPlace = new Map(sources.map((source) => [source.place, source]))
   return {
     images,
-    places: US_PLACES.map((place) => byPlace.get(place.id) || { place: place.id, label: place.label, url: '' }),
+    places: sources,
     description: opportunity.description || '',
   }
 }
@@ -209,27 +183,29 @@ export default function ProductDetailModal({ opportunity, onClose }) {
             ? 'United States product pages confirmed live for this product when the search ran.'
             : 'Links from this older search were not confirmed. Run a new search to get verified US links.'}
         </p>
-        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {facts.places.map((source) => (
-            <li key={source.place} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900">
-                  {source.label}
-                  <span className="ml-2 text-xs font-medium uppercase text-gray-400">US</span>
-                </p>
-                <p className="truncate text-xs text-gray-500">{source.url || 'No verified US listing'}</p>
-              </div>
-              {source.url ? (
+        {facts.places.length ? (
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {facts.places.map((source) => (
+              <li key={source.url} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {source.label}
+                    <span className="ml-2 text-xs font-medium uppercase text-gray-400">US</span>
+                  </p>
+                  <p className="truncate text-xs text-gray-500">{source.url}</p>
+                </div>
                 <div className="flex shrink-0 items-center gap-3">
                   {money(source.price) && <span className="text-sm font-semibold text-gray-800">{money(source.price)}</span>}
                   <a href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
                     Open <FiExternalLink size={14} />
                   </a>
                 </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-gray-500">No verified US listing.</p>
+        )}
       </section>
     </Modal>
   )

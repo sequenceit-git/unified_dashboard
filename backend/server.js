@@ -55,12 +55,12 @@ app.use('/api/research', researchRoutes)
 connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   // Sweep stale/orphaned running or queued reports left behind by server restart
   try {
-    const ResearchReport2 = require('./models/ResearchReport2')
-    await ResearchReport2.updateMany(
+    const ResearchReport = require('./models/ResearchReport')
+    await ResearchReport.updateMany(
       { status: 'stopping' },
       { status: 'stopped', finishedAt: new Date() },
     )
-    const staleResult = await ResearchReport2.updateMany(
+    const staleResult = await ResearchReport.updateMany(
       { status: { $in: ['running', 'queued'] } },
       {
         status: 'failed',

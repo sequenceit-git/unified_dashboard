@@ -1,7 +1,7 @@
 /**
  * Excel Export Service
  *
- * Generates a styled .xlsx file from ResearchReport2 opportunities.
+ * Generates a styled .xlsx file from ResearchReport opportunities.
  * Returns a Buffer that can be streamed directly to the HTTP response.
  *
  * Columns mirror the CSV catalog export exactly so both downloads stay in sync:
@@ -95,7 +95,7 @@ function buildExportRow(rec, i, timestampSuffix) {
 /**
  * Generate an Excel workbook buffer from an array of opportunity docs.
  *
- * @param {Array}  recommendations - Array of ResearchReport2 opportunity subdocs or plain objects
+ * @param {Array}  recommendations - Array of ResearchReport opportunity subdocs or plain objects
  * @param {object} meta            - { categories, niche, generatedAt }
  * @returns {Promise<Buffer>}      - xlsx file as a Buffer
  */

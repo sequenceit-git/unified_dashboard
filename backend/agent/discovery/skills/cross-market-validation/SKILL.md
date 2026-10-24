@@ -1,6 +1,6 @@
 ---
 name: cross-market-validation
-description: Stage 2 of marketplace-best-seller-research. Run the master validation gates G1 to G10 on one candidate and collect up to four verified US product pages.
+description: Stage 2 of marketplace-best-seller-research. Run the master validation gates G1 to G10 on one candidate and collect up to one verified US product page per marketplace.
 ---
 
 # Cross-Market Validation (Stage 2)
@@ -37,5 +37,5 @@ matchConfidence, description, highlights[], specs[{name, value}], imageUrls[], e
 ## Hard rules
 
 - Every number comes from a page you opened, and its URL is returned. Otherwise null.
-- listingLinks: ebay.com/itm, amazon.com/dp, walmart.com/ip, temu.com goods page only, each opened in this search. Never write a URL from memory or guess an item ID or ASIN. No search pages, TikTok, or non-US domains. The backend re-checks every link and drops any it cannot confirm.
+- listingLinks: ebay.com/itm, amazon.com/dp, walmart.com/ip, temu.com goods page, tiktok.com/shop/pdp, etsy.com/listing, or wish.com/product only, each opened in this search. Never write a URL from memory or guess an item ID or ASIN. No search pages, videos, or non-US domains or country paths. The backend re-checks every link and drops any it cannot confirm.
 - If sources conflict, report both and let confidence drop. Do not pick the convenient value.

@@ -8,6 +8,24 @@ export const MARKETPLACES = [
 const EXTRA_LABELS = {
   temu: 'Temu',
   tiktok_shop: 'TikTok Shop',
+  tiktok: 'TikTok Shop',
+  amazon: 'Amazon',
+  walmart: 'Walmart',
+  etsy: 'Etsy',
+  wish: 'Wish',
+  shopify: 'Shopify store',
+  bigcommerce: 'BigCommerce store',
+  magento: 'Magento store',
+  salesforce: 'Salesforce Commerce store',
+  vtex: 'VTEX store',
+  wix: 'Wix store',
+  squarespace: 'Squarespace store',
+  square: 'Square store',
+  ecwid: 'Ecwid store',
+  shift4shop: 'Shift4Shop store',
+  prestashop: 'PrestaShop store',
+  opencart: 'OpenCart store',
+  woocommerce: 'WooCommerce store',
 }
 
 export function marketplaceLabel(id) {
@@ -24,7 +42,7 @@ export const EVIDENCE_LABELS = {
 
 export function marketplaceBadgeColor(id) {
   if (id === 'ebay') return 'blue'
-  if (id === 'tiktok_shop') return 'purple'
+  if (id === 'tiktok_shop' || id === 'tiktok') return 'purple'
   if (id === 'temu') return 'yellow'
   return 'gray'
 }

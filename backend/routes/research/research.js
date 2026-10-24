@@ -1,7 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const { requireAuth, loadAccess, requireMainRoute, requireRole } = require('../../middleware/auth')
-const ResearchReport2 = require('../../models/ResearchReport2')
+const ResearchReport = require('../../models/ResearchReport')
 const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
 const Listing = require('../../models/Listing')
@@ -23,7 +23,7 @@ router.use(requireAuth, loadAccess, requireMainRoute('market-research'))
 // ─── GET /api/research/reports — list all reports ────────────────────────────
 router.get('/reports', async (req, res) => {
   try {
-    const reports = await ResearchReport2.find()
+    const reports = await ResearchReport.find()
       .sort({ createdAt: -1 })
       .limit(50)
     res.json(reports)
@@ -39,7 +39,7 @@ router.get('/recommendations/:reportId', async (req, res) => {
     if (!mongoose.isValidObjectId(reportId)) {
       return res.status(404).json({ error: 'Report not found' })
     }
-    const report = await ResearchReport2.findById(reportId)
+    const report = await ResearchReport.findById(reportId)
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
@@ -68,7 +68,7 @@ router.get('/report/:reportId', async (req, res) => {
     if (!mongoose.isValidObjectId(reportId)) {
       return res.status(404).json({ error: 'Report not found' })
     }
-    const report = await ResearchReport2.findById(reportId)
+    const report = await ResearchReport.findById(reportId)
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
@@ -89,7 +89,7 @@ router.get('/status/:reportId', async (req, res) => {
     if (!mongoose.isValidObjectId(reportId)) {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
-    const report = await ResearchReport2.findById(reportId).select(
+    const report = await ResearchReport.findById(reportId).select(
       'status progress error summary startedAt finishedAt createdAt params reportDate',
     )
     if (!report) {
@@ -111,7 +111,7 @@ router.get('/export/:reportId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
 
-    const report = await ResearchReport2.findById(reportId)
+    const report = await ResearchReport.findById(reportId)
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
@@ -220,7 +220,7 @@ router.post('/stop/:reportId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
 
-    const current = await ResearchReport2.findById(reportId).select('status opportunities')
+    const current = await ResearchReport.findById(reportId).select('status opportunities')
     if (!current) {
       return res.status(404).json({ error: 'Report not found' })
     }
@@ -229,7 +229,7 @@ router.post('/stop/:reportId', async (req, res) => {
     }
 
     const found = current.opportunities?.length || 0
-    const stopped = await ResearchReport2.findOneAndUpdate(
+    const stopped = await ResearchReport.findOneAndUpdate(
       { _id: reportId, status: { $in: ['queued', 'running', 'stopping'] } },
       {
         $set: {
@@ -260,7 +260,7 @@ router.delete('/reports/:reportId', async (req, res) => {
     if (!mongoose.isValidObjectId(reportId)) {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
-    const report = await ResearchReport2.findByIdAndDelete(reportId)
+    const report = await ResearchReport.findByIdAndDelete(reportId)
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
@@ -302,7 +302,7 @@ router.post('/generate', async (req, res) => {
     }
 
     // Rate Limit / Concurrency guard: Check if a run is already queued or running
-    const activeRun = await ResearchReport2.findOne({
+    const activeRun = await ResearchReport.findOne({
       status: { $in: ['queued', 'running'] },
     })
     if (activeRun) {
@@ -318,8 +318,8 @@ router.post('/generate', async (req, res) => {
       ? rawTargetMarketplaces.map((m) => String(m).toLowerCase().trim()).filter((m) => validMarkets.includes(m))
       : ['ebay']
 
-    // Create the parent ResearchReport2 record initially with reportDate = null
-    const report = await ResearchReport2.create({
+    // Create the parent ResearchReport record initially with reportDate = null
+    const report = await ResearchReport.create({
       runBy: req.user?.id || null,
       trigger: 'manual',
       reportDate: null,
@@ -373,7 +373,7 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
       return res.status(400).json({ error: 'Select eBay, TikTok Shop, or Temu Shop' })
     }
 
-    const report = await ResearchReport2.findById(reportId)
+    const report = await ResearchReport.findById(reportId)
     if (!report) {
       return res.status(404).json({ error: 'Research report not found' })
     }

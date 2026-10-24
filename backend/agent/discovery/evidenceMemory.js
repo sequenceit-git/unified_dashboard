@@ -3,7 +3,7 @@
  * A remembered product is reused with its original observedAt instead of being searched again.
  */
 
-const ResearchReport2 = require('../../models/ResearchReport2')
+const ResearchReport = require('../../models/ResearchReport')
 const { listingKey } = require('./usListings')
 
 const MEMORY_HOURS = 24
@@ -35,7 +35,7 @@ function dedupeCandidates(candidates) {
 
 async function loadEvidenceMemory({ excludeReportId, hours = MEMORY_HOURS } = {}) {
   const since = new Date(Date.now() - hours * 3600000)
-  const reports = await ResearchReport2.find({
+  const reports = await ResearchReport.find({
     _id: { $ne: excludeReportId },
     status: { $in: ['completed', 'stopped'] },
     updatedAt: { $gte: since },

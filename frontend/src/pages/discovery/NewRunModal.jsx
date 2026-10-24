@@ -174,7 +174,9 @@ export default function NewRunModal({
             <div>
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <label className="text-xs font-semibold text-gray-700">Target marketplaces</label>
-                <span className="text-[11px] font-medium text-indigo-600">Also checks Amazon, Walmart, Alibaba</span>
+                <span className="text-[11px] font-medium text-indigo-600" title="eBay, Amazon, Walmart, Temu, TikTok Shop, Etsy, Wish, and independent US stores">
+                  Research covers US marketplaces and stores
+                </span>
               </div>
               <div className="grid gap-2">
                 {marketplaces.map((market) => {

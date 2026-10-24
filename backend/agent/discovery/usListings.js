@@ -1,24 +1,63 @@
 const ebay = require('../../services/marketplace/ebay')
 
+/** US marketplaces the agent may search, in display order, with the product-page shape the model must return. */
 const US_PLACES = [
-  { id: 'ebay', label: 'eBay' },
-  { id: 'amazon', label: 'Amazon' },
-  { id: 'walmart', label: 'Walmart' },
-  { id: 'temu', label: 'Temu' },
+  { id: 'ebay', label: 'eBay', domain: 'ebay.com', page: 'ebay.com/itm/<id>' },
+  { id: 'amazon', label: 'Amazon', domain: 'amazon.com', page: 'amazon.com/dp/<ASIN>' },
+  { id: 'walmart', label: 'Walmart', domain: 'walmart.com', page: 'walmart.com/ip/<id>' },
+  { id: 'temu', label: 'Temu', domain: 'temu.com', page: 'temu.com goods page (US site, no country path such as /uk/)' },
+  { id: 'tiktok', label: 'TikTok Shop', domain: 'tiktok.com', page: 'tiktok.com/shop/pdp/<slug>/<id> or shop.tiktok.com/view/product/<id>?region=US' },
+  { id: 'etsy', label: 'Etsy', domain: 'etsy.com', page: 'etsy.com/listing/<id> (no country path such as /uk/)' },
+  { id: 'wish', label: 'Wish', domain: 'wish.com', page: 'wish.com/product/<id>' },
 ]
+
+const US_DOMAINS = US_PLACES.map((place) => place.domain)
+const PLACE_IDS = US_PLACES.map((place) => place.id)
 
 const ID_PATTERNS = {
   ebay: /\/itm\/(?:[^/]+\/)?(\d{9,})/i,
   amazon: /\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i,
   walmart: /\/ip\/(?:[^/]+\/)?(\d{5,})/i,
   temu: /(?:[?&]goods_id=|-g-)(\d+)/i,
+  tiktok: /\/(?:shop\/pdp\/(?:[^/]+\/)?|view\/product\/)(\d{10,})/i,
+  etsy: /\/listing\/(\d{6,})/i,
+  wish: /\/product\/([a-f0-9]{24})/i,
 }
+
+const COUNTRY_PATH = /^\/[a-z]{2}(?:-[a-z]{2})?\//i
+
+/**
+ * Storefront platforms from the master skill (section 1.2). Each store runs on its own domain, so a
+ * store page is recognised by the platform's markup, not by its URL.
+ */
+const STOREFRONTS = [
+  { id: 'shopify', label: 'Shopify', mark: /cdn\.shopify\.com|Shopify\.theme|shopify-section/i },
+  { id: 'bigcommerce', label: 'BigCommerce', mark: /cdn\d*\.bigcommerce\.com|BCData/i },
+  { id: 'magento', label: 'Adobe Commerce / Magento', mark: /text\/x-magento-init|Magento_[A-Z]|mage\/cookies/ },
+  { id: 'salesforce', label: 'Salesforce Commerce Cloud', mark: /demandware|dwanalytics/i },
+  { id: 'vtex', label: 'VTEX', mark: /vteximg\.com|vtexassets\.com|vtexcommercestable/i },
+  { id: 'wix', label: 'Wix', mark: /static\.wixstatic\.com|wix-ecommerce|wixstores/i },
+  { id: 'squarespace', label: 'Squarespace', mark: /static1\.squarespace\.com|assets\.squarespace\.com|SQUARESPACE_CONTEXT/i },
+  { id: 'square', label: 'Square', mark: /editmysite\.com|squarecdn\.com/i },
+  { id: 'ecwid', label: 'Ecwid by Lightspeed', mark: /app\.ecwid\.com|ecwid-productBrowser/i },
+  { id: 'shift4shop', label: 'Shift4Shop', mark: /3dcart|shift4shop/i },
+  { id: 'prestashop', label: 'PrestaShop', mark: /prestashop/i },
+  { id: 'opencart', label: 'OpenCart', mark: /route=product\/product|catalog\/view\/theme/i },
+  { id: 'woocommerce', label: 'WooCommerce', mark: /wp-content\/plugins\/woocommerce|woocommerce-product|wc-block-/i },
+]
+
+const MAX_STORE_SOURCES = 3
+const MARKETPLACE_HOST = /(?:^|\.)(?:ebay|amazon|walmart|temu|tiktok|etsy|wish|aliexpress|alibaba)\.[a-z.]+$/i
+const US_FRIENDLY_TLDS = new Set(['us', 'co', 'io'])
+const STORE_NON_PRODUCT = /^\/(?:$|search|collections\/?$|cart|account|blogs?\/|pages\/|policies\/)|[?&](?:q|s|search)=/i
+const PRODUCT_SCHEMA = /"@type"\s*:\s*\[?\s*"Product"|property=["']og:type["'][^>]*content=["'](?:og:)?product/i
+const USD_PRICE = /"priceCurrency"\s*:\s*"USD"|(?:og|product):price:currency["'][^>]*content=["']USD|Shopify\.currency\s*=\s*\{\s*"active"\s*:\s*"USD"/i
 
 const NOT_FOUND = /page not found|couldn.t find (?:this|that) page|looking for something\?|no longer available|listing (?:was|has) ended|item not found|404 error/i
 const BOT_WALL = /captcha|robot or human|enter the characters you see|verify you are a human|access denied|press (?:&amp;|&) hold/i
 const STOP_WORDS = new Set(['the', 'and', 'for', 'with', 'new', 'set', 'pack', 'pcs', 'inch', 'from', 'your', 'that', 'this', 'best', 'seller'])
 
-/** US product page on ebay.com, amazon.com, walmart.com, or temu.com; anything else is null. */
+/** Product page on one of the US marketplaces in US_PLACES; other sites, countries, and search pages are null. */
 function placeOf(url) {
   let parsed
   try {
@@ -33,14 +72,44 @@ function placeOf(url) {
   if (host === 'ebay.com' && ID_PATTERNS.ebay.test(parsed.pathname)) return 'ebay'
   if (host === 'amazon.com' && ID_PATTERNS.amazon.test(parsed.pathname)) return 'amazon'
   if (host === 'walmart.com' && ID_PATTERNS.walmart.test(parsed.pathname)) return 'walmart'
-  if (host === 'temu.com' && /(?:goods\.html|[?&]goods_id=|-g-\d+)/i.test(path)) return 'temu'
+  if (host === 'temu.com' && !COUNTRY_PATH.test(parsed.pathname) && /(?:goods\.html|[?&]goods_id=|-g-\d+)/i.test(path)) return 'temu'
+  if (host === 'tiktok.com' && /^\/shop\/pdp\//i.test(parsed.pathname) && ID_PATTERNS.tiktok.test(parsed.pathname)) return 'tiktok'
+  if (host === 'shop.tiktok.com' && parsed.searchParams.get('region')?.toUpperCase() === 'US' && ID_PATTERNS.tiktok.test(parsed.pathname)) return 'tiktok'
+  if (host === 'etsy.com' && !COUNTRY_PATH.test(parsed.pathname) && ID_PATTERNS.etsy.test(parsed.pathname)) return 'etsy'
+  if (host === 'wish.com' && ID_PATTERNS.wish.test(parsed.pathname)) return 'wish'
   return null
+}
+
+/** Host of a possible independent-store product page (not a marketplace, not a non-US country domain). */
+function storeHostOf(url) {
+  let parsed
+  try {
+    parsed = new URL(String(url || '').trim())
+  } catch {
+    return null
+  }
+  if (parsed.protocol !== 'https:') return null
+  const host = parsed.hostname.replace(/^www\./i, '').toLowerCase()
+  const tld = host.split('.').pop()
+  if (!host.includes('.') || MARKETPLACE_HOST.test(host)) return null
+  if (tld.length === 2 && !US_FRIENDLY_TLDS.has(tld)) return null
+  if (STORE_NON_PRODUCT.test(`${parsed.pathname}${parsed.search}`)) return null
+  return host
+}
+
+/** True for a URL the backend can try to confirm: a US marketplace product page or an independent store page. */
+function isCheckableUrl(url) {
+  return Boolean(placeOf(url) || storeHostOf(url))
 }
 
 /** Stable identity for a US product page, e.g. "ebay:267805925551" or "amazon:B0C1234567". */
 function listingKey(url) {
   const place = placeOf(url)
-  if (!place) return null
+  if (!place) {
+    const host = storeHostOf(url)
+    if (!host) return null
+    return `store:${host}${new URL(String(url).trim()).pathname.replace(/\/+$/, '').toLowerCase()}`
+  }
   const href = String(url).trim()
   const id = href.match(ID_PATTERNS[place])?.[1]
   return id ? `${place}:${id.toUpperCase()}` : `${place}:${href.split(/[?#]/)[0].toLowerCase()}`
@@ -49,6 +118,9 @@ function listingKey(url) {
 function cleanUrl(url) {
   const parsed = new URL(String(url).trim())
   parsed.hash = ''
+  if (placeOf(parsed.href) === 'tiktok' && parsed.hostname === 'shop.tiktok.com') {
+    parsed.search = '?region=US'
+  }
   parsed.protocol = 'https:'
   return parsed.href
 }
@@ -93,7 +165,8 @@ async function ebayListingMatches(url, title) {
   }
 }
 
-async function pageMatches(url, title) {
+/** Live HTML of a page that stayed on the same listing after redirects and is not a bot wall or not-found page. */
+async function loadPage(url, maxChars) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 8000)
   try {
@@ -107,25 +180,42 @@ async function pageMatches(url, title) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       },
     })
-    if (response.status !== 200) return false
-    if (listingKey(response.url) !== listingKey(url)) return false
-    const html = (await response.text()).slice(0, 400000)
-    if (BOT_WALL.test(html.slice(0, 20000)) || NOT_FOUND.test(html.slice(0, 60000))) return false
-    const pageTitle = [
-      html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1],
-      html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i)?.[1],
-    ].filter(Boolean).join(' ')
-    return namesProduct(pageTitle || html, title)
+    if (response.status !== 200) return null
+    if (listingKey(response.url) !== listingKey(url)) return null
+    const html = (await response.text()).slice(0, maxChars)
+    if (BOT_WALL.test(html.slice(0, 20000)) || NOT_FOUND.test(html.slice(0, 60000))) return null
+    return html
   } catch {
-    return false
+    return null
   } finally {
     clearTimeout(timer)
   }
 }
 
+function pageTitleOf(html) {
+  return [
+    html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1],
+    html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i)?.[1],
+  ].filter(Boolean).join(' ')
+}
+
+async function pageMatches(url, title) {
+  const html = await loadPage(url, 400000)
+  return Boolean(html) && namesProduct(pageTitleOf(html) || html, title)
+}
+
+/** Storefront platform of a live US store product page that names the product, or null. */
+async function storefrontMatch(url, title) {
+  const html = await loadPage(url, 1500000)
+  if (!html || !PRODUCT_SCHEMA.test(html) || !USD_PRICE.test(html)) return null
+  if (!namesProduct(pageTitleOf(html), title)) return null
+  return STOREFRONTS.find((platform) => platform.mark.test(html)) || null
+}
+
 /**
- * Keeps at most one confirmed US product page per site, in the order given. A link survives
- * only when the page is live and names the product; unreachable, blocked, or mismatched pages are dropped.
+ * Confirmed US product pages, in display order: at most one per marketplace, then up to
+ * MAX_STORE_SOURCES independent stores on a known storefront platform. A link survives only when
+ * the page is live and names the product; unreachable, blocked, or mismatched pages are dropped.
  */
 async function validatedUsListings(links, title) {
   const candidates = []
@@ -138,24 +228,43 @@ async function validatedUsListings(links, title) {
     const amount = Number(link?.price)
     candidates.push({
       place: placeOf(raw),
+      host: storeHostOf(raw),
       url: cleanUrl(raw),
       price: Number.isFinite(amount) ? amount : null,
     })
   }
 
   const checked = await Promise.all(candidates.map(async (link) => {
-    const ok = link.place === 'ebay' ? await ebayListingMatches(link.url, title) : await pageMatches(link.url, title)
-    return ok ? link : null
+    if (link.place === 'ebay') return (await ebayListingMatches(link.url, title)) ? link : null
+    if (link.place) return (await pageMatches(link.url, title)) ? link : null
+    const platform = await storefrontMatch(link.url, title)
+    return platform ? { ...link, place: platform.id, label: `${platform.label} store · ${link.host}` } : null
   }))
 
-  return US_PLACES.map((place) => {
-    const link = checked.find((item) => item?.place === place.id)
-    return link ? { label: place.label, url: link.url, kind: 'listing', price: link.price } : null
+  const marketplaces = US_PLACES.map((place) => {
+    const link = checked.find((item) => item?.place === place.id && !item.host)
+    return link ? { place: place.id, label: place.label, url: link.url, kind: 'listing', price: link.price } : null
   }).filter(Boolean)
+
+  const stores = []
+  for (const link of checked) {
+    if (!link?.host || stores.length >= MAX_STORE_SOURCES || stores.some((store) => store.host === link.host)) continue
+    stores.push(link)
+  }
+
+  return [
+    ...marketplaces,
+    ...stores.map((link) => ({ place: link.place, label: link.label, url: link.url, kind: 'store', price: link.price })),
+  ]
 }
 
 module.exports = {
+  US_PLACES,
+  US_DOMAINS,
+  PLACE_IDS,
+  STOREFRONTS,
   placeOf,
+  isCheckableUrl,
   listingKey,
   validatedUsListings,
 }

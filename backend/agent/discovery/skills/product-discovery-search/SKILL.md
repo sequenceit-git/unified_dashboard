@@ -9,7 +9,7 @@ This stage carries out section 4 steps 1 to 4 of the master skill `marketplace-b
 
 ## Scope (dashboard defaults, master section 12)
 
-United States only, USD. Open only ebay.com, amazon.com, walmart.com, and temu.com product pages. No TikTok, no other countries, no suppliers, wholesale, factories, or buy-cost pages. The runner asks for up to 25 candidates per round and repeats until 20 products are confirmed; it lists products already reviewed so you can skip them.
+United States only, USD. Open only US product pages on ebay.com, amazon.com, walmart.com, temu.com, tiktok.com (TikTok Shop), etsy.com, and wish.com, or, when the runner asks for storefronts, product pages of independent US stores on the master section 12 platforms (their own best-seller label is Tier 4). No other countries or country paths, no suppliers, wholesale, factories, or buy-cost pages. The runner asks for up to 25 candidates per round and repeats until 20 products are confirmed; it lists products already reviewed so you can skip them.
 
 ## Inputs (provided by the runner)
 
@@ -44,6 +44,6 @@ Description, feature bullets, and specs are copied in Stage 2 from the confirmed
 
 ## Hard rules
 
-- Every URL is a real US product page you opened in this search: ebay.com/itm, amazon.com/dp, walmart.com/ip, or a temu.com goods page. Never write a URL from memory or guess an item ID or ASIN. No search pages, homepages, or placeholders. The backend re-checks each link and drops the product if none is confirmed.
+- Every URL is a real US product page you opened in this search: ebay.com/itm, amazon.com/dp, walmart.com/ip, a temu.com goods page, tiktok.com/shop/pdp, etsy.com/listing, or wish.com/product. TikTok videos and shop pages are not product pages. Never write a URL from memory or guess an item ID or ASIN. No search pages, homepages, or placeholders. The backend re-checks each link and drops the product if none is confirmed.
 - Never present views, likes, or reviews as sales.
 - A shorter list with T2 or T3 evidence beats a long list of guesses.
