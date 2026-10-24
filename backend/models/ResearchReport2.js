@@ -17,6 +17,12 @@ const opportunitySchema = new mongoose.Schema(
       value: { type: String },
     }],
     demandSignal: { type: String, default: '' },
+    officialRank: { type: String, default: '' },
+    observedAt: { type: Date },
+    evidenceTier: { type: String, enum: ['T1', 'T2', 'T3', 'T4', 'T5', null], default: null },
+    confidenceReason: { type: String, default: '' },
+    linksVerified: { type: Boolean, default: false },
+    scoreBreakdown: { type: mongoose.Schema.Types.Mixed },
     listedShops: [{ type: String, enum: ['ebay', 'tiktok_shop', 'temu'] }],
     brand: { type: String, default: '' },
     sources: [{

@@ -1,33 +1,50 @@
 ---
 name: opportunity-scoring-rubric
-description: Score one product 0-100 from verified fields and write short factual notes; scoring is computed by backend code.
+description: Stage 3 of marketplace-best-seller-research. The backend ranks by evidence tier and computes the master score; the model writes the per-product note only.
 ---
 
-# Opportunity Scoring Rubric
+# Scoring and Notes (Stage 3)
+
+This stage carries out section 4 steps 7 and 9 of the master skill `marketplace-best-seller-research`. Sections 8.1 to 8.3 of the master are the rules. `backend/agent/discovery/economics.js` implements them.
 
 ## Who does what
 
-The backend computes the score from structured fields. The model only writes `aiNotes`.
+The backend assigns the evidence tier, computes the score and confidence, and ranks. The model writes `aiNotes` only and never changes a number.
 
-## Gates (applied first, not scored)
+## Ranking (master 8.1)
 
-- restrictedFlag true -> exclude
-- matchConfidence = similar or no eBay evidence -> mark "unverified"
+Evidence tier first (T1 strongest, T5 weakest), then score within the tier. A T3 product never outranks a comparable T2 product on proxy strength alone.
 
-## Weights (sum 100)
+## Score (master 8.2, 0 to 100)
 
-Score only how well the product is already selling. Do not score margin, unit cost, or suppliers.
+| Component | Weight | Source fields |
+|---|---:|---|
+| Sales or official-rank signal (T1 to T3 only) | 45 | officialRank, demandSignalText, ebaySoldCount |
+| Recent demand growth or velocity | 20 | velocity |
+| Review and engagement momentum | 15 | rating, reviewCount |
+| Availability and listing freshness | 10 | verified live US listings this run |
+| Cross-platform or cross-source corroboration | 10 | number of verified US sites, independentSignal |
 
-- Demand: 40 (High 40, Medium 24, Low 8, Unknown 0)
-- Rating: 30 (>=4.5: 30; 4.0-4.4: 20; below 4.0: 8; subtract 8 when defect risk is high)
-- Sold evidence: 30 (1,000+ sold: 30; 100+: 22; any sold count: 12; a visible best-seller or viral label with no count: 15)
+- Only observed components count. Missing components are dropped and the remaining weights are re-normalized to 100. The weights used are saved with the product.
+- Penalties: G5 manipulation flags -15, sold figure with unknown period (G3) -10.
+- Fewer than two observed components means no numeric score; the tier and confidence are still shown.
 
-## Confidence
+## Confidence (master 8.3)
 
-Cap the score at 55 and set confidence to low when two or more of demand, rating, sold evidence, or price are missing.
+- High: T1 or T2, corroborated by a second verified site or independent signal, no flags
+- Medium: T2 or T3 with a clear metric, or a strong signal that is not corroborated
+- Low: T4 or T5 only, unclear metric period, or manipulation flags
 
-## aiNotes (1-2 sentences)
+Each product gets a one-line confidence reason.
 
-- Use only fields already extracted. No new facts.
-- Name the selling evidence: sold count or best-seller label, rating, demand, and the listed price.
+## Gates applied before scoring
+
+- restrictedFlag or complianceFlags present: drop the product
+- No verified US listing: drop the product
+
+## aiNotes (1 to 2 sentences)
+
+- Use only the facts given. No new facts.
+- Name the evidence in plain words (official rank, platform sold count, or proxy only), quote the demand wording, and give the rating and price.
+- Label proxies as proxies. Never call views or reviews sales.
 - Do not mention profit, margin, unit cost, wholesale, or suppliers.

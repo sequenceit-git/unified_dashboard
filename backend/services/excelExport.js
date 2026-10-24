@@ -44,6 +44,18 @@ const COLUMNS = [
 
 const LAST_COL_LETTER = 'Q' // 17 columns (A–Q)
 
+/** Only links the agent confirmed live; older unconfirmed reports export blank link cells. */
+function verifiedLinks(rec) {
+  if (!rec.linksVerified) return { sourceUrl: '', listingUrl: '', otherUrl: '' }
+  const urls = (rec.sources || []).map((source) => source?.url).filter(Boolean)
+  const listingUrl = rec.listingUrl || urls[0] || ''
+  return {
+    sourceUrl: urls[0] || '',
+    listingUrl,
+    otherUrl: urls.find((url) => url !== listingUrl) || '',
+  }
+}
+
 // Build one export row using the exact same mapping as the CSV download,
 // so xlsx and csv outputs never drift apart.
 function buildExportRow(rec, i, timestampSuffix) {
@@ -51,9 +63,7 @@ function buildExportRow(rec, i, timestampSuffix) {
   const category = rec.category || rec.metrics?.category || ''
   const basePrice = rec.metrics?.price != null ? rec.metrics.price : (rec.price ?? rec.metrics?.averagePrice ?? '')
   const description = rec.aiNotes || rec.recommendationReason || ''
-  const sourceUrl = rec.sourceUrl || rec.sourcing?.buyUrl || ''
-  const listingUrl = rec.listingUrl || rec.productUrl || ''
-  const otherUrl = rec.validation?.otherUrl || ''
+  const { sourceUrl, listingUrl, otherUrl } = verifiedLinks(rec)
   const margin = rec.estimatedMargin != null ? rec.estimatedMargin : (rec.estimatedProfitMarginPercent ?? '')
   const score = rec.opportunityScore ?? ''
 
@@ -236,4 +246,4 @@ async function generateRecommendationsExcel(recommendations, meta = {}) {
   return buffer
 }
 
-module.exports = { generateRecommendationsExcel, buildExportRow }
+module.exports = { generateRecommendationsExcel, buildExportRow, verifiedLinks }

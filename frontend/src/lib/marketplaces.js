@@ -14,6 +14,14 @@ export function marketplaceLabel(id) {
   return MARKETPLACES.find((m) => m.id === id)?.label || EXTRA_LABELS[id] || id
 }
 
+export const EVIDENCE_LABELS = {
+  T1: 'Confirmed sales',
+  T2: 'Official rank or badge',
+  T3: 'Platform sold count',
+  T4: 'Demand proxy only',
+  T5: 'Unverified signal',
+}
+
 export function marketplaceBadgeColor(id) {
   if (id === 'ebay') return 'blue'
   if (id === 'tiktok_shop') return 'purple'

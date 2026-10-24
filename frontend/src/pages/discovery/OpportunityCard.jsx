@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Badge from '../../components/ui/Badge'
-import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
+import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
 import { SHOP_SECTIONS } from '../../lib/shops'
 import { FiExternalLink, FiAlertTriangle } from 'react-icons/fi'
 
@@ -8,8 +8,9 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
   const [adding, setAdding] = useState(false)
   const listedShops = opportunity.listedShops || []
 
-  const score = opportunity.opportunityScore ?? 75
+  const score = opportunity.opportunityScore
   const scoreBadgeColor =
+    score == null ? 'bg-gray-100 text-gray-600 border-gray-200' :
     score >= 85 ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
     score >= 70 ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
     'bg-amber-100 text-amber-800 border-amber-200'
@@ -35,7 +36,7 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
   const storedNotes = opportunity.aiNotes || opportunity.recommendationReason || ''
   const rationale = /margin|profit|unit cost|landed|supplier|sourcing|wholesale/i.test(storedNotes) ? '' : storedNotes
   
-  const marketplaceUrl = opportunity.listingUrl || ''
+  const marketplaceUrl = opportunity.linksVerified ? opportunity.listingUrl || '' : ''
   const rawImage = opportunity.image || (Array.isArray(opportunity.images) ? opportunity.images.find(Boolean) : '')
   const imageUrl = rawImage ? String(rawImage).replace(/\/s-l\d+\./i, '/s-l960.') : ''
 
@@ -83,13 +84,18 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
             )}
           </div>
           <div className="flex items-center gap-1.5">
+            {opportunity.evidenceTier && (
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600" title={EVIDENCE_LABELS[opportunity.evidenceTier]}>
+                {opportunity.evidenceTier}
+              </span>
+            )}
             {confidence && confidence !== 'unverified' && (
               <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-500">
                 {confidence}
               </span>
             )}
             <div className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${scoreBadgeColor}`}>
-              Score: {score}/100
+              Score: {score ?? '—'}/100
             </div>
           </div>
         </div>

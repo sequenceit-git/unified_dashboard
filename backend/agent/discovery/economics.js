@@ -1,125 +1,168 @@
 /**
- * Calculations for Landed Unit Economics & Scoring Rubric
- * Based on SKILL.md specs for Discovery Agent Two
+ * Best-seller scoring from the master skill (marketplace-best-seller-research, sections 3 and 8).
+ * Rank by evidence tier first, then by the documented 0-100 score.
  */
 
-/**
- * Calculate Marketplace Net Margin
- * Reference fees:
- * - eBay: 13.6% referral fee + $0.30 fixed fee (or $0.40 if sellingPrice > 10)
- * - TikTok Shop: 8% referral fee + $0.30
- * - Default / other: 15% flat
- */
-function calculateUnitEconomics({ sellingPrice, unitCost, shippingCost = 0, marketplace = 'ebay', dutyApplies = false }) {
-  if (sellingPrice == null || unitCost == null || Number(sellingPrice) <= 0) {
-    return {
-      netProfit: null,
-      netMarginPct: null,
-      channelFee: null,
-      dutyCost: null,
-      landedCost: null,
-      isViable: false,
-    }
+const WEIGHTS = {
+  sales: 45,
+  velocity: 20,
+  reviews: 15,
+  freshness: 10,
+  corroboration: 10,
+}
+
+const TIER_ORDER = { T1: 1, T2: 2, T3: 3, T4: 4, T5: 5 }
+
+const OFFICIAL_RANK = /best\s?seller|#\s?\d[\d,]*\s+in\b|movers\s*(?:&|and)\s*shakers|top\s?rated|trending\s+#?\d/i
+const SOLD_WORDING = /\bsold\b|bought in (?:the )?past/i
+
+/** Reads "12.4k sold", "2K+ bought in past month", "1,203 sold" as a floor number. */
+function parseCount(text) {
+  const match = String(text || '').replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*([km])?\+?\s*(?:sold|bought)/i)
+  if (!match) return null
+  const unit = (match[2] || '').toLowerCase()
+  const factor = unit === 'k' ? 1000 : unit === 'm' ? 1000000 : 1
+  return Math.round(Number(match[1]) * factor)
+}
+
+function parseRank(text) {
+  const match = String(text || '').replace(/,/g, '').match(/#\s?(\d+)/)
+  return match ? Number(match[1]) : null
+}
+
+/** The strongest tier the observed fields actually support. T1 needs the seller's own order data. */
+function evidenceTierOf({ ownSales, officialRank, demandSignal, soldCount, rating, reviewCount }) {
+  if (Number(ownSales) > 0) return 'T1'
+  if (String(officialRank || '').trim() || OFFICIAL_RANK.test(String(demandSignal || ''))) return 'T2'
+  if (Number(soldCount) > 0 || SOLD_WORDING.test(String(demandSignal || ''))) return 'T3'
+  if (Number(rating) > 0 || Number(reviewCount) > 0) return 'T4'
+  return 'T5'
+}
+
+function salesFraction({ tier, officialRank, demandSignal, soldCount }) {
+  if (tier === 'T1') return 1
+  let best = null
+  if (tier === 'T2') {
+    const rank = parseRank(officialRank) ?? parseRank(demandSignal)
+    best = rank == null ? 0.8 : rank <= 10 ? 1 : rank <= 100 ? 0.85 : 0.7
   }
-
-  const price = Number(sellingPrice)
-  const cost = Number(unitCost)
-  const ship = Number(shippingCost) || 0
-
-  // 1. Channel Fee calculation
-  let fee = 0
-  const market = (marketplace || '').toLowerCase()
-  if (market.includes('ebay')) {
-    const fixedFee = price > 10 ? 0.40 : 0.30
-    fee = (price * 0.136) + fixedFee
-  } else if (market.includes('tiktok')) {
-    fee = (price * 0.08) + 0.30
-  } else {
-    fee = price * 0.15
+  const sold = Number(soldCount) > 0 ? Number(soldCount) : parseCount(demandSignal)
+  if (sold != null) {
+    const fromSold = sold >= 10000 ? 1 : sold >= 1000 ? 0.85 : sold >= 100 ? 0.6 : 0.4
+    best = Math.max(best ?? 0, fromSold)
+  } else if (tier === 'T3') {
+    best = Math.max(best ?? 0, 0.5)
   }
+  return best
+}
 
-  // 2. Import Duty calculation if applicable (conservative 10% on cost if non-US)
-  const dutyCost = dutyApplies ? (cost * 0.10) : 0
+function velocityFraction(velocity) {
+  const value = String(velocity || '').toLowerCase()
+  if (value === 'rising') return 1
+  if (value === 'steady') return 0.7
+  if (value === 'spike') return 0.3
+  return null
+}
 
-  // 3. Landed Cost
-  const landedCost = cost + ship + dutyCost
-
-  // 4. Net Profit & Margin
-  const netProfit = price - landedCost - fee
-  const netMarginPct = Math.round(((netProfit / price) * 100) * 10) / 10
-
-  return {
-    sellingPrice: price,
-    unitCost: cost,
-    shippingCost: ship,
-    dutyCost: Math.round(dutyCost * 100) / 100,
-    landedCost: Math.round(landedCost * 100) / 100,
-    channelFee: Math.round(fee * 100) / 100,
-    netProfit: Math.round(netProfit * 100) / 100,
-    netMarginPct,
-    isViable: netMarginPct != null && !isNaN(netMarginPct),
-  }
+function reviewFraction(rating, reviewCount) {
+  const stars = Number(rating)
+  if (!(stars > 0)) return null
+  const quality = stars >= 4.5 ? 1 : stars >= 4.0 ? 0.7 : stars >= 3.5 ? 0.4 : 0.15
+  const count = Number(reviewCount)
+  const volume = count >= 1000 ? 1 : count >= 100 ? 0.85 : count >= 10 ? 0.6 : 0.5
+  return quality * volume
 }
 
 /**
- * Score 0-100 from best-seller evidence only: demand, sold volume, and rating.
- * Buy cost, margin, and supplier reliability are not part of the score.
+ * Returns the tier, the 0-100 score (null when fewer than two components were observed),
+ * confidence per the master rubric, a one-line reason, and the weights and penalties used.
  */
 function computeOpportunityScore({
-  demandTier,
-  rating,
-  soldCount,
-  demandSignal,
-  price,
-  highDefectRisk,
+  ownSales = null,
+  officialRank = null,
+  demandSignal = '',
+  soldCount = null,
+  metricScope = 'unknown',
+  velocity = null,
+  rating = null,
+  reviewCount = null,
+  verifiedPlaces = 0,
+  independentSignal = false,
+  manipulationFlags = [],
 }) {
-  let score = 0
-  let missingRequired = 0
+  const tier = evidenceTierOf({ ownSales, officialRank, demandSignal, soldCount, rating, reviewCount })
+  const places = Number(verifiedPlaces) || 0
+  const corroborated = places >= 2 || Boolean(independentSignal)
+  const flags = Array.isArray(manipulationFlags) ? manipulationFlags.filter(Boolean) : []
+  const scope = String(metricScope || 'unknown').toLowerCase()
+  const metricUnclear = tier === 'T3' && !['lifetime', 'recent'].includes(scope)
 
-  const dt = (demandTier || '').toLowerCase()
-  if (dt === 'high') score += 40
-  else if (dt === 'medium') score += 24
-  else if (dt === 'low') score += 8
-  else missingRequired++
-
-  const stars = Number(rating)
-  if (!isNaN(stars) && stars > 0) {
-    if (stars >= 4.5) score += 30
-    else if (stars >= 4.0) score += 20
-    else score += 8
-    if (highDefectRisk) score = Math.max(0, score - 8)
-  } else {
-    missingRequired++
+  const parts = {
+    sales: ['T1', 'T2', 'T3'].includes(tier) ? salesFraction({ tier, officialRank, demandSignal, soldCount }) : null,
+    velocity: velocityFraction(velocity),
+    reviews: reviewFraction(rating, reviewCount),
+    freshness: places > 0 ? 1 : null,
+    corroboration: places > 0 || independentSignal ? (places >= 3 ? 1 : corroborated ? 0.7 : 0.2) : null,
   }
 
-  const sold = Number(soldCount)
-  if (!isNaN(sold) && sold > 0) {
-    if (sold >= 1000) score += 30
-    else if (sold >= 100) score += 22
-    else score += 12
-  } else if (String(demandSignal || '').trim()) {
-    score += 15
-  } else {
-    missingRequired++
+  const used = Object.keys(parts).filter((key) => parts[key] != null)
+  const weightSum = used.reduce((sum, key) => sum + WEIGHTS[key], 0)
+  const weightsUsed = Object.fromEntries(used.map((key) => [key, Math.round((WEIGHTS[key] / weightSum) * 1000) / 10]))
+
+  const penalties = []
+  if (flags.length) penalties.push({ gate: 'G5', reason: 'Possible review or sales manipulation', points: 15 })
+  if (metricUnclear) penalties.push({ gate: 'G3', reason: 'Sold figure period is not stated', points: 10 })
+
+  let opportunityScore = null
+  if (used.length >= 2) {
+    const raw = used.reduce((sum, key) => sum + WEIGHTS[key] * parts[key], 0) / weightSum * 100
+    const penalty = penalties.reduce((sum, item) => sum + item.points, 0)
+    opportunityScore = Math.min(100, Math.max(0, Math.round(raw - penalty)))
   }
 
-  if (price == null || Number(price) <= 0) missingRequired++
-
-  let confidence = 'high'
-  if (missingRequired >= 2) {
+  let confidence = 'medium'
+  let confidenceReason = ''
+  if (tier === 'T4' || tier === 'T5') {
     confidence = 'low'
-    score = Math.min(score, 55)
-  } else if (missingRequired === 1) {
+    confidenceReason = 'Only demand proxies such as reviews were observed, not sales or an official rank.'
+  } else if (flags.length) {
+    confidence = 'low'
+    confidenceReason = `Flagged for possible manipulation: ${flags.join(', ')}.`
+  } else if (metricUnclear) {
+    confidence = 'low'
+    confidenceReason = 'The sold figure does not state whether it is lifetime or recent.'
+  } else if (!corroborated) {
     confidence = 'medium'
+    confidenceReason = 'Single verified listing; no independent second signal was confirmed.'
+  } else if (tier === 'T1' || tier === 'T2') {
+    confidence = 'high'
+    confidenceReason = `${tier === 'T1' ? 'Confirmed store sales' : 'Official platform rank or badge'} corroborated on ${places} verified US listing${places === 1 ? '' : 's'}.`
+  } else {
+    confidence = 'medium'
+    confidenceReason = `Platform-displayed sold count corroborated on ${places} verified US listing${places === 1 ? '' : 's'}.`
   }
 
   return {
-    opportunityScore: Math.min(100, Math.max(0, Math.round(score))),
+    evidenceTier: tier,
+    opportunityScore,
     confidence,
+    confidenceReason,
+    scoreBreakdown: {
+      weightsUsed,
+      renormalized: used.length < Object.keys(WEIGHTS).length,
+      penalties,
+    },
   }
+}
+
+/** Tier first (T1 strongest), then score. Products without a score sort last within their tier. */
+function compareByEvidence(a, b) {
+  const tierGap = (TIER_ORDER[a.evidenceTier] || 9) - (TIER_ORDER[b.evidenceTier] || 9)
+  if (tierGap) return tierGap
+  return (b.opportunityScore ?? -1) - (a.opportunityScore ?? -1)
 }
 
 module.exports = {
-  calculateUnitEconomics,
   computeOpportunityScore,
+  compareByEvidence,
 }

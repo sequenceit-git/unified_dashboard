@@ -44,7 +44,7 @@ export default function CustomersPage() {
   }, [marketplace, q, sort, page])
 
   const open = async (row) => {
-    setSelected(await api.get(`/api/customers/${row._id}`, token))
+    setSelected(await api.get(`/api/customers/${row._id}${queryString({ marketplace })}`, token))
   }
 
   if (!section) return <RequireShopSection />

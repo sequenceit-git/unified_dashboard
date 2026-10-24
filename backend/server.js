@@ -18,7 +18,6 @@ const orderRoutes = require('./routes/sales/orders')
 const productRoutes = require('./routes/catalog/products')
 const researchRoutes = require('./routes/research/research')
 const shopRoutes = require('./routes/system/shops')
-const discoveryRoutes = require('./routes/discovery/discovery')
 const uploadRoutes = require('./routes/system/upload')
 
 const app = express()
@@ -43,7 +42,6 @@ app.get('/', (req, res) => {
 app.use('/api', apiRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/upload', uploadRoutes)
-app.use('/api/discovery', discoveryRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/products', productRoutes)
@@ -58,6 +56,10 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   // Sweep stale/orphaned running or queued reports left behind by server restart
   try {
     const ResearchReport2 = require('./models/ResearchReport2')
+    await ResearchReport2.updateMany(
+      { status: 'stopping' },
+      { status: 'stopped', finishedAt: new Date() },
+    )
     const staleResult = await ResearchReport2.updateMany(
       { status: { $in: ['running', 'queued'] } },
       {

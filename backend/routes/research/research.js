@@ -9,6 +9,7 @@ const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 const { productImages } = require('../../agent/discovery/listingImage')
+const { generateRecommendationsExcel, verifiedLinks } = require('../../services/excelExport')
 
 const SHOP_LABELS = {
   ebay: 'eBay',
@@ -156,9 +157,7 @@ router.get('/export/:reportId', async (req, res) => {
         const category = r.category || r.metrics?.category || ''
         const basePrice = r.metrics?.price != null ? r.metrics.price : (r.price ?? r.metrics?.averagePrice ?? '')
         const description = r.aiNotes || r.recommendationReason || ''
-        const sourceUrl = r.sourceUrl || r.sourcing?.buyUrl || ''
-        const listingUrl = r.listingUrl || r.productUrl || ''
-        const otherUrl = r.validation?.otherUrl || ''
+        const { sourceUrl, listingUrl, otherUrl } = verifiedLinks(r)
         const margin = r.estimatedMargin != null ? r.estimatedMargin : (r.estimatedProfitMarginPercent ?? '')
         const score = r.opportunityScore ?? ''
 

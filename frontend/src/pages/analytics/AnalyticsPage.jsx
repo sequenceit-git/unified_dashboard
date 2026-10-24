@@ -11,9 +11,8 @@ import RevenueChart from './RevenueChart'
 import TopProducts from './TopProducts'
 
 const RANGES = [
-  { value: '7', label: 'Last 7 days' },
   { value: '30', label: 'Last 30 days' },
-  { value: '90', label: 'Last 90 days' },
+  { value: '60', label: 'Last 60 days' },
 ]
 
 function rangeParams(days) {
@@ -27,29 +26,13 @@ function rangeParams(days) {
   }
 }
 
-function toIsoSafe(dateStr, isEnd = false) {
-  if (!dateStr) return ''
-  const d = new Date(isEnd ? `${dateStr}T23:59:59.999` : `${dateStr}T00:00:00.000`)
-  return isNaN(d.getTime()) ? '' : d.toISOString()
-}
-
 export default function AnalyticsPage() {
   const { token } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
   const [days, setDays] = useState('30')
-  const [customFrom, setCustomFrom] = useState('')
-  const [customTo, setCustomTo] = useState('')
 
-  const { from, to } = useMemo(() => {
-    if (customFrom || customTo) {
-      return {
-        from: toIsoSafe(customFrom, false),
-        to: toIsoSafe(customTo, true),
-      }
-    }
-    return rangeParams(days)
-  }, [days, customFrom, customTo])
+  const { from, to } = useMemo(() => rangeParams(days), [days])
 
   const summary = useApi(token ? `/api/analytics/summary${queryString({ from, to, marketplace })}` : null)
   const revenue = useApi(token ? `/api/analytics/revenue${queryString({ from, to, marketplace })}` : null)
@@ -63,31 +46,13 @@ export default function AnalyticsPage() {
     <div className="space-y-3">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-bold">{section.label} analytics</h1>
-        <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-3">
-          <Select
-            value={days}
-            onChange={(e) => {
-              setDays(e.target.value)
-              setCustomFrom('')
-              setCustomTo('')
-            }}
-            options={RANGES}
-          />
-          <input
-            type="date"
-            value={customFrom}
-            onChange={(e) => setCustomFrom(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            aria-label="Analytics from date"
-          />
-          <input
-            type="date"
-            value={customTo}
-            onChange={(e) => setCustomTo(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            aria-label="Analytics to date"
-          />
-        </div>
+        <Select
+          className="sm:w-44"
+          value={days}
+          onChange={(e) => setDays(e.target.value)}
+          options={RANGES}
+          aria-label="Analytics period"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">

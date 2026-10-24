@@ -13,6 +13,7 @@ const SyncLog = require('../../models/SyncLog')
 const Shop = require('../../models/Shop')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
+const { saveCustomerStats } = require('../customerStats')
 
 const marketplaceServices = {
   ebay,
@@ -162,6 +163,7 @@ class UnifiedMarketplaceManager {
       }
 
       let createdCount = 0
+      const touchedCustomerIds = []
       let appToken = null
       if (shop.marketplace === 'ebay' && typeof service.getApplicationToken === 'function') {
         try {
@@ -201,6 +203,7 @@ class UnifiedMarketplaceManager {
               await customer.save()
             }
           }
+          if (customer?._id) touchedCustomerIds.push(customer._id)
         }
 
         // Ensure catalog products and listings exist for ordered items
@@ -265,6 +268,7 @@ class UnifiedMarketplaceManager {
         const existing = await Order.findOne({ shopId: shop._id, externalOrderId: ord.externalOrderId })
         if (existing) {
           existing.status = ord.status
+          if (!existing.customerId && customer?._id) existing.customerId = customer._id
           await existing.save()
           updatedCount++
         } else {
@@ -277,6 +281,8 @@ class UnifiedMarketplaceManager {
           createdCount++
         }
       }
+
+      await saveCustomerStats(touchedCustomerIds)
 
       shop.lastSyncAt = new Date()
       await shop.save()

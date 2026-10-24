@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FiExternalLink } from 'react-icons/fi'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
-import { marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
+import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
 
 function money(value) {
   const amount = Number(value)
@@ -53,14 +53,9 @@ export function productFacts(opportunity) {
   ;(opportunity.sources || []).forEach((source) => pushUrl(images, source.imageUrl))
 
   const sources = []
-  ;(opportunity.sources || []).forEach((source) => pushSource(sources, source))
-  pushSource(sources, { label: 'Live listing', url: opportunity.listingUrl, kind: 'listing', price: opportunity.price })
-  pushSource(sources, {
-    label: opportunity.validation?.otherMarketplace || 'Other marketplace',
-    url: opportunity.validation?.otherUrl,
-    kind: 'listing',
-  })
-  pushSource(sources, { label: 'eBay', url: opportunity.validation?.ebaySourceUrl, kind: 'listing' })
+  if (opportunity.linksVerified) {
+    ;(opportunity.sources || []).forEach((source) => pushSource(sources, source))
+  }
 
   const byPlace = new Map(sources.map((source) => [source.place, source]))
   return {
@@ -168,7 +163,12 @@ export default function ProductDetailModal({ opportunity, onClose }) {
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <Fact label="Sell price" value={sell} />
+            <Fact
+              label="Evidence"
+              value={opportunity.evidenceTier ? `${opportunity.evidenceTier} · ${EVIDENCE_LABELS[opportunity.evidenceTier] || ''}` : null}
+            />
             <Fact label="Best seller" value={opportunity.demandSignal} />
+            <Fact label="Official rank" value={opportunity.officialRank} />
             <Fact label="Price range" value={low || high ? `${low || '—'} – ${high || '—'}` : null} />
             <Fact label="Monthly sales" value={monthly != null ? `${Number(monthly).toLocaleString()} units` : null} />
             <Fact label="Competition" value={opportunity.validation?.competitionLevel || opportunity.competitionLevel} />
@@ -176,6 +176,13 @@ export default function ProductDetailModal({ opportunity, onClose }) {
             <Fact label="Rating" value={rating != null ? `★ ${rating}${reviews ? ` (${reviews})` : ''}` : null} />
             <Fact label="Confidence" value={opportunity.confidence && opportunity.confidence !== 'unverified' ? opportunity.confidence : null} />
           </div>
+
+          {opportunity.confidenceReason && (
+            <p className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-700">Confidence: </span>
+              {opportunity.confidenceReason}
+            </p>
+          )}
 
           {notes && (
             <section className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-3">
@@ -197,7 +204,11 @@ export default function ProductDetailModal({ opportunity, onClose }) {
 
       <section className="mt-6 border-t border-gray-100 pt-5">
         <h3 className="text-sm font-bold text-gray-900">Where it is selling</h3>
-        <p className="mt-1 text-xs text-gray-500">Four United States listing pages. A link is shown only when it is a real product page on that site.</p>
+        <p className="mt-1 text-xs text-gray-500">
+          {opportunity.linksVerified
+            ? 'United States product pages confirmed live for this product when the search ran.'
+            : 'Links from this older search were not confirmed. Run a new search to get verified US links.'}
+        </p>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {facts.places.map((source) => (
             <li key={source.place} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2">

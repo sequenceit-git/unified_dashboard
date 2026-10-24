@@ -1,55 +1,42 @@
 const fs = require('fs')
 const path = require('path')
 
+const MASTER = 'marketplace-best-seller-research'
+
+/** Master reference files each stage needs, in prompt order. */
+const STAGE_REFERENCES = {
+  'product-discovery-search': ['platforms', 'evidence'],
+  'cross-market-validation': ['validation', 'platforms', 'evidence'],
+  'opportunity-scoring-rubric': ['scoring'],
+}
+
+function stripFrontmatter(text) {
+  return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trim()
+}
+
+function read(relativePath) {
+  const filePath = path.join(__dirname, relativePath)
+  return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : ''
+}
+
+const prompts = new Map()
+
 /**
- * Skill Registry for Product Discovery 2 Agent
- * 4 High-Impact Skills following the Agent Skills Standard (SKILL.md)
+ * Master core, then only the master references this stage uses, then the stage skill.
+ * Stage text cannot replace the master rules. Built once per stage and cached.
  */
-const SKILLS = {
-  'product-discovery-search': 'Search marketplaces to find trending, popular candidate products.',
-  'cross-market-validation': 'Cross-check candidate products on competing marketplaces for true demand & reviews.',
-  'sourcing-and-unit-economics': 'Find cheaper sourcing/supplier links and compute net profit margins.',
-  'opportunity-scoring-rubric': 'Calculate 0-100 Opportunity Score and synthesize actionable AI rationale.',
+function promptFor(stageName) {
+  if (prompts.has(stageName)) return prompts.get(stageName)
+  const parts = [
+    read(path.join(MASTER, 'SKILL.md')),
+    ...(STAGE_REFERENCES[stageName] || []).map((name) => read(path.join(MASTER, 'references', `${name}.md`))),
+    stripFrontmatter(read(path.join(stageName, 'SKILL.md'))),
+  ]
+  const prompt = parts.filter(Boolean).join('\n\n---\n\n')
+  prompts.set(stageName, prompt)
+  return prompt
 }
-
-class SkillManager {
-  constructor(baseDir = path.join(__dirname)) {
-    this.baseDir = baseDir
-    this.cache = new Map()
-  }
-
-  getSkills() {
-    return Object.keys(SKILLS).map((key) => ({
-      name: key,
-      description: SKILLS[key],
-    }))
-  }
-
-  loadSkill(skillName) {
-    if (this.cache.has(skillName)) {
-      return this.cache.get(skillName)
-    }
-    const skillPath = path.join(this.baseDir, skillName, 'SKILL.md')
-    if (!fs.existsSync(skillPath)) {
-      return null
-    }
-    const content = fs.readFileSync(skillPath, 'utf8')
-    this.cache.set(skillName, content)
-    return content
-  }
-
-  loadAllSkills() {
-    return Object.keys(SKILLS)
-      .map((k) => this.loadSkill(k))
-      .filter(Boolean)
-      .join('\n\n---\n\n')
-  }
-}
-
-const skillManager = new SkillManager()
 
 module.exports = {
-  SKILLS,
-  SkillManager,
-  skillManager,
+  skillManager: { promptFor },
 }
