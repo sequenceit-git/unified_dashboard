@@ -23,6 +23,7 @@ export default function AiAgentSettings() {
   const [choice, setChoice] = useState('')
   const [customModel, setCustomModel] = useState('')
   const [apiKey, setApiKey] = useState('')
+  const [replacingKey, setReplacingKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [messageError, setMessageError] = useState(false)
@@ -38,6 +39,8 @@ export default function AiAgentSettings() {
   if (settingsRes.error) return <ErrorState message={settingsRes.error} onRetry={settingsRes.refetch} />
   if (!settings) return null
 
+  const hasSavedKey = settings.keySource === 'settings' && !settings.keyUnreadable
+  const showSavedKey = hasSavedKey && !replacingKey
   const model = choice === CUSTOM ? customModel.trim() : choice
   const defaultModel = settings.defaultModel || 'gpt-5-mini'
   const options = [
@@ -51,6 +54,7 @@ export default function AiAgentSettings() {
     try {
       await api.patch('/api/settings/ai', body, token)
       setApiKey('')
+      setReplacingKey(false)
       setMessage(done)
       setMessageError(false)
       settingsRes.refetch()
@@ -93,15 +97,38 @@ export default function AiAgentSettings() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
-            <Input
-              label="OpenAI API key"
-              type="password"
-              autoComplete="off"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              placeholder={settings.keySource === 'settings' ? 'Leave blank to keep the saved key' : 'sk-...'}
-            />
-            <p className="text-xs text-gray-500">{keyStatus(settings)}</p>
+            {showSavedKey ? (
+              <Input
+                label="OpenAI API key"
+                readOnly
+                value={`sk-••••••••••••••••${settings.keyLast4 || ''}`}
+                className="font-mono text-gray-500"
+              />
+            ) : (
+              <Input
+                label="OpenAI API key"
+                type="password"
+                autoComplete="off"
+                value={apiKey}
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder={hasSavedKey ? 'Paste the new key' : 'sk-...'}
+              />
+            )}
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-500">{keyStatus(settings)}</p>
+              {hasSavedKey && (
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                  onClick={() => {
+                    setReplacingKey(!replacingKey)
+                    setApiKey('')
+                  }}
+                >
+                  {replacingKey ? 'Keep saved key' : 'Replace key'}
+                </button>
+              )}
+            </div>
             {settings.keyUnreadable && (
               <p className="text-xs text-amber-700">The saved key can no longer be read on this server. Enter it again.</p>
             )}

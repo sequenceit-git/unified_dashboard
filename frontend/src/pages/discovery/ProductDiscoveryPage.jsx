@@ -3,6 +3,7 @@ import {
   FiTrendingUp,
   FiCheckCircle,
   FiDownload,
+  FiAlertTriangle,
 } from 'react-icons/fi'
 import { TbBrandOpenai } from 'react-icons/tb'
 import { useAuth } from '../../auth/AuthContext'
@@ -396,12 +397,26 @@ export default function ProductDiscoveryPage() {
               </p>
             )}
 
+            {selectedReport?.status === 'failed' && (
+              <div role="alert" className="mb-4 flex gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <FiAlertTriangle className="mt-0.5 shrink-0 text-red-600" size={17} />
+                <div className="min-w-0">
+                  <p className="font-semibold">This research run failed</p>
+                  <p className="mt-0.5 break-words">{selectedReport.error || 'The run stopped without an error message. Check the backend log.'}</p>
+                </div>
+              </div>
+            )}
+
+            {selectedReport?.status === 'completed' && selectedReport.summary && (
+              <p className="mb-4 rounded-xl bg-gray-50 px-4 py-3 text-xs text-gray-600">{selectedReport.summary}</p>
+            )}
+
             {loadingRecs || loadingReports ? (
               <div className="py-16 text-center">
                 <Spinner />
                 <p className="mt-2 text-xs text-gray-500">Loading recommendations…</p>
               </div>
-            ) : !hasResults ? (
+            ) : !hasResults && selectedReport?.status === 'failed' ? null : !hasResults ? (
               <EmptyState
                 message={
                   runInProgress
