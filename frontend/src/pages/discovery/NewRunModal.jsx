@@ -152,10 +152,10 @@ export default function NewRunModal({
           <div className="space-y-4 border-t border-gray-100 pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">Where it searches</p>
             <p className="text-sm text-gray-600">
-              US best sellers across 8 shops: eBay, Amazon, Walmart, Temu, TikTok Shop, Etsy, Wish, and US Shopify stores.
+              US best sellers on eBay, Amazon, Walmart, and Temu.
             </p>
             <p className="text-sm text-gray-600">
-              It ranks the top 20 best sellers and links every US shop where each one is listed. List any of them in your eBay, TikTok Shop, or Temu shop from its card.
+              It finds 10 to 15 best-selling or viral products and links the US listings it confirms. List any of them in your eBay, TikTok Shop, or Temu shop from its card.
             </p>
             <p className="flex items-center gap-1.5 text-xs text-indigo-700">
               <FiZap size={13} />

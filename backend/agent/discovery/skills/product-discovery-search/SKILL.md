@@ -1,49 +1,42 @@
 ---
 name: product-discovery-search
-description: Stage 1 of marketplace-best-seller-research. Discover US best-seller candidates and capture an evidence record for each from pages actually opened.
+description: Find best-selling and viral products on US marketplaces (eBay, Amazon, Walmart, Temu, TikTok Shop). Do not search for suppliers.
 ---
 
-# Product Discovery Search (Stage 1)
+# Product Discovery Search
 
-This stage carries out section 4 steps 1 to 4 of the master skill `marketplace-best-seller-research`. The master's evidence tiers, untrusted-content rule, and accuracy rules always apply. Nothing here overrides them.
+## Context
 
-## Scope (dashboard defaults, master section 12)
-
-United States only, USD. Open only US product pages on ebay.com, amazon.com, walmart.com, temu.com, tiktok.com (TikTok Shop), etsy.com, and wish.com. No other countries or country paths, no suppliers, wholesale, factories, or buy-cost pages. The runner asks for up to 25 candidates per round and repeats until 20 products are confirmed; it lists products already reviewed so you can skip them.
+Client sells in the United States only. Prices in USD. Use only ebay.com, amazon.com, walmart.com, and temu.com product pages. Do not use other countries. Look only at live retail listings for products that are already selling well or going viral. Do not look for wholesale suppliers, factories, or buy-cost pages.
 
 ## Inputs (provided by the runner)
 
-category, niche, user preferences, currentYear, candidate count, products already reviewed
+category, niche, observedMarketplace, currentYear, candidateCount
 
-## Discover
+## Search rules
 
-- The runner restricts domains. Do not use `site:` operators.
-- Start from official ranking surfaces first, because they are T2: Amazon Best Sellers and Movers & Shakers, Walmart best sellers, eBay trending, Temu "Best seller" badges. Then keyword searches such as "best selling <niche> <category>" or "trending <category> <currentYear>".
-- Search each platform and each distinct keyword separately.
-- Open the product page. Never take a price, sold count, rank, or spec from a search snippet.
+- The runner already restricts domains. Do NOT use `site:` operators.
+- Queries should target products people are already buying: "best selling <niche> <category>", "viral <niche> <category> <currentYear>", "trending <niche> <category>", "movers and shakers <category>".
+- Open the product listing. Copy the description, feature bullets, and visible specification rows (material, size, color, weight, power, compatibility, what is included). Do not rely on search snippets for price, sales numbers, or specs.
 
-## Evidence record per candidate (master section 5)
+## Demand signals to capture (use whichever the marketplace shows)
 
-Copy exactly what the page shows; use null when it is not shown:
-
-- demandSignalText: exact wording, e.g. "2K+ bought in past month", "12,400 sold", "#3 in Kitchen & Dining"
-- officialRank: rank or badge wording, if any
-- evidenceTier: T2 official rank or badge, T3 platform-displayed sold or bought count, T4 reviews or engagement only, T5 unverified
-- metricScope: lifetime, recent, or unknown. "bought in past month" is recent and a rounded floor.
-- rating, reviewCount, observedPriceUsd
-- imageUrls (up to 3)
-- restrictedFlag (master gate G9)
-
-Description, feature bullets, and specs are copied in Stage 2 from the confirmed page.
+- eBay: "X sold" on the listing
+- Amazon: "X bought in past month", Best Seller / Movers & Shakers
+- Temu / TikTok Shop: "X sold" counts, "Hot" / "Best seller" badges
+- Any: review count and rating
 
 ## Exclude
 
-- Brand-gated or licensed goods and likely counterfeits
-- Restricted categories: supplements, cosmetics, children's products needing certification, lithium-battery goods, weapons, vapes
-- Listings with only a supplier or wholesale page
+- Brand-gated or licensed goods (Apple, Nike, Disney, etc.) and likely counterfeits
+- Regulated or restricted categories: supplements, cosmetics, children's products needing safety certification, lithium-battery goods, weapons, vapes
+- Oversaturated commodities with no price room
+
+## Output (one JSON object per candidate, strict schema)
+
+title, brand (nullable), observedMarketplace, listingUrl, observedPriceUsd, demandSignalText (copied exactly), reviewCount, rating, category, description (2-4 sentences from the listing), highlights (up to 5), specs (name/value pairs from the page), imageUrls (up to 4), restrictedFlag (bool + reason)
 
 ## Hard rules
 
-- Every URL is a real US product page you opened in this search: ebay.com/itm, amazon.com/dp, walmart.com/ip, a temu.com goods page, tiktok.com/shop/pdp, etsy.com/listing, or wish.com/product. TikTok videos and shop pages are not product pages. Never write a URL from memory or guess an item ID or ASIN. No search pages, homepages, or placeholders. The backend re-checks each link and drops the product if none is confirmed.
-- Never present views, likes, or reviews as sales.
-- A shorter list with T2 or T3 evidence beats a long list of guesses.
+- Every URL must be a real page you actually opened. Never invent or use placeholder URLs.
+- If a field is not visible on the page, return null. Never estimate.
