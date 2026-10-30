@@ -1,9 +1,9 @@
-// Backend env comes from its own files only: backend/.env.local, then
-// backend/.env. Never the repo-root .env (it isn't deployed — each Vercel
-// project only sees its own Root Directory). Never put secrets in code.
+// One env file for the repo: the root .env. .env.local in the root overrides it.
+// Never put secrets in code.
 const path = require('path')
-require('dotenv').config({ path: path.join(__dirname, '.env.local') })
-require('dotenv').config({ path: path.join(__dirname, '.env') })
+const root = path.join(__dirname, '..')
+require('dotenv').config({ path: path.join(root, '.env.local') })
+require('dotenv').config({ path: path.join(root, '.env') })
 const cors = require('cors')
 const express = require('express')
 const connectDB = require('./config/db')

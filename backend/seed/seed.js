@@ -6,10 +6,9 @@
  * Usage: npm run seed
  */
 const path = require('path')
-require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') })
-require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env.local') })
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
-require('dotenv').config()
+const root = path.join(__dirname, '..', '..')
+require('dotenv').config({ path: path.join(root, '.env.local') })
+require('dotenv').config({ path: path.join(root, '.env') })
 const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 

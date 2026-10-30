@@ -29,7 +29,7 @@ services:
       mongo:
         condition: service_healthy
     env_file:
-      - ./backend/.env
+      - ./.env
     environment:
       - NODE_ENV=production
       - PORT=5000
