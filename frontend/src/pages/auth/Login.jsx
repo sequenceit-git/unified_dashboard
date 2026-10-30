@@ -54,7 +54,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={submit} className="mt-4 space-y-3">
-          <Input label="Username" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
+          <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
           <Input
             label="Password"
             type="password"

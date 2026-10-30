@@ -5,8 +5,7 @@ const AuthContext = createContext(null)
 
 // Dev quick sign-in accounts.
 export const QUICK_ACCOUNTS = [
-  { label: 'Super Admin', email: 'admin@dev.local', role: 'super_admin' },
-  { label: 'eBay Agent', email: 'agent1@dev.local', role: 'sub_admin' },
+  { label: 'Super Admin', email: 'admin@sequenceit.com', role: 'super_admin' },
 ]
 const QUICK_PASSWORD = 'Temp1234!'
 
