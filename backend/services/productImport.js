@@ -382,4 +382,49 @@ async function importProductFromUrl(rawUrl, { useAi = true, marketplace } = {}) 
   }
 }
 
-module.exports = { importProductFromUrl }
+/**
+ * Maps known product facts onto a shop category's attribute schema.
+ * Dropdown fields must use one of the listed values.
+ */
+async function fillShopAttributes({ title, description, brand, attributes, schema }) {
+  const fields = (schema || []).filter((attr) => attr?.id && attr?.name)
+  if (!fields.length) return {}
+  const { apiKey, model } = await getAiConfig({ purpose: 'listing' })
+  if (!apiKey) return {}
+  const client = new OpenAI({ apiKey })
+  const response = await client.responses.create({
+    model,
+    instructions: 'You fill marketplace category attributes from known product facts. Use only those facts. For a field with values, copy one listed value exactly. Omit anything you cannot support. Reply with JSON only: { "attributeId": "value" }.',
+    input: JSON.stringify({
+      title: title || '',
+      brand: brand || '',
+      description: String(description || '').slice(0, 4000),
+      known: attributes || {},
+      fields: fields.map((attr) => ({
+        id: attr.id,
+        name: attr.name,
+        required: Boolean(attr.required),
+        values: (attr.values || []).slice(0, 40),
+      })),
+    }),
+  })
+  const parsed = parseJson(response.output_text) || {}
+  const allowed = new Map(fields.map((attr) => [String(attr.id), attr]))
+  const next = {}
+  for (const [id, value] of Object.entries(parsed)) {
+    const attr = allowed.get(String(id))
+    const text = String(value || '').trim()
+    if (!attr || !text) continue
+    if (attr.values?.length && !attr.freeText && !attr.values.includes(text)) {
+      const compact = (item) => String(item).toLowerCase().replace(/[^a-z0-9]+/g, '')
+      const match = attr.values.find((item) => compact(item) === compact(text))
+      if (!match) continue
+      next[attr.id] = match
+      continue
+    }
+    next[attr.id] = text
+  }
+  return next
+}
+
+module.exports = { importProductFromUrl, fillShopAttributes }

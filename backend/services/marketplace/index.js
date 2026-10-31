@@ -572,6 +572,8 @@ class UnifiedMarketplaceManager {
 
     if (!listing) listing = await Listing.findOne({ productId: product._id, shopId: shop._id })
     if (!listing) listing = new Listing({ productId: product._id, shopId: shop._id })
+    const wasStatus = listing.status
+    const wasRaw = listing.marketplaceStatus
     Object.assign(listing, {
       marketplace: shop.marketplace,
       externalListingId: item.externalListingId,
@@ -583,6 +585,9 @@ class UnifiedMarketplaceManager {
       lastSyncedAt: new Date(),
     })
     await listing.save()
+    if (!created) {
+      await require('../notify').listingStatusChanged(listing, shop, { wasStatus, wasRaw }).catch(() => {})
+    }
     return { created }
   }
 

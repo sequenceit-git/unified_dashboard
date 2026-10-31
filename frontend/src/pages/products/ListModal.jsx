@@ -96,7 +96,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
       .then((list) => {
         if (cancelled) return
         setAttributes(list || [])
-        setAspects((prev) => ({ ...matchAspects(list, { ...product.attributes, ...prefill?.aspects }), ...prev }))
+        setAspects((prev) => ({ ...matchAspects(list, { ...product.attributes, ...(product.brand ? { Brand: product.brand } : {}), ...prefill?.aspects }), ...prev }))
       })
       .catch((err) => !cancelled && setAttributeError(err.message))
     return () => {

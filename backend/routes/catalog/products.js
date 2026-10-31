@@ -7,7 +7,7 @@ const Shop = require('../../models/Shop')
 const ResearchReport = require('../../models/ResearchReport')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
-const { importProductFromUrl } = require('../../services/productImport')
+const { importProductFromUrl, fillShopAttributes } = require('../../services/productImport')
 const { listingUrl } = require('../../utils/listingUrl')
 
 const router = express.Router()
@@ -118,6 +118,21 @@ router.post('/import-url', requireRole('super_admin'), async (req, res) => {
     res.json(await importProductFromUrl(req.body.url, {
       useAi: req.body.useAi !== false,
       marketplace: canonicalMarketplace(req.body.marketplace),
+    }))
+  } catch (err) {
+    res.status(422).json({ error: err.message })
+  }
+})
+
+// POST /api/products/fill-attributes — map known facts onto a shop category schema
+router.post('/fill-attributes', requireRole('super_admin'), async (req, res) => {
+  try {
+    res.json(await fillShopAttributes({
+      title: req.body.title,
+      description: req.body.description,
+      brand: req.body.brand,
+      attributes: req.body.attributes,
+      schema: req.body.schema,
     }))
   } catch (err) {
     res.status(422).json({ error: err.message })

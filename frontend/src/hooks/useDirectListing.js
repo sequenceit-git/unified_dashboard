@@ -18,6 +18,7 @@ function emptySession() {
     categories: [],
     categoryId: '',
     categoryState: { loading: false, error: '' },
+    fillingAttributes: false,
     error: '',
     saving: false,
   }
@@ -85,6 +86,7 @@ export function startDirectFetch(marketplace, { url, useAi, token, titleMax, att
         categories: [],
         categoryId: '',
         categoryState: { loading: false, error: '' },
+        fillingAttributes: false,
       })
     })
     .catch((err) => {

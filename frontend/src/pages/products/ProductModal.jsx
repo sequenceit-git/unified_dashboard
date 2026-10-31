@@ -174,6 +174,9 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                     </a>
                   )}
                 </div>
+                {shopListing?.syncError && (
+                  <p className="mt-2 text-xs text-amber-700">{shopListing.syncError}</p>
+                )}
                 {listingActions.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {listingActions.map((action) => (

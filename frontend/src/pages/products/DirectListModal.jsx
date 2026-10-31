@@ -65,7 +65,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const { session, update } = useDirectListing(marketplace)
   const {
     url, useAi, fetching, draft, stock, weight, length, width, height,
-    schema, aspects, extras, categories, categoryId, categoryState, error, saving,
+    schema, aspects, extras, categories, categoryId, categoryState, fillingAttributes, error, saving,
   } = session
 
   const categoryQuery = useDebounced((draft?.title || '').trim().slice(0, 80), 600)
@@ -99,24 +99,52 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
       return undefined
     }
     let cancelled = false
+    const known = { ...draft.attributes, ...(draft.brand ? { Brand: draft.brand } : {}) }
     api.get(`/api/shops/${shop._id}/categories/${categoryId}/attributes`, token)
-      .then((list) => {
+      .then(async (list) => {
         if (cancelled) return
-        const matched = matchAspects(list, draft.attributes)
+        const matched = matchAspects(list, known)
         const used = new Set((list || []).map((attr) => String(attr.name).toLowerCase()))
         update((current) => ({
           schema: list || [],
-          aspects: { ...matched, ...current.aspects },
+          aspects: { ...matched, ...Object.fromEntries(Object.entries(current.aspects || {}).filter(([, value]) => asText(value))) },
           extras: Object.entries(draft.attributes)
             .filter(([name]) => !used.has(name.toLowerCase()))
             .map(([name, value]) => ({ name, value })),
         }))
+        const missing = (list || [])
+          .filter((attr) => (attr.required || attr.recommended || marketplace === 'tiktok_shop') && !asText(matched[attr.id]))
+          .slice(0, 25)
+        if (!useAi || !missing.length) return
+        update({ fillingAttributes: true })
+        try {
+          const filled = await api.post('/api/products/fill-attributes', {
+            title: draft.title,
+            description: draft.description,
+            brand: draft.brand,
+            attributes: known,
+            schema: missing.map((attr) => ({
+              id: attr.id,
+              name: attr.name,
+              required: attr.required,
+              values: attr.values,
+              freeText: attr.freeText,
+            })),
+          }, token)
+          if (cancelled) return
+          update((current) => ({
+            fillingAttributes: false,
+            aspects: { ...filled, ...Object.fromEntries(Object.entries(current.aspects || {}).filter(([, value]) => asText(value))) },
+          }))
+        } catch {
+          if (!cancelled) update({ fillingAttributes: false })
+        }
       })
       .catch(() => {
-        if (!cancelled) update({ schema: [] })
+        if (!cancelled) update({ schema: [], fillingAttributes: false })
       })
     return () => { cancelled = true }
-  }, [draft, shop?._id, layout.specifics, categoryId, token, update])
+  }, [draft?.sourceUrl, shop?._id, layout.specifics, categoryId, token, update, useAi, marketplace])
 
   const set = (key) => (e) => update((current) => ({ draft: { ...current.draft, [key]: e.target.value } }))
   const setAspect = (id, value) => update((current) => ({ aspects: { ...current.aspects, [id]: value } }))
@@ -124,7 +152,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const setDraftImages = (images) => update((current) => ({ draft: { ...current.draft, images } }))
 
   const required = schema.filter((attr) => attr.required)
-  const optional = schema.filter((attr) => !attr.required && attr.recommended)
+  const optional = schema.filter((attr) => !attr.required && (attr.recommended || marketplace === 'tiktok_shop'))
   const selectedCategory = categories.find((item) => item.categoryId === categoryId)
 
   const namedValues = () => ({
@@ -183,7 +211,12 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           } : {}),
           ...(layout.condition ? { condition: draft.condition || 'NEW', brand: draft.brand.trim() || named.Brand || 'Unbranded' } : {}),
           ...(categoryId ? { categoryId } : {}),
-          aspects: { ...named, ...Object.fromEntries(Object.entries(aspects).filter(([, value]) => asText(value))) },
+          aspects: Object.fromEntries([
+            ...schema.map((attr) => [attr.id, aspects[attr.id]]).filter(([, value]) => asText(value)),
+            ...extras
+              .filter((row) => row.name.trim() && asText(row.value) && !schema.some((attr) => String(attr.name).toLowerCase() === row.name.trim().toLowerCase()))
+              .map((row) => [row.name.trim(), asText(row.value)]),
+          ]),
         }, token)
         clearDirectListing(marketplace)
         onCreated(product, { listed: true })
@@ -250,7 +283,8 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
         </div>
       )}
       {optional.length > 0 && (
-        <details open={optional.some((attr) => asText(aspects[attr.id]))}>
+        {fillingAttributes && <p className="text-xs text-gray-500">Filling {layout.specifics.label.toLowerCase()} with GPT-5 mini…</p>}
+        <details open={optional.some((attr) => asText(aspects[attr.id])) || fillingAttributes}>
           <summary className="cursor-pointer text-xs font-semibold text-gray-700">More {layout.specifics.label.toLowerCase()} buyers filter by</summary>
           <div className="mt-2 grid grid-cols-1 gap-2">
             {optional.slice(0, 20).map((attr) => (

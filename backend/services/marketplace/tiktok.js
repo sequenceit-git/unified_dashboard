@@ -113,6 +113,34 @@ const LISTING_STATUS = {
   DELETED: 'ended',
 }
 
+const NOT_SUBMITTED = {
+  PAYMENT_ACCOUNT_NOT_LINKED: 'No payment account is linked to the shop.',
+  SHOP_INACTIVE: 'The shop is inactive.',
+  W8_NOT_CONFIGURED: 'W-8 tax information has not been provided.',
+}
+
+function auditReason(detail, tiktokStatus) {
+  const audit = detail?.audit || {}
+  const fails = detail?.audit_failed_reasons || audit.audit_failed_reasons || []
+  const failText = fails
+    .flatMap((row) => [...(row.reasons || []), ...(row.suggestions || [])])
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .join(' ')
+  const blocked = (audit.not_submitted_reasons || []).map((code) => NOT_SUBMITTED[code] || code)
+  if (tiktokStatus === 'FAILED' || audit.status === 'FAILED') {
+    return failText || 'TikTok Shop rejected this product in review.'
+  }
+  if (tiktokStatus === 'DRAFT') {
+    return [...blocked, failText].filter(Boolean).join(' ')
+      || 'TikTok Shop saved this as a draft. It is not in review. Publish it after you fix the missing details.'
+  }
+  if (audit.status === 'PRE_APPROVED') {
+    return 'TikTok approved the listing but it is waiting on a shop prerequisite before it can go live.'
+  }
+  return ''
+}
+
 /** Customer-service message `content` is a JSON string; only text-like types carry readable words. */
 function chatMessage(row) {
   let text = ''
@@ -269,7 +297,7 @@ class TikTokShopService {
             status: catalogStatus,
             listingStatus: LISTING_STATUS[tiktokStatus] || 'pending',
             marketplaceStatus: tiktokStatus,
-            listingError: tiktokStatus === 'FAILED' ? 'TikTok Shop rejected this product in review. Check it in Seller Center.' : '',
+            listingError: auditReason(detail, tiktokStatus),
             externalListingId: `${product.id}:${sku.id}`,
           })
         }
@@ -435,14 +463,15 @@ class TikTokShopService {
     const dims = options.dimensions || product.dimensions || {}
     const filled = Object.entries(options.aspects || {}).filter(([, value]) => String(value || '').trim())
     const schema = filled.length ? await this.getItemAspects(accessToken, categoryId, { shop }).catch(() => []) : []
-    const attributes = filled
-      .map(([id, value]) => {
-        const row = schema.find((attr) => attr.id === id || attr.name === id)
-        if (!row) return null
-        const name = String(value).trim()
-        return { id: row.id, values: [row.valueIds[name] ? { id: row.valueIds[name] } : { name }] }
-      })
-      .filter(Boolean)
+    const attributes = []
+    const seen = new Set()
+    for (const [id, value] of filled) {
+      const row = schema.find((attr) => attr.id === id || String(attr.name).toLowerCase() === String(id).toLowerCase())
+      if (!row || seen.has(row.id)) continue
+      seen.add(row.id)
+      const name = String(value).trim()
+      attributes.push({ id: row.id, values: [row.valueIds[name] ? { id: row.valueIds[name] } : { name }] })
+    }
 
     const data = await this.call(accessToken, 'POST', '/product/202309/products', {
       shop,
@@ -460,6 +489,7 @@ class TikTokShopService {
           unit: 'INCH',
         },
         ...(attributes.length ? { product_attributes: attributes } : {}),
+        save_mode: 'LISTING',
         skus: [
           {
             seller_sku: product.sku,

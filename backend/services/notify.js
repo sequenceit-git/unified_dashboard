@@ -75,23 +75,27 @@ async function stockChanged(product, shop, { was } = {}) {
 async function listingStatusChanged(listing, shop, { wasStatus, wasRaw } = {}) {
   if (!listing?._id || !shop) return
   const key = `listing_failed:${listing._id}`
-  const nowFailed = listing.status === 'error' || FAILED_RAW.has(listing.marketplaceStatus)
+  const raw = listing.marketplaceStatus
+  const sentBackToDraft = wasRaw === 'PENDING' && raw === 'DRAFT'
+  const nowFailed = listing.status === 'error' || FAILED_RAW.has(raw) || sentBackToDraft
   const wasFailed = wasStatus === 'error' || FAILED_RAW.has(wasRaw)
   if (!nowFailed) return resolve(key)
-  if (wasFailed) return
-  const raw = listing.marketplaceStatus
-  const reason = raw === 'FREEZE'
-    ? 'was frozen by TikTok Shop'
-    : raw === 'PLATFORM_DEACTIVATED'
-      ? 'was suspended by TikTok Shop'
-      : 'failed shop review'
+  if (wasFailed && !sentBackToDraft) return
+  const reason = listing.syncError
+    || (raw === 'FREEZE'
+      ? 'TikTok Shop froze this listing.'
+      : raw === 'PLATFORM_DEACTIVATED'
+        ? 'TikTok Shop suspended this listing.'
+        : sentBackToDraft
+          ? 'TikTok Shop sent this listing back to Draft. It is not in review.'
+          : 'This listing failed shop review.')
   await raise({
     type: 'listing_failed',
     shopId: shop._id,
     refId: listing.productId,
     key,
-    title: 'Listing needs attention',
-    message: `A ${shopLabel(shop.marketplace)} listing ${reason}.`,
+    title: sentBackToDraft ? 'TikTok listing is a draft' : 'Listing needs attention',
+    message: reason,
     href: shopPath('/products', shop.marketplace),
   })
 }
