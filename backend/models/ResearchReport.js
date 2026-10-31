@@ -60,6 +60,7 @@ const reportSchema = new mongoose.Schema(
       keywords: [{ type: String }],
       instructions: { type: String },
       minMargin: { type: Number, default: null },
+      model: { type: String },
     },
     status: {
       type: String,

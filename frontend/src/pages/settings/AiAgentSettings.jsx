@@ -8,7 +8,14 @@ import { useApi } from '../../hooks/useApi'
 import { api } from '../../lib/api'
 
 const CUSTOM = '__custom__'
+const SAME = '__same__'
 const PRESET_MODELS = ['gpt-5-mini', 'gpt-5', 'gpt-5-nano', 'gpt-4.1-mini', 'gpt-4o-mini']
+
+/** Dropdown value and custom text for a saved model name. */
+function splitChoice(name, emptyValue) {
+  if (!name) return [emptyValue, '']
+  return PRESET_MODELS.includes(name) ? [name, ''] : [CUSTOM, name]
+}
 
 function keyStatus(settings) {
   if (settings.keySource === 'settings') return `Saved key ending in ${settings.keyLast4 || '••••'}`
@@ -22,6 +29,8 @@ export default function AiAgentSettings() {
   const settings = settingsRes.data
   const [choice, setChoice] = useState('')
   const [customModel, setCustomModel] = useState('')
+  const [inboxChoice, setInboxChoice] = useState(SAME)
+  const [inboxCustom, setInboxCustom] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [replacingKey, setReplacingKey] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -30,9 +39,12 @@ export default function AiAgentSettings() {
 
   useEffect(() => {
     if (!settings) return
-    const preset = PRESET_MODELS.includes(settings.model)
-    setChoice(preset ? settings.model : CUSTOM)
-    setCustomModel(preset ? '' : settings.model)
+    const [discovery, discoveryCustom] = splitChoice(settings.model, CUSTOM)
+    setChoice(discovery)
+    setCustomModel(discoveryCustom)
+    const [inbox, inboxText] = splitChoice(settings.inboxModel, SAME)
+    setInboxChoice(inbox)
+    setInboxCustom(inboxText)
   }, [settings])
 
   if (settingsRes.loading) return <Card><Spinner /></Card>
@@ -42,11 +54,13 @@ export default function AiAgentSettings() {
   const hasSavedKey = settings.keySource === 'settings' && !settings.keyUnreadable
   const showSavedKey = hasSavedKey && !replacingKey
   const model = choice === CUSTOM ? customModel.trim() : choice
+  const inboxModel = inboxChoice === SAME ? '' : inboxChoice === CUSTOM ? inboxCustom.trim() : inboxChoice
   const defaultModel = settings.defaultModel || 'gpt-5-mini'
   const options = [
     ...PRESET_MODELS.map((name) => ({ value: name, label: name === defaultModel ? `${name} (default)` : name })),
     { value: CUSTOM, label: 'Custom model name…' },
   ]
+  const inboxOptions = [{ value: SAME, label: `Same as discovery (${model || defaultModel})` }, ...options]
 
   const save = async (body, done) => {
     setSaving(true)
@@ -68,12 +82,12 @@ export default function AiAgentSettings() {
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    if (!model) {
+    if (!model || (inboxChoice === CUSTOM && !inboxModel)) {
       setMessage('Enter a model name.')
       setMessageError(true)
       return
     }
-    save({ model, ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}) }, 'AI agent settings saved.')
+    save({ model, inboxModel, ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}) }, 'AI agent settings saved.')
   }
 
   return (
@@ -82,7 +96,7 @@ export default function AiAgentSettings() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-gray-900">AI agent</h2>
-            <p className="mt-1 text-sm text-gray-500">OpenAI key and model used by Product Discovery research.</p>
+            <p className="mt-1 text-sm text-gray-500">OpenAI key, plus the models used by Product Discovery and the inbox auto-reply.</p>
           </div>
           <span
             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${
@@ -135,16 +149,34 @@ export default function AiAgentSettings() {
           </div>
 
           <div className="space-y-2">
-            <Select label="Model" options={options} value={choice} onChange={(event) => setChoice(event.target.value)} />
+            <Select label="Discovery model" options={options} value={choice} onChange={(event) => setChoice(event.target.value)} />
             {choice === CUSTOM && (
               <Input
-                aria-label="Custom model name"
+                aria-label="Custom discovery model name"
                 value={customModel}
                 onChange={(event) => setCustomModel(event.target.value)}
                 placeholder="e.g. gpt-5.1-mini"
               />
             )}
             <p className="text-xs text-gray-500">The model must support web search in the OpenAI Responses API.</p>
+          </div>
+
+          <div className="space-y-2 md:col-start-2">
+            <Select
+              label="Inbox reply model"
+              options={inboxOptions}
+              value={inboxChoice}
+              onChange={(event) => setInboxChoice(event.target.value)}
+            />
+            {inboxChoice === CUSTOM && (
+              <Input
+                aria-label="Custom inbox model name"
+                value={inboxCustom}
+                onChange={(event) => setInboxCustom(event.target.value)}
+                placeholder="e.g. gpt-5.1-mini"
+              />
+            )}
+            <p className="text-xs text-gray-500">Writes the automatic replies to buyer messages. It does not need web search.</p>
           </div>
         </div>
 

@@ -300,7 +300,8 @@ router.post('/generate', async (req, res) => {
       return res.status(400).json({ error: 'At least one product category is required' })
     }
 
-    if (!(await getAiConfig()).apiKey) {
+    const aiConfig = await getAiConfig()
+    if (!aiConfig.apiKey) {
       return res.status(503).json({
         error: 'OpenAI API key is not configured. Add it in Settings > AI agent.',
       })
@@ -328,6 +329,7 @@ router.post('/generate', async (req, res) => {
         category: categories[0],
         keywords: niche ? [niche] : [],
         instructions: instructions?.trim() || '',
+        model: aiConfig.model,
       },
       status: 'queued',
       startedAt: new Date(),

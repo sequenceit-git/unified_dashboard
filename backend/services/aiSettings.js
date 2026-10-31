@@ -43,18 +43,20 @@ async function loadStored() {
   return doc?.value || {}
 }
 
-/** Key and model the agent should use right now. */
-async function getAiConfig() {
-  if (cache.value && Date.now() - cache.at < CACHE_MS) return cache.value
-  const stored = await loadStored()
-  const savedKey = stored.apiKeyEnc ? decrypt(stored.apiKeyEnc) : null
-  const envKey = (process.env.OPENAI_API || process.env.OPENAI_API_KEY || '').trim()
-  const value = {
-    apiKey: savedKey || envKey || '',
-    model: stored.model || (process.env.OPENAI_MODEL || '').trim() || DEFAULT_MODEL,
+/** Key and model to use right now. `purpose: 'inbox'` uses the inbox model, else the discovery model. */
+async function getAiConfig({ purpose } = {}) {
+  if (!cache.value || Date.now() - cache.at >= CACHE_MS) {
+    const stored = await loadStored()
+    const savedKey = stored.apiKeyEnc ? decrypt(stored.apiKeyEnc) : null
+    const envKey = (process.env.OPENAI_API || process.env.OPENAI_API_KEY || '').trim()
+    const model = stored.model || (process.env.OPENAI_MODEL || '').trim() || DEFAULT_MODEL
+    cache = {
+      at: Date.now(),
+      value: { apiKey: savedKey || envKey || '', model, inboxModel: stored.inboxModel || model },
+    }
   }
-  cache = { at: Date.now(), value }
-  return value
+  const { apiKey, model, inboxModel } = cache.value
+  return { apiKey, model: purpose === 'inbox' ? inboxModel : model }
 }
 
 /** What Settings may show: never the key itself. */
@@ -64,6 +66,8 @@ async function getPublicAiSettings() {
   const envKey = Boolean((process.env.OPENAI_API || process.env.OPENAI_API_KEY || '').trim())
   return {
     model: stored.model || (process.env.OPENAI_MODEL || '').trim() || DEFAULT_MODEL,
+    // Empty means the inbox uses the discovery model.
+    inboxModel: stored.inboxModel || '',
     defaultModel: DEFAULT_MODEL,
     hasKey: savedKeyReadable || envKey,
     keySource: savedKeyReadable ? 'settings' : envKey ? 'server' : 'none',
@@ -72,17 +76,26 @@ async function getPublicAiSettings() {
   }
 }
 
-/** Saves the model and, when given, a new key. `clearApiKey` removes the saved key. */
-async function saveAiSettings({ model, apiKey, clearApiKey }, userId) {
+function checkModelName(value) {
+  const name = String(value || '').trim()
+  if (!MODEL_PATTERN.test(name)) {
+    throw Object.assign(new Error('Model name can use letters, numbers, dots, dashes, colons, and slashes (up to 80 characters).'), { status: 400 })
+  }
+  return name
+}
+
+/**
+ * Saves the models and, when given, a new key. An empty `inboxModel` makes the inbox use the
+ * discovery model. `clearApiKey` removes the saved key.
+ */
+async function saveAiSettings({ model, inboxModel, apiKey, clearApiKey }, userId) {
   const stored = await loadStored()
   const next = { ...stored }
 
-  if (model !== undefined) {
-    const name = String(model || '').trim()
-    if (!MODEL_PATTERN.test(name)) {
-      throw Object.assign(new Error('Model name can use letters, numbers, dots, dashes, colons, and slashes (up to 80 characters).'), { status: 400 })
-    }
-    next.model = name
+  if (model !== undefined) next.model = checkModelName(model)
+  if (inboxModel !== undefined) {
+    if (String(inboxModel || '').trim()) next.inboxModel = checkModelName(inboxModel)
+    else delete next.inboxModel
   }
 
   if (clearApiKey) {

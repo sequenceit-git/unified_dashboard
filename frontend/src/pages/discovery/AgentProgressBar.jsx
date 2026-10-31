@@ -32,9 +32,11 @@ export default function AgentProgressBar({ report, onStop, stopping = false }) {
               <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
                 Discovery Agent Two • Running Live
               </span>
-              <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-200 ring-1 ring-inset ring-indigo-400/30">
-                GPT-5 Mini
-              </span>
+              {report.params?.model && (
+                <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-200 ring-1 ring-inset ring-indigo-400/30">
+                  {report.params.model}
+                </span>
+              )}
             </div>
             <h3 className="mt-0.5 text-base font-bold text-white">
               {stage}

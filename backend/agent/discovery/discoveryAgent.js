@@ -89,6 +89,18 @@ function parseJsonSafe(text) {
   return null
 }
 
+/** Split pasted "Home & Kitchen, Electronics" chips and drop duplicates. */
+function normalizeCategories(values) {
+  const list = []
+  for (const value of Array.isArray(values) ? values : [values]) {
+    for (const part of String(value || '').split(/[,|;]/)) {
+      const name = part.trim()
+      if (name && !list.some((item) => item.toLowerCase() === name.toLowerCase())) list.push(name)
+    }
+  }
+  return list.slice(0, 6)
+}
+
 function uniqueUrls(values) {
   const seen = new Set()
   const urls = []
@@ -200,11 +212,16 @@ async function callWebSearch({ client, prompt, allowedDomains = [], maxRetries =
       const isRateLimit = err?.status === 429 || err?.message?.includes('rate_limit')
       const isServerOverload = err?.status >= 500 && err?.status < 600
       const isNetworkError = ['ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND'].includes(err?.code)
-      const isModelNotFound = err?.status === 404 || err?.message?.includes('model')
+      const isModelNotFound = err?.status === 404 || err?.code === 'model_not_found'
+        || /model .*(does not exist|not found)/i.test(err?.message || '')
 
       if (isModelNotFound && currentModel !== fallbackModel) {
         console.warn(`[DiscoveryAgent] Model ${currentModel} unavailable. Switching to fallback: ${fallbackModel}`)
         currentModel = fallbackModel
+        client.model = fallbackModel
+        if (client.reportId) {
+          await updateWhileRunning(client.reportId, { $set: { 'params.model': fallbackModel } }).catch(() => {})
+        }
         continue
       }
 
@@ -255,7 +272,7 @@ RULES:
 6. demandSignalText must quote the visible sales signal, such as "12k sold" or "Best Seller".
 7. Open the listing page. Copy what the product is, its feature bullets, and the specification rows you can see. Leave a spec null only when the page does not show it.
 
-Return ONLY a valid JSON object matching this schema:
+Return ONLY a valid JSON object matching this schema. Keep each object short — later steps read the listing page for details:
 {
   "candidates": [
     {
@@ -267,11 +284,7 @@ Return ONLY a valid JSON object matching this schema:
       "demandSignalText": "string or null",
       "reviewCount": number or null,
       "rating": number or null,
-      "category": "string",
-      "description": "string (2-4 sentences from the listing: what it is, what it does, and who it is for)",
-      "highlights": ["string (short feature bullet from the listing, up to 5)"],
-      "specs": [{ "name": "string (such as Material, Size, Color, Weight, Power)", "value": "string" }],
-      "imageUrls": ["string (direct product image URLs from the listing, up to 4)"]
+      "category": "string"
     }
   ]
 }
@@ -383,12 +396,14 @@ Write 1-2 concise sentences on why this is a top-selling product. Cite the sold 
 /**
  * Main Agent Runner for Product Discovery
  */
-async function runDiscoveryAgent({ categories = [], niche = '', instructions = '', marketplaces, reportId, user }) {
+async function runDiscoveryAgent({ categories: rawCategories = [], niche = '', instructions = '', marketplaces, reportId, user }) {
+  const categories = normalizeCategories(rawCategories)
   console.log(`[DiscoveryAgent] Starting run for reportId: ${reportId}, categories: [${categories.join(', ')}]`)
 
   let client
   try {
     client = await getOpenAIClient()
+    client.reportId = reportId
   } catch (err) {
     await updateWhileRunning(reportId, { $set: { status: 'failed', finishedAt: new Date(), error: err.message } })
     throw err
@@ -398,6 +413,7 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
     $set: {
       status: 'running',
       startedAt: new Date(),
+      'params.model': client.model,
       progress: {
         stage: 'Scanning Marketplaces',
         step: 1,
@@ -424,7 +440,8 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
 
     const TARGET_PRODUCTS = 20
     const MAX_ROUNDS = 3
-    const searchMarkets = marketplaces && marketplaces.length ? marketplaces : ['ebay', 'amazon', 'walmart', 'temu']
+    // `marketplaces` is where the user sells; products are found on every US marketplace.
+    const searchMarkets = ['ebay', 'amazon', 'walmart', 'temu']
     const queue = []
     const triedTitles = []
     let discoveredCount = 0
@@ -434,14 +451,37 @@ async function runDiscoveryAgent({ categories = [], niche = '', instructions = '
       if (queue.length || round >= MAX_ROUNDS) return 0
       round += 1
       const needed = TARGET_PRODUCTS - evaluatedOpportunities.length
-      const found = await discoverCandidates({
-        client,
-        categories,
-        niche,
-        marketplaces: searchMarkets,
-        count: Math.min(TARGET_PRODUCTS, needed + 6),
-        exclude: triedTitles,
-      })
+      // One search per category: a single search over several categories returns too little to parse.
+      const perCategory = Math.min(TARGET_PRODUCTS, Math.max(4, Math.ceil((needed + 6) / categories.length)))
+      // One category at a time: parallel web searches hit OpenAI rate limits and come back empty.
+      const lists = []
+      const failures = []
+      for (const category of categories) {
+        if (await stoppedByUser(reportId)) break
+        await updateWhileRunning(reportId, {
+          $set: { 'progress.currentItem': `Searching best sellers in ${category}...` },
+        })
+        try {
+          const list = await discoverCandidates({
+            client,
+            categories: [category],
+            niche,
+            marketplaces: searchMarkets,
+            count: perCategory,
+            exclude: triedTitles,
+          })
+          console.log(`[DiscoveryAgent2] Round ${round}: ${category} returned ${list.length} products`)
+          lists.push(list.map((candidate) => ({ ...candidate, category })))
+        } catch (err) {
+          failures.push(err)
+          console.warn(`[DiscoveryAgent2] Round ${round}: ${category} search failed:`, err.message)
+        }
+      }
+      if (!lists.length && failures.length) throw failures[0]
+      const found = []
+      for (let index = 0; lists.some((list) => index < list.length); index += 1) {
+        for (const list of lists) if (list[index]) found.push(list[index])
+      }
       let added = 0
       for (const candidate of found) {
         const key = String(candidate?.title || '').trim().toLowerCase()

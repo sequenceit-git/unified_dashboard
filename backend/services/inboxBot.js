@@ -46,7 +46,7 @@ function instructions(shop, products) {
 }
 
 async function writeReply(shop, history) {
-  const { apiKey, model } = await getAiConfig()
+  const { apiKey, model } = await getAiConfig({ purpose: 'inbox' })
   if (!apiKey) throw new Error('OpenAI API key is not configured. Add it in Settings > AI agent.')
   const transcript = history
     .filter((message) => message.text)

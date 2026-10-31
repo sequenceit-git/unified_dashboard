@@ -14,11 +14,11 @@ router.get('/ai', async (req, res) => {
   }
 })
 
-// PATCH /api/settings/ai — body: { model?, apiKey?, clearApiKey? }
+// PATCH /api/settings/ai — body: { model?, inboxModel?, apiKey?, clearApiKey? }
 router.patch('/ai', async (req, res) => {
   try {
-    const { model, apiKey, clearApiKey } = req.body || {}
-    res.json(await saveAiSettings({ model, apiKey, clearApiKey: Boolean(clearApiKey) }, req.user?.id))
+    const { model, inboxModel, apiKey, clearApiKey } = req.body || {}
+    res.json(await saveAiSettings({ model, inboxModel, apiKey, clearApiKey: Boolean(clearApiKey) }, req.user?.id))
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message })
   }
