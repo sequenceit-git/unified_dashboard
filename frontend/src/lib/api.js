@@ -19,6 +19,10 @@ async function request(path, { token, ...options } = {}) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || `API ${res.status}`)
   }
+  const type = res.headers.get('content-type') || ''
+  if (!type.includes('json')) {
+    throw new Error('The server is restarting or unreachable. Wait a few seconds and press Retry.')
+  }
   return res.json()
 }
 
