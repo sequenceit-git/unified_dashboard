@@ -13,6 +13,8 @@ const SyncLog = require('../../models/SyncLog')
 const Shop = require('../../models/Shop')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
+const Conversation = require('../../models/Conversation')
+const Message = require('../../models/Message')
 const { saveCustomerStats } = require('../customerStats')
 
 const marketplaceServices = {
@@ -506,6 +508,72 @@ class UnifiedMarketplaceManager {
       this.syncListingsForShop(shop).catch((err) => ({ error: err.message })),
     ])
     return { shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, orders: ordersResult, listings: listingsResult }
+  }
+
+  async syncInboxForShop(shop) {
+    if (shop._id && !shop.auth?.accessTokenEnc) {
+      shop = await Shop.findById(shop._id).select('+auth.accessTokenEnc')
+    }
+    const token = shop.auth?.accessTokenEnc || ''
+    if (!token) {
+      return { shopName: shop.name, marketplace: shop.marketplace, imported: 0, error: `${shop.name} is not connected.` }
+    }
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getInbox !== 'function') {
+      return { shopName: shop.name, marketplace: shop.marketplace, imported: 0, error: `${shop.name} inbox sync is not available.` }
+    }
+    let threads = []
+    try {
+      threads = await service.getInbox(token, shop)
+    } catch (err) {
+      const denied = err.status === 401 || /scope|access token|access denied|invalid access/i.test(err.message || '')
+      return {
+        shopName: shop.name,
+        marketplace: shop.marketplace,
+        imported: 0,
+        error: denied
+          ? `${shop.name} is connected, but this login does not include message access. Connect the shop again from Settings.`
+          : err.message,
+      }
+    }
+    let imported = 0
+    for (const thread of threads) {
+      if (!thread.externalThreadId) continue
+      const convo = await Conversation.findOneAndUpdate(
+        { shopId: shop._id, externalThreadId: thread.externalThreadId },
+        {
+          $set: {
+            marketplace: shop.marketplace,
+            status: thread.status || 'open',
+            lastMessageAt: thread.lastMessageAt || new Date(),
+            lastMessagePreview: thread.lastMessagePreview || '',
+            unreadCount: thread.unreadCount || 0,
+          },
+        },
+        { upsert: true, returnDocument: 'after' },
+      )
+      for (const message of thread.messages || []) {
+        if (!message.externalMessageId) continue
+        await Message.updateOne(
+          { shopId: shop._id, externalMessageId: message.externalMessageId },
+          {
+            $setOnInsert: {
+              conversationId: convo._id,
+              shopId: shop._id,
+              direction: message.direction || 'inbound',
+              senderType: message.senderType || 'customer',
+              text: message.text || '',
+              externalMessageId: message.externalMessageId,
+              sentAt: message.sentAt || new Date(),
+              deliveryStatus: 'delivered',
+            },
+          },
+          { upsert: true },
+        )
+      }
+      imported += 1
+    }
+    return { shopName: shop.name, marketplace: shop.marketplace, imported }
   }
 
   /**

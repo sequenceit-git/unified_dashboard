@@ -6,6 +6,7 @@ const Message = require('../../models/Message')
 const MessageTemplate = require('../../models/MessageTemplate')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
+const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inbox'))
@@ -83,9 +84,16 @@ router.post('/conversations/:id/messages', async (req, res) => {
 // POST /api/inbox/sync — sync conversations from connected marketplace shops
 router.post('/sync', async (req, res) => {
   try {
-    const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
-    const shops = await Shop.find(filter)
-    res.json({ success: true, syncedShops: shops.length, message: 'Inbox channels checked' })
+    const filter = { status: 'connected' }
+    if (req.user.role === 'sub_admin') filter._id = { $in: req.allowedShopIds }
+    const marketplace = canonicalMarketplace(req.body?.marketplace)
+    if (marketplace) filter.marketplace = marketplace
+    const shops = await Shop.find(filter).select('+auth.accessTokenEnc')
+    const results = []
+    for (const shop of shops) {
+      results.push(await marketplaceManager.syncInboxForShop(shop))
+    }
+    res.json({ success: results.every((item) => !item.error), results })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

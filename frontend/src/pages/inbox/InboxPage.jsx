@@ -36,7 +36,9 @@ export default function InboxPage() {
   const handleSyncInbox = async () => {
     setSyncing(true)
     try {
-      await api.post('/api/inbox/sync', { marketplace }, token)
+      const data = await api.post('/api/inbox/sync', { marketplace }, token)
+      const problems = (data.results || []).map((item) => item.error).filter(Boolean)
+      setError(problems.join(' '))
       await fetchConvos()
     } catch (err) {
       setError(`Sync failed: ${err.message}`)
@@ -105,7 +107,7 @@ export default function InboxPage() {
             />
           </div>
           <Button onClick={handleSyncInbox} disabled={syncing} size="sm">
-            {syncing ? 'Checking...' : '↻ Check Channels'}
+            {syncing ? 'Syncing…' : 'Sync inbox'}
           </Button>
         </div>
       </div>

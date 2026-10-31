@@ -464,6 +464,54 @@ class EbayService {
       return null
     }
   }
+
+  async getInbox(accessToken) {
+    const threads = []
+    for (const conversationType of ['FROM_MEMBERS', 'FROM_EBAY']) {
+      const params = new URLSearchParams({ conversation_type: conversationType, limit: '25', offset: '0' })
+      const data = await this.ebayJson(accessToken, `/commerce/message/v1/conversation?${params}`)
+      for (const row of data.conversations || []) {
+        const latest = row.latestMessage || row.latest_message || {}
+        const sentAt = latest.createdDate || latest.creationDate || row.createdDate || new Date().toISOString()
+        const text = latest.messageBody || latest.messageText || latest.body || ''
+        const sender = String(latest.sender || latest.senderUsername || latest.messageSender || '').toUpperCase()
+        const fromSeller = sender.includes('SELLER')
+        threads.push({
+          externalThreadId: String(row.conversationId || row.conversation_id),
+          status: String(row.conversationStatus || '').toUpperCase() === 'CLOSED' ? 'closed' : 'open',
+          lastMessageAt: new Date(sentAt),
+          lastMessagePreview: String(text).slice(0, 100),
+          unreadCount: Number(row.unreadCount || 0),
+          messages: text ? [{
+            externalMessageId: String(latest.messageId || `${row.conversationId}-latest`),
+            text: String(text),
+            direction: fromSeller ? 'outbound' : 'inbound',
+            senderType: fromSeller ? 'agent' : 'customer',
+            sentAt: new Date(sentAt),
+          }] : [],
+        })
+      }
+    }
+    return threads
+  }
+
+  async ebayJson(accessToken, path) {
+    const response = await fetch(`${config.apiBaseUrl}${path}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const detail = body.errors?.[0]?.message || body.message || response.statusText
+      const error = new Error(`eBay messages: ${detail}`)
+      error.status = response.status
+      throw error
+    }
+    return body
+  }
 }
 
 module.exports = new EbayService()

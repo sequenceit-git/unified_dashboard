@@ -256,6 +256,33 @@ class TikTokShopService {
     }
   }
 
+  async getInbox(accessToken, shop) {
+    const data = await this.call(accessToken, 'GET', '/customer_service/202309/conversations', {
+      shop,
+      query: { page_size: 20 },
+    })
+    return (data.conversations || []).map((row) => {
+      const latest = row.latest_message || {}
+      const senderRole = String(latest.sender?.role || '').toUpperCase()
+      const fromSeller = /SELLER|AGENT|CUSTOMER_SERVICE/.test(senderRole)
+      const sentAt = latest.create_time ? new Date(Number(latest.create_time) * 1000) : new Date()
+      return {
+        externalThreadId: String(row.id),
+        status: 'open',
+        lastMessageAt: sentAt,
+        lastMessagePreview: String(latest.content || '').slice(0, 100),
+        unreadCount: Number(row.unread_count || 0),
+        messages: latest.id ? [{
+          externalMessageId: String(latest.id),
+          text: String(latest.content || ''),
+          direction: fromSeller ? 'outbound' : 'inbound',
+          senderType: fromSeller ? 'agent' : 'customer',
+          sentAt,
+        }] : [],
+      }
+    })
+  }
+
   async createListing(accessToken, product, options = {}) {
     if (!options.categoryId) {
       throw new Error('TikTok Shop listing requires a category id from Product categories')

@@ -23,6 +23,12 @@ const STOCK = [
   { value: 'out', label: 'Out of stock' },
 ]
 
+function categoryLabel(name) {
+  const parts = String(name || '').split(' / ').filter(Boolean)
+  if (parts.length <= 2) return name
+  return parts.slice(-2).join(' / ')
+}
+
 export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '', disabled = false, disabledMessage = '' }) {
   const { token, isAdmin } = useAuth()
   const [rows, setRows] = useState([])
@@ -91,14 +97,25 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
 
   return (
     <div>
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search title or SKU…" />
-        <div className="flex flex-wrap gap-2">
-          <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
-          <Select value={source} onChange={(e) => { setSource(e.target.value); setPage(1) }} options={SOURCES} />
-          <Select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1) }} options={[{ value: 'all', label: 'All categories' }, ...categories.map((c) => ({ value: c, label: c }))]} />
-          <Select value={stock} onChange={(e) => { setStock(e.target.value); setPage(1) }} options={STOCK} />
-        </div>
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1.5fr)_repeat(4,minmax(0,1fr))]">
+        <SearchInput
+          className="sm:max-w-none sm:col-span-2 xl:col-span-1"
+          value={q}
+          onChange={(v) => { setQ(v); setPage(1) }}
+          placeholder="Search title or SKU…"
+        />
+        <Select className="min-w-0" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
+        <Select className="min-w-0" value={source} onChange={(e) => { setSource(e.target.value); setPage(1) }} options={SOURCES} />
+        <Select
+          className="min-w-0"
+          value={category}
+          onChange={(e) => { setCategory(e.target.value); setPage(1) }}
+          options={[
+            { value: 'all', label: 'All categories' },
+            ...categories.map((name) => ({ value: name, label: categoryLabel(name) })),
+          ]}
+        />
+        <Select className="min-w-0" value={stock} onChange={(e) => { setStock(e.target.value); setPage(1) }} options={STOCK} />
       </div>
       <DataTable
         columns={[
