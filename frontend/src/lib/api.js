@@ -11,7 +11,7 @@ function headers(token, isJson = true) {
 }
 
 async function request(path, { token, ...options } = {}) {
-  const res = await fetch(`${BASE}${path}`, { headers: headers(token), ...options })
+  const res = await fetch(`${BASE}${path}`, { headers: headers(token), cache: 'no-store', ...options })
   if (res.status === 401) {
     window.dispatchEvent(new Event('auth:expired'))
   }

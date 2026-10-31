@@ -40,6 +40,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'Unified Dashboard API — OK', health: '/api/health' })
 })
 
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store')
+  next()
+})
 app.use('/api', apiRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/upload', uploadRoutes)
