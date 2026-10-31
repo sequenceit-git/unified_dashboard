@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   FiChevronDown,
   FiSettings,
@@ -93,19 +93,13 @@ function readOpen(storageKey, defaultOpen) {
 }
 
 function itemClass(nested, on) {
-  return `flex w-full items-center gap-3 text-[15px] font-semibold transition-colors lg:gap-0 lg:justify-center lg:group-hover:justify-start lg:group-hover:gap-3 ${
-    nested
-      ? 'py-3 pl-14 pr-6 lg:px-0 lg:group-hover:pl-14 lg:group-hover:pr-6'
-      : 'px-8 py-4 lg:px-0 lg:group-hover:px-8'
+  return `flex w-full items-center gap-3 text-[15px] font-semibold transition-colors ${
+    nested ? 'py-3 pl-14 pr-6' : 'px-8 py-4'
   } ${on ? 'bg-[#4F46E5] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`
 }
 
 function ItemLabel({ children }) {
-  return (
-    <span className="min-w-0 truncate text-left transition-all duration-200 lg:max-w-0 lg:opacity-0 lg:group-hover:max-w-[180px] lg:group-hover:opacity-100">
-      {children}
-    </span>
-  )
+  return <span className="min-w-0 truncate text-left">{children}</span>
 }
 
 function NavItem({ to, end, onClose, nested, active, icon: Icon, children }) {
@@ -153,20 +147,31 @@ function shopLinkActive(pathname, search, link) {
 }
 
 function ShopGroup({ section, links, pathname, search, onClose }) {
-  const active = links.some((link) => shopLinkActive(pathname, search, link))
-  const [open, setOpen] = useState(() => readOpen(section.storageKey, section.defaultOpen))
+  const navigate = useNavigate()
+  const currentShop = new URLSearchParams(search).get('shop') === section.id
+  const [open, setOpen] = useState(() => readOpen(section.storageKey, section.defaultOpen) || currentShop)
   const Icon = section.icon
+  const firstLink = links.find((link) => !link.unavailable)
+
+  const setStoredOpen = (next) => {
+    setOpen(next)
+    try {
+      localStorage.setItem(section.storageKey, String(next))
+    } catch {
+      // Ignore storage failures and keep the toggle in memory.
+    }
+  }
 
   const toggle = () => {
-    setOpen((current) => {
-      const next = !current
-      try {
-        localStorage.setItem(section.storageKey, String(next))
-      } catch {
-        // Ignore storage failures and keep the toggle in memory.
+    if (!open) {
+      setStoredOpen(true)
+      if (!currentShop && firstLink) {
+        navigate(firstLink.to)
+        onClose?.()
       }
-      return next
-    })
+      return
+    }
+    setStoredOpen(false)
   }
 
   return (
@@ -178,17 +183,15 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
         aria-label={section.label}
         aria-expanded={open}
         aria-controls={`${section.id}-shop-nav`}
-        className={`flex w-full items-center gap-3 px-8 py-3 text-left transition-colors hover:bg-slate-100 lg:gap-0 lg:justify-center lg:px-0 lg:group-hover:justify-start lg:group-hover:gap-3 lg:group-hover:px-8 ${
-          !open && active ? 'bg-indigo-50' : ''
+        className={`flex w-full items-center gap-3 px-8 py-3 text-left font-semibold transition-colors hover:bg-slate-100 ${
+          currentShop ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600'
         }`}
       >
-        <Icon size={18} className="shrink-0 text-slate-500" />
+        <Icon size={18} className={`shrink-0 ${currentShop ? 'text-indigo-600' : 'text-slate-500'}`} />
         <ItemLabel>{section.label}</ItemLabel>
         <FiChevronDown
           size={16}
-          className={`ml-auto shrink-0 text-slate-400 transition-transform lg:ml-0 lg:w-0 lg:opacity-0 lg:group-hover:ml-auto lg:group-hover:w-4 lg:group-hover:opacity-100 ${
-            open ? '' : '-rotate-90'
-          }`}
+          className={`ml-auto shrink-0 text-slate-400 transition-transform ${open ? '' : '-rotate-90'}`}
         />
       </button>
       {open && (
@@ -246,7 +249,7 @@ export default function Sidebar({ open, onClose }) {
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside
-        className={`group fixed bottom-0 left-0 top-16 z-40 w-64 transform overflow-x-hidden border-r border-[#E2E8F0] bg-white p-0 text-[#0F172A] shadow-2xl transition-[transform,width] duration-200 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:w-[72px] lg:shrink-0 lg:translate-x-0 lg:shadow-none lg:hover:w-64 ${
+        className={`fixed bottom-0 left-0 top-16 z-40 w-64 transform overflow-x-hidden border-r border-[#E2E8F0] bg-white p-0 text-[#0F172A] shadow-2xl transition-transform duration-200 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -265,7 +268,7 @@ export default function Sidebar({ open, onClose }) {
 
           {shopSections.length > 0 && (
             <div className="mt-2">
-              <p className="overflow-hidden px-8 pb-1 pt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-all duration-200 lg:max-h-0 lg:px-0 lg:pb-0 lg:pt-0 lg:opacity-0 lg:group-hover:max-h-10 lg:group-hover:px-8 lg:group-hover:pb-1 lg:group-hover:pt-5 lg:group-hover:opacity-100">
+              <p className="px-8 pb-1 pt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
                 Shop
               </p>
               {shopSections.map((section) => (
