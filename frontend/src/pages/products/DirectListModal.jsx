@@ -283,15 +283,17 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
         </div>
       )}
       {optional.length > 0 && (
-        {fillingAttributes && <p className="text-xs text-gray-500">Filling {layout.specifics.label.toLowerCase()} with GPT-5 mini…</p>}
-        <details open={optional.some((attr) => asText(aspects[attr.id])) || fillingAttributes}>
-          <summary className="cursor-pointer text-xs font-semibold text-gray-700">More {layout.specifics.label.toLowerCase()} buyers filter by</summary>
-          <div className="mt-2 grid grid-cols-1 gap-2">
-            {optional.slice(0, 20).map((attr) => (
-              <AttributeField key={attr.id} attr={attr} value={aspects[attr.id] || ''} onChange={(value) => setAspect(attr.id, value)} />
-            ))}
-          </div>
-        </details>
+        <>
+          {fillingAttributes && <p className="text-xs text-gray-500">Filling {layout.specifics.label.toLowerCase()} with GPT-5 mini…</p>}
+          <details open={optional.some((attr) => asText(aspects[attr.id])) || fillingAttributes}>
+            <summary className="cursor-pointer text-xs font-semibold text-gray-700">More {layout.specifics.label.toLowerCase()} buyers filter by</summary>
+            <div className="mt-2 grid grid-cols-1 gap-2">
+              {optional.slice(0, 20).map((attr) => (
+                <AttributeField key={attr.id} attr={attr} value={aspects[attr.id] || ''} onChange={(value) => setAspect(attr.id, value)} />
+              ))}
+            </div>
+          </details>
+        </>
       )}
       {extras.length > 0 && (
         <div>
