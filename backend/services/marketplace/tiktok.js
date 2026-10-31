@@ -24,6 +24,15 @@ const ORDER_STATUS = {
   CANCELLED: 'cancelled',
 }
 
+function imageUrls(images) {
+  const urls = []
+  for (const image of images || []) {
+    const url = image?.url || image?.urls?.[0] || image?.thumb_urls?.[0]
+    if (url && !urls.includes(url)) urls.push(url)
+  }
+  return urls.slice(0, 8)
+}
+
 class TikTokShopService {
   getAuthUrl(state = '') {
     if (!config.serviceId) {
@@ -67,57 +76,78 @@ class TikTokShopService {
     }
   }
 
-  async getOrders(accessToken, { shop, limit = 50 } = {}) {
-    const data = await this.call(accessToken, 'POST', '/order/202309/orders/search', {
-      shop,
-      query: { page_size: Math.min(limit, 100) },
-      body: {},
-    })
-    return {
-      orders: (data.orders || []).map((order) => ({
-        externalOrderId: order.id,
-        placedAt: order.create_time ? new Date(order.create_time * 1000) : new Date(),
-        status: ORDER_STATUS[order.status] || 'pending',
-        buyer: { name: order.recipient_address?.name || order.user_id || 'TikTok Shop customer', email: '' },
-        totals: {
-          total: Number(order.payment?.total_amount || 0),
-          currency: order.payment?.currency || 'USD',
-        },
-        items: (order.line_items || []).map((item) => ({
-          sku: item.seller_sku || item.sku_id,
-          title: item.product_name || item.sku_name,
-          quantity: 1,
-          unitPrice: Number(item.sale_price || 0),
-          externalListingId: item.product_id ? `${item.product_id}:${item.sku_id || ''}` : undefined,
-        })),
-      })),
-    }
-  }
-
-  async getInventory(accessToken, { shop, limit = 50 } = {}) {
-    const data = await this.call(accessToken, 'POST', '/product/202502/products/search', {
-      shop,
-      query: { page_size: Math.min(limit, 100) },
-      body: { status: 'ACTIVATE' },
-    })
-    const items = []
-    for (const product of data.products || []) {
-      const images = (product.main_images || []).map((image) => image.url || image.urls?.[0]).filter(Boolean)
-      for (const sku of product.skus || []) {
-        const stock = (sku.inventory || []).reduce((sum, row) => sum + Number(row.quantity || 0), 0)
-        items.push({
-          sku: sku.seller_sku || String(sku.id),
-          title: product.title || `TikTok Shop ${sku.id}`,
-          description: product.description || '',
-          price: Number(sku.price?.sale_price || sku.price?.tax_exclusive_price || 0),
-          stock,
-          images,
-          category: 'General',
-          brand: 'TikTok Shop',
-          externalListingId: `${product.id}:${sku.id}`,
+  async getOrders(accessToken, { shop, limit = 100 } = {}) {
+    const now = Math.floor(Date.now() / 1000)
+    const orders = []
+    let pageToken = ''
+    do {
+      const data = await this.call(accessToken, 'POST', '/order/202309/orders/search', {
+        shop,
+        query: { page_size: 50, ...(pageToken ? { page_token: pageToken } : {}) },
+        body: { create_time_ge: now - 365 * 24 * 3600, create_time_lt: now },
+      })
+      for (const order of data.orders || []) {
+        orders.push({
+          externalOrderId: order.id,
+          placedAt: order.create_time ? new Date(order.create_time * 1000) : new Date(),
+          status: ORDER_STATUS[order.status] || 'pending',
+          buyer: { name: order.recipient_address?.name || order.user_id || 'TikTok Shop customer', email: '' },
+          totals: {
+            total: Number(order.payment?.total_amount || 0),
+            currency: order.payment?.currency || 'USD',
+          },
+          items: (order.line_items || []).map((item) => ({
+            sku: item.seller_sku || item.sku_id,
+            title: item.product_name || item.sku_name,
+            quantity: 1,
+            unitPrice: Number(item.sale_price || 0),
+            externalListingId: item.product_id ? `${item.product_id}:${item.sku_id || ''}` : undefined,
+          })),
         })
       }
-    }
+      pageToken = data.next_page_token || ''
+    } while (pageToken && orders.length < limit)
+    return { orders }
+  }
+
+  async getInventory(accessToken, { shop, limit = 200 } = {}) {
+    const items = []
+    let pageToken = ''
+    do {
+      const data = await this.call(accessToken, 'POST', '/product/202502/products/search', {
+        shop,
+        query: { page_size: 50, ...(pageToken ? { page_token: pageToken } : {}) },
+        body: {},
+      })
+      for (const product of data.products || []) {
+        let images = imageUrls(product.main_images)
+        if (!images.length && product.id) {
+          try {
+            const detail = await this.call(accessToken, 'GET', `/product/202309/products/${product.id}`, { shop })
+            images = imageUrls(detail.main_images)
+          } catch {
+            images = []
+          }
+        }
+        const catalogStatus = product.status === 'ACTIVATE' ? 'active' : 'draft'
+        for (const sku of product.skus || []) {
+          const stock = (sku.inventory || []).reduce((sum, row) => sum + Number(row.quantity || 0), 0)
+          items.push({
+            sku: sku.seller_sku || String(sku.id),
+            title: product.title || `TikTok Shop ${sku.id}`,
+            description: product.description || '',
+            price: Number(sku.price?.sale_price || sku.price?.tax_exclusive_price || 0),
+            stock,
+            images,
+            category: 'General',
+            brand: 'TikTok Shop',
+            status: catalogStatus,
+            externalListingId: `${product.id}:${sku.id}`,
+          })
+        }
+      }
+      pageToken = data.next_page_token || ''
+    } while (pageToken && items.length < limit)
     return { inventoryItems: items }
   }
 

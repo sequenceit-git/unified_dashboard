@@ -440,8 +440,8 @@ class UnifiedMarketplaceManager {
             images: item.images || [],
             basePrice: item.price || 19.99,
             stock: item.stock || 10,
-            status: 'active',
-            source: 'manual',
+            status: item.status || 'active',
+            source: 'marketplace_sync',
           })
           createdProducts++
         } else if (item.images?.length > 0 && (!product.images || product.images.length === 0)) {
