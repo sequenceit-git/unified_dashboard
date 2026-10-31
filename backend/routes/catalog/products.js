@@ -200,9 +200,13 @@ router.delete('/:id', requireRole('super_admin'), async (req, res) => {
     if (!doc) return res.status(404).json({ error: 'Not found' })
     const listings = await Listing.find({ productId: doc._id })
     for (const listing of listings) {
-      await marketplaceManager.forgetListing(listing)
+      await marketplaceManager.forgetListing(listing, [doc.sku])
       const shop = await Shop.findById(listing.shopId)
       if (shop) await marketplaceManager.removeFromShop(shop, listing)
+    }
+    if (!listings.length) {
+      const shops = await Shop.find({ marketplace: 'tiktok_shop', status: 'connected' }).select('_id')
+      for (const shop of shops) await marketplaceManager.forgetListing({ shopId: shop._id }, [doc.sku])
     }
     await Product.findByIdAndDelete(doc._id)
     await Listing.deleteMany({ productId: doc._id })
@@ -294,6 +298,7 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
         { $addToSet: { 'opportunities.$.listedShops': shop.marketplace } },
       )
     }
+    await marketplaceManager.rememberListing(shop._id, [product.sku, publishRes.externalListingId])
     await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     res.status(201).json(listing)
   } catch (err) {
@@ -317,6 +322,14 @@ router.post('/:id/listing-action', requireRole('super_admin'), async (req, res) 
     listing.syncError = null
     listing.lastSyncedAt = new Date()
     await listing.save()
+    if (action === 'delete') {
+      const product = await Product.findById(listing.productId).select('sku')
+      await marketplaceManager.forgetListing(listing, [product?.sku])
+    }
+    if (action === 'publish' || action === 'relist') {
+      const product = await Product.findById(listing.productId).select('sku')
+      await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId])
+    }
     await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     res.json({
       ...listing.toObject(),

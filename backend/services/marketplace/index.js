@@ -36,6 +36,23 @@ function listingAliases(id) {
   return [...new Set([value, key].filter(Boolean))]
 }
 
+function ignoreTokens(...values) {
+  const tokens = new Set()
+  for (const value of values.flat()) {
+    const text = String(value || '').trim()
+    if (!text) continue
+    tokens.add(text)
+    tokens.add(text.toLowerCase())
+    for (const part of text.split(':')) {
+      const piece = part.trim()
+      if (!piece) continue
+      tokens.add(piece)
+      tokens.add(piece.toLowerCase())
+    }
+  }
+  return [...tokens]
+}
+
 class UnifiedMarketplaceManager {
   getService(marketplace) {
     const service = marketplaceServices[marketplace]
@@ -421,15 +438,34 @@ class UnifiedMarketplaceManager {
     await this.withShopToken(shop, (token) => service.applyListingAction(token, 'delete', listing, { shop })).catch(() => {})
   }
 
-  /** Keeps a removed shop product from being imported again. TikTok search still returns deleted products. */
-  async forgetListing(listing) {
-    const key = productKey(listing?.externalListingId)
-    if (!listing?.shopId || !key) return
-    await IgnoredListing.updateOne(
-      { shopId: listing.shopId, productKey: key },
-      { $setOnInsert: { shopId: listing.shopId, productKey: key } },
-      { upsert: true },
-    )
+  /** Keeps a removed shop product from being imported again. TikTok search still returns it. */
+  async forgetListing(listing, extras = []) {
+    const shopId = listing?.shopId
+    if (!shopId) return
+    for (const productKey of ignoreTokens(listing?.externalListingId, extras)) {
+      await IgnoredListing.updateOne(
+        { shopId, productKey },
+        { $setOnInsert: { shopId, productKey } },
+        { upsert: true },
+      )
+    }
+  }
+
+  /** A new publish of the same SKU should sync again. */
+  async rememberListing(shopId, tokens) {
+    const keys = ignoreTokens(tokens)
+    if (!shopId || !keys.length) return
+    await IgnoredListing.deleteMany({ shopId, productKey: { $in: keys } })
+  }
+
+  async isForgotten(shopId, item, product) {
+    const tokens = ignoreTokens(item?.externalListingId, item?.sku, item?.aliases, item?.matchSkus, product?.sku)
+    if (!shopId || !tokens.length) return false
+    const rows = await IgnoredListing.find({ shopId, productKey: { $in: tokens } }).select('_id').limit(1).lean()
+    if (rows.length) return true
+    const folded = new Set(tokens.map((token) => token.toLowerCase()))
+    const stored = await IgnoredListing.find({ shopId }).select('productKey').lean()
+    return stored.some((row) => folded.has(String(row.productKey || '').toLowerCase()))
   }
 
   /**
@@ -585,9 +621,6 @@ class UnifiedMarketplaceManager {
   /** Saves one marketplace listing, creating or updating its product. */
   async saveSyncedListing(shop, item) {
     const key = productKey(item.externalListingId)
-    if (key && await IgnoredListing.exists({ shopId: shop._id, productKey: key })) {
-      return { created: false, skipped: true }
-    }
     const ids = [...new Set([...(item.aliases || []), ...listingAliases(item.externalListingId)])]
     let listing = await Listing.findOne({
       shopId: shop._id,
@@ -596,10 +629,25 @@ class UnifiedMarketplaceManager {
         ...(key ? [{ externalListingId: new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(:|$)`) }] : []),
       ],
     })
-    // TikTok Delete keeps the product in search with status DELETED. Never create a catalog row for that.
-    if (item.marketplaceStatus === 'DELETED' && !listing) return { created: false, skipped: true }
     let product = listing ? await Product.findById(listing.productId) : null
-    if (!product && item.matchSkus.length) product = await Product.findOne({ sku: { $in: item.matchSkus } })
+    if (!product && item.matchSkus?.length) product = await Product.findOne({ sku: { $in: item.matchSkus } })
+    if (await this.isForgotten(shop._id, item, product)) {
+      if (product?.source === 'marketplace_sync') {
+        const others = await Listing.countDocuments({ productId: product._id, ...(listing ? { _id: { $ne: listing._id } } : {}) })
+        if (!others) {
+          await Listing.deleteMany({ productId: product._id, shopId: shop._id })
+          await Product.deleteOne({ _id: product._id })
+        }
+      }
+      return { created: false, skipped: true }
+    }
+    // A rejected, draft, or deleted TikTok product is not a new catalog row. Search still returns it.
+    if (!listing && ['DELETED', 'FAILED', 'DRAFT'].includes(item.marketplaceStatus)) {
+      return { created: false, skipped: true }
+    }
+    if (listing?.marketplaceStatus === 'DELETED' && !['ACTIVATE', 'SELLER_DEACTIVATED'].includes(item.marketplaceStatus)) {
+      return { created: false, skipped: true }
+    }
 
     const fromMarketplace = {
       title: item.title,
@@ -632,7 +680,14 @@ class UnifiedMarketplaceManager {
     }
 
     if (!listing) listing = await Listing.findOne({ productId: product._id, shopId: shop._id })
-    if (item.marketplaceStatus === 'DELETED' && !listing) return { created: false, skipped: true }
+    if (!listing && ['DELETED', 'FAILED', 'DRAFT'].includes(item.marketplaceStatus)) {
+      if (created) await Product.deleteOne({ _id: product._id })
+      return { created: false, skipped: true }
+    }
+    if (await this.isForgotten(shop._id, item, product)) {
+      if (created) await Product.deleteOne({ _id: product._id })
+      return { created: false, skipped: true }
+    }
     if (!listing) listing = new Listing({ productId: product._id, shopId: shop._id })
     const wasStatus = listing.status
     const wasRaw = listing.marketplaceStatus
