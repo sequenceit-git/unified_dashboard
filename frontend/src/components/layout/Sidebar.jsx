@@ -69,6 +69,7 @@ const SECTION_ICONS = {
   offers: FiMessageCircle,
   promotions: FiPercent,
   finances: FiDollarSign,
+  prices: FiDollarSign,
   content: FiVideo,
   creators: FiStar,
 }

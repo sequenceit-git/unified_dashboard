@@ -2,7 +2,7 @@
  * United States Temu local-seller Open API.
  * One POST router. Documented types used here:
  * bg.open.accesstoken.create
- * bg.order.list.v2.get
+ * bg.order.list.get
  * bg.local.goods.list.query
  */
 
@@ -11,19 +11,19 @@ const config = require('../../config/marketplaces').temu
 
 const ORDER_STATUS = {
   1: 'pending',
-  2: 'paid',
+  2: 'processing',
   3: 'cancelled',
   4: 'shipped',
   5: 'delivered',
 }
 
 class TemuService {
-  /** Temu goods create and edit calls are not wired yet, so listing is read-only here. */
+  /** Publishing a new Temu goods record is still done in Seller Center. Stock can be pushed. */
   listingCapabilities = {
     canList: false,
     apiName: 'Temu Open API',
-    editAfterListing: [],
-    note: 'Listing on Temu from EcomPilot is not available yet. Create the product in Temu Seller Center; it will sync here.',
+    editAfterListing: ['quantity'],
+    note: 'Create the goods in Temu Seller Center. Stock changes made here are sent with bg.local.goods.stock.edit.',
   }
 
   getAuthUrl(state = '') {
@@ -57,10 +57,12 @@ class TemuService {
   }
 
   async getOrders(accessToken, { limit = 50 } = {}) {
-    const result = await this.call('bg.order.list.v2.get', {
+    const result = await this.call('bg.order.list.get', {
       access_token: accessToken,
       pageNumber: 1,
       pageSize: Math.min(limit, 100),
+      parentOrderStatus: 0,
+      regionId: 211,
     })
     const rows = result.pageItems || result.orderList || result.parentOrderList || []
     return {
@@ -109,7 +111,9 @@ class TemuService {
           images: [good.thumbUrl || good.imageUrl].filter(Boolean),
           category: '',
           brand: '',
-          externalListingId: String(good.goodsId || sku.goodsId || sku.skuId),
+          externalListingId: sku.skuId && (good.goodsId || sku.goodsId)
+            ? `${good.goodsId || sku.goodsId}:${sku.skuId}`
+            : String(good.goodsId || sku.goodsId || sku.skuId),
         })
       }
     }
@@ -120,8 +124,39 @@ class TemuService {
     throw new Error('Temu listing publish uses the US Partner goods create API. Confirm the type in partner-us before sending a product.')
   }
 
-  async updateStock() {
-    throw new Error('Temu stock edit type must be taken from the US Partner goods API list before pushing stock.')
+  async updateStock(accessToken, sku, quantity, options = {}) {
+    const [goodsId, skuId] = String(options.externalListingId || '').split(':')
+    if (!goodsId || !skuId) throw new Error('Sync this Temu goods again so the SKU id is saved, then update stock.')
+    const target = Math.max(0, Math.floor(Number(quantity)))
+    const result = await this.call('bg.local.goods.stock.edit', {
+      access_token: accessToken,
+      goodsId: Number(goodsId),
+      skuStockTargetList: [{ skuId: Number(skuId), stockTarget: target }],
+    })
+    const info = (result.skuStockEditStatusInfoList || []).find((row) => String(row.skuId) === String(skuId))
+    if (result.operateResult === false || info?.stockEditStatus === false) {
+      throw new Error(info?.errorMsg || result.msg || 'Temu could not update this SKU stock.')
+    }
+    return { success: true }
+  }
+
+  async reviseListing(accessToken, externalListingId, changes) {
+    if (changes.quantity != null) await this.updateStock(accessToken, null, changes.quantity, { externalListingId })
+    return { success: true }
+  }
+
+  async applyListingAction(accessToken, action, listing) {
+    const goodsId = String(listing.externalListingId || '').split(':')[0]
+    if (!goodsId) throw new Error('This product is not on Temu yet.')
+    const onsale = action === 'publish' ? 1 : action === 'unpublish' ? 0 : null
+    if (onsale == null) throw new Error(`Temu cannot ${action} a listing.`)
+    const result = await this.call('bg.local.goods.sale.status.set', {
+      access_token: accessToken,
+      goodsId: Number(goodsId),
+      onsale,
+    })
+    if (result?.success === false) throw new Error('Temu could not change the sale status.')
+    return { status: onsale ? 'live' : 'paused', marketplaceStatus: onsale ? 'ONSALE' : 'OFFSALE' }
   }
 
   async updatePrice() {

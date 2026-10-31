@@ -6,6 +6,7 @@
 
 const ebayConfig = require('../../config/marketplaces').ebay
 const tiktok = require('./tiktok')
+const temu = require('./temu')
 const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
 
@@ -394,7 +395,181 @@ const TIKTOK = {
   },
 }
 
-const LOADERS = { ebay: EBAY, tiktok_shop: TIKTOK, temu: {} }
+const AFTERSALES_GROUP = {
+  1: 'Pending',
+  2: 'Requested',
+  3: 'Package shipped',
+  4: 'Platform reviewing',
+  5: 'Refunded',
+  6: 'Rejected',
+  7: 'Cancelled',
+}
+
+function temuTime(value) {
+  const n = Number(value)
+  if (!n) return null
+  return new Date(n > 1e12 ? n : n * 1000).toISOString()
+}
+
+function temuAmount(price, currency = 'USD') {
+  if (price == null || price === '') return null
+  if (typeof price === 'object') {
+    const value = Number(price.amount)
+    return Number.isFinite(value) ? { value, currency: price.currency || currency } : null
+  }
+  const value = Number(price)
+  return Number.isFinite(value) ? { value, currency } : null
+}
+
+function temuGoodsRows(result) {
+  const goods = result.goodsList || result.pageItems || result.list || []
+  const rows = []
+  for (const good of goods) {
+    const skus = good.skuList || good.skuInfoList || [good]
+    for (const sku of skus) {
+      rows.push({
+        goods: good.goodsName || sku.goodsName || 'Temu goods',
+        sku: sku.outSkuSn || sku.outGoodsSn || good.outGoodsSn || String(sku.skuId || good.goodsId || ''),
+        price: temuAmount(sku.retailPrice || sku.price || good.price, good.currency),
+        listPrice: temuAmount(sku.listPrice || good.listPrice, good.currency),
+        stock: Number(sku.quantity || sku.stock || good.quantity || 0),
+      })
+    }
+  }
+  return rows
+}
+
+const TEMU = {
+  async returns(token) {
+    const end = Math.floor(Date.now() / 1000)
+    const start = end - 90 * 24 * 3600
+    const list = await tables([
+      {
+        id: 'returns',
+        title: 'Returns and refunds (last 90 days)',
+        columns: [col('id', 'Request'), col('order', 'Order'), col('status', 'Status', 'status'), col('opened', 'Opened', 'date'), col('updated', 'Updated', 'date'), col('respondBy', 'Respond by', 'date')],
+        load: async () => (await temu.call('bg.aftersales.parentaftersales.list.get', {
+          access_token: token,
+          pageNo: 1,
+          pageSize: 50,
+          createAtStart: start,
+          createAtEnd: end,
+        })).data?.map((row) => ({
+          id: row.parentAfterSalesSn,
+          order: row.parentOrderSn,
+          status: AFTERSALES_GROUP[row.afterSalesStatusGroup] || 'Open',
+          opened: temuTime(row.createAt),
+          updated: temuTime(row.updateAt),
+          respondBy: temuTime(row.operateExpireTimeMs),
+        })) || [],
+      },
+    ])
+    const open = list[0].rows.filter((row) => !/refunded|rejected|cancelled/i.test(row.status)).length
+    return {
+      summary: [
+        { label: 'Open requests', value: open, type: 'number' },
+        { label: 'Requests', value: list[0].rows.length, type: 'number' },
+      ],
+      tables: list,
+    }
+  },
+
+  async prices(token) {
+    const list = await tables([
+      {
+        id: 'reviews',
+        title: 'Price reviews',
+        columns: [col('id', 'Price order'), col('goodsId', 'Goods'), col('status', 'Status', 'status'), col('price', 'Price', 'money')],
+        load: async () => firstList(await temu.call('bg.local.goods.priceorder.query', { access_token: token, page: 1, size: 50 })).map((row) => ({
+          id: row.priceOrderId || row.id,
+          goodsId: row.goodsId,
+          status: words(row.priceOrderStatus || row.status || row.orderStatus),
+          price: temuAmount(row.supplierPrice || row.suggestSupplyPrice || row.price, row.currency),
+        })),
+      },
+      {
+        id: 'catalog',
+        title: 'Current goods prices',
+        columns: [col('goods', 'Goods'), col('sku', 'SKU'), col('price', 'Price', 'money'), col('listPrice', 'List price', 'money'), col('stock', 'Stock', 'number')],
+        load: async () => temuGoodsRows(await temu.call('bg.local.goods.list.query', {
+          access_token: token,
+          pageNo: 1,
+          pageSize: 50,
+          goodsSearchType: 1,
+          orderField: 'price',
+          orderType: 0,
+        })),
+      },
+    ])
+    return {
+      summary: [
+        { label: 'Price reviews', value: list[0].rows.length, type: 'number' },
+        { label: 'Goods', value: list[1].rows.length, type: 'number' },
+      ],
+      tables: list,
+    }
+  },
+
+  async fulfillment(token) {
+    const list = await tables([
+      {
+        id: 'unshipped',
+        title: 'Awaiting shipment',
+        columns: [col('order', 'Order'), col('placed', 'Placed', 'date'), col('items', 'Items')],
+        load: async () => (await temu.call('bg.order.list.get', {
+          access_token: token,
+          pageNumber: 1,
+          pageSize: 50,
+          parentOrderStatus: 2,
+          regionId: 211,
+        })).pageItems?.map((row) => {
+          const parent = row.parentOrderMap || row
+          const lines = row.orderList || []
+          return {
+            order: parent.parentOrderSn,
+            placed: temuTime(parent.parentOrderTime),
+            items: lines.map((line) => line.goodsName || line.spec).filter(Boolean).join(', '),
+          }
+        }) || [],
+      },
+      {
+        id: 'warehouses',
+        title: 'Warehouses',
+        columns: [col('id', 'Warehouse'), col('name', 'Name'), col('default', 'Default')],
+        load: async () => firstList(await temu.call('bg.logistics.warehouse.list.get', { access_token: token })).map((row) => ({
+          id: row.warehouseId || row.id,
+          name: row.warehouseName || row.name || '',
+          default: row.defaultWarehouse ? 'Yes' : '',
+        })),
+      },
+      {
+        id: 'templates',
+        title: 'Freight templates',
+        columns: [col('id', 'Template'), col('name', 'Name')],
+        load: async () => firstList(await temu.call('bg.freight.template.list.query', { access_token: token })).map((row) => ({
+          id: row.templateId || row.freightTemplateId || row.id,
+          name: row.templateName || row.freightTemplateName || row.name || '',
+        })),
+      },
+    ])
+    return {
+      summary: [
+        { label: 'Awaiting shipment', value: list[0].rows.length, type: 'number' },
+        { label: 'Warehouses', value: list[1].rows.length, type: 'number' },
+        { label: 'Freight templates', value: list[2].rows.length, type: 'number' },
+      ],
+      tables: list,
+    }
+  },
+}
+
+function firstList(result) {
+  if (Array.isArray(result)) return result
+  if (!result || typeof result !== 'object') return []
+  return Object.values(result).find(Array.isArray) || []
+}
+
+const LOADERS = { ebay: EBAY, tiktok_shop: TIKTOK, temu: TEMU }
 
 function hasLoader(marketplace, sectionId) {
   return typeof LOADERS[marketplace]?.[sectionId] === 'function'

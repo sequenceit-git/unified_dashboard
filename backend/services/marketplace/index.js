@@ -626,7 +626,7 @@ class UnifiedMarketplaceManager {
       shopId: shop._id,
       $or: [
         { externalListingId: { $in: ids } },
-        ...(key ? [{ externalListingId: new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(:|$)`) }] : []),
+        ...(key && shop.marketplace === 'tiktok_shop' ? [{ externalListingId: new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(:|$)`) }] : []),
       ],
     })
     let product = listing ? await Product.findById(listing.productId) : null
