@@ -286,13 +286,14 @@ class TikTokShopService {
         const skus = detail.skus?.length ? detail.skus : product.skus || []
         const attributes = attributeMap(detail.product_attributes)
         const brand = attributes.Brand || ''
-        for (const sku of skus) {
-          const stock = (sku.inventory || []).reduce((sum, row) => sum + Number(row.quantity || 0), 0)
+        const rows = skus.length ? skus : [null]
+        for (const sku of rows) {
+          const stock = sku ? (sku.inventory || []).reduce((sum, row) => sum + Number(row.quantity || 0), 0) : 0
           items.push({
-            sku: sku.seller_sku || String(sku.id),
-            title: detail.title || product.title || `TikTok Shop ${sku.id}`,
+            sku: sku?.seller_sku || (sku?.id ? String(sku.id) : String(product.id)),
+            title: detail.title || product.title || `TikTok Shop ${sku?.id || product.id}`,
             description: plainText(detail.description),
-            price: Number(sku.price?.sale_price || sku.price?.tax_exclusive_price || 0),
+            price: Number(sku?.price?.sale_price || sku?.price?.tax_exclusive_price || 0),
             stock,
             images,
             category: categoryPath(detail.category_chains),
@@ -304,13 +305,13 @@ class TikTokShopService {
             listingStatus: LISTING_STATUS[tiktokStatus] || 'pending',
             marketplaceStatus: tiktokStatus,
             listingError: auditReason(detail, tiktokStatus),
-            externalListingId: `${product.id}:${sku.id}`,
+            externalListingId: sku?.id ? `${product.id}:${sku.id}` : String(product.id),
           })
         }
       }
       pageToken = data.next_page_token || ''
     } while (pageToken && items.length < limit)
-    return { inventoryItems: items }
+    return { inventoryItems: items, complete: !pageToken }
   }
 
   async shopPerformance(accessToken, { shop, from, to } = {}) {

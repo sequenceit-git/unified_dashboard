@@ -117,8 +117,12 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
 
   const remove = async (id) => {
     if (!window.confirm('Delete this product? This cannot be undone.')) return
-    await api.del(`/api/products/${id}`, token)
-    fetchRows()
+    try {
+      await api.del(`/api/products/${id}`, token)
+      fetchRows()
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
   if (disabled) return <EmptyState message={disabledMessage || 'Nothing to show'} />

@@ -14,6 +14,7 @@ const SyncLog = require('../../models/SyncLog')
 const Shop = require('../../models/Shop')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
+const IgnoredListing = require('../../models/IgnoredListing')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 const { saveCustomerStats } = require('../customerStats')
@@ -23,6 +24,16 @@ const marketplaceServices = {
   ebay,
   tiktok_shop: tiktokShop,
   temu,
+}
+
+function productKey(id) {
+  return String(id || '').split(':')[0]
+}
+
+function listingAliases(id) {
+  const value = String(id || '')
+  const key = productKey(value)
+  return [...new Set([value, key].filter(Boolean))]
 }
 
 class UnifiedMarketplaceManager {
@@ -400,6 +411,28 @@ class UnifiedMarketplaceManager {
   }
 
   /**
+   * Removes the shop listing when the catalog product is deleted.
+   * TikTok's delete sets status DELETED; search keeps returning that product.
+   */
+  async removeFromShop(shop, listing) {
+    if (!shop || shop.marketplace !== 'tiktok_shop' || !listing?.externalListingId) return
+    if (listing.marketplaceStatus === 'DELETED') return
+    const service = this.getService(shop.marketplace)
+    await this.withShopToken(shop, (token) => service.applyListingAction(token, 'delete', listing, { shop })).catch(() => {})
+  }
+
+  /** Keeps a removed shop product from being imported again. TikTok search still returns deleted products. */
+  async forgetListing(listing) {
+    const key = productKey(listing?.externalListingId)
+    if (!listing?.shopId || !key) return
+    await IgnoredListing.updateOne(
+      { shopId: listing.shopId, productKey: key },
+      { $setOnInsert: { shopId: listing.shopId, productKey: key } },
+      { upsert: true },
+    )
+  }
+
+  /**
    * Looks up category attribute schema via eBay Taxonomy API
    */
   async getCategoryAttributes(shop, categoryId) {
@@ -479,8 +512,8 @@ class UnifiedMarketplaceManager {
       complete: res.complete ?? items.length < 200,
       items: items.map((item) => ({
         ...item,
-        aliases: [item.externalListingId],
-        matchSkus: [item.sku].filter(Boolean),
+        aliases: listingAliases(item.externalListingId),
+        matchSkus: [item.sku].filter((sku) => sku && !/^none$/i.test(sku)),
         listingStatus: item.listingStatus || 'live',
       })),
     }
@@ -518,16 +551,24 @@ class UnifiedMarketplaceManager {
 
     let ended = 0
     if (fetched.complete) {
-      const result = await Listing.updateMany(
-        {
-          shopId: shop._id,
-          status: { $in: ['live', 'out_of_stock', 'pending', 'paused'] },
-          externalListingId: { $exists: true, $nin: seenListingIds },
-          updatedAt: { $lt: new Date(Date.now() - 10 * 60 * 1000) },
-        },
-        { status: 'ended', syncError: `No longer listed on ${config[shop.marketplace]?.name || shop.marketplace}.`, lastSyncedAt: new Date() },
-      )
-      ended = result.modifiedCount || 0
+      const seen = new Set()
+      for (const id of seenListingIds) listingAliases(id).forEach((key) => seen.add(key))
+      const cutoff = new Date(Date.now() - 10 * 60 * 1000)
+      const candidates = await Listing.find({
+        shopId: shop._id,
+        status: { $in: ['live', 'out_of_stock', 'pending', 'paused'] },
+        externalListingId: { $exists: true, $nin: ['', null] },
+        updatedAt: { $lt: cutoff },
+      })
+      for (const listing of candidates) {
+        const keys = listingAliases(listing.externalListingId)
+        if (keys.some((key) => seen.has(key))) continue
+        listing.status = 'ended'
+        listing.syncError = `No longer returned by ${config[shop.marketplace]?.name || shop.marketplace}.`
+        listing.lastSyncedAt = new Date()
+        await listing.save()
+        ended += 1
+      }
     }
     if (failures.length) console.warn(`Listing sync for ${shop.name}: ${failures.length} item(s) failed. ${failures.slice(0, 3).join(' | ')}`)
     await Shop.updateOne({ _id: shop._id }, { lastSyncAt: new Date() })
@@ -536,7 +577,20 @@ class UnifiedMarketplaceManager {
 
   /** Saves one marketplace listing, creating or updating its product. */
   async saveSyncedListing(shop, item) {
-    let listing = await Listing.findOne({ shopId: shop._id, externalListingId: { $in: item.aliases } })
+    const key = productKey(item.externalListingId)
+    if (key && await IgnoredListing.exists({ shopId: shop._id, productKey: key })) {
+      return { created: false, skipped: true }
+    }
+    const ids = [...new Set([...(item.aliases || []), ...listingAliases(item.externalListingId)])]
+    let listing = await Listing.findOne({
+      shopId: shop._id,
+      $or: [
+        { externalListingId: { $in: ids } },
+        ...(key ? [{ externalListingId: new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(:|$)`) }] : []),
+      ],
+    })
+    // TikTok Delete keeps the product in search with status DELETED. Never create a catalog row for that.
+    if (item.marketplaceStatus === 'DELETED' && !listing) return { created: false, skipped: true }
     let product = listing ? await Product.findById(listing.productId) : null
     if (!product && item.matchSkus.length) product = await Product.findOne({ sku: { $in: item.matchSkus } })
 
@@ -571,6 +625,7 @@ class UnifiedMarketplaceManager {
     }
 
     if (!listing) listing = await Listing.findOne({ productId: product._id, shopId: shop._id })
+    if (item.marketplaceStatus === 'DELETED' && !listing) return { created: false, skipped: true }
     if (!listing) listing = new Listing({ productId: product._id, shopId: shop._id })
     const wasStatus = listing.status
     const wasRaw = listing.marketplaceStatus

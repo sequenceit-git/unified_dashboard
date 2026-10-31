@@ -192,11 +192,19 @@ router.patch('/:id', requireRole('super_admin'), async (req, res) => {
   }
 })
 
-// DELETE /api/products/:id — remove the product and its shop listings
+// DELETE /api/products/:id — remove the product and its shop listings.
+// TikTok Delete leaves the product in search as DELETED, so the id is remembered and is not imported again.
 router.delete('/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    const doc = await Product.findByIdAndDelete(req.params.id)
+    const doc = await Product.findById(req.params.id)
     if (!doc) return res.status(404).json({ error: 'Not found' })
+    const listings = await Listing.find({ productId: doc._id })
+    for (const listing of listings) {
+      await marketplaceManager.forgetListing(listing)
+      const shop = await Shop.findById(listing.shopId)
+      if (shop) await marketplaceManager.removeFromShop(shop, listing)
+    }
+    await Product.findByIdAndDelete(doc._id)
     await Listing.deleteMany({ productId: doc._id })
     res.json({ deleted: true })
   } catch (err) {
