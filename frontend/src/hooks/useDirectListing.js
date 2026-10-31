@@ -19,6 +19,8 @@ function emptySession() {
     categoryId: '',
     categoryState: { loading: false, error: '' },
     fillingAttributes: false,
+    certificationRules: [],
+    certifications: {},
     error: '',
     saving: false,
   }
@@ -87,6 +89,8 @@ export function startDirectFetch(marketplace, { url, useAi, token, titleMax, att
         categoryId: '',
         categoryState: { loading: false, error: '' },
         fillingAttributes: false,
+        certificationRules: [],
+        certifications: {},
       })
     })
     .catch((err) => {

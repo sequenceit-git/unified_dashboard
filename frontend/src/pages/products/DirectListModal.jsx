@@ -6,6 +6,7 @@ import { Input, Select } from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import AttributeField, { matchAspects } from '../../components/listing/AttributeField'
+import CertificationFields, { certificationNeeded, certificationPayload } from '../../components/listing/CertificationFields'
 import { listingFormFor, useShopProfile } from '../../hooks/useShopProfiles'
 import { clearDirectListing, startDirectFetch, useDirectListing } from '../../hooks/useDirectListing'
 import { useApi } from '../../hooks/useApi'
@@ -65,7 +66,8 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const { session, update } = useDirectListing(marketplace)
   const {
     url, useAi, fetching, draft, stock, weight, length, width, height,
-    schema, aspects, extras, categories, categoryId, categoryState, fillingAttributes, error, saving,
+    schema, aspects, extras, categories, categoryId, categoryState, fillingAttributes,
+    certificationRules, certifications, error, saving,
   } = session
 
   const categoryQuery = useDebounced((draft?.title || '').trim().slice(0, 80), 600)
@@ -146,6 +148,18 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     return () => { cancelled = true }
   }, [draft?.sourceUrl, shop?._id, layout.specifics, categoryId, token, update, useAi, marketplace])
 
+  useEffect(() => {
+    if (marketplace !== 'tiktok_shop' || !shop?._id || !categoryId) {
+      update({ certificationRules: [] })
+      return undefined
+    }
+    let cancelled = false
+    api.get(`/api/shops/${shop._id}/categories/${categoryId}/rules`, token)
+      .then((rules) => { if (!cancelled) update({ certificationRules: rules || [] }) })
+      .catch(() => { if (!cancelled) update({ certificationRules: [] }) })
+    return () => { cancelled = true }
+  }, [marketplace, shop?._id, categoryId, token, update])
+
   const set = (key) => (e) => update((current) => ({ draft: { ...current.draft, [key]: e.target.value } }))
   const setAspect = (id, value) => update((current) => ({ aspects: { ...current.aspects, [id]: value } }))
   const setExtra = (index, field, value) => update((current) => ({ extras: current.extras.map((row, i) => (i === index ? { ...row, [field]: value } : row)) }))
@@ -170,6 +184,8 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     const named = namedValues()
     const missing = required.filter((attr) => !asText(aspects[attr.id]))
     if (missing.length) return update({ error: `Fill in: ${missing.map((attr) => attr.name).join(', ')}.` })
+    const missingCerts = (certificationRules || []).filter((rule) => certificationNeeded(rule, aspects, schema) && !certifications?.[rule.id]?.file)
+    if (missingCerts.length) return update({ error: `Upload: ${missingCerts.map((rule) => rule.name).join(', ')}.` })
     if (layout.canList && !shop?._id) return update({ error: `Connect ${shopLabel} in Settings first.` })
     update({ saving: true, error: '' })
     try {
@@ -211,6 +227,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           } : {}),
           ...(layout.condition ? { condition: draft.condition || 'NEW', brand: draft.brand.trim() || named.Brand || 'Unbranded' } : {}),
           ...(categoryId ? { categoryId } : {}),
+          certifications: certificationPayload(certificationRules, aspects, schema, certifications),
           aspects: Object.fromEntries([
             ...schema.map((attr) => [attr.id, aspects[attr.id]]).filter(([, value]) => asText(value)),
             ...extras
@@ -295,6 +312,13 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           </details>
         </>
       )}
+      <CertificationFields
+        rules={certificationRules}
+        aspects={aspects}
+        schema={schema}
+        files={certifications}
+        onChange={(id, value) => update((current) => ({ certifications: { ...current.certifications, [id]: value } }))}
+      />
       {extras.length > 0 && (
         <div>
           <p className="mb-1.5 text-xs font-semibold text-gray-600">From the product page</p>

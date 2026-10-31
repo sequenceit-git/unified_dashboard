@@ -441,6 +441,13 @@ class UnifiedMarketplaceManager {
     return this.withShopToken(shop, (token) => service.getItemAspects(token, categoryId, { shop }))
   }
 
+  /** Extra category requirements, such as TikTok certifications. */
+  async getCategoryRules(shop, categoryId) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getCategoryRules !== 'function') return []
+    return this.withShopToken(shop, (token) => service.getCategoryRules(token, categoryId, { shop }))
+  }
+
   /**
    * Processes refunds/returns across marketplaces
    */

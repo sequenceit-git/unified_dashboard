@@ -8,6 +8,7 @@ import { useApi } from '../../hooks/useApi'
 import { marketplaceLabel } from '../../lib/marketplaces'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import AttributeField, { matchAspects } from '../../components/listing/AttributeField'
+import CertificationFields, { certificationNeeded, certificationPayload } from '../../components/listing/CertificationFields'
 import { CONDITIONS } from '../../lib/listingConditions'
 
 function useDebounced(value, ms) {
@@ -50,6 +51,8 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
   const [categoryId, setCategoryId] = useState('')
   const [categoryState, setCategoryState] = useState({ loading: false, error: '' })
   const [attributes, setAttributes] = useState([])
+  const [certificationRules, setCertificationRules] = useState([])
+  const [certificationFiles, setCertificationFiles] = useState({})
   const [attributeError, setAttributeError] = useState('')
   const [aspects, setAspects] = useState({})
 
@@ -104,6 +107,18 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
     }
   }, [caps.attributes, shopId, categoryId, token])
 
+  useEffect(() => {
+    if (marketplace !== 'tiktok_shop' || !shopId || !categoryId) {
+      setCertificationRules([])
+      return undefined
+    }
+    let cancelled = false
+    api.get(`/api/shops/${shopId}/categories/${categoryId}/rules`, token)
+      .then((rules) => { if (!cancelled) setCertificationRules(rules || []) })
+      .catch(() => { if (!cancelled) setCertificationRules([]) })
+    return () => { cancelled = true }
+  }, [marketplace, shopId, categoryId, token])
+
   const required = attributes.filter((a) => a.required)
   const optional = attributes.filter((a) => !a.required && a.recommended)
   const extraNames = Object.keys(aspects).filter((key) => !attributes.some((a) => a.id === key))
@@ -117,6 +132,8 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
     if (title.length > titleMax) return setError(`${marketplaceLabel(marketplace)} titles can be at most ${titleMax} characters.`)
     if (!(Number(stock) > 0)) return setError('Stock must be at least 1 to list a product.')
     if (missingRequired.length) return setError(`Fill in: ${missingRequired.map((a) => a.name).join(', ')}.`)
+    const missingCerts = certificationRules.filter((rule) => certificationNeeded(rule, aspects, attributes) && !certificationFiles[rule.id]?.file)
+    if (missingCerts.length) return setError(`Upload: ${missingCerts.map((rule) => rule.name).join(', ')}.`)
 
     setBusy(true)
     setError('')
@@ -140,6 +157,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
           ...(caps.condition ? { condition, brand: brand.trim() || 'Unbranded' } : {}),
           ...(categoryId ? { categoryId } : {}),
           ...(Object.keys(filled).length ? { aspects: filled } : {}),
+          certifications: certificationPayload(certificationRules, aspects, attributes, certificationFiles),
         },
         token,
       )
@@ -280,6 +298,13 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
               </details>
             )}
             {attributeError && <p className="text-xs text-red-600">{attributeError}</p>}
+            <CertificationFields
+              rules={certificationRules}
+              aspects={aspects}
+              schema={attributes}
+              files={certificationFiles}
+              onChange={(id, value) => setCertificationFiles((current) => ({ ...current, [id]: value }))}
+            />
 
             {caps.packageDetails && (
               <div className="border-t border-indigo-100 pt-2">

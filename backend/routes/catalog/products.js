@@ -244,6 +244,7 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
       images,
       aspects: req.body.aspects,
       brand: req.body.brand || product.brand,
+      certifications: req.body.certifications,
     }
 
     const capabilities = marketplaceManager.listingCapabilities(shop.marketplace)

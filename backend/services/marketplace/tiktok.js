@@ -406,6 +406,25 @@ class TikTokShopService {
     return [{ categoryId: String(data.leaf_category_id), categoryName: path[path.length - 1] || '', path: path.join(' > ') }]
   }
 
+  /** Certifications and other extra requirements for a leaf category. US shops use category tree v2. */
+  async getCategoryRules(accessToken, categoryId, { shop } = {}) {
+    const data = await this.call(accessToken, 'GET', `/product/202309/categories/${encodeURIComponent(categoryId)}/rules`, {
+      shop,
+      query: { category_version: 'v2', locale: 'en-US' },
+    })
+    return (data.product_certifications || []).map((row) => ({
+      id: String(row.id),
+      name: row.name || 'Certification',
+      required: Boolean(row.is_required),
+      documentDetails: row.document_details || '',
+      sampleImageUrl: row.sample_image_url || '',
+      expirationRequired: Boolean(row.expiration_date?.is_required),
+      conditions: (row.requirement_conditions || [])
+        .filter((item) => item.attribute_id && item.attribute_value_id)
+        .map((item) => ({ attributeId: String(item.attribute_id), valueId: String(item.attribute_value_id) })),
+    }))
+  }
+
   /** Product attributes for a category. Sales properties are variants and are left out. */
   async getItemAspects(accessToken, categoryId, { shop } = {}) {
     const data = await this.call(accessToken, 'GET', `/product/202309/categories/${encodeURIComponent(categoryId)}/attributes`, {
@@ -446,6 +465,27 @@ class TikTokShopService {
     return data.uri
   }
 
+  /** Uploads a certification image or PDF and returns the TikTok id to put on the product. */
+  async uploadCertification(accessToken, file, filename = 'certification') {
+    const { buffer, type } = await certificationBytes(file)
+    const pdf = type.includes('pdf') || String(filename).toLowerCase().endsWith('.pdf')
+    if (pdf) {
+      const name = safeFileName(filename, 'pdf')
+      const form = new FormData()
+      form.append('data', new Blob([buffer], { type: 'application/pdf' }), name)
+      form.append('name', name)
+      const data = await this.call(accessToken, 'POST', '/product/202309/files/upload', { form })
+      if (!data.id) throw new Error('TikTok Shop did not accept the certification PDF.')
+      return { files: [{ id: data.id, name, format: 'PDF' }] }
+    }
+    const form = new FormData()
+    form.append('data', new Blob([buffer], { type: type || 'image/jpeg' }), safeFileName(filename, 'jpg'))
+    form.append('use_case', 'CERTIFICATION_IMAGE')
+    const data = await this.call(accessToken, 'POST', '/product/202309/images/upload', { form })
+    if (!data.uri) throw new Error('TikTok Shop did not accept the certification image.')
+    return { images: [{ uri: data.uri }] }
+  }
+
   /**
    * Creates the product on TikTok Shop. New products go to TikTok's review first, so the
    * listing starts as pending. Returns `{ externalListingId: "productId:skuId", status }`.
@@ -463,9 +503,10 @@ class TikTokShopService {
     const description = options.description || product.description || title
     const categoryId = options.categoryId || await this.recommendCategory(accessToken, shop, title, description)
     if (!categoryId) throw new Error('TikTok Shop could not suggest a category for this title.')
-    const [warehouseId, mainImages] = await Promise.all([
+    const [warehouseId, mainImages, rules] = await Promise.all([
       this.defaultWarehouseId(accessToken, shop),
       Promise.all(images.map((url) => this.uploadImage(accessToken, url))),
+      this.getCategoryRules(accessToken, categoryId, { shop }),
     ])
     const dims = options.dimensions || product.dimensions || {}
     const filled = Object.entries(options.aspects || {}).filter(([, value]) => String(value || '').trim())
@@ -478,6 +519,25 @@ class TikTokShopService {
       seen.add(row.id)
       const name = String(value).trim()
       attributes.push({ id: row.id, values: [row.valueIds[name] ? { id: row.valueIds[name] } : { name }] })
+    }
+    const needed = rules.filter((rule) => certificationRequired(rule, attributes))
+    const provided = Array.isArray(options.certifications) ? options.certifications : []
+    const missing = needed.filter((rule) => !provided.some((item) => String(item.id) === rule.id && item.file))
+    if (missing.length) {
+      throw new Error(`TikTok Shop requires ${missing.map((rule) => rule.name).join(', ')} for this category. Upload each document, then publish again.`)
+    }
+    const certifications = []
+    for (const rule of needed) {
+      const item = provided.find((row) => String(row.id) === rule.id)
+      if (rule.expirationRequired && !item.expirationDate) {
+        throw new Error(`Add an expiration date for ${rule.name}.`)
+      }
+      const uploaded = await this.uploadCertification(accessToken, item.file, item.name || rule.name)
+      certifications.push({
+        id: rule.id,
+        ...uploaded,
+        ...(item.expirationDate ? { expiration_date: Math.floor(new Date(item.expirationDate).getTime() / 1000) } : {}),
+      })
     }
 
     const data = await this.call(accessToken, 'POST', '/product/202309/products', {
@@ -496,6 +556,7 @@ class TikTokShopService {
           unit: 'INCH',
         },
         ...(attributes.length ? { product_attributes: attributes } : {}),
+        ...(certifications.length ? { certifications } : {}),
         save_mode: 'LISTING',
         skus: [
           {
@@ -632,6 +693,31 @@ class TikTokShopService {
     }
     return payload.data || {}
   }
+}
+
+function certificationRequired(rule, attributes) {
+  if (rule.required) return true
+  if (!rule.conditions?.length) return false
+  return rule.conditions.some((condition) => attributes.some((attr) => (
+    attr.id === condition.attributeId && (attr.values || []).some((value) => String(value.id) === condition.valueId)
+  )))
+}
+
+async function certificationBytes(file) {
+  const value = String(file || '')
+  const data = value.match(/^data:([^;]+);base64,(.+)$/)
+  if (data) return { buffer: Buffer.from(data[2], 'base64'), type: data[1].toLowerCase() }
+  if (/^https?:\/\//i.test(value)) {
+    const response = await fetch(value)
+    if (!response.ok) throw new Error('Could not download the certification file.')
+    return { buffer: Buffer.from(await response.arrayBuffer()), type: (response.headers.get('content-type') || '').toLowerCase() }
+  }
+  throw new Error('Upload the certification again.')
+}
+
+function safeFileName(name, extension) {
+  const base = String(name || 'certification').replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40) || 'certification'
+  return `${base}.${extension}`
 }
 
 function signRequest(path, params, bodyText, secret) {

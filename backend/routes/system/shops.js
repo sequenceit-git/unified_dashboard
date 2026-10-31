@@ -233,6 +233,22 @@ router.get('/:id/categories/:categoryId/attributes', async (req, res) => {
   }
 })
 
+// GET /api/shops/:id/categories/:categoryId/rules — certifications required for this category
+router.get('/:id/categories/:categoryId/rules', async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    const rules = await cache.wrap(
+      `taxonomy:${shop._id}:rules:${req.params.categoryId}`,
+      24 * 3600,
+      async () => (await marketplaceManager.getCategoryRules(shop, req.params.categoryId)) || [],
+    )
+    res.json(rules)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/shops/:id/finances — Settlement and fee breakdown
 router.get('/:id/finances', async (req, res) => {
   try {
