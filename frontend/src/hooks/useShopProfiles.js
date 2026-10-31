@@ -66,6 +66,68 @@ export function listingActionsFor(profile, listing) {
   })
 }
 
+const DIRECT_DEFAULTS = {
+  ebay: {
+    titleMax: 80,
+    maxImages: 12,
+    condition: true,
+    specifics: { label: 'Item specifics', hint: 'eBay asks for different specifics per category. Brand is always sent.' },
+    package: 'optional',
+    packageNote: 'Used by eBay for calculated shipping. Skip if your store already has defaults.',
+    category: 'search',
+    intro: 'This form uses the eBay listing format: 80-character title, condition, category, and item specifics.',
+  },
+  tiktok_shop: {
+    titleMax: 255,
+    maxImages: 9,
+    condition: false,
+    specifics: { label: 'Product attributes', hint: 'TikTok asks for attributes per category. Missing required ones keep the product in draft.' },
+    package: 'required',
+    packageNote: 'TikTok needs package weight and size to make shipping labels.',
+    category: 'auto',
+    intro: 'This form uses the TikTok Shop format: longer title, required package size, and category attributes. New products go to review.',
+  },
+  temu: {
+    titleMax: 250,
+    maxImages: 10,
+    condition: false,
+    specifics: null,
+    package: 'hidden',
+    packageNote: '',
+    category: 'text',
+    intro: 'Save the goods to the catalog. Publishing to Temu from EcomPilot is not available yet.',
+  },
+}
+
+/**
+ * Direct-listing and product-form layout for this shop. Profile and listing API
+ * capabilities override defaults, but eBay / TikTok / Temu never share one template.
+ */
+export function listingFormFor(marketplace, profile, caps = {}) {
+  const fallback = DIRECT_DEFAULTS[marketplace] || DIRECT_DEFAULTS.ebay
+  const form = profile?.productForm || {}
+  const packageMode = form.packageDetails
+    ? (form.packageDetails.required ? 'required' : 'optional')
+    : caps.packageDetails
+      ? fallback.package
+      : fallback.package
+  return {
+    titleMax: form.titleMax || caps.titleMax || fallback.titleMax,
+    maxImages: form.maxImages || caps.maxImages || fallback.maxImages,
+    condition: form.condition ?? caps.condition ?? fallback.condition,
+    specifics: form.specifics === null ? null : (form.specifics || fallback.specifics),
+    package: packageMode,
+    packageNote: form.packageDetails?.note || fallback.packageNote,
+    category: caps.categorySearch ? 'search' : caps.categoryAutoPick ? 'auto' : fallback.category,
+    canList: caps.canList !== false && marketplace !== 'temu',
+    listAction: form.listAction || (marketplace === 'tiktok_shop' ? 'Publish to TikTok Shop' : `List on ${profile?.label || 'shop'}`),
+    apiName: caps.apiName || '',
+    note: caps.note || '',
+    intro: fallback.intro,
+    label: profile?.label || fallback.intro.split(' ')[3] || 'Shop',
+  }
+}
+
 export function listingFilters(profile) {
   const statuses = profile?.statuses || {}
   return [

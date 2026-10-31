@@ -168,6 +168,10 @@ router.patch('/:id', requireRole('super_admin'), async (req, res) => {
     const doc = await Product.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true })
     const changes = changedListingFields(before, doc)
     const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
+    if (changes.quantity != null) {
+      const listing = await Listing.findOne({ productId: doc._id }).populate('shopId', 'name marketplace')
+      await require('../../services/notify').stockChanged(doc, listing?.shopId, { was: before.stock }).catch(() => {})
+    }
     res.json({ ...doc.toObject(), marketplaceSync })
   } catch (err) {
     res.status(400).json({ error: err.message })

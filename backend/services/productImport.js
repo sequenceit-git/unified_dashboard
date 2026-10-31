@@ -266,17 +266,22 @@ async function download(url) {
   }
 }
 
-const AI_FIELDS = `{
-  "title": "buyer-friendly listing title, at most 80 characters, no store names or promo words",
+function aiFields(marketplace) {
+  const titleMax = marketplace === 'ebay' ? 80 : marketplace === 'temu' ? 250 : 255
+  const condition = marketplace === 'ebay'
+    ? '\n  "condition": "NEW, LIKE_NEW, USED_GOOD or FOR_PARTS_OR_NOT_WORKING",'
+    : ''
+  return `{
+  "title": "buyer-friendly listing title, at most ${titleMax} characters, no store names or promo words",
   "description": "plain-text description for a marketplace listing: a short intro, then key features one per line starting with '- '. No links, no mention of the source store",
-  "brand": "brand name or Unbranded",
-  "condition": "NEW, LIKE_NEW, USED_GOOD or FOR_PARTS_OR_NOT_WORKING",
+  "brand": "brand name or Unbranded",${condition}
   "price": number or null,
   "attributes": { "Attribute name": "string value only, omit if unknown" },
   "category": "short category path, e.g. Health & Beauty > Fragrances",
   "images": ["direct image URLs, only if you found them"],
   "notes": "one sentence on anything the seller should double-check"
 }`
+}
 
 function parseJson(text) {
   const match = String(text || '').match(/\{[\s\S]*\}/)
@@ -296,7 +301,7 @@ const SHOP_HINT = {
 }
 
 async function aiDraft({ url, extracted, text, searchWeb, marketplace }) {
-  const { apiKey, model } = await getAiConfig()
+  const { apiKey, model } = await getAiConfig({ purpose: 'listing' })
   if (!apiKey) return null
   const client = new OpenAI({ apiKey })
   const facts = searchWeb
@@ -306,7 +311,7 @@ async function aiDraft({ url, extracted, text, searchWeb, marketplace }) {
     model,
     ...(searchWeb ? { tools: [{ type: 'web_search' }] } : {}),
     instructions: `You prepare marketplace listings from a product page. Use only facts from the page; never invent specifications. Copy item specifics that already have values, and omit any you cannot read. ${SHOP_HINT[marketplace] || ''} Reply with JSON only.`,
-    input: `Product page: ${url}\n\n${facts}\n\nReturn this JSON:\n${AI_FIELDS}`,
+    input: `Product page: ${url}\n\n${facts}\n\nReturn this JSON:\n${aiFields(marketplace)}`,
   })
   return parseJson(response.output_text)
 }
@@ -362,7 +367,7 @@ async function importProductFromUrl(rawUrl, { useAi = true, marketplace } = {}) 
     sourceUrl: url.href,
     source,
     aiUsed: Boolean(ai),
-    title: String(ai?.title || base.title || '').slice(0, 255),
+    title: String(ai?.title || base.title || '').slice(0, marketplace === 'ebay' ? 80 : marketplace === 'temu' ? 250 : 255),
     description: String(ai?.description || base.description || '').trim(),
     brand,
     condition: ['NEW', 'LIKE_NEW', 'USED_GOOD', 'FOR_PARTS_OR_NOT_WORKING'].includes(ai?.condition) ? ai.condition : base.condition || 'NEW',

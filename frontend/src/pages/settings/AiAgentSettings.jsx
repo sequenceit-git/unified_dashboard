@@ -96,7 +96,7 @@ export default function AiAgentSettings() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-gray-900">AI agent</h2>
-            <p className="mt-1 text-sm text-gray-500">OpenAI key, plus the models used by Product Discovery and the inbox auto-reply.</p>
+            <p className="mt-1 text-sm text-gray-500">OpenAI key, plus the models used by Product Discovery and the inbox auto-reply. Direct listing always uses gpt-5-mini.</p>
           </div>
           <span
             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${

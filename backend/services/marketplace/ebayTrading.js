@@ -64,7 +64,7 @@ function parseItem(item) {
   const quantity = Number(item.Quantity || 0) - Number(item.SellingStatus?.QuantitySold || 0)
   return {
     itemId: String(item.ItemID),
-    sku: item.SKU ? String(item.SKU) : '',
+    sku: item.SKU && !/^none$/i.test(String(item.SKU).trim()) ? String(item.SKU).trim() : '',
     title: item.Title || '',
     description: item.Description || '',
     price: Number(text(item.SellingStatus?.CurrentPrice) || text(item.StartPrice) || 0),
@@ -251,9 +251,16 @@ async function endListing(token, itemId, reason = 'NotAvailable') {
   return { status: 'ended' }
 }
 
-/** Puts an ended listing back on eBay. May return a new item id. */
-async function relistListing(token, itemId) {
-  const doc = await call(token, 'RelistFixedPriceItem', `<Item><ItemID>${escapeXml(itemId)}</ItemID></Item>`)
+/** Puts an ended listing back on eBay. A restock can send the new quantity. May return a new item id. */
+async function relistListing(token, itemId, { quantity, price, title, description } = {}) {
+  const parts = [
+    `<ItemID>${escapeXml(itemId)}</ItemID>`,
+    quantity != null ? `<Quantity>${Math.max(1, Math.floor(Number(quantity)))}</Quantity>` : '',
+    price != null ? `<StartPrice currencyID="USD">${Number(price).toFixed(2)}</StartPrice>` : '',
+    title ? `<Title>${escapeXml(String(title).slice(0, 80))}</Title>` : '',
+    description ? `<Description>${cdata(description)}</Description>` : '',
+  ]
+  const doc = await call(token, 'RelistFixedPriceItem', `<Item>${parts.join('')}</Item>`)
   return { status: 'live', externalListingId: doc.ItemID ? String(doc.ItemID) : itemId }
 }
 

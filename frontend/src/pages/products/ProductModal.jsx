@@ -104,7 +104,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
         if (failed.length) {
           alert(`Saved here, but not updated on: ${failed.map((item) => `${item.shopName} (${item.error})`).join('; ')}`)
         }
-        onSaved()
+        onSaved(saved)
       } else {
         const attributes = marketplace ? { ...(body.attributes || {}), targetMarketplace: marketplace } : body.attributes
         onSaved(await api.post('/api/products', { ...body, ...(attributes ? { attributes } : {}) }, token))

@@ -135,6 +135,10 @@ router.post('/adjust', requireRole('super_admin'), async (req, res) => {
       console.warn('Listing query failed during stock adjust:', err.message)
     }
 
+    const updated = await Product.findById(productId)
+    const listing = await Listing.findOne({ productId }).populate('shopId', 'name marketplace')
+    await require('../../services/notify').stockChanged(updated, listing?.shopId, { was: stockBefore }).catch(() => {})
+
     res.status(201).json({ stockBefore, stockAfter, log, pushedToMarketplaces: pushedCount })
   } catch (err) {
     res.status(400).json({ error: err.message })

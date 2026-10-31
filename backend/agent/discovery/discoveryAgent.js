@@ -723,6 +723,7 @@ async function runDiscoveryAgent({ categories: rawCategories = [], niche = '', i
     if (!finished) return { reportId, status: 'stopped' }
 
     console.log(`[DiscoveryAgent2] Run completed successfully! ${topOpportunities.length} opportunities saved.`)
+    require('../../services/notify').reportFinished({ _id: reportId }, { ok: true, count: topOpportunities.length }).catch(() => {})
     return {
       reportId,
       status: 'completed',
@@ -737,6 +738,7 @@ async function runDiscoveryAgent({ categories: rawCategories = [], niche = '', i
         error: err.message,
       },
     })
+    require('../../services/notify').reportFinished({ _id: reportId }, { ok: false, error: err.message }).catch(() => {})
     throw err
   }
 }

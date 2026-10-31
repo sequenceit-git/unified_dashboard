@@ -84,6 +84,7 @@ async function runJob(kind, shopId) {
     result = { error: err.message }
   }
   logResult(kind, shop, result)
+  await require('./notify').fromSync(kind, shop, result).catch((err) => console.warn(`[notify] ${err.message}`))
   await Promise.all(spec.clears(shop).map((prefix) => cache.invalidate(prefix)))
   await events.publish({
     type: 'sync',

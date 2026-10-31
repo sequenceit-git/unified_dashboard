@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { api, queryString } from '../../lib/api'
 import Badge, { statusColor } from '../../components/ui/Badge'
@@ -32,7 +32,7 @@ function categoryLabel(name) {
   return parts.slice(-2).join(' / ')
 }
 
-export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '', listLabel = 'List on shop', disabled = false, disabledMessage = '' }) {
+export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null, marketplace = '', listLabel = 'List on shop', disabled = false, disabledMessage = '' }) {
   const { token, isAdmin } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const productStatus = profile?.productForm?.productStatus || {}
@@ -49,13 +49,30 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
   const [categories, setCategories] = useState([])
   const [sort, setSort] = useState('-createdAt')
   const [page, setPage] = useState(1)
+  const requestId = useRef(0)
 
   useEffect(() => {
     api.get('/api/products/categories', token).then(setCategories).catch(() => {})
   }, [token])
 
+  useEffect(() => {
+    setPage(1)
+    setRows([])
+    setLoading(true)
+  }, [marketplace])
+
+  useEffect(() => {
+    if (!rowPatch?._id) return
+    setRows((current) => current.map((row) => (
+      String(row._id) === String(rowPatch._id)
+        ? { ...row, ...rowPatch, shopListing: row.shopListing }
+        : row
+    )))
+  }, [rowPatch])
+
   const fetchRows = async ({ quiet = false } = {}) => {
     if (disabled) return
+    const id = ++requestId.current
     if (!quiet) setLoading(true)
     setError('')
     try {
@@ -74,12 +91,14 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
         })}`,
         token,
       )
+      if (id !== requestId.current) return
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
+      if (id !== requestId.current) return
       setError(e.message)
     } finally {
-      setLoading(false)
+      if (id === requestId.current) setLoading(false)
     }
   }
 
@@ -226,7 +245,11 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
                         onClick: async () => {
                           if (action.confirm && !window.confirm(action.confirm)) return
                           try {
-                            await api.post(`/api/products/${r._id}/listing-action`, { action: action.id }, token)
+                            const updated = await api.post(`/api/products/${r._id}/listing-action`, { action: action.id, marketplace }, token)
+                            requestId.current += 1
+                            setRows((current) => current.map((row) => (
+                              String(row._id) === String(r._id) ? { ...row, shopListing: { ...row.shopListing, ...updated } } : row
+                            )))
                             fetchRows({ quiet: true })
                           } catch (err) {
                             alert(err.message)

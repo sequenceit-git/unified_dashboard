@@ -17,6 +17,7 @@ const Listing = require('../../models/Listing')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 const { saveCustomerStats } = require('../customerStats')
+const { listingUrl } = require('../../utils/listingUrl')
 
 const marketplaceServices = {
   ebay,
@@ -616,6 +617,37 @@ class UnifiedMarketplaceManager {
       listing.lastSyncedAt = new Date()
       await listing.save()
     }
+    // Ending an eBay listing takes it off sale. Revising stock cannot bring it back;
+    // a restock has to relist it.
+    if (Number(changes.quantity) > 0) {
+      const ended = await Listing.find({ productId: product._id, status: 'ended', marketplace: 'ebay' })
+      for (const listing of ended) {
+        const shop = await Shop.findById(listing.shopId)
+        if (!shop || shop.status !== 'connected') continue
+        const service = this.getService(shop.marketplace)
+        if (typeof service.relistListing !== 'function') continue
+        try {
+          const result = await this.withShopToken(shop, (token) => service.relistListing(token, listing.externalListingId, {
+            quantity: changes.quantity,
+            ...(changes.price != null ? { price: changes.price } : {}),
+            ...(changes.title ? { title: changes.title } : {}),
+            ...(changes.description ? { description: changes.description } : {}),
+          }))
+          listing.status = result.status || 'live'
+          if (result.externalListingId) listing.externalListingId = result.externalListingId
+          listing.listingUrl = listingUrl(shop.marketplace, listing.externalListingId, '')
+          listing.marketplaceStatus = 'Active'
+          listing.syncError = null
+          if (changes.price != null) listing.price = changes.price
+          results.push({ shopName: shop.name, ok: true, relisted: true })
+        } catch (err) {
+          listing.syncError = err.message
+          results.push({ shopName: shop.name, ok: false, error: err.message })
+        }
+        listing.lastSyncedAt = new Date()
+        await listing.save()
+      }
+    }
     return results
   }
 
@@ -650,6 +682,7 @@ class UnifiedMarketplaceManager {
         doc.auth.expiresAt = this.tokenExpiry(next.expires_in)
         await doc.save()
       } catch (err) {
+        require('../notify').tokenFailed(doc, err.message).catch(() => {})
         if (force) throw err
         console.warn(`[tokens] ${doc.name}: refresh failed: ${err.message}`)
       }

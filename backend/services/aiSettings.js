@@ -43,7 +43,7 @@ async function loadStored() {
   return doc?.value || {}
 }
 
-/** Key and model to use right now. `purpose: 'inbox'` uses the inbox model, else the discovery model. */
+/** Key and model to use right now. Inbox uses the inbox model; Direct listing always uses gpt-5-mini. */
 async function getAiConfig({ purpose } = {}) {
   if (!cache.value || Date.now() - cache.at >= CACHE_MS) {
     const stored = await loadStored()
@@ -56,7 +56,9 @@ async function getAiConfig({ purpose } = {}) {
     }
   }
   const { apiKey, model, inboxModel } = cache.value
-  return { apiKey, model: purpose === 'inbox' ? inboxModel : model }
+  if (purpose === 'inbox') return { apiKey, model: inboxModel }
+  if (purpose === 'listing') return { apiKey, model: DEFAULT_MODEL }
+  return { apiKey, model }
 }
 
 /** What Settings may show: never the key itself. */

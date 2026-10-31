@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-export default function Modal({ title, onClose, children, wide = false, size = '' }) {
+export default function Modal({ title, onClose, children, wide = false, size = '', closeOnBackdrop = true }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
@@ -15,7 +15,7 @@ export default function Modal({ title, onClose, children, wide = false, size = '
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs p-0 sm:items-center sm:p-4"
-      onClick={onClose}
+      onClick={closeOnBackdrop ? onClose : undefined}
     >
       <div
         className={`w-full max-h-[92vh] flex flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${maxWidthClass}`}

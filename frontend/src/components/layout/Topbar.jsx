@@ -1,8 +1,9 @@
-import { FiBell, FiLogOut, FiMenu, FiSettings } from 'react-icons/fi'
+import { FiLogOut, FiMenu, FiSettings } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { ThemeToggle } from '../../theme/ThemeContext'
 import Button from '../ui/Button'
+import NotificationBell from './NotificationBell'
 
 function formatRole(role) {
   if (role === 'super_admin') return 'Super Admin'
@@ -28,14 +29,7 @@ export default function Topbar({ onMenu }) {
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <ThemeToggle />
-        <button
-          type="button"
-          title="Notifications (coming soon)"
-          aria-label="Notifications"
-          className="relative rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-        >
-          <FiBell size={18} />
-        </button>
+        <NotificationBell />
         <button
           type="button"
           title="Settings"

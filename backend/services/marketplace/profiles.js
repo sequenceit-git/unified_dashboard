@@ -90,6 +90,7 @@ const PROFILES = {
       packageDetails: { required: false, note: 'Used by eBay for calculated shipping.' },
       productStatus: { draft: 'Draft', active: 'Ready to list', archived: 'Archived' },
       listAction: 'List on eBay',
+      directIntro: 'eBay listing format: 80-character title, condition, category, and item specifics.',
     },
     listingActions: [
       { id: 'end', label: 'End listing', confirm: 'End this listing on eBay? Buyers will no longer see it.', statuses: ['live', 'out_of_stock'] },
@@ -139,6 +140,7 @@ const PROFILES = {
       packageDetails: { required: true, note: 'TikTok needs package weight and size to make shipping labels.' },
       productStatus: { draft: 'Draft', active: 'Ready to publish', archived: 'Archived' },
       listAction: 'Publish to TikTok Shop',
+      directIntro: 'TikTok Shop format: longer title, required package size, and category attributes. New products go to review.',
     },
     listingActions: [
       { id: 'unpublish', label: 'Unpublish', confirm: 'Take this product off TikTok Shop? You can publish it again later.', statuses: ['live', 'out_of_stock'], raw: ['ACTIVATE'] },
@@ -174,6 +176,7 @@ const PROFILES = {
       packageDetails: { required: false, note: '' },
       productStatus: { draft: 'Draft', active: 'Ready', archived: 'Archived' },
       listAction: 'List on Temu',
+      directIntro: 'Save goods to the catalog. Publishing to Temu from EcomPilot is not available yet.',
     },
     listingActions: [],
   },

@@ -241,6 +241,11 @@ class EbayService {
     return { success: true, price }
   }
 
+  /** Puts an ended listing back on sale. `changes.quantity` is the stock to list. */
+  async relistListing(accessToken, externalListingId, changes = {}) {
+    return trading.relistListing(accessToken, ebayItemId(externalListingId), changes)
+  }
+
   async applyListingAction(accessToken, action, listing) {
     const itemId = ebayItemId(listing.externalListingId)
     if (action === 'end') return trading.endListing(accessToken, itemId)

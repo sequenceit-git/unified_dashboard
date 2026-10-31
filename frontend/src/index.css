@@ -140,9 +140,16 @@ button {
 }
 
 .dark .bg-gray-50,
-.dark .bg-gray-50\/70,
 .dark .bg-gray-50\/80,
+.dark .bg-gray-50\/70,
 .dark .bg-gray-50\/60,
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50\/40,
+.dark [class~="bg-gray-50/80"],
+.dark [class~="bg-gray-50/70"],
+.dark [class~="bg-gray-50/60"],
+.dark [class~="bg-gray-50/50"],
+.dark [class~="bg-gray-50/40"],
 .dark .bg-slate-100,
 .dark .bg-gray-100 {
   background-color: #1c2436;
@@ -162,9 +169,15 @@ button {
 
 .dark .hover\:bg-indigo-50:hover,
 .dark .bg-indigo-50,
+.dark .bg-indigo-50\/70,
+.dark .bg-indigo-50\/50,
+.dark .bg-indigo-50\/40,
+.dark [class~="bg-indigo-50/70"],
+.dark [class~="bg-indigo-50/50"],
+.dark [class~="bg-indigo-50/40"],
 .dark .group:hover .group-hover\:bg-indigo-50,
 .dark .group:hover .group-hover\:bg-indigo-100 {
-  background-color: #312e81;
+  background-color: rgb(49 46 129 / 0.55);
 }
 
 .dark .text-gray-900,
@@ -256,15 +269,52 @@ button {
 }
 
 .dark .bg-indigo-100,
+.dark .hover\:bg-indigo-100:hover,
 .dark .bg-indigo-200,
-.dark .bg-indigo-200\/60 {
+.dark .bg-indigo-200\/60,
+.dark [class~="bg-indigo-200/60"] {
   background-color: rgb(79 70 229 / 0.38);
+}
+
+.dark .bg-yellow-50,
+.dark .bg-yellow-100 {
+  background-color: rgb(120 53 15 / 0.45);
+}
+
+.dark .bg-purple-50,
+.dark .bg-purple-100 {
+  background-color: rgb(88 28 135 / 0.45);
+}
+
+.dark .bg-amber-100 {
+  background-color: rgb(120 53 15 / 0.5);
+}
+
+.dark .bg-emerald-100 {
+  background-color: rgb(6 78 59 / 0.5);
+}
+
+.dark .text-yellow-700,
+.dark .text-yellow-800,
+.dark .text-yellow-900 {
+  color: #fcd34d;
+}
+
+.dark .text-purple-600,
+.dark .text-purple-700,
+.dark .text-purple-800,
+.dark .text-purple-900 {
+  color: #e9d5ff;
 }
 
 .dark .border-emerald-200,
 .dark .border-red-200,
 .dark .border-amber-200,
+.dark .border-yellow-200,
+.dark .border-yellow-100,
+.dark .border-purple-200,
 .dark .border-indigo-100,
+.dark .border-indigo-200,
 .dark .border-indigo-200\/80 {
   border-color: #3d4a63;
 }

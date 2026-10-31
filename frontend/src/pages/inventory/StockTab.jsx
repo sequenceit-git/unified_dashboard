@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { api, queryString } from '../../lib/api'
 import Card from '../../components/ui/Card'
@@ -17,18 +17,28 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('stock')
   const [page, setPage] = useState(1)
+  const requestId = useRef(0)
+
+  useEffect(() => {
+    setPage(1)
+    setRows([])
+    setLoading(true)
+  }, [marketplace])
 
   const fetchRows = async () => {
+    const id = ++requestId.current
     setLoading(true)
     setError('')
     try {
       const res = await api.get(`/api/products${queryString({ marketplace, q, sort, page, limit: 15 })}`, token)
+      if (id !== requestId.current) return
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
+      if (id !== requestId.current) return
       setError(e.message)
     } finally {
-      setLoading(false)
+      if (id === requestId.current) setLoading(false)
     }
   }
 

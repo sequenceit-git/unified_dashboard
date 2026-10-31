@@ -21,6 +21,7 @@ const settingsRoutes = require('./routes/system/settings')
 const shopRoutes = require('./routes/system/shops')
 const uploadRoutes = require('./routes/system/upload')
 const eventRoutes = require('./routes/system/events')
+const notificationRoutes = require('./routes/system/notifications')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -59,6 +60,7 @@ app.use('/api/inbox', inboxRoutes)
 app.use('/api/research', researchRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/events', eventRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   // Sweep stale/orphaned running or queued reports left behind by server restart
