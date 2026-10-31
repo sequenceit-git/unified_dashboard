@@ -574,10 +574,12 @@ class UnifiedMarketplaceManager {
     if (!listing) listing = new Listing({ productId: product._id, shopId: shop._id })
     const wasStatus = listing.status
     const wasRaw = listing.marketplaceStatus
+    const wasStock = listing.stock
     Object.assign(listing, {
       marketplace: shop.marketplace,
       externalListingId: item.externalListingId,
       price: item.price,
+      stock: Number.isFinite(item.stock) ? item.stock : listing.stock,
       status: item.listingStatus === 'live' && item.stock === 0 ? 'out_of_stock' : item.listingStatus,
       marketplaceStatus: item.marketplaceStatus || undefined,
       listingUrl: item.listingUrl || undefined,
@@ -585,7 +587,11 @@ class UnifiedMarketplaceManager {
       lastSyncedAt: new Date(),
     })
     await listing.save()
-    await require('../notify').listingStatusChanged(listing, shop, { wasStatus, wasRaw, imported: created }).catch(() => {})
+    const notify = require('../notify')
+    await notify.listingStatusChanged(listing, shop, { wasStatus, wasRaw, imported: created }).catch(() => {})
+    if (Number.isFinite(item.stock)) {
+      await notify.stockChanged(product, shop, { was: wasStock, stock: item.stock }).catch(() => {})
+    }
     return { created }
   }
 

@@ -8,6 +8,7 @@ const listingSchema = new mongoose.Schema(
     externalListingId: { type: String },
     listingUrl: { type: String },
     price: { type: Number },
+    stock: { type: Number },
     status: {
       type: String,
       enum: ['pending', 'live', 'out_of_stock', 'paused', 'error', 'ended'],

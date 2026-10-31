@@ -136,8 +136,7 @@ router.post('/adjust', requireRole('super_admin'), async (req, res) => {
     }
 
     const updated = await Product.findById(productId)
-    const listing = await Listing.findOne({ productId }).populate('shopId', 'name marketplace')
-    await require('../../services/notify').stockChanged(updated, listing?.shopId, { was: stockBefore }).catch(() => {})
+    await require('../../services/notify').stockChangedOnShops(updated, { was: stockBefore, stock: stockAfter }).catch(() => {})
 
     res.status(201).json({ stockBefore, stockAfter, log, pushedToMarketplaces: pushedCount })
   } catch (err) {

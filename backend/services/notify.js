@@ -80,15 +80,23 @@ function listingAlertReason(listing, raw, { sentBackToDraft } = {}) {
   return 'This listing failed shop review.'
 }
 
-/** Notify only when stock first drops to the threshold, not on every later sync. */
-async function stockChanged(product, shop, { was } = {}) {
+/**
+ * Notify when stock first drops to the threshold on a shop. `stock` is that
+ * shop's quantity when known; otherwise the catalog product stock is used.
+ */
+async function stockChanged(product, shop, { was, stock } = {}) {
   if (!product?._id) return
-  const key = `low_stock:${product._id}`
-  if (!isLow(product)) return resolve(key)
-  if (was == null && product.source === 'marketplace_sync') return
-  if (was != null && Number(was) <= Number(product.lowStockThreshold ?? 5)) return
   const { shopId, marketplace } = shopRef(shop)
-  const count = Number(product.stock)
+  const key = shopId ? `low_stock:${product._id}:${shopId}` : `low_stock:${product._id}`
+  const count = Number(stock != null ? stock : product.stock)
+  const threshold = Number(product.lowStockThreshold ?? 5)
+  if (!Number.isFinite(count) || count > threshold) {
+    await resolve(key)
+    if (shopId) await resolve(`low_stock:${product._id}`)
+    return
+  }
+  if (was == null && product.source === 'marketplace_sync') return
+  if (was != null && Number(was) <= threshold) return
   await raise({
     type: 'low_stock',
     shopId,
@@ -98,6 +106,20 @@ async function stockChanged(product, shop, { was } = {}) {
     message: `${product.title || product.sku || 'A product'} is at ${count} unit${count === 1 ? '' : 's'}${marketplace ? ` on ${shopLabel(marketplace)}` : ''}.`,
     href: shopPath('/inventory', marketplace),
   })
+}
+
+/** Raises or clears a low-stock alert on every shop listing for this product. */
+async function stockChangedOnShops(product, { was, stock } = {}) {
+  if (!product?._id) return
+  const Listing = require('../models/Listing')
+  const listings = await Listing.find({ productId: product._id }).populate('shopId', 'name marketplace')
+  if (!listings.length) {
+    await stockChanged(product, null, { was, stock })
+    return
+  }
+  for (const listing of listings) {
+    await stockChanged(product, listing.shopId, { was, stock: stock != null ? stock : listing.stock })
+  }
 }
 
 /**
@@ -207,6 +229,7 @@ module.exports = {
   raise,
   resolve,
   stockChanged,
+  stockChangedOnShops,
   listingStatusChanged,
   fromSync,
   tokenFailed,

@@ -184,8 +184,7 @@ router.patch('/:id', requireRole('super_admin'), async (req, res) => {
     const changes = changedListingFields(before, doc)
     const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
     if (changes.quantity != null) {
-      const listing = await Listing.findOne({ productId: doc._id }).populate('shopId', 'name marketplace')
-      await require('../../services/notify').stockChanged(doc, listing?.shopId, { was: before.stock }).catch(() => {})
+      await require('../../services/notify').stockChangedOnShops(doc, { was: before.stock, stock: doc.stock }).catch(() => {})
     }
     res.json({ ...doc.toObject(), marketplaceSync })
   } catch (err) {
