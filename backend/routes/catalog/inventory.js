@@ -115,7 +115,7 @@ router.post('/adjust', requireRole('super_admin'), async (req, res) => {
     // Synchronize adjusted stock to active marketplace listings
     let pushedCount = 0
     try {
-      const listings = await Listing.find({ productId, status: 'live' }).populate('shopId')
+      const listings = await Listing.find({ productId, status: { $in: ['live', 'out_of_stock'] } }).populate('shopId')
       for (const item of listings) {
         if (item.shopId) {
           try {
@@ -144,7 +144,7 @@ router.post('/adjust', requireRole('super_admin'), async (req, res) => {
 // POST /api/inventory/sync — push all live product inventory levels to connected marketplace listings
 router.post('/sync', requireRole('super_admin'), async (req, res) => {
   try {
-    const listingFilter = { status: 'live' }
+    const listingFilter = { status: { $in: ['live', 'out_of_stock'] } }
     const marketplace = canonicalMarketplace(req.body?.marketplace)
     if (marketplace) listingFilter.marketplace = marketplace
     const listings = await Listing.find(listingFilter).populate('productId').populate('shopId')

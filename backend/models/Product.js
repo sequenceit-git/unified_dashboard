@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { newSku } = require('../utils/sku')
 
 const variantSchema = new mongoose.Schema(
   {
@@ -17,6 +18,8 @@ const productSchema = new mongoose.Schema(
     description: { type: String },
     category: { type: String },
     brand: { type: String },
+    // eBay condition code (NEW, USED_GOOD, ...), used as the default when listing.
+    condition: { type: String },
     images: [{ type: String }],
     basePrice: { type: Number },
     costPrice: { type: Number, default: null },
@@ -34,11 +37,27 @@ const productSchema = new mongoose.Schema(
 
     variants: [variantSchema],
     status: { type: String, enum: ['draft', 'active', 'archived'], default: 'draft' },
-    source: { type: String, enum: ['manual', 'bulk_upload', 'research_bot', 'marketplace_sync'], default: 'manual' },
+    source: { type: String, enum: ['manual', 'bulk_upload', 'research_bot', 'marketplace_sync', 'url_import'], default: 'manual' },
     sourceReportId: { type: mongoose.Schema.Types.ObjectId, ref: 'ResearchReport', default: null },
   },
   { timestamps: true },
 )
+
+// SKUs are generated when left blank, so nobody has to type one.
+productSchema.pre('validate', async function assignSku() {
+  if (!String(this.sku || '').trim()) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const sku = newSku(this.attributes?.targetMarketplace)
+      if (!(await this.constructor.exists({ sku }))) {
+        this.sku = sku
+        break
+      }
+    }
+  }
+  this.variants.forEach((variant, index) => {
+    if (!String(variant.sku || '').trim()) variant.sku = `${this.sku}-${index + 1}`
+  })
+})
 
 productSchema.index({ sku: 1 }, { unique: true })
 productSchema.index({ 'variants.sku': 1 }, { sparse: true })

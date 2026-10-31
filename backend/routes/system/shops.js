@@ -4,6 +4,10 @@ const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const config = require('../../config/marketplaces')
 const { canonicalMarketplace } = require('../../utils/marketplace')
+const profiles = require('../../services/marketplace/profiles')
+const sections = require('../../services/marketplace/sections')
+const syncQueue = require('../../services/syncQueue')
+const cache = require('../../services/cache')
 
 const router = express.Router()
 
@@ -59,10 +63,56 @@ router.use(requireAuth, loadAccess)
 router.get('/', async (req, res) => {
   try {
     const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
-    const shops = await Shop.find(filter).select('name marketplace status externalShopId lastSyncAt aiReplyEnabled').sort({ marketplace: 1 })
-    res.json(shops)
+    const shops = await Shop.find(filter).select('name marketplace status externalShopId lastSyncAt aiReplyEnabled').sort({ marketplace: 1 }).lean()
+    res.json(shops.map((shop) => ({ ...shop, listing: marketplaceManager.listingCapabilities(shop.marketplace) })))
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/shops/profiles?refresh=1 — each shop's sections, status names and product form,
+// with the sections its API access allows. Sub-admins only get their marketplaces.
+router.get('/profiles', async (req, res) => {
+  try {
+    const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
+    const refresh = req.query.refresh === '1' && req.user.role === 'super_admin'
+    const shops = await Shop.find(filter).select('name marketplace status apiAccess apiAccessCheckedAt shopCipher')
+    let list = await marketplaceManager.shopProfiles(shops, { refresh })
+    if (req.user.role === 'sub_admin') list = list.filter((profile) => shops.some((shop) => shop.marketplace === profile.marketplace))
+    res.json(list)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/shops/sections/:sectionId?marketplace=ebay — data for a shop-specific section.
+router.get('/sections/:sectionId', async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.query.marketplace)
+    const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === req.params.sectionId)
+    if (!section || !sections.hasLoader(marketplace, section.id)) return res.status(404).json({ error: 'This shop has no such section' })
+    const user = req.authUser || req.user
+    if (user.role !== 'super_admin' && !user.mainRoutes?.includes(section.route)) {
+      return res.status(403).json({ error: `You do not have access to the ${section.route} section` })
+    }
+    const filter = { marketplace, status: 'connected' }
+    if (req.user.role === 'sub_admin') filter._id = { $in: req.allowedShopIds }
+    const shop = await Shop.findOne(filter)
+    if (!shop) return res.status(404).json({ error: `No connected ${config[marketplace]?.name || marketplace} shop` })
+    if (shop.apiAccess?.[section.id]?.ok === false) {
+      return res.status(403).json({ error: `${section.label} isn't available for this shop: ${shop.apiAccess[section.id].reason}` })
+    }
+    // Cleared by every orders sync of this shop; ?refresh=1 loads it fresh.
+    const key = `shop:${shop._id}:section:${section.id}`
+    let data = req.query.refresh === '1' ? undefined : await cache.get(key)
+    if (data === undefined) {
+      data = await marketplaceManager.withShopToken(shop, (token) => sections.load(marketplace, section.id, token, shop))
+      data.loadedAt = new Date().toISOString()
+      if (!data.tables.some((table) => table.error)) await cache.set(key, data, 10 * 60)
+    }
+    res.json({ id: section.id, label: section.label, shopName: shop.name, ...data })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
   }
 })
 
@@ -147,10 +197,10 @@ router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (r
       { upsert: true, returnDocument: 'after' },
     )
 
-    // Trigger initial background sync for orders & listings
-    marketplaceManager.syncAllForShop(shop).catch((err) => {
-      console.warn(`Initial sync failed for shop ${shop.name}:`, err.message)
-    })
+    // First load of orders and listings, and which sections the new login can reach.
+    for (const kind of ['full', 'access']) {
+      syncQueue.enqueue(kind, shop._id).catch((err) => console.warn(`Initial ${kind} sync failed for ${shop.name}:`, err.message))
+    }
 
     res.json({ success: true, shop })
   } catch (err) {
@@ -163,8 +213,9 @@ router.get('/:id/categories', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
-    const categories = await marketplaceManager.getCategories(shop, req.query.q)
-    res.json(categories || [])
+    const query = String(req.query.q || '').trim().toLowerCase()
+    const categories = await cache.wrap(`taxonomy:${shop._id}:categories:${query}`, 6 * 3600, async () => (await marketplaceManager.getCategories(shop, req.query.q)) || [])
+    res.json(categories)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -175,8 +226,8 @@ router.get('/:id/categories/:categoryId/attributes', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
-    const attributes = await marketplaceManager.getCategoryAttributes(shop, req.params.categoryId)
-    res.json(attributes || [])
+    const attributes = await cache.wrap(`taxonomy:${shop._id}:attributes:${req.params.categoryId}`, 24 * 3600, async () => (await marketplaceManager.getCategoryAttributes(shop, req.params.categoryId)) || [])
+    res.json(attributes)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -197,7 +248,8 @@ router.get('/:id/finances', async (req, res) => {
 // POST /api/shops/sync-all — Synchronizes orders, customers, and product listings from all shops
 router.post('/sync-all', requireRole('super_admin'), async (req, res) => {
   try {
-    const results = await marketplaceManager.syncAllShops()
+    const shops = await Shop.find({ status: 'connected' }).select('_id')
+    const results = await Promise.all(shops.map((shop) => syncQueue.enqueue('full', shop._id, { wait: true })))
     res.json({ success: true, results })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -207,9 +259,9 @@ router.post('/sync-all', requireRole('super_admin'), async (req, res) => {
 // POST /api/shops/:id/sync — Synchronize specific shop
 router.post('/:id/sync', async (req, res) => {
   try {
-    const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
+    const shop = await Shop.findById(req.params.id).select('_id')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
-    const result = await marketplaceManager.syncAllForShop(shop)
+    const result = await syncQueue.enqueue('full', shop._id, { wait: true })
     res.json({ success: true, result })
   } catch (err) {
     res.status(500).json({ error: err.message })

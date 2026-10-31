@@ -18,6 +18,14 @@ const ORDER_STATUS = {
 }
 
 class TemuService {
+  /** Temu goods create and edit calls are not wired yet, so listing is read-only here. */
+  listingCapabilities = {
+    canList: false,
+    apiName: 'Temu Open API',
+    editAfterListing: [],
+    note: 'Listing on Temu from EcomPilot is not available yet. Create the product in Temu Seller Center; it will sync here.',
+  }
+
   getAuthUrl(state = '') {
     if (!config.appKey) throw new Error('Temu app key (TEMU_APP_KEY) is missing')
     const params = new URLSearchParams({
@@ -99,13 +107,13 @@ class TemuService {
           price: Number(sku.retailPrice?.amount || good.retailPrice?.amount || sku.price || 0),
           stock: Number(sku.quantity || sku.stock || good.quantity || 0),
           images: [good.thumbUrl || good.imageUrl].filter(Boolean),
-          category: 'General',
-          brand: 'Temu',
+          category: '',
+          brand: '',
           externalListingId: String(good.goodsId || sku.goodsId || sku.skuId),
         })
       }
     }
-    return { inventoryItems: items }
+    return { inventoryItems: items, complete: goods.length < Math.min(limit, 100) }
   }
 
   async createListing() {

@@ -15,9 +15,18 @@ import {
   FiShoppingCart,
   FiUsers,
   FiShield,
+  FiTruck,
+  FiRotateCcw,
+  FiMessageCircle,
+  FiPercent,
+  FiDollarSign,
+  FiVideo,
+  FiStar,
+  FiLock,
 } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
 import { allowedShopSections } from '../../hooks/useShopSection'
+import { useShopProfiles } from '../../hooks/useShopProfiles'
 
 const TOP_LINKS = [
   { to: '/market-research', label: 'Product Discovery', route: 'market-research', icon: FiCompass },
@@ -48,13 +57,30 @@ const SHOP_SECTIONS = [
   },
 ]
 
-const SHOP_LINKS = [
-  { path: '/analytics', label: 'Analytics', route: 'analytics', icon: FiBarChart2 },
-  { path: '/inbox', label: 'Inbox', route: 'inbox', icon: FiInbox },
-  { path: '/products', label: 'Products', route: 'products', icon: FiPackage },
-  { path: '/inventory', label: 'Inventory', route: 'inventory', icon: FiLayers },
-  { path: '/orders', label: 'Orders', route: 'orders', icon: FiShoppingCart },
-  { path: '/customers', label: 'Customers', route: 'customers', icon: FiUsers },
+const SECTION_ICONS = {
+  analytics: FiBarChart2,
+  inbox: FiInbox,
+  products: FiPackage,
+  inventory: FiLayers,
+  orders: FiShoppingCart,
+  customers: FiUsers,
+  fulfillment: FiTruck,
+  returns: FiRotateCcw,
+  offers: FiMessageCircle,
+  promotions: FiPercent,
+  finances: FiDollarSign,
+  content: FiVideo,
+  creators: FiStar,
+}
+
+// Shown until the shop profiles load.
+const DEFAULT_SECTIONS = [
+  { id: 'analytics', path: '/analytics', label: 'Analytics', route: 'analytics' },
+  { id: 'inbox', path: '/inbox', label: 'Inbox', route: 'inbox' },
+  { id: 'products', path: '/products', label: 'Products', route: 'products' },
+  { id: 'inventory', path: '/inventory', label: 'Inventory', route: 'inventory' },
+  { id: 'orders', path: '/orders', label: 'Orders', route: 'orders' },
+  { id: 'customers', path: '/customers', label: 'Customers', route: 'customers' },
 ]
 
 function readOpen(storageKey, defaultOpen) {
@@ -167,7 +193,16 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
       </button>
       {open && (
         <div id={`${section.id}-shop-nav`}>
-          {links.map((link) => (
+          {links.map((link) => (link.unavailable ? (
+            <div
+              key={link.to}
+              title={`${link.label}: ${link.reason || 'Not available for this shop'}`}
+              className={`${itemClass(true, false)} cursor-not-allowed opacity-50 hover:bg-transparent hover:text-slate-600`}
+            >
+              <FiLock size={18} className="shrink-0" />
+              <ItemLabel>{link.label}</ItemLabel>
+            </div>
+          ) : (
             <NavItem
               key={link.to}
               to={link.to}
@@ -178,7 +213,7 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
             >
               {link.label}
             </NavItem>
-          ))}
+          )))}
         </div>
       )}
     </div>
@@ -189,15 +224,23 @@ export default function Sidebar({ open, onClose }) {
   const { hasRoute, isAdmin, user } = useAuth()
   const { pathname, search } = useLocation()
   const topLinks = TOP_LINKS.filter((link) => hasRoute(link.route))
-  const allowedShopIds = new Set(allowedShopSections(user, isAdmin).map((section) => section.id))
-  const shopSections = SHOP_SECTIONS.filter((section) => allowedShopIds.has(section.id)).map((section) => ({
-    ...section,
-    links: SHOP_LINKS.filter((link) => hasRoute(link.route)).map((link) => ({
-      ...link,
-      shop: section.id,
-      to: `${link.path}?shop=${section.id}`,
-    })),
-  })).filter((section) => section.links.length > 0)
+  const { profiles } = useShopProfiles()
+  const allowed = allowedShopSections(user, isAdmin)
+  const shopSections = SHOP_SECTIONS.filter((section) => allowed.some((item) => item.id === section.id)).map((section) => {
+    const marketplace = allowed.find((item) => item.id === section.id).marketplace
+    const profile = profiles?.find((item) => item.marketplace === marketplace)
+    return {
+      ...section,
+      label: profile?.label || section.label,
+      links: (profile?.sections || DEFAULT_SECTIONS).filter((link) => hasRoute(link.route)).map((link) => ({
+        ...link,
+        icon: SECTION_ICONS[link.id] || FiPackage,
+        shop: section.id,
+        to: `${link.path}?shop=${section.id}`,
+        unavailable: link.available === false,
+      })),
+    }
+  }).filter((section) => section.links.length > 0)
 
   return (
     <>

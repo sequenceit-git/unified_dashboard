@@ -1,5 +1,6 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
+const { cachedResponse } = require('../../services/cache')
 
 const resources = {
   users: require('../../models/User'),
@@ -21,17 +22,9 @@ const resources = {
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('dashboard'))
 
-let overviewCache = { timestamp: 0, data: null, userId: null }
-
 // GET /api/dashboard/overview — document counts per collection (parallel + cached)
-router.get('/overview', async (req, res) => {
+router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
   try {
-    const now = Date.now()
-    const userKey = `${req.user.id}_${req.user.role}`
-    if (overviewCache.data && overviewCache.userId === userKey && now - overviewCache.timestamp < 10000) {
-      return res.json(overviewCache.data)
-    }
-
     const entries = Object.entries(resources)
     const results = await Promise.all(
       entries.map(async ([name, model]) => [name, await model.countDocuments(shopFilter(req, model))]),
@@ -97,7 +90,6 @@ router.get('/overview', async (req, res) => {
         lowStock,
       },
     }
-    overviewCache = { timestamp: now, data: responseData, userId: userKey }
     res.json(responseData)
   } catch (err) {
     res.status(500).json({ error: err.message })

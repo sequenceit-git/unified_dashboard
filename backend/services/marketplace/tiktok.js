@@ -102,6 +102,17 @@ function amountOf(value) {
   return Number(value.amount || 0)
 }
 
+const LISTING_STATUS = {
+  ACTIVATE: 'live',
+  PENDING: 'pending',
+  DRAFT: 'paused',
+  FAILED: 'error',
+  SELLER_DEACTIVATED: 'paused',
+  PLATFORM_DEACTIVATED: 'paused',
+  FREEZE: 'paused',
+  DELETED: 'ended',
+}
+
 /** Customer-service message `content` is a JSON string; only text-like types carry readable words. */
 function chatMessage(row) {
   let text = ''
@@ -125,6 +136,22 @@ function chatMessage(row) {
 }
 
 class TikTokShopService {
+  /** What the List dialog shows for TikTok Shop (Product API 202309). */
+  listingCapabilities = {
+    canList: true,
+    apiName: 'TikTok Shop Product API',
+    titleMax: 255,
+    maxImages: 9,
+    categorySearch: false,
+    categoryAutoPick: true,
+    attributes: true,
+    condition: false,
+    packageDetails: true,
+    editAfterListing: ['title', 'description', 'price', 'stock'],
+    listingActions: ['unpublish', 'publish', 'delete'],
+    note: 'TikTok picks the category from the title. New products go to TikTok review before they appear in the shop.',
+  }
+
   getAuthUrl(state = '') {
     if (!config.serviceId) {
       throw new Error('TikTok Shop service id (TIKTOK_SHOP_SERVICE_ID) is missing')
@@ -220,7 +247,8 @@ class TikTokShopService {
           }
         }
         const images = imageUrls(detail.main_images || product.main_images)
-        const catalogStatus = (detail.product_status || product.status) === 'ACTIVATE' ? 'active' : 'draft'
+        const tiktokStatus = detail.status || detail.product_status || product.status
+        const catalogStatus = tiktokStatus === 'ACTIVATE' ? 'active' : 'draft'
         const skus = detail.skus?.length ? detail.skus : product.skus || []
         const attributes = attributeMap(detail.product_attributes)
         const brand = attributes.Brand || ''
@@ -239,6 +267,9 @@ class TikTokShopService {
             dimensions: toInches(detail.package_dimensions),
             attributes,
             status: catalogStatus,
+            listingStatus: LISTING_STATUS[tiktokStatus] || 'pending',
+            marketplaceStatus: tiktokStatus,
+            listingError: tiktokStatus === 'FAILED' ? 'TikTok Shop rejected this product in review. Check it in Seller Center.' : '',
             externalListingId: `${product.id}:${sku.id}`,
           })
         }
@@ -320,28 +351,178 @@ class TikTokShopService {
     return { externalMessageId: data.message_id ? String(data.message_id) : null }
   }
 
+  /** Leaf category TikTok suggests for a title. */
+  async recommendCategory(accessToken, shop, title, description) {
+    const data = await this.call(accessToken, 'POST', '/product/202309/categories/recommend', {
+      shop,
+      body: { product_title: String(title).slice(0, 255), description: description || undefined, category_version: 'v2' },
+    })
+    return data.leaf_category_id ? String(data.leaf_category_id) : null
+  }
+
+  /** The suggested category with its path, in the same shape as eBay's suggestions. */
+  async getCategories(accessToken, query, { shop } = {}) {
+    const data = await this.call(accessToken, 'POST', '/product/202309/categories/recommend', {
+      shop,
+      body: { product_title: String(query || '').slice(0, 255), category_version: 'v2' },
+    })
+    if (!data.leaf_category_id) return []
+    const path = (data.categories || []).map((row) => row.name).filter(Boolean)
+    return [{ categoryId: String(data.leaf_category_id), categoryName: path[path.length - 1] || '', path: path.join(' > ') }]
+  }
+
+  /** Product attributes for a category. Sales properties are variants and are left out. */
+  async getItemAspects(accessToken, categoryId, { shop } = {}) {
+    const data = await this.call(accessToken, 'GET', `/product/202309/categories/${encodeURIComponent(categoryId)}/attributes`, {
+      shop,
+      query: { category_version: 'v2' },
+    })
+    return (data.attributes || [])
+      .filter((row) => row.type !== 'SALES_PROPERTY')
+      .map((row) => ({
+        id: String(row.id),
+        name: row.name,
+        required: Boolean(row.is_requried ?? row.is_required),
+        recommended: !(row.requirement_conditions || []).length,
+        values: (row.values || []).map((value) => value.name),
+        valueIds: Object.fromEntries((row.values || []).map((value) => [value.name, String(value.id)])),
+        freeText: row.is_customizable !== false || !(row.values || []).length,
+      }))
+  }
+
+  async defaultWarehouseId(accessToken, shop) {
+    const data = await this.call(accessToken, 'GET', '/logistics/202309/warehouses', { shop })
+    const warehouses = (data.warehouses || []).filter((row) => row.type !== 'RETURN_WAREHOUSE')
+    const chosen = warehouses.find((row) => row.is_default) || warehouses[0]
+    if (!chosen) throw new Error('TikTok Shop has no sales warehouse. Add one in Seller Center first.')
+    return String(chosen.id)
+  }
+
+  /** TikTok only accepts its own image URIs, so each public image is downloaded and uploaded. */
+  async uploadImage(accessToken, imageUrl) {
+    const source = await fetch(imageUrl)
+    if (!source.ok) throw new Error(`Could not download image ${imageUrl} (${source.status})`)
+    const type = source.headers.get('content-type') || 'image/jpeg'
+    const form = new FormData()
+    form.append('data', new Blob([await source.arrayBuffer()], { type }), `image.${type.split('/')[1] || 'jpg'}`)
+    form.append('use_case', 'MAIN_IMAGE')
+    const data = await this.call(accessToken, 'POST', '/product/202309/images/upload', { form })
+    if (!data.uri) throw new Error('TikTok Shop did not accept the image.')
+    return data.uri
+  }
+
+  /**
+   * Creates the product on TikTok Shop. New products go to TikTok's review first, so the
+   * listing starts as pending. Returns `{ externalListingId: "productId:skuId", status }`.
+   */
   async createListing(accessToken, product, options = {}) {
-    if (!options.categoryId) {
-      throw new Error('TikTok Shop listing requires a category id from Product categories')
-    }
     const shop = options.shop
-    return this.call(accessToken, 'POST', '/product/202309/products', {
+    const title = String(options.title || product.title || '').slice(0, 255)
+    const images = (options.images?.length ? options.images : product.images || []).filter((url) => /^https?:\/\//i.test(url)).slice(0, 9)
+    if (!images.length) throw new Error('TikTok Shop needs at least one product image with a public link.')
+    const quantity = Math.floor(Number(options.stock ?? product.stock ?? 0))
+    if (!(quantity > 0)) throw new Error('Set stock to at least 1 before listing on TikTok Shop.')
+    const price = Number(options.price ?? product.basePrice)
+    if (!(price > 0)) throw new Error('Set a price above 0 before listing on TikTok Shop.')
+
+    const description = options.description || product.description || title
+    const categoryId = options.categoryId || await this.recommendCategory(accessToken, shop, title, description)
+    if (!categoryId) throw new Error('TikTok Shop could not suggest a category for this title.')
+    const [warehouseId, mainImages] = await Promise.all([
+      this.defaultWarehouseId(accessToken, shop),
+      Promise.all(images.map((url) => this.uploadImage(accessToken, url))),
+    ])
+    const dims = options.dimensions || product.dimensions || {}
+    const filled = Object.entries(options.aspects || {}).filter(([, value]) => String(value || '').trim())
+    const schema = filled.length ? await this.getItemAspects(accessToken, categoryId, { shop }).catch(() => []) : []
+    const attributes = filled
+      .map(([id, value]) => {
+        const row = schema.find((attr) => attr.id === id || attr.name === id)
+        if (!row) return null
+        const name = String(value).trim()
+        return { id: row.id, values: [row.valueIds[name] ? { id: row.valueIds[name] } : { name }] }
+      })
+      .filter(Boolean)
+
+    const data = await this.call(accessToken, 'POST', '/product/202309/products', {
       shop,
       body: {
-        title: options.title || product.title,
-        description: product.description || product.title,
-        category_id: options.categoryId,
-        main_images: (product.images || []).slice(0, 9).map((uri) => ({ uri })),
-        package_weight: { value: String(options.weight || product.weight || 1), unit: 'POUND' },
+        title,
+        description: /<\w+/.test(description) ? description : `<p>${description.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`,
+        category_id: categoryId,
+        category_version: 'v2',
+        main_images: mainImages.map((uri) => ({ uri })),
+        package_weight: { value: String(Number(options.weight || product.weight || 1)), unit: 'POUND' },
+        package_dimensions: {
+          length: String(Math.ceil(Number(dims.length || 10))),
+          width: String(Math.ceil(Number(dims.width || 10))),
+          height: String(Math.ceil(Number(dims.height || 5))),
+          unit: 'INCH',
+        },
+        ...(attributes.length ? { product_attributes: attributes } : {}),
         skus: [
           {
             seller_sku: product.sku,
-            price: { amount: String(options.price || product.basePrice || 0), currency: 'USD' },
-            inventory: [{ quantity: Number(product.stock || 0) }],
+            price: { amount: price.toFixed(2), currency: 'USD' },
+            inventory: [{ warehouse_id: warehouseId, quantity }],
           },
         ],
+        idempotency_key: `${product._id || product.sku}-${Date.now()}`,
       },
     })
+    const skuId = data.skus?.[0]?.id
+    const marketplaceStatus = data.status || 'PENDING'
+    return {
+      externalListingId: skuId ? `${data.product_id}:${skuId}` : String(data.product_id),
+      status: LISTING_STATUS[marketplaceStatus] || 'pending',
+      marketplaceStatus,
+      categoryId,
+    }
+  }
+
+  async applyListingAction(accessToken, action, listing, options = {}) {
+    const [productId] = String(listing.externalListingId || '').split(':')
+    if (!productId) throw new Error('This product is not on TikTok Shop yet.')
+    const shop = options.shop
+    const ids = { product_ids: [productId] }
+    if (action === 'unpublish') {
+      await this.call(accessToken, 'POST', '/product/202309/products/deactivate', { shop, body: ids })
+      return { status: 'paused', marketplaceStatus: 'SELLER_DEACTIVATED' }
+    }
+    if (action === 'publish') {
+      const raw = listing.marketplaceStatus
+      if (raw === 'DRAFT' || raw === 'FAILED' || listing.status === 'error') {
+        await this.call(accessToken, 'POST', `/product/202509/products/${productId}/partial_edit`, {
+          shop,
+          body: { save_mode: 'LISTING' },
+        })
+      } else {
+        await this.call(accessToken, 'POST', '/product/202309/products/activate', { shop, body: ids })
+      }
+      return { status: 'pending', marketplaceStatus: 'PENDING' }
+    }
+    if (action === 'delete') {
+      await this.call(accessToken, 'DELETE', '/product/202309/products', { shop, body: ids })
+      return { status: 'ended', marketplaceStatus: 'DELETED' }
+    }
+    throw new Error(`TikTok Shop cannot ${action} a listing.`)
+  }
+
+  /** Changes title, description, price or stock of a synced product. */
+  async reviseListing(accessToken, externalListingId, changes, options = {}) {
+    if (changes.price != null) await this.updatePrice(accessToken, null, changes.price, 'USD', { ...options, externalListingId })
+    if (changes.quantity != null) await this.updateStock(accessToken, null, changes.quantity, { ...options, externalListingId })
+    if (changes.title || changes.description) {
+      const [productId] = String(externalListingId || '').split(':')
+      await this.call(accessToken, 'POST', `/product/202509/products/${productId}/partial_edit`, {
+        shop: options.shop,
+        body: {
+          ...(changes.title ? { title: String(changes.title).slice(0, 255) } : {}),
+          ...(changes.description ? { description: changes.description } : {}),
+        },
+      })
+    }
+    return { success: true }
   }
 
   async updateStock(accessToken, sku, quantity, options = {}) {
@@ -349,9 +530,10 @@ class TikTokShopService {
     if (!productId || !skuId) {
       throw new Error(`TikTok Shop stock update needs a synced product and SKU for ${sku}`)
     }
+    const warehouseId = await this.defaultWarehouseId(accessToken, options.shop)
     return this.call(accessToken, 'POST', `/product/202309/products/${productId}/inventory/update`, {
       shop: options.shop,
-      body: { skus: [{ id: skuId, inventory: [{ quantity: Number(quantity) }] }] },
+      body: { skus: [{ id: skuId, inventory: [{ warehouse_id: warehouseId, quantity: Math.max(0, Math.floor(Number(quantity))) }] }] },
     })
   }
 
@@ -383,7 +565,8 @@ class TikTokShopService {
     return payload.data || payload
   }
 
-  async call(accessToken, method, path, { shop, query = {}, body } = {}) {
+  /** Signed request. `form` sends multipart data, which TikTok leaves out of the signature. */
+  async call(accessToken, method, path, { shop, query = {}, body, form } = {}) {
     if (!config.appKey || !config.appSecret) {
       throw new Error('TikTok Shop credentials (TIKTOK_SHOP_APP_KEY, TIKTOK_SHOP_APP_SECRET) are missing')
     }
@@ -396,16 +579,15 @@ class TikTokShopService {
     Object.keys(params).forEach((key) => {
       if (params[key] === undefined || params[key] === null) delete params[key]
     })
-    const bodyText = body === undefined ? '' : JSON.stringify(body)
+    const bodyText = body === undefined || form ? '' : JSON.stringify(body)
     params.sign = signRequest(path, params, bodyText, config.appSecret)
     const url = `${config.apiBaseUrl}${path}?${new URLSearchParams(params)}`
     const response = await fetch(url, {
       method,
-      headers: {
-        'content-type': 'application/json',
-        'x-tts-access-token': accessToken,
-      },
-      body: method === 'GET' ? undefined : bodyText,
+      headers: form
+        ? { 'x-tts-access-token': accessToken }
+        : { 'content-type': 'application/json', 'x-tts-access-token': accessToken },
+      body: method === 'GET' ? undefined : form || bodyText,
     })
     const payload = await response.json().catch(() => ({}))
     if (!response.ok || (payload.code && payload.code !== 0)) {

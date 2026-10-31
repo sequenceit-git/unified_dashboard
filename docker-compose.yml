@@ -19,6 +19,44 @@ services:
       retries: 5
       start_period: 10s
 
+  redis:
+    image: redis:7-alpine
+    container_name: unified-dashboard-redis
+    restart: unless-stopped
+    # Cache entries and queued jobs only; nothing here is the source of truth.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Loads new marketplace data (inbox, orders, listings) in the background.
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: unified-dashboard-worker
+    restart: unless-stopped
+    command: ["node", "worker.js"]
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017/unified_dashboard}
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - internal-net
+
   backend:
     build:
       context: ./backend
@@ -28,12 +66,15 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - ./.env
     environment:
       - NODE_ENV=production
       - PORT=5000
       - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017/unified_dashboard}
+      - REDIS_URL=redis://redis:6379
     volumes:
       - backend-uploads:/app/uploads
     networks:
@@ -75,6 +116,7 @@ services:
 volumes:
   backend-uploads:
   mongodb-data:
+  redis-data:
 
 networks:
   internal-net:

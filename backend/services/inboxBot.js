@@ -169,41 +169,4 @@ async function syncAndReply(shop) {
   return result
 }
 
-let timer = null
-let running = false
-const lastErrors = new Map()
-
-/** Production default: on. Set INBOX_AUTO_SYNC=true|false and INBOX_SYNC_MINUTES to override. */
-function startInboxScheduler() {
-  const enabled = process.env.INBOX_AUTO_SYNC
-    ? process.env.INBOX_AUTO_SYNC === 'true'
-    : process.env.NODE_ENV === 'production'
-  const minutes = Number(process.env.INBOX_SYNC_MINUTES || 5)
-  if (!enabled || !(minutes > 0) || timer) return
-
-  const tick = async () => {
-    if (running) return
-    running = true
-    try {
-      const shops = await Shop.find({ status: 'connected', marketplace: { $in: Object.keys(MARKETPLACE_LABEL) } })
-      for (const shop of shops) {
-        const result = await syncAndReply(shop).catch((err) => ({ error: err.message }))
-        const key = String(shop._id)
-        if (result.error && lastErrors.get(key) !== result.error) {
-          console.warn(`[inbox] ${shop.name}: ${result.error}`)
-        }
-        lastErrors.set(key, result.error || '')
-      }
-    } catch (err) {
-      console.warn(`[inbox] scheduled sync failed: ${err.message}`)
-    } finally {
-      running = false
-    }
-  }
-
-  timer = setInterval(tick, minutes * 60 * 1000)
-  setTimeout(tick, 30 * 1000)
-  console.log(`[inbox] Checking shop inboxes every ${minutes} minute(s)`)
-}
-
-module.exports = { syncAndReply, refreshThread, startInboxScheduler }
+module.exports = { syncAndReply, refreshThread }

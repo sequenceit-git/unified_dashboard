@@ -6,6 +6,7 @@
 const ebay = require('./ebay')
 const tiktokShop = require('./tiktok')
 const temu = require('./temu')
+const profiles = require('./profiles')
 const config = require('../../config/marketplaces')
 const Order = require('../../models/Order')
 const Customer = require('../../models/Customer')
@@ -68,24 +69,33 @@ class UnifiedMarketplaceManager {
    */
   async publishListing(shop, product, options = {}) {
     const service = this.getService(shop.marketplace)
-    const token = shop.auth?.accessTokenEnc || ''
-
-    if (!token) {
-      throw new Error(`Shop "${shop.name}" does not have an active ${shop.marketplace} token. Please connect your store via OAuth first.`)
+    const images = this.publicImageUrls(options.images?.length ? options.images : product.images)
+    try {
+      return await this.withShopToken(shop, (token) => service.createListing(token, product, { ...options, images, shop }))
+    } catch (err) {
+      if (err.notConnected) {
+        throw new Error(`Shop "${shop.name}" is not connected. Connect it again from Settings.`)
+      }
+      throw err
     }
-
-    return service.createListing(token, product, { ...options, shop })
   }
 
+  /** Marketplaces fetch images themselves, so uploaded files need the site's public address. */
+  publicImageUrls(images = []) {
+    const base = (process.env.PUBLIC_URL || (process.env.CLIENT_URL || '').split(',')[0] || '').trim().replace(/\/$/, '')
+    return images
+      .map((url) => String(url || '').trim())
+      .filter(Boolean)
+      .map((url) => (url.startsWith('/') && base ? `${base}${url}` : url))
+      .filter((url) => /^https?:\/\//i.test(url))
+  }
 
   /**
    * Pushes stock updates to a connected marketplace
    */
   async pushStock(shop, { sku, quantity, externalListingId }) {
     const service = this.getService(shop.marketplace)
-    const token = shop.auth?.accessTokenEnc || ''
-    if (!token) return { success: false, reason: 'unauthorized_shop' }
-    return service.updateStock(token, sku, quantity, { shop, externalListingId })
+    return this.withShopToken(shop, (token) => service.updateStock(token, sku, quantity, { shop, externalListingId }))
   }
 
   /**
@@ -122,10 +132,7 @@ class UnifiedMarketplaceManager {
       startedAt: new Date(),
     })
 
-    if (shop._id && !shop.auth?.accessTokenEnc) {
-      shop = await Shop.findById(shop._id).select('+auth.accessTokenEnc +auth.refreshTokenEnc')
-    }
-    const token = shop.auth?.accessTokenEnc || ''
+    const token = shop._id ? await this.freshToken(shop) : shop.auth?.accessTokenEnc || ''
     if (!token) {
       syncLog.status = 'partial'
       syncLog.finishedAt = new Date()
@@ -154,6 +161,7 @@ class UnifiedMarketplaceManager {
           },
           items: (o.lineItems || []).map((li) => ({
             sku: li.sku || li.legacyItemId,
+            externalListingId: li.legacyItemId ? String(li.legacyItemId) : undefined,
             title: li.title,
             quantity: li.quantity,
             unitPrice: parseFloat(li.lineItemCost?.value || 0),
@@ -251,20 +259,24 @@ class UnifiedMarketplaceManager {
           }
           item.productId = prod._id
 
-          // Ensure listing link exists
-          await Listing.findOneAndUpdate(
-            { productId: prod._id, shopId: shop._id },
-            {
-              productId: prod._id,
-              shopId: shop._id,
-              marketplace: shop.marketplace,
-              externalListingId: `item-${item.sku}`,
-              price: item.unitPrice || prod.basePrice,
-              status: 'live',
-              lastSyncedAt: new Date(),
-            },
-            { upsert: true, returnDocument: 'after' },
-          )
+          // Links the product to its listing; the listing sync decides whether it is still live.
+          if (item.externalListingId) {
+            await Listing.updateOne(
+              { productId: prod._id, shopId: shop._id },
+              {
+                $setOnInsert: {
+                  productId: prod._id,
+                  shopId: shop._id,
+                  marketplace: shop.marketplace,
+                  externalListingId: item.externalListingId,
+                  price: item.unitPrice || prod.basePrice,
+                  status: 'pending',
+                  lastSyncedAt: new Date(),
+                },
+              },
+              { upsert: true },
+            )
+          }
         }
 
         const existing = await Order.findOne({ shopId: shop._id, externalOrderId: ord.externalOrderId })
@@ -286,8 +298,7 @@ class UnifiedMarketplaceManager {
 
       await saveCustomerStats(touchedCustomerIds)
 
-      shop.lastSyncAt = new Date()
-      await shop.save()
+      await Shop.updateOne({ _id: shop._id }, { lastSyncAt: new Date() })
 
       syncLog.stats = {
         fetched: rawOrders.length,
@@ -316,10 +327,8 @@ class UnifiedMarketplaceManager {
    * Pushes price update to marketplace
    */
   async pushPrice(shop, { sku, price, externalListingId }) {
-    const token = shop.auth?.accessTokenEnc || ''
-    if (!token) return { success: false, reason: 'unauthorized_shop' }
     const service = this.getService(shop.marketplace)
-    return service.updatePrice(token, sku, price, 'USD', { shop, externalListingId })
+    return this.withShopToken(shop, (token) => service.updatePrice(token, sku, price, 'USD', { shop, externalListingId }))
   }
 
   /**
@@ -328,8 +337,65 @@ class UnifiedMarketplaceManager {
   async getCategories(shop, query = 'General') {
     const service = this.getService(shop.marketplace)
     if (typeof service.getCategories !== 'function') return []
-    const token = shop.auth?.accessTokenEnc || ''
-    return service.getCategories(token, query)
+    return this.withShopToken(shop, (token) => service.getCategories(token, query, { shop }))
+  }
+
+  /**
+   * Re-checks which sections the shop's token can reach and saves the result on the shop.
+   * Returns the saved `apiAccess` map.
+   */
+  async checkShopAccess(shop) {
+    const access = await this.withShopToken(shop, (token) => profiles.probeSections(shop.marketplace, token, shop))
+    const checkedAt = new Date()
+    await Shop.updateOne({ _id: shop._id }, { apiAccess: access, apiAccessCheckedAt: checkedAt })
+    shop.apiAccess = access
+    shop.apiAccessCheckedAt = checkedAt
+    return access
+  }
+
+  /** Profiles for every marketplace, each with its connected shop's section access. */
+  async shopProfiles(shops, { refresh = false } = {}) {
+    const result = []
+    for (const marketplace of Object.keys(profiles.PROFILES)) {
+      const shop = shops.find((item) => item.marketplace === marketplace && item.status === 'connected')
+        || shops.find((item) => item.marketplace === marketplace)
+      if (shop?.status === 'connected') {
+        const syncQueue = require('../syncQueue')
+        const stale = !shop.apiAccessCheckedAt || Date.now() - new Date(shop.apiAccessCheckedAt).getTime() > profiles.ACCESS_TTL_MS
+        if (refresh || !shop.apiAccess) {
+          const access = await syncQueue.enqueue('access', shop._id, { wait: true, timeoutMs: 30000 })
+          if (access && !access.error && !access.queued && !access.skipped) {
+            shop.apiAccess = access
+            shop.apiAccessCheckedAt = new Date()
+          }
+        } else if (stale) {
+          syncQueue.enqueue('access', shop._id).catch((err) => console.warn(`Access check failed for ${shop.name}:`, err.message))
+        }
+      }
+      result.push({ ...profiles.describe(marketplace, shop), shopId: shop?._id || null, shopName: shop?.name || null })
+    }
+    return result
+  }
+
+  /** What each marketplace's listing API supports, so the List dialog can show the right fields. */
+  listingCapabilities(marketplace) {
+    return marketplaceServices[marketplace]?.listingCapabilities || { canList: false, editAfterListing: [] }
+  }
+
+  /**
+   * Pause, publish, end, relist or delete a listing using that shop's API.
+   * Returns the fields to save on the listing document.
+   */
+  async applyListingAction(shop, listing, action) {
+    const allowed = (profiles.PROFILES[shop.marketplace]?.listingActions || []).some((item) => {
+      if (item.id !== action) return false
+      if (listing.marketplaceStatus && item.raw?.includes(listing.marketplaceStatus)) return true
+      return item.statuses.includes(listing.status)
+    })
+    if (!allowed) throw new Error(`This ${shop.marketplace === 'ebay' ? 'eBay' : 'shop'} listing cannot ${action} in its current state.`)
+    const service = this.getService(shop.marketplace)
+    if (typeof service.applyListingAction !== 'function') throw new Error(`Listing actions are not available for ${shop.name}.`)
+    return this.withShopToken(shop, (token) => service.applyListingAction(token, action, listing, { shop }))
   }
 
   /**
@@ -338,8 +404,7 @@ class UnifiedMarketplaceManager {
   async getCategoryAttributes(shop, categoryId) {
     const service = this.getService(shop.marketplace)
     if (typeof service.getItemAspects !== 'function') return []
-    const token = shop.auth?.accessTokenEnc || ''
-    return service.getItemAspects(token, categoryId)
+    return this.withShopToken(shop, (token) => service.getItemAspects(token, categoryId, { shop }))
   }
 
   /**
@@ -380,133 +445,186 @@ class UnifiedMarketplaceManager {
     }
   }
 
+  /** Listings as they are on the marketplace right now, in one shape for every shop. */
+  async fetchShopListings(shop, token) {
+    const service = this.getService(shop.marketplace)
+    if (shop.marketplace === 'ebay') {
+      const items = await service.getListings(token)
+      return {
+        complete: items.length < 200,
+        items: items.map((item) => ({
+          sku: item.sku || `EBAY-${item.itemId}`,
+          aliases: [item.itemId, `item-${item.itemId}`, ...(item.sku ? [`item-${item.sku}`, `ebay-item-${item.sku}`] : [])],
+          matchSkus: [item.sku, item.itemId, `EBAY-${item.itemId}`].filter(Boolean),
+          externalListingId: item.itemId,
+          title: item.title,
+          description: item.description,
+          price: item.price,
+          stock: item.stock,
+          images: item.images,
+          category: item.category,
+          brand: item.brand,
+          attributes: item.specifics,
+          listingStatus: 'live',
+          marketplaceStatus: item.listingStatus || 'Active',
+          listingUrl: item.url || `https://www.ebay.com/itm/${item.itemId}`,
+        })),
+      }
+    }
+    if (typeof service.getInventory !== 'function') return { complete: false, items: [] }
+    const res = await service.getInventory(token, { limit: 200, shop })
+    const items = res.inventoryItems || []
+    return {
+      complete: res.complete ?? items.length < 200,
+      items: items.map((item) => ({
+        ...item,
+        aliases: [item.externalListingId],
+        matchSkus: [item.sku].filter(Boolean),
+        listingStatus: item.listingStatus || 'live',
+      })),
+    }
+  }
+
   /**
-   * Synchronizes existing product listings from eBay into the platform
-   * Automatically populates the Products catalog and Listings tab!
+   * Pulls listings from the marketplace. The marketplace wins: title, description, price, stock
+   * and images edited on eBay or TikTok overwrite the dashboard copy. Listings that are gone
+   * from the marketplace are marked ended.
    */
   async syncListingsForShop(shop) {
-    if (shop._id && !shop.auth?.accessTokenEnc) {
-      shop = await Shop.findById(shop._id).select('+auth.accessTokenEnc +auth.refreshTokenEnc')
-    }
-    const token = shop.auth?.accessTokenEnc || ''
-    if (!token) {
-      return { synced: 0, reason: 'No active access token' }
-    }
-
-    const service = this.getService(shop.marketplace)
-    let rawItems = []
-
+    let fetched
     try {
-      const res = await service.getInventory(token, { limit: 50, shop })
-      rawItems = (res.inventoryItems || []).map((item) => (
-        item.title
-          ? {
-              sku: item.sku,
-              title: item.title,
-              description: item.description || '',
-              price: Number(item.price || 0),
-              stock: Number(item.stock || 0),
-              images: item.images || [],
-              weight: item.weight,
-              dimensions: item.dimensions,
-              attributes: item.attributes,
-              category: item.category || 'General',
-              brand: item.brand || '',
-              externalListingId: item.externalListingId,
-            }
-          : {
-              sku: item.sku,
-              title: item.product?.title || `eBay Item ${item.sku}`,
-              description: item.product?.description || '',
-              price: Number(item.product?.aspects?.Price?.[0] || 19.99),
-              stock: Number(item.availability?.shipToLocationAvailability?.quantity || 10),
-              images: item.product?.imageUrls || [],
-              weight: Number(item.packageWeightAndSize?.weight?.value || 1),
-              category: item.product?.aspects?.Category?.[0] || 'General',
-              brand: item.product?.aspects?.Brand?.[0] || 'Generic',
-              externalListingId: `ebay-item-${item.sku}`,
-            }
-      ))
-
-      let createdProducts = 0
-      let updatedListings = 0
-
-      for (const item of rawItems) {
-        // 1. Create or find Catalog Product
-        let product = await Product.findOne({ sku: item.sku })
-        if (!product) {
-          product = await Product.create({
-            sku: item.sku,
-            title: item.title,
-            description: item.description,
-            category: item.category || 'General',
-            brand: item.brand || 'DevBrand',
-            images: item.images || [],
-            basePrice: item.price || 19.99,
-            stock: item.stock || 0,
-            weight: item.weight || 1,
-            dimensions: item.dimensions || undefined,
-            attributes: item.attributes || undefined,
-            status: item.status || 'active',
-            source: 'marketplace_sync',
-          })
-          createdProducts++
-        } else {
-          const fill = (field, value, placeholders = []) => {
-            if (value == null || value === '') return
-            const current = product[field]
-            if (current == null || current === '' || placeholders.includes(current)) product[field] = value
-          }
-          fill('description', item.description)
-          fill('category', item.category, ['General'])
-          fill('brand', item.brand, ['TikTok Shop', 'DevBrand', shop.name])
-          if (!product.brand || product.brand === 'TikTok Shop') product.brand = item.brand || ''
-          if (item.images?.length && (!product.images || product.images.length === 0)) product.images = item.images
-          if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
-          if (item.dimensions && product.dimensions?.length === 10 && product.dimensions?.width === 10 && product.dimensions?.height === 5) {
-            product.dimensions = item.dimensions
-          }
-          if (item.attributes && Object.keys(item.attributes).length && (!product.attributes || !Object.keys(product.attributes).length)) {
-            product.attributes = item.attributes
-          }
-          await product.save()
-        }
-
-        // 2. Link or update marketplace Listing
-        await Listing.findOneAndUpdate(
-          { productId: product._id, shopId: shop._id },
-          {
-            productId: product._id,
-            shopId: shop._id,
-            marketplace: shop.marketplace,
-            externalListingId: item.externalListingId,
-            price: item.price,
-            status: 'live',
-            lastSyncedAt: new Date(),
-          },
-          { upsert: true, new: true },
-        )
-        updatedListings++
-      }
-
-      return {
-        productsImported: createdProducts,
-        listingsLinked: updatedListings,
-      }
+      fetched = await this.withShopToken(shop, (token) => this.fetchShopListings(shop, token))
     } catch (err) {
       console.warn(`Listing sync failed for shop ${shop.name}:`, err.message)
       return { productsImported: 0, listingsLinked: 0, error: err.message }
     }
+
+    let createdProducts = 0
+    let updatedListings = 0
+    const seenListingIds = []
+    const failures = []
+    for (const item of fetched.items) {
+      if (!item.externalListingId) continue
+      seenListingIds.push(item.externalListingId)
+      try {
+        const { created } = await this.saveSyncedListing(shop, item)
+        if (created) createdProducts++
+        updatedListings++
+      } catch (err) {
+        failures.push(`${item.externalListingId}: ${err.message}`)
+      }
+    }
+
+    let ended = 0
+    if (fetched.complete) {
+      const result = await Listing.updateMany(
+        {
+          shopId: shop._id,
+          status: { $in: ['live', 'out_of_stock', 'pending', 'paused'] },
+          externalListingId: { $exists: true, $nin: seenListingIds },
+          updatedAt: { $lt: new Date(Date.now() - 10 * 60 * 1000) },
+        },
+        { status: 'ended', syncError: `No longer listed on ${config[shop.marketplace]?.name || shop.marketplace}.`, lastSyncedAt: new Date() },
+      )
+      ended = result.modifiedCount || 0
+    }
+    if (failures.length) console.warn(`Listing sync for ${shop.name}: ${failures.length} item(s) failed. ${failures.slice(0, 3).join(' | ')}`)
+    await Shop.updateOne({ _id: shop._id }, { lastSyncAt: new Date() })
+    return { productsImported: createdProducts, listingsLinked: updatedListings, listingsEnded: ended, failed: failures.length }
+  }
+
+  /** Saves one marketplace listing, creating or updating its product. */
+  async saveSyncedListing(shop, item) {
+    let listing = await Listing.findOne({ shopId: shop._id, externalListingId: { $in: item.aliases } })
+    let product = listing ? await Product.findById(listing.productId) : null
+    if (!product && item.matchSkus.length) product = await Product.findOne({ sku: { $in: item.matchSkus } })
+
+    const fromMarketplace = {
+      title: item.title,
+      description: item.description,
+      basePrice: item.price > 0 ? item.price : undefined,
+      stock: Number.isFinite(item.stock) ? item.stock : undefined,
+      images: item.images?.length ? item.images : undefined,
+      category: item.category,
+      brand: item.brand,
+    }
+    const created = !product
+    if (created) {
+      product = await Product.create({
+        sku: item.sku,
+        ...Object.fromEntries(Object.entries(fromMarketplace).filter(([, value]) => value !== undefined && value !== '')),
+        title: item.title || `Item ${item.externalListingId}`,
+        weight: item.weight || 1,
+        dimensions: item.dimensions || undefined,
+        attributes: item.attributes || undefined,
+        status: item.listingStatus === 'live' ? 'active' : 'draft',
+        source: 'marketplace_sync',
+      })
+    } else {
+      for (const [field, value] of Object.entries(fromMarketplace)) {
+        if (value !== undefined && value !== '') product[field] = value
+      }
+      if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
+      if (item.listingStatus === 'live' && product.status === 'draft') product.status = 'active'
+      await product.save()
+    }
+
+    if (!listing) listing = await Listing.findOne({ productId: product._id, shopId: shop._id })
+    if (!listing) listing = new Listing({ productId: product._id, shopId: shop._id })
+    Object.assign(listing, {
+      marketplace: shop.marketplace,
+      externalListingId: item.externalListingId,
+      price: item.price,
+      status: item.listingStatus === 'live' && item.stock === 0 ? 'out_of_stock' : item.listingStatus,
+      marketplaceStatus: item.marketplaceStatus || undefined,
+      listingUrl: item.listingUrl || undefined,
+      syncError: item.listingError || null,
+      lastSyncedAt: new Date(),
+    })
+    await listing.save()
+    return { created }
+  }
+
+  /**
+   * Pushes dashboard edits (title, description, images, price, stock) to every linked
+   * listing that is live on its marketplace. Returns one result per listing.
+   */
+  async pushProductChanges(product, changes) {
+    const results = []
+    const listings = await Listing.find({ productId: product._id, status: { $in: ['live', 'out_of_stock', 'pending', 'paused'] } })
+    for (const listing of listings) {
+      const shop = await Shop.findById(listing.shopId)
+      if (!shop || shop.status !== 'connected') continue
+      const service = this.getService(shop.marketplace)
+      if (typeof service.reviseListing !== 'function') continue
+      const payload = {
+        ...changes,
+        ...(changes.images ? { images: this.publicImageUrls(changes.images) } : {}),
+      }
+      try {
+        await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop }))
+        listing.syncError = null
+        if (changes.price != null) listing.price = changes.price
+        if (changes.quantity != null && ['live', 'out_of_stock'].includes(listing.status)) {
+          listing.status = Number(changes.quantity) > 0 ? 'live' : 'out_of_stock'
+        }
+        results.push({ shopName: shop.name, ok: true })
+      } catch (err) {
+        listing.syncError = err.message
+        results.push({ shopName: shop.name, ok: false, error: err.message })
+      }
+      listing.lastSyncedAt = new Date()
+      await listing.save()
+    }
+    return results
   }
 
   /**
    * Full synchronization for a single shop (both orders & listings)
    */
   async syncAllForShop(shop) {
-    const [ordersResult, listingsResult] = await Promise.all([
-      this.syncOrdersForShop(shop).catch((err) => ({ error: err.message })),
-      this.syncListingsForShop(shop).catch((err) => ({ error: err.message })),
-    ])
+    const listingsResult = await this.syncListingsForShop(shop).catch((err) => ({ error: err.message }))
+    const ordersResult = await this.syncOrdersForShop(shop).catch((err) => ({ error: err.message }))
     return { shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, orders: ordersResult, listings: listingsResult }
   }
 
@@ -626,7 +744,8 @@ class UnifiedMarketplaceManager {
   async getThreadHistory(shop, convo) {
     const service = this.getService(shop.marketplace)
     if (typeof service.getThreadMessages !== 'function') return []
-    return this.withShopToken(shop, (token) => service.getThreadMessages(token, shop, convo.externalThreadId))
+    const conversationType = convo.replyable === false ? 'FROM_EBAY' : 'FROM_MEMBERS'
+    return this.withShopToken(shop, (token) => service.getThreadMessages(token, shop, convo.externalThreadId, { conversationType }))
   }
 
   /** Sends text to the buyer on the marketplace; returns `{ externalMessageId }`. */

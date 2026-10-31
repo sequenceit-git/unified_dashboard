@@ -4,8 +4,54 @@
  */
 
 const config = require('../../config/marketplaces').ebay
+const trading = require('./ebayTrading')
+
+/** eBay notices arrive as full HTML emails; this keeps the readable text. */
+function htmlToText(html) {
+  return String(html || '')
+    .replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<br\s*\/?>|<\/(p|div|tr|li|h\d)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/[ \t\f\v]+/g, ' ')
+    .replace(/\s*\n\s*/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/** Numeric eBay item ID; older dashboard records stored `item-<id>`. */
+function ebayItemId(externalListingId) {
+  const id = String(externalListingId || '').replace(/^(ebay-)?item-/, '')
+  if (!/^\d{9,}$/.test(id)) {
+    throw new Error('This product is not linked to a live eBay listing yet. Sync the shop or list it again.')
+  }
+  return id
+}
 
 class EbayService {
+  /** What the List dialog shows for eBay (Trading API AddFixedPriceItem, Taxonomy API). */
+  listingCapabilities = {
+    canList: true,
+    apiName: 'eBay Trading API',
+    titleMax: 80,
+    maxImages: 12,
+    categorySearch: true,
+    categoryAutoPick: false,
+    attributes: true,
+    condition: true,
+    packageDetails: true,
+    editAfterListing: ['title', 'description', 'price', 'stock', 'images'],
+    listingActions: ['end', 'relist'],
+    note: 'Shipping, returns and item location are copied from your existing eBay listings.',
+  }
+
   /**
    * Generates the OAuth authorization URL for the seller consent page
    */
@@ -158,185 +204,96 @@ class EbayService {
     return response.json()
   }
 
-  /**
-   * Updates inventory item quantity on eBay
-   */
-  async updateStock(accessToken, sku, quantity) {
-    const payload = {
-      availability: {
-        shipToLocationAvailability: {
-          quantity: Math.max(0, quantity),
-        },
-      },
-    }
-
-    const response = await fetch(`${config.apiBaseUrl}/sell/inventory/v1/inventory_item/${encodeURIComponent(sku)}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'Content-Language': 'en-US',
-      },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Stock Update Error: ${err.message || response.statusText}`)
-    }
-
-    return { success: true }
+  /** Live listings with full details, from the Trading API (includes Seller Hub listings). */
+  async getListings(accessToken) {
+    return trading.getActiveListings(accessToken)
   }
 
   /**
-   * Publishes or creates a product inventory item on eBay
-   * @param {string} accessToken
-   * @param {Object} product
-   * @param {Object|number} options - Listing options or price override
+   * Publishes a live fixed-price listing. Location, shipping and returns are copied from one of
+   * the seller's live listings. Returns `{ externalListingId: ItemID, status }`.
    */
   async createListing(accessToken, product, options = {}) {
-    const opts = typeof options === 'number' ? { price: options } : options
-    const images = (opts.images && opts.images.length ? opts.images : product.images) || []
-
-    const payload = {
-      availability: {
-        shipToLocationAvailability: {
-          quantity: Number(opts.stock ?? product.stock ?? 1),
-        },
-      },
-      condition: opts.condition || 'NEW',
-      product: {
-        // eBay strictly caps title at 80 characters
-        title: (opts.title || product.title || '').slice(0, 80),
-        description: opts.description || product.description || product.title,
-        aspects: {
-          Brand: [opts.brand || product.brand || 'Unbranded'],
-          ...(product.category ? { Category: [product.category] } : {}),
-          ...(opts.aspects || {}),
-        },
-        imageUrls: images.length ? images : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'],
-      },
-      packageWeightAndSize: {
-        weight: {
-          value: Number(opts.weight || product.weight || 1),
-          unit: 'POUND',
-        },
-        dimensions: {
-          length: Number(opts.dimensions?.length || product.dimensions?.length || 10),
-          width: Number(opts.dimensions?.width || product.dimensions?.width || 10),
-          height: Number(opts.dimensions?.height || product.dimensions?.height || 5),
-          unit: 'INCH',
-        },
-      },
+    const opts = typeof options === 'number' ? { price: options } : { ...options }
+    if (!opts.categoryId) {
+      const [suggestion] = await this.getCategories(accessToken, opts.title || product.title).catch(() => [])
+      opts.categoryId = suggestion?.categoryId
     }
-
-    const response = await fetch(`${config.apiBaseUrl}/sell/inventory/v1/inventory_item/${encodeURIComponent(product.sku)}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'Content-Language': 'en-US',
-      },
-      body: JSON.stringify(payload),
+    const { itemId } = await trading.addListing(accessToken, product, {
+      ...opts,
+      images: opts.images?.length ? opts.images : product.images,
+      cacheKey: String(opts.shop?._id || 'default'),
     })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Listing Error: ${err.message || response.statusText}`)
-    }
-
-    return { externalListingId: `ebay-item-${product.sku}`, status: 'live' }
+    return { externalListingId: itemId, status: opts.verifyOnly ? 'pending' : 'live', categoryId: opts.categoryId }
   }
 
-  /**
-   * Updates pricing for an existing offer or inventory item on eBay
-   */
-  async updatePrice(accessToken, sku, price, currency = 'USD') {
-    const payload = {
-      pricingSummary: {
-        price: {
-          value: String(price),
-          currency,
-        },
-      },
-    }
+  /** Changes title, description, images, price or quantity of a live listing. */
+  async reviseListing(accessToken, externalListingId, changes) {
+    return trading.reviseListing(accessToken, ebayItemId(externalListingId), changes)
+  }
 
-    // Try offer price update or fallback
-    const response = await fetch(`${config.apiBaseUrl}/sell/inventory/v1/offer/${encodeURIComponent(sku)}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
+  async updateStock(accessToken, sku, quantity, options = {}) {
+    return trading.reviseListing(accessToken, ebayItemId(options.externalListingId), { quantity })
+  }
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Price Update Error: ${err.message || response.statusText}`)
-    }
-
+  async updatePrice(accessToken, sku, price, currency = 'USD', options = {}) {
+    await trading.reviseListing(accessToken, ebayItemId(options.externalListingId), { price })
     return { success: true, price }
   }
 
+  async applyListingAction(accessToken, action, listing) {
+    const itemId = ebayItemId(listing.externalListingId)
+    if (action === 'end') return trading.endListing(accessToken, itemId)
+    if (action === 'relist') return trading.relistListing(accessToken, itemId)
+    throw new Error(`eBay cannot ${action} a listing.`)
+  }
+
   /**
-   * Look up categories and suggestions via eBay Taxonomy API
+   * Category suggestions for a title. The Taxonomy API refuses seller tokens, so this uses the app token.
    */
-  async getCategories(accessToken, query = 'General', categoryTreeId = '0') {
+  async getCategories(accessToken, query = 'General') {
+    const categoryTreeId = '0'
+    const appToken = await this.getApplicationToken().catch(() => null)
     const response = await fetch(
       `${config.apiBaseUrl}/commerce/taxonomy/v1/category_tree/${categoryTreeId}/get_category_suggestions?q=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/json',
-        },
-      },
+      { headers: { Authorization: `Bearer ${appToken || accessToken}`, Accept: 'application/json' } },
     )
-
     if (!response.ok) {
-      return [
-        { categoryId: '11450', categoryName: 'Clothing, Shoes & Accessories' },
-        { categoryId: '293', categoryName: 'Electronics & Computers' },
-        { categoryId: '11700', categoryName: 'Home & Garden' },
-        { categoryId: '888', categoryName: 'Sporting Goods' },
-      ]
+      const err = await response.json().catch(() => ({}))
+      throw new Error(`eBay category lookup failed: ${err.errors?.[0]?.message || response.statusText}`)
     }
-
     const data = await response.json()
     return (data.categorySuggestions || []).map((s) => ({
       categoryId: s.category?.categoryId,
       categoryName: s.category?.categoryName,
+      path: (s.categoryTreeNodeAncestors || []).map((node) => node.categoryName).reverse().concat(s.category?.categoryName).join(' > '),
     }))
   }
 
   /**
    * Look up item aspects/attributes required for an eBay category
    */
-  async getItemAspects(accessToken, categoryId, categoryTreeId = '0') {
+  async getItemAspects(accessToken, categoryId) {
+    const appToken = await this.getApplicationToken().catch(() => null)
     const response = await fetch(
-      `${config.apiBaseUrl}/commerce/taxonomy/v1/category_tree/${categoryTreeId}/get_item_aspects_for_category?category_id=${categoryId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/json',
-        },
-      },
+      `${config.apiBaseUrl}/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id=${encodeURIComponent(categoryId)}`,
+      { headers: { Authorization: `Bearer ${appToken || accessToken}`, Accept: 'application/json' } },
     )
-
     if (!response.ok) {
-      return [
-        { name: 'Brand', required: true, values: ['Generic', 'Apple', 'Samsung'] },
-        { name: 'Type', required: true, values: [] },
-        { name: 'Color', required: false, values: ['Black', 'White', 'Blue'] },
-      ]
+      const err = await response.json().catch(() => ({}))
+      throw new Error(`eBay item specifics lookup failed: ${err.errors?.[0]?.message || response.statusText}`)
     }
-
     const data = await response.json()
-    return (data.aspects || []).map((a) => ({
-      name: a.localizedAspectName,
-      required: a.aspectConstraint?.aspectRequired || false,
-      values: (a.aspectValues || []).map((v) => v.localizedValue),
-    }))
+    return (data.aspects || [])
+      .filter((a) => a.localizedAspectName !== 'Brand')
+      .map((a) => ({
+        id: a.localizedAspectName,
+        name: a.localizedAspectName,
+        required: Boolean(a.aspectConstraint?.aspectRequired),
+        recommended: a.aspectConstraint?.aspectUsage === 'RECOMMENDED',
+        values: (a.aspectValues || []).map((v) => v.localizedValue).slice(0, 200),
+        freeText: a.aspectConstraint?.aspectMode !== 'SELECTION_ONLY',
+      }))
   }
 
   /**
@@ -472,7 +429,8 @@ class EbayService {
   async getInbox(accessToken, shop = {}) {
     const rows = []
     for (const conversationType of ['FROM_MEMBERS', 'FROM_EBAY']) {
-      const params = new URLSearchParams({ conversation_type: conversationType, limit: '25', offset: '0' })
+      const limit = conversationType === 'FROM_MEMBERS' ? '50' : '25'
+      const params = new URLSearchParams({ conversation_type: conversationType, limit, offset: '0' })
       const data = await this.ebayJson(accessToken, `/commerce/message/v1/conversation?${params}`)
       for (const row of data.conversations || []) rows.push({ row, conversationType })
     }
@@ -492,9 +450,9 @@ class EbayService {
     const threads = rows.map(({ row, conversationType }) => {
       const latest = row.latestMessage || {}
       const sentAt = latest.createdDate || row.createdDate || new Date().toISOString()
-      const text = latest.messageBody || ''
-      const fromSeller = Boolean(accountUsername) && latest.senderUsername === accountUsername
       const fromEbay = conversationType === 'FROM_EBAY'
+      const text = fromEbay ? row.conversationTitle || htmlToText(latest.messageBody) : latest.messageBody || ''
+      const fromSeller = Boolean(accountUsername) && latest.senderUsername === accountUsername
       const buyer = fromSeller ? latest.recipientUsername : latest.senderUsername
       return {
         externalThreadId: String(row.conversationId),
@@ -505,7 +463,7 @@ class EbayService {
         lastMessageAt: new Date(sentAt),
         lastMessagePreview: String(text).slice(0, 100),
         unreadCount: Number(row.unreadCount || 0),
-        messages: text ? [{
+        messages: text && !fromEbay ? [{
           externalMessageId: String(latest.messageId || `${row.conversationId}-latest`),
           text: String(text),
           direction: fromSeller ? 'outbound' : 'inbound',
@@ -518,16 +476,18 @@ class EbayService {
   }
 
   /** Recent messages of one member conversation, oldest first. */
-  async getThreadMessages(accessToken, shop, conversationId) {
+  async getThreadMessages(accessToken, shop, conversationId, { conversationType = 'FROM_MEMBERS' } = {}) {
     const accountUsername = shop?.accountUsername
-    const params = new URLSearchParams({ conversation_type: 'FROM_MEMBERS', limit: '25', offset: '0' })
+    const fromEbay = conversationType === 'FROM_EBAY'
+    const params = new URLSearchParams({ conversation_type: conversationType, limit: '25', offset: '0' })
     const data = await this.ebayJson(accessToken, `/commerce/message/v1/conversation/${encodeURIComponent(conversationId)}?${params}`)
     return (data.messages || [])
       .map((message) => {
-        const fromSeller = Boolean(accountUsername) && message.senderUsername === accountUsername
+        const fromSeller = !fromEbay && Boolean(accountUsername) && message.senderUsername === accountUsername
+        const body = /<\w+[^>]*>/.test(message.messageBody || '') ? htmlToText(message.messageBody) : String(message.messageBody || '')
         return {
           externalMessageId: String(message.messageId),
-          text: String(message.messageBody || ''),
+          text: fromEbay && message.subject && !body.startsWith(message.subject) ? `${message.subject}\n\n${body}` : body,
           direction: fromSeller ? 'outbound' : 'inbound',
           senderType: fromSeller ? 'agent' : 'customer',
           sentAt: new Date(message.createdDate || Date.now()),

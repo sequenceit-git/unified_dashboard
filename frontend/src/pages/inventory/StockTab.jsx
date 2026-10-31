@@ -6,6 +6,7 @@ import DataTable from '../../components/ui/DataTable'
 import Pagination from '../../components/ui/Pagination'
 import RowMenu from '../../components/ui/RowMenu'
 import SearchInput from '../../components/ui/SearchInput'
+import { FiExternalLink } from 'react-icons/fi'
 
 export default function StockTab({ marketplace, onAdjust, refreshKey }) {
   const { token, isAdmin } = useAuth()

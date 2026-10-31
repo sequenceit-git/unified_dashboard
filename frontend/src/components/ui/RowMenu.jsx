@@ -38,7 +38,7 @@ export default function RowMenu({ items }) {
       </button>
       {open && (
         <div
-          className="fixed z-50 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+          className="fixed z-50 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           style={{ top: pos.top, left: pos.left }}
           onClick={(e) => e.stopPropagation()}
         >

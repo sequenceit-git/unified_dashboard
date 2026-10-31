@@ -16,6 +16,7 @@ import OpportunityCard from './OpportunityCard'
 import ProductDetailModal from './ProductDetailModal'
 import NewRunModal from './NewRunModal'
 import AgentProgressBar from './AgentProgressBar'
+import ListModal from '../products/ListModal'
 
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'stopped'])
 const POLL_INTERVAL_MS = 2500
@@ -38,6 +39,7 @@ export default function ProductDiscoveryPage() {
   const [pollingId, setPollingId] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [stopping, setStopping] = useState(false)
+  const [listing, setListing] = useState(null)
 
   // ── Load all reports ─────────────────────────────────────────────────────
   const loadReports = useCallback(async () => {
@@ -205,27 +207,33 @@ export default function ProductDiscoveryPage() {
     }
   }
 
-  const handleListShop = async ({ reportId, rank, title, price, stock, marketplace }) => {
+  // Saves the product, then opens that shop's own List form (its categories and required fields).
+  const handleListShop = async ({ reportId, rank, title, price, marketplace }) => {
     try {
-      const res = await api.post(
-        '/api/research/add-to-catalog',
-        { reportId, rank, title, price, stock, marketplace },
-        token,
+      const res = await api.post('/api/research/add-to-catalog', { reportId, rank, title, price, marketplace }, token)
+      if (!res.product?._id) return
+      setRecommendations((prev) =>
+        prev.map((opp) => (opp.rank === rank ? { ...opp, addedProductId: res.product._id } : opp)),
       )
-      if (res.product?._id) {
-        setRecommendations((prev) =>
-          prev.map((opp) =>
-            opp.rank === rank
-              ? { ...opp, addedProductId: res.product._id, listedShops: res.listedShops || opp.listedShops }
-              : opp,
-          ),
-        )
-        setNotification(res.message || `"${title}" saved.`)
-        setTimeout(() => setNotification(''), 5000)
+      if (res.canList) {
+        setListing({ product: res.product, marketplace, rank })
+      } else {
+        setNotification(res.message)
+        setTimeout(() => setNotification(''), 6000)
       }
     } catch (err) {
       alert(err.message)
     }
+  }
+
+  const listed = () => {
+    const { rank, marketplace, product } = listing
+    setRecommendations((prev) =>
+      prev.map((opp) => (opp.rank === rank ? { ...opp, listedShops: [...new Set([...(opp.listedShops || []), marketplace])] } : opp)),
+    )
+    setListing(null)
+    setNotification(`"${product.title}" listed.`)
+    setTimeout(() => setNotification(''), 5000)
   }
 
   // ── Stats calculation ────────────────────────────────────────────────────
@@ -449,6 +457,15 @@ export default function ProductDiscoveryPage() {
       {/* ── Modal Pop-up for New Run ──────────────────────────────────────── */}
       {selectedProduct && (
         <ProductDetailModal opportunity={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      )}
+
+      {listing && (
+        <ListModal
+          product={listing.product}
+          marketplace={listing.marketplace}
+          onClose={() => setListing(null)}
+          onSaved={listed}
+        />
       )}
 
       <NewRunModal

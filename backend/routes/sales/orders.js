@@ -5,6 +5,7 @@ const Order = require('../../models/Order')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
+const syncQueue = require('../../services/syncQueue')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('orders'))
@@ -78,17 +79,13 @@ router.post('/sync', async (req, res) => {
       filter.marketplace = marketplace
     }
 
-    const shops = await Shop.find(filter)
-    const results = []
-
-    for (const shop of shops) {
-      try {
-        const r = await marketplaceManager.syncOrdersForShop(shop)
-        results.push({ shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, ...r })
-      } catch (syncErr) {
-        results.push({ shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, error: syncErr.message })
-      }
-    }
+    const shops = await Shop.find(filter).select('name marketplace')
+    const results = await Promise.all(shops.map(async (shop) => ({
+      shopId: shop._id,
+      shopName: shop.name,
+      marketplace: shop.marketplace,
+      ...(await syncQueue.enqueue('orders', shop._id, { wait: true })),
+    })))
 
     res.json({ success: true, results })
   } catch (err) {

@@ -52,7 +52,6 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
         rank: opportunity.rank || 1,
         title,
         price: sellPriceNum != null ? sellPriceNum : 24.99,
-        stock: 0,
         marketplace,
       })
     } finally {

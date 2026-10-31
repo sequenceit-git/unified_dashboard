@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import { Select } from '../../components/ui/Input'
 
-export default function ThreadView({ convoId, onChanged, onBack }) {
+export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack }) {
   const { token } = useAuth()
   const [thread, setThread] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -16,9 +16,9 @@ export default function ThreadView({ convoId, onChanged, onBack }) {
   const [busy, setBusy] = useState(false)
   const [sendError, setSendError] = useState('')
 
-  const load = async () => {
+  const load = async ({ quiet = false } = {}) => {
     if (!convoId) return
-    setLoading(true)
+    if (!quiet) setLoading(true)
     setError('')
     try {
       const [t, tmps] = await Promise.all([
@@ -35,6 +35,7 @@ export default function ThreadView({ convoId, onChanged, onBack }) {
   }
 
   useEffect(() => { setDraft(''); setSendError(''); load() }, [convoId]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (refreshKey) load({ quiet: true }) }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async () => {
     if (!draft.trim()) return
@@ -99,7 +100,7 @@ export default function ThreadView({ convoId, onChanged, onBack }) {
           <li key={m._id} className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${m.direction === 'inbound' ? 'bg-gray-100' : m.senderType === 'ai' ? 'ml-auto bg-purple-600 text-white' : 'ml-auto bg-indigo-600 text-white'}`}>
             <p>{m.text}</p>
             <p className={`mt-1 text-[11px] ${m.direction === 'inbound' ? 'text-gray-500' : 'text-indigo-200'}`}>
-              {SENDER_LABEL[m.senderType] || m.senderType} · {m.sentAt && new Date(m.sentAt).toLocaleString()}
+              {thread.replyable === false ? thread.customerName || 'Marketplace' : SENDER_LABEL[m.senderType] || m.senderType} · {m.sentAt && new Date(m.sentAt).toLocaleString()}
             </p>
           </li>
         ))}

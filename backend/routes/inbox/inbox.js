@@ -7,7 +7,9 @@ const MessageTemplate = require('../../models/MessageTemplate')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
-const { syncAndReply, refreshThread } = require('../../services/inboxBot')
+const { refreshThread } = require('../../services/inboxBot')
+const syncQueue = require('../../services/syncQueue')
+const cache = require('../../services/cache')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inbox'))
@@ -24,6 +26,8 @@ router.get('/conversations', async (req, res) => {
       filter.shopId = req.query.shopId
     }
     if (req.query.status && req.query.status !== 'all') filter.status = req.query.status
+    if (req.query.type === 'buyers') filter.replyable = { $ne: false }
+    if (req.query.type === 'notices') filter.replyable = false
     const pg = paging(req)
     const out = await paged(Conversation, filter, pg, { lastMessageAt: -1 })
     res.json(out)
@@ -38,7 +42,10 @@ router.get('/conversations/:id', async (req, res) => {
     const convo = await Conversation.findOne({ _id: req.params.id, ...shopFilter(req, Conversation) })
       .populate('customerId', 'name email')
     if (!convo) return res.status(404).json({ error: 'Not found' })
-    if (convo.replyable !== false && convo.externalThreadId) {
+    const needsBody = convo.replyable === false && !(await Message.exists({ conversationId: convo._id }))
+    // Opening a thread fetches its latest messages, at most once a minute per thread.
+    if (convo.externalThreadId && (convo.replyable !== false || needsBody)
+      && (needsBody || await cache.claim(`thread:${convo._id}`, 60))) {
       const shop = await Shop.findById(convo.shopId)
       if (shop?.status === 'connected') await refreshThread(shop, convo)
     }
@@ -96,11 +103,12 @@ router.post('/sync', async (req, res) => {
     if (req.user.role === 'sub_admin') filter._id = { $in: req.allowedShopIds }
     const marketplace = canonicalMarketplace(req.body?.marketplace)
     if (marketplace) filter.marketplace = marketplace
-    const shops = await Shop.find(filter)
-    const results = []
-    for (const shop of shops) {
-      results.push(await syncAndReply(shop))
-    }
+    const shops = await Shop.find(filter).select('name marketplace')
+    const results = await Promise.all(shops.map(async (shop) => ({
+      shopName: shop.name,
+      marketplace: shop.marketplace,
+      ...(await syncQueue.enqueue('inbox', shop._id, { wait: true })),
+    })))
     res.json({ success: results.every((item) => !item.error), results })
   } catch (err) {
     res.status(500).json({ error: err.message })

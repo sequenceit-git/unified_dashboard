@@ -20,6 +20,7 @@ const researchRoutes = require('./routes/research/research')
 const settingsRoutes = require('./routes/system/settings')
 const shopRoutes = require('./routes/system/shops')
 const uploadRoutes = require('./routes/system/upload')
+const eventRoutes = require('./routes/system/events')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -57,6 +58,7 @@ app.use('/api/customers', customerRoutes)
 app.use('/api/inbox', inboxRoutes)
 app.use('/api/research', researchRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/events', eventRoutes)
 
 connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   // Sweep stale/orphaned running or queued reports left behind by server restart
@@ -86,7 +88,13 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
     console.warn('Auto-connect from ENV warning:', err.message)
   })
 
-  if (require.main === module) require('./services/inboxBot').startInboxScheduler()
+  if (require.main === module) {
+    // With Redis the sync worker (worker.js) runs the schedules; SYNC_WORKER_INLINE=true runs
+    // it inside this process instead, for single-container setups.
+    const syncQueue = require('./services/syncQueue')
+    if (!require('./services/redis').enabled()) syncQueue.startInlineSchedules()
+    else if (process.env.SYNC_WORKER_INLINE === 'true') syncQueue.startWorker().catch((err) => console.warn(`[sync] ${err.message}`))
+  }
 })
 
 // Local dev: `node server.js` listens. On Vercel the exported app is run by

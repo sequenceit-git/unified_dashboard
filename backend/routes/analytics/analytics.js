@@ -7,9 +7,10 @@ const Listing = require('../../models/Listing')
 const Shop = require('../../models/Shop')
 const tiktok = require('../../services/marketplace/tiktok')
 const { canonicalMarketplace } = require('../../utils/marketplace')
+const { cachedResponse } = require('../../services/cache')
 
 const router = express.Router()
-router.use(requireAuth, loadAccess, requireMainRoute('analytics'))
+router.use(requireAuth, loadAccess, requireMainRoute('analytics'), cachedResponse('analytics', 120))
 
 function dates(req) {
   const to = req.query.to ? new Date(req.query.to) : new Date()

@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import ShopSectionGate from './components/ShopSectionGate'
+import ShopSectionPage from './pages/shop/ShopSectionPage'
 import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import CustomersPage from './pages/customers/CustomersPage'
 import InboxPage from './pages/inbox/InboxPage'
@@ -43,13 +45,14 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/discovery" element={<Navigate to="/market-research" replace />} />
         <Route path="/" element={<RouteAccess route="dashboard"><Overview /></RouteAccess>} />
-        <Route path="/analytics" element={<RouteAccess route="analytics"><AnalyticsPage /></RouteAccess>} />
+        <Route path="/analytics" element={<RouteAccess route="analytics"><ShopSectionGate sectionId="analytics"><AnalyticsPage /></ShopSectionGate></RouteAccess>} />
         <Route path="/market-research" element={<RouteAccess route="market-research"><ProductDiscoveryPage /></RouteAccess>} />
-        <Route path="/products" element={<RouteAccess route="products"><ProductsPage /></RouteAccess>} />
-        <Route path="/inventory" element={<RouteAccess route="inventory"><InventoryPage /></RouteAccess>} />
-        <Route path="/orders" element={<RouteAccess route="orders"><OrdersPage /></RouteAccess>} />
-        <Route path="/customers" element={<RouteAccess route="customers"><CustomersPage /></RouteAccess>} />
-        <Route path="/inbox" element={<RouteAccess route="inbox"><InboxPage /></RouteAccess>} />
+        <Route path="/products" element={<RouteAccess route="products"><ShopSectionGate sectionId="products"><ProductsPage /></ShopSectionGate></RouteAccess>} />
+        <Route path="/inventory" element={<RouteAccess route="inventory"><ShopSectionGate sectionId="inventory"><InventoryPage /></ShopSectionGate></RouteAccess>} />
+        <Route path="/orders" element={<RouteAccess route="orders"><ShopSectionGate sectionId="orders"><OrdersPage /></ShopSectionGate></RouteAccess>} />
+        <Route path="/customers" element={<RouteAccess route="customers"><ShopSectionGate sectionId="customers"><CustomersPage /></ShopSectionGate></RouteAccess>} />
+        <Route path="/inbox" element={<RouteAccess route="inbox"><ShopSectionGate sectionId="inbox"><InboxPage /></ShopSectionGate></RouteAccess>} />
+        <Route path="/shop/:sectionId" element={<ShopSectionPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/sub-admins" element={<AdminOnly><SubAdminManagementPage /></AdminOnly>} />
         <Route path="/sub-admins/new" element={<AdminOnly><SubAdminFormPage /></AdminOnly>} />

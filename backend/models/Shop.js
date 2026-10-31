@@ -20,6 +20,9 @@ const shopSchema = new mongoose.Schema(
     aiReplyEnabled: { type: Boolean, default: false },
     // Seller's own marketplace username; eBay messages only carry usernames, not roles.
     accountUsername: { type: String },
+    // Which dashboard sections this shop's token can reach: { sectionId: { ok, reason } }.
+    apiAccess: { type: mongoose.Schema.Types.Mixed, default: undefined },
+    apiAccessCheckedAt: { type: Date },
   },
   { timestamps: true },
 )

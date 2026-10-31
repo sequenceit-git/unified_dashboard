@@ -386,113 +386,62 @@ router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
 
     let product = opp.addedProductId ? await Product.findById(opp.addedProductId) : null
 
-    // Generate collision-resistant unique SKU with crypto random suffix
-    const catPrefix = (opp.metrics?.category || opp.category || 'GEN')
-      .substring(0, 3)
-      .toUpperCase()
-      .replace(/[^A-Z]/g, 'X')
-    const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase()
-    const sku = `BOT-${catPrefix}-${Date.now().toString().slice(-4)}${randomSuffix}`
-
     const sellingPrice = price != null ? Number(price) : opp.metrics?.averagePrice ?? opp.metrics?.price ?? 0
     const estCost = opp.metrics?.estimatedCost != null ? Number(opp.metrics.estimatedCost) : 0
-
-    // Safely default stock to 0 to prevent ghost marketplace listing
-    const safeStock = stock != null ? Number(stock) : 0
-
     const savedImages = Array.isArray(opp.images) && opp.images.length
       ? opp.images
       : opp.image
         ? [opp.image]
         : []
+    // Specs found by the agent become item specifics, so each shop's List form starts filled in.
+    const specifics = Object.fromEntries((opp.specs || [])
+      .filter((spec) => spec?.name && spec?.value)
+      .map((spec) => [String(spec.name).trim(), String(spec.value).trim()]))
+    const highlights = (opp.highlights || []).filter(Boolean)
+    const baseDescription = description || opp.description || opp.title
+    const fullDescription = highlights.length
+      ? `${baseDescription}\n\n${highlights.map((line) => `- ${line}`).join('\n')}`
+      : baseDescription
 
     if (!product) {
       product = await Product.create({
-        sku,
         title: title || opp.title,
-        description: description || opp.description || opp.title,
+        description: fullDescription,
         category: opp.metrics?.category || opp.category || 'General',
         brand: opp.brand || 'Unbranded',
+        condition: 'NEW',
         images: savedImages,
         basePrice: sellingPrice,
-        stock: safeStock,
+        stock: stock != null ? Math.max(0, Number(stock) || 0) : 0,
         lowStockThreshold: 10,
         status: 'draft',
         source: 'research_bot',
         sourceReportId: report._id,
         attributes: {
-          aiOpportunityScore: opp.opportunityScore,
+          ...specifics,
+          ...(opp.brand ? { Brand: opp.brand } : {}),
           targetMarketplace: marketplace,
+          aiOpportunityScore: opp.opportunityScore,
           listingUrl: opp.listingUrl,
           estimatedCost: estCost,
         },
       })
       opp.addedProductId = product._id
+      await report.save()
     }
 
-    const listed = new Set(opp.listedShops || [])
-    listed.add(marketplace)
-    opp.listedShops = [...listed]
-    await report.save()
-
-    const shopLabel = SHOP_LABELS[marketplace] || marketplace
-    const shop = await Shop.findOne({ marketplace }).select('+auth.accessTokenEnc')
-    let listing = null
-    let publishError = ''
-    if (shop) {
-      try {
-        const publishRes = await marketplaceManager.publishListing(shop, product, {
-          price: sellingPrice,
-          title: product.title,
-          description: product.description,
-          images: product.images,
-          brand: product.brand,
-          condition: 'NEW',
-        })
-        listing = await Listing.findOneAndUpdate(
-          { productId: product._id, shopId: shop._id },
-          {
-            productId: product._id,
-            shopId: shop._id,
-            marketplace,
-            ...(publishRes?.externalListingId ? { externalListingId: publishRes.externalListingId } : {}),
-            price: sellingPrice,
-            status: publishRes?.status || 'pending',
-            syncError: null,
-            lastSyncedAt: new Date(),
-          },
-          { new: true, upsert: true, runValidators: true },
-        )
-      } catch (apiErr) {
-        publishError = apiErr.message
-        listing = await Listing.findOneAndUpdate(
-          { productId: product._id, shopId: shop._id },
-          {
-            productId: product._id,
-            shopId: shop._id,
-            marketplace,
-            price: sellingPrice,
-            status: 'error',
-            syncError: publishError,
-            lastSyncedAt: new Date(),
-          },
-          { new: true, upsert: true, runValidators: true },
-        )
-      }
-    }
-
-    const message = !shop
-      ? `Saved for ${shopLabel}. Connect ${shopLabel} in Settings to publish the listing.`
-      : publishError
-        ? `Saved for ${shopLabel}. The shop has not published it yet.`
-        : `Listed on ${shopLabel}.`
-
+    const shop = await Shop.findOne({ marketplace, status: 'connected' }).select('_id')
+    const capabilities = marketplaceManager.listingCapabilities(marketplace)
     res.status(201).json({
       product,
-      listing,
-      listedShops: opp.listedShops,
+      listedShops: opp.listedShops || [],
       shopConnected: Boolean(shop),
-      message,
+      canList: Boolean(shop && capabilities.canList),
+      message: !shop
+        ? `Saved to Products. Connect ${SHOP_LABELS[marketplace] || marketplace} in Settings to list it.`
+        : !capabilities.canList
+          ? `Saved to Products. ${capabilities.note}`
+          : '',
     })
   } catch (err) {
     res.status(400).json({ error: err.message })

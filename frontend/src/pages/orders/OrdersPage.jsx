@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
+import { useSyncReload } from '../../hooks/useLiveEvents'
 import { api, queryString } from '../../lib/api'
 import { marketplaceLabel } from '../../lib/marketplaces'
 import Badge, { statusColor } from '../../components/ui/Badge'
@@ -32,9 +33,9 @@ export default function OrdersPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const fetchRows = async () => {
+  const fetchRows = async ({ quiet = false } = {}) => {
     if (!marketplace) return
-    setLoading(true)
+    if (!quiet) setLoading(true)
     setError('')
     try {
       const res = await api.get(`/api/orders${queryString({ marketplace, status, q, sort, page, limit: 15 })}`, token)

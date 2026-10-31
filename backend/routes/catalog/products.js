@@ -4,8 +4,11 @@ const { paging, sortOf, paged } = require('../../utils/query')
 const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
+const ResearchReport = require('../../models/ResearchReport')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
+const { importProductFromUrl } = require('../../services/productImport')
+const { listingUrl } = require('../../utils/listingUrl')
 
 const router = express.Router()
 
@@ -13,7 +16,33 @@ router.use(requireAuth, loadAccess, requireMainRoute('products'))
 
 const SORTABLE = ['createdAt', 'title', 'basePrice', 'costPrice', 'stock']
 
+/** Fields a dashboard edit should send on to live marketplace listings. */
+function changedListingFields(before, after) {
+  const changes = {}
+  if (after.title !== before.title) changes.title = after.title
+  if ((after.description || '') !== (before.description || '')) changes.description = after.description
+  if (Number(after.basePrice) !== Number(before.basePrice)) changes.price = after.basePrice
+  if (Number(after.stock) !== Number(before.stock)) changes.quantity = after.stock
+  if (JSON.stringify(after.images || []) !== JSON.stringify(before.images || [])) changes.images = after.images
+  return changes
+}
+
 // Sub-admins see products through listings of their own shop (schema note 6).
+/** `listing` query: any listing status, or inactive (paused or in review). */
+function listingStatusFilter(value) {
+  switch (value) {
+    case 'live':
+    case 'out_of_stock':
+    case 'pending':
+    case 'paused':
+    case 'ended':
+    case 'error':
+      return { status: value }
+    case 'inactive': return { status: { $in: ['paused', 'pending'] } }
+    default: return {}
+  }
+}
+
 async function scopedIds(req) {
   if (req.user.role !== 'sub_admin') return null
   const rows = await Listing.find({ shopId: { $in: req.allowedShopIds } }).select('productId')
@@ -38,16 +67,23 @@ router.get('/', async (req, res) => {
     if (req.query.stock === 'out') filter.stock = 0
     const ids = await scopedIds(req)
     if (ids) filter._id = { $in: ids }
+    let marketplace = null
     if (req.query.marketplace && !req.query.shop) {
-      const marketplace = canonicalMarketplace(req.query.marketplace)
+      marketplace = canonicalMarketplace(req.query.marketplace)
       if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
-      const rows = await Listing.find({ marketplace }).select('productId')
+      const listingFilter = { marketplace, ...listingStatusFilter(req.query.listing) }
+      const rows = await Listing.find(listingFilter).select('productId')
       let productIds = rows.map((row) => row.productId)
       if (ids) {
         const allowed = new Set(ids.map(String))
         productIds = productIds.filter((id) => allowed.has(String(id)))
       }
-      filter._id = { $in: productIds }
+      const unlisted = !ids && (!req.query.listing || req.query.listing === 'all')
+      if (unlisted) {
+        filter.$and = [{ $or: [{ _id: { $in: productIds } }, { 'attributes.targetMarketplace': marketplace }] }]
+      } else {
+        filter._id = { $in: productIds }
+      }
     }
     if (req.query.shop) {
       const shopId = req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === req.query.shop)
@@ -57,9 +93,34 @@ router.get('/', async (req, res) => {
       filter._id = { $in: rows.map((r) => r.productId) }
     }
     const pg = paging(req)
-    res.json(await paged(Product, filter, pg, sortOf(req, SORTABLE)))
+    const result = await paged(Product, filter, pg, sortOf(req, SORTABLE))
+    if (marketplace) {
+      const listings = await Listing.find({ marketplace, productId: { $in: result.data.map((row) => row._id) } })
+        .select('productId status marketplaceStatus syncError externalListingId listingUrl lastSyncedAt').lean()
+      const byProduct = new Map(listings.map((row) => [String(row.productId), {
+        ...row,
+        listingUrl: listingUrl(marketplace, row.externalListingId, row.listingUrl, { status: row.status }),
+      }]))
+      result.data = result.data.map((row) => {
+        const plain = typeof row.toObject === 'function' ? row.toObject() : row
+        return { ...plain, shopListing: byProduct.get(String(plain._id)) || null }
+      })
+    }
+    res.json(result)
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/products/import-url — { url } → editable draft read from a product page
+router.post('/import-url', requireRole('super_admin'), async (req, res) => {
+  try {
+    res.json(await importProductFromUrl(req.body.url, {
+      useAi: req.body.useAi !== false,
+      marketplace: canonicalMarketplace(req.body.marketplace),
+    }))
+  } catch (err) {
+    res.status(422).json({ error: err.message })
   }
 })
 
@@ -97,44 +158,17 @@ router.post('/', requireRole('super_admin'), async (req, res) => {
   }
 })
 
-// POST /api/products/bulk — { products: [...] } for bulk upload
-router.post('/bulk', requireRole('super_admin'), async (req, res) => {
-  try {
-    if (!Array.isArray(req.body.products)) {
-      return res.status(400).json({ error: 'products must be an array' })
-    }
-    const normalized = req.body.products.map((p) => {
-      let images = p.images
-      if (typeof images === 'string') {
-        images = images.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean)
-      } else if (!Array.isArray(images)) {
-        images = []
-      }
-      return {
-        ...p,
-        images,
-        weight: p.weight !== undefined && p.weight !== '' ? Number(p.weight) : 1,
-        dimensions: {
-          length: p.dimensions?.length ? Number(p.dimensions.length) : (p.length ? Number(p.length) : 10),
-          width: p.dimensions?.width ? Number(p.dimensions.width) : (p.width ? Number(p.width) : 10),
-          height: p.dimensions?.height ? Number(p.dimensions.height) : (p.height ? Number(p.height) : 5),
-          unit: p.dimensions?.unit || 'in',
-        },
-      }
-    })
-    const docs = await Product.insertMany(normalized, { ordered: false })
-    res.status(201).json({ created: docs.length })
-  } catch (err) {
-    res.status(400).json({ error: err.message, inserted: err.insertedDocs?.length || 0 })
-  }
-})
-
 // PATCH /api/products/:id
 router.patch('/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    const doc = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
-    if (!doc) return res.status(404).json({ error: 'Not found' })
-    res.json(doc)
+    const before = await Product.findById(req.params.id).lean()
+    if (!before) return res.status(404).json({ error: 'Not found' })
+    // The SKU links the product to its marketplace listings, so it never changes.
+    const { sku, ...update } = req.body
+    const doc = await Product.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true })
+    const changes = changedListingFields(before, doc)
+    const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
+    res.json({ ...doc.toObject(), marketplaceSync })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
@@ -171,8 +205,10 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
       images = product.images || []
     }
 
+    const stock = req.body.stock !== undefined && req.body.stock !== '' ? Number(req.body.stock) : product.stock
     const listingOptions = {
       price,
+      stock,
       title: req.body.title || product.title,
       description: req.body.description || product.description,
       categoryId: req.body.categoryId,
@@ -184,38 +220,80 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
       brand: req.body.brand || product.brand,
     }
 
-    // Push listing to eBay
-    let externalListingId = null
-    let listingStatus = 'pending'
-    let syncError = null
+    const capabilities = marketplaceManager.listingCapabilities(shop.marketplace)
+    if (!capabilities.canList) return res.status(422).json({ error: capabilities.note || `Listing on ${shop.name} is not available.` })
 
-    try {
-      const publishRes = await marketplaceManager.publishListing(shop, product, listingOptions)
-      if (publishRes?.externalListingId) externalListingId = publishRes.externalListingId
-      if (publishRes?.status) listingStatus = publishRes.status
-    } catch (apiErr) {
-      console.warn(`Marketplace [${shop.marketplace}] listing error:`, apiErr.message)
-      listingStatus = 'error'
-      syncError = apiErr.message
+    const existing = await Listing.findOne({ productId: product._id, shopId: shop._id })
+    if (existing?.externalListingId && ['live', 'pending', 'out_of_stock'].includes(existing.status)) {
+      return res.status(409).json({ error: `Already listed on ${shop.name}. Edit the product to update the listing.` })
     }
 
+    let publishRes
+    try {
+      publishRes = await marketplaceManager.publishListing(shop, product, listingOptions)
+    } catch (apiErr) {
+      console.warn(`Marketplace [${shop.marketplace}] listing error:`, apiErr.message)
+      await Listing.findOneAndUpdate(
+        { productId: product._id, shopId: shop._id },
+        { productId: product._id, shopId: shop._id, marketplace: shop.marketplace, price, status: 'error', syncError: apiErr.message, lastSyncedAt: new Date() },
+        { upsert: true, runValidators: true },
+      )
+      return res.status(422).json({ error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [] })
+    }
+
+    if (stock !== product.stock || product.status === 'draft') {
+      await Product.updateOne({ _id: product._id }, { stock, status: 'active' })
+    }
     const listing = await Listing.findOneAndUpdate(
       { productId: product._id, shopId: shop._id },
       {
         productId: product._id,
         shopId: shop._id,
         marketplace: shop.marketplace,
-        ...(externalListingId ? { externalListingId } : {}),
+        externalListingId: publishRes.externalListingId,
+        listingUrl: listingUrl(shop.marketplace, publishRes.externalListingId, null, { status: publishRes.status || 'pending' }),
         price,
-        status: listingStatus,
-        syncError,
+        status: publishRes.status || 'pending',
+        ...(publishRes.marketplaceStatus ? { marketplaceStatus: publishRes.marketplaceStatus } : {}),
+        syncError: null,
         lastSyncedAt: new Date(),
       },
       { new: true, upsert: true, runValidators: true },
     )
+    if (product.sourceReportId) {
+      await ResearchReport.updateOne(
+        { _id: product.sourceReportId, 'opportunities.addedProductId': product._id },
+        { $addToSet: { 'opportunities.$.listedShops': shop.marketplace } },
+      )
+    }
     res.status(201).json(listing)
   } catch (err) {
     res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/products/:id/listing-action — { action: end|relist|unpublish|publish|delete }
+router.post('/:id/listing-action', requireRole('super_admin'), async (req, res) => {
+  try {
+    const action = String(req.body.action || '')
+    const listing = await Listing.findOne({ productId: req.params.id, ...(req.body.marketplace ? { marketplace: req.body.marketplace } : {}) })
+    if (!listing?.externalListingId) return res.status(404).json({ error: 'This product is not listed on a shop yet.' })
+    const shop = await Shop.findById(listing.shopId)
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    const result = await marketplaceManager.applyListingAction(shop, listing, action)
+    listing.status = result.status || listing.status
+    if (result.marketplaceStatus) listing.marketplaceStatus = result.marketplaceStatus
+    if (result.externalListingId) listing.externalListingId = result.externalListingId
+    listing.listingUrl = listingUrl(shop.marketplace, listing.externalListingId, listing.listingUrl, { status: listing.status })
+    listing.syncError = null
+    listing.lastSyncedAt = new Date()
+    await listing.save()
+    res.json({
+      ...listing.toObject(),
+      listingUrl: listing.listingUrl,
+    })
+  } catch (err) {
+    res.status(422).json({ error: err.message })
   }
 })
 
@@ -225,30 +303,12 @@ router.patch('/:id/sync', requireRole('super_admin'), async (req, res) => {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ error: 'Product not found' })
 
-    const listings = await Listing.find({ productId: product._id, ...shopFilter(req, Listing) }).populate('shopId')
-    let pushedCount = 0
-
-    for (const item of listings) {
-      if (item.shopId) {
-        try {
-          await marketplaceManager.pushStock(item.shopId, {
-            sku: product.sku,
-            quantity: product.stock,
-            externalListingId: item.externalListingId,
-            productId: product._id,
-          })
-          pushedCount++
-        } catch (apiErr) {
-          console.warn(`Stock sync failed for shop ${item.shopId.name}:`, apiErr.message)
-        }
-      }
-    }
-
-    const r = await Listing.updateMany(
-      { productId: product._id, ...shopFilter(req, Listing) },
-      { price: product.basePrice, lastSyncedAt: new Date() },
-    )
-    res.json({ listingsUpdated: r.modifiedCount ?? 0, pushedToMarketplaces: pushedCount })
+    const results = await marketplaceManager.pushProductChanges(product, { price: product.basePrice, quantity: product.stock })
+    res.json({
+      listingsUpdated: results.length,
+      pushedToMarketplaces: results.filter((item) => item.ok).length,
+      marketplaceSync: results,
+    })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
@@ -266,28 +326,8 @@ router.patch('/:id/price', requireRole('super_admin'), async (req, res) => {
     const product = await Product.findByIdAndUpdate(req.params.id, { basePrice: numPrice }, { new: true })
     if (!product) return res.status(404).json({ error: 'Product not found' })
 
-    const listings = await Listing.find({ productId: product._id, ...shopFilter(req, Listing) }).populate('shopId')
-    let pushedCount = 0
-
-    for (const item of listings) {
-      if (item.shopId) {
-        try {
-          await marketplaceManager.pushPrice(item.shopId, {
-            sku: product.sku,
-            price: numPrice,
-            externalListingId: item.externalListingId,
-          })
-          item.price = numPrice
-          item.lastSyncedAt = new Date()
-          await item.save()
-          pushedCount++
-        } catch (apiErr) {
-          console.warn(`Price push failed for shop ${item.shopId.name}:`, apiErr.message)
-        }
-      }
-    }
-
-    res.json({ product, pushedToMarketplaces: pushedCount })
+    const results = await marketplaceManager.pushProductChanges(product, { price: numPrice })
+    res.json({ product, pushedToMarketplaces: results.filter((item) => item.ok).length, marketplaceSync: results })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

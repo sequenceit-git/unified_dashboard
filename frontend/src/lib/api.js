@@ -17,7 +17,10 @@ async function request(path, { token, ...options } = {}) {
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `API ${res.status}`)
+    const err = new Error(body.error || `API ${res.status}`)
+    err.status = res.status
+    err.data = body
+    throw err
   }
   const type = res.headers.get('content-type') || ''
   if (!type.includes('json')) {

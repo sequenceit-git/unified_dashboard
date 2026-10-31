@@ -8,14 +8,17 @@ import Pagination from '../../components/ui/Pagination'
 import RowMenu from '../../components/ui/RowMenu'
 import SearchInput from '../../components/ui/SearchInput'
 import { EmptyState } from '../../components/ui/Feedback'
+import { listingActionsFor, listingBadge, listingFilters, useShopProfile } from '../../hooks/useShopProfiles'
+import { useSyncReload } from '../../hooks/useLiveEvents'
+import { FiExternalLink } from 'react-icons/fi'
 
 const STATUSES = ['all', 'draft', 'active', 'archived']
 const SOURCES = [
   { value: 'all', label: 'All sources' },
   { value: 'research_bot', label: 'AI Agent (Bot)' },
   { value: 'manual', label: 'Manual' },
-  { value: 'bulk_upload', label: 'Bulk upload' },
   { value: 'marketplace_sync', label: 'Marketplace sync' },
+  { value: 'url_import', label: 'Direct listing' },
 ]
 const STOCK = [
   { value: 'all', label: 'All stock' },
@@ -29,8 +32,10 @@ function categoryLabel(name) {
   return parts.slice(-2).join(' / ')
 }
 
-export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '', disabled = false, disabledMessage = '' }) {
+export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '', listLabel = 'List on shop', disabled = false, disabledMessage = '' }) {
   const { token, isAdmin } = useAuth()
+  const { profile } = useShopProfile(marketplace)
+  const productStatus = profile?.productForm?.productStatus || {}
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
   const [loading, setLoading] = useState(true)
@@ -40,6 +45,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
   const [source, setSource] = useState('all')
   const [category, setCategory] = useState('all')
   const [stock, setStock] = useState('all')
+  const [listingStatus, setListingStatus] = useState('all')
   const [categories, setCategories] = useState([])
   const [sort, setSort] = useState('-createdAt')
   const [page, setPage] = useState(1)
@@ -48,9 +54,9 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
     api.get('/api/products/categories', token).then(setCategories).catch(() => {})
   }, [token])
 
-  const fetchRows = async () => {
+  const fetchRows = async ({ quiet = false } = {}) => {
     if (disabled) return
-    setLoading(true)
+    if (!quiet) setLoading(true)
     setError('')
     try {
       const res = await api.get(
@@ -63,6 +69,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
           page,
           limit: 15,
           marketplace,
+          listing: marketplace ? listingStatus : undefined,
           ...(source !== 'all' ? { source } : {}),
         })}`,
         token,
@@ -80,7 +87,9 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, status, source, category, stock, sort, page, refreshKey, disabled, marketplace])
+  }, [q, status, source, category, stock, listingStatus, sort, page, refreshKey, disabled, marketplace])
+
+  useSyncReload('listings', marketplace, () => fetchRows({ quiet: true }))
 
   const toggleSort = (key) => {
     setSort((s) => (s === key ? `-${key}` : key))
@@ -97,14 +106,14 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
 
   return (
     <div>
-      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1.5fr)_repeat(4,minmax(0,1fr))]">
+      <div className={`mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 ${marketplace ? 'xl:grid-cols-[minmax(14rem,1.5fr)_repeat(5,minmax(0,1fr))]' : 'xl:grid-cols-[minmax(14rem,1.5fr)_repeat(4,minmax(0,1fr))]'}`}>
         <SearchInput
           className="sm:max-w-none sm:col-span-2 xl:col-span-1"
           value={q}
           onChange={(v) => { setQ(v); setPage(1) }}
           placeholder="Search title or SKU…"
         />
-        <Select className="min-w-0" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
+        <Select className="min-w-0" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s === 'all' ? 'All products' : productStatus[s] || s }))} />
         <Select className="min-w-0" value={source} onChange={(e) => { setSource(e.target.value); setPage(1) }} options={SOURCES} />
         <Select
           className="min-w-0"
@@ -116,6 +125,9 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
           ]}
         />
         <Select className="min-w-0" value={stock} onChange={(e) => { setStock(e.target.value); setPage(1) }} options={STOCK} />
+        {marketplace && (
+          <Select className="min-w-0" value={listingStatus} onChange={(e) => { setListingStatus(e.target.value); setPage(1) }} options={listingFilters(profile)} />
+        )}
       </div>
       <DataTable
         columns={[
@@ -163,25 +175,71 @@ export default function CatalogTab({ onEdit, onList, refreshKey, marketplace = '
                       : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  {isAi ? 'AI Agent' : r.source || 'Manual'}
+                  {isAi ? 'AI Agent' : SOURCES.find((s) => s.value === r.source)?.label || 'Manual'}
                 </span>
               )
             },
           },
-          { key: 'status', label: 'Status', render: (r) => <Badge color={statusColor(r.status)}>{r.status}</Badge> },
+          marketplace
+            ? {
+                key: 'listing',
+                label: 'Listing',
+                render: (r) => {
+                  const badge = listingBadge(profile, r.shopListing)
+                  const url = r.shopListing?.listingUrl
+                  if (!badge) return <Badge color="gray">Not listed</Badge>
+                  return (
+                    <span className="inline-flex items-center gap-1.5" title={r.shopListing.syncError || ''}>
+                      <Badge color={badge.color}>{badge.label}</Badge>
+                      {url && (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Open this listing on the shop"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded p-1 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800"
+                          aria-label="Open shop listing"
+                        >
+                          <FiExternalLink size={14} />
+                        </a>
+                      )}
+                    </span>
+                  )
+                },
+              }
+            : { key: 'status', label: 'Status', render: (r) => <Badge color={statusColor(r.status)}>{r.status}</Badge> },
           {
             key: 'actions', label: '',
-            render: (r) => isAdmin && (
-              <span onClick={(e) => e.stopPropagation()}>
-                <RowMenu
-                  items={[
-                    { label: 'Edit', onClick: () => onEdit(r) },
-                    { label: 'List on shop', onClick: () => onList(r) },
-                    { label: 'Delete', danger: true, onClick: () => remove(r._id) },
-                  ]}
-                />
-              </span>
-            ),
+            render: (r) => {
+              if (!isAdmin) return null
+              const listed = ['live', 'out_of_stock', 'pending'].includes(r.shopListing?.status)
+              const shopActions = listingActionsFor(profile, r.shopListing)
+              return (
+                <span onClick={(e) => e.stopPropagation()}>
+                  <RowMenu
+                    items={[
+                      { label: 'Edit', onClick: () => onEdit(r) },
+                      ...shopActions.map((action) => ({
+                        label: action.label,
+                        danger: action.danger,
+                        onClick: async () => {
+                          if (action.confirm && !window.confirm(action.confirm)) return
+                          try {
+                            await api.post(`/api/products/${r._id}/listing-action`, { action: action.id }, token)
+                            fetchRows({ quiet: true })
+                          } catch (err) {
+                            alert(err.message)
+                          }
+                        },
+                      })),
+                      ...(listed || shopActions.length ? [] : [{ label: listLabel, onClick: () => onList(r) }]),
+                      { label: 'Delete', danger: true, onClick: () => remove(r._id) },
+                    ]}
+                  />
+                </span>
+              )
+            },
           },
         ]}
         rows={rows}

@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import { Select } from '../../components/ui/Input'
 import Pagination from '../../components/ui/Pagination'
 import { useApi } from '../../hooks/useApi'
+import { useSyncReload } from '../../hooks/useLiveEvents'
 import ConversationList from './ConversationList'
 import ThreadView from './ThreadView'
 
@@ -16,6 +17,7 @@ export default function InboxPage() {
   const section = useShopSection()
   const marketplace = section?.marketplace
   const [status, setStatus] = useState('open')
+  const [type, setType] = useState('buyers')
   const [page, setPage] = useState(1)
   const [convos, setConvos] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -65,7 +67,7 @@ export default function InboxPage() {
   }
 
 
-  const fetchConvos = async () => {
+  const fetchConvos = async ({ quiet = false } = {}) => {
     if (!marketplace || shopsRes.loading) return
     if (noShopForTab) {
       setConvos([])
@@ -74,10 +76,10 @@ export default function InboxPage() {
       setLoading(false)
       return
     }
-    setLoading(true)
+    if (!quiet) setLoading(true)
     setError('')
     try {
-      const base = { status, page, limit: 20 }
+      const base = { status, type, page, limit: 20 }
       let res
       if (marketplace === 'all' || shopIds.length <= 1) {
         res = await api.get(
@@ -107,7 +109,15 @@ export default function InboxPage() {
     }
   }
 
-  useEffect(() => { fetchConvos() }, [marketplace, status, page, shopsRes.loading]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchConvos() }, [marketplace, status, type, page, shopsRes.loading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The sync worker checks the inbox in the background; reload when it brings something new.
+  const [threadRefresh, setThreadRefresh] = useState(0)
+  useSyncReload('inbox', marketplace, (event) => {
+    if (!event.newMessages || syncing) return
+    fetchConvos({ quiet: true })
+    setThreadRefresh((n) => n + 1)
+  })
 
   if (!section) return <RequireShopSection />
 
@@ -132,6 +142,17 @@ export default function InboxPage() {
               AI auto-reply {autoReplyOn ? 'on' : 'off'}
             </button>
           )}
+          <div className="w-[160px]">
+            <Select
+              value={type}
+              onChange={(e) => { setType(e.target.value); setPage(1) }}
+              options={[
+                { value: 'buyers', label: 'Buyer messages' },
+                { value: 'notices', label: `${section.label} notices` },
+                { value: 'all', label: 'Everything' },
+              ]}
+            />
+          </div>
           <div className="w-[140px]">
             <Select
               value={status}
@@ -158,7 +179,7 @@ export default function InboxPage() {
           </div>
         </div>
         <div className={`min-h-0 min-w-0 flex-1 ${mobileThread ? 'flex flex-col' : 'hidden sm:flex sm:flex-col'}`}>
-          <ThreadView convoId={activeId} onChanged={fetchConvos} onBack={() => setMobileThread(false)} />
+          <ThreadView convoId={activeId} refreshKey={threadRefresh} onChanged={fetchConvos} onBack={() => setMobileThread(false)} />
         </div>
       </div>
     </div>
