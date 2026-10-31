@@ -18,6 +18,8 @@ const shopSchema = new mongoose.Schema(
     },
     lastSyncAt: { type: Date },
     aiReplyEnabled: { type: Boolean, default: false },
+    // Seller's own marketplace username; eBay messages only carry usernames, not roles.
+    accountUsername: { type: String },
   },
   { timestamps: true },
 )

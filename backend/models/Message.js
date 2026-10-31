@@ -12,6 +12,8 @@ const messageSchema = new mongoose.Schema(
     externalMessageId: { type: String },
     deliveryStatus: { type: String, enum: ['sent', 'delivered', 'failed'], default: 'sent' },
     sentAt: { type: Date, default: Date.now },
+    // Set once the auto-reply has taken this inbound message, so two servers never answer it twice.
+    aiHandled: { type: Boolean, default: false },
   },
   { timestamps: true },
 )

@@ -102,6 +102,28 @@ function amountOf(value) {
   return Number(value.amount || 0)
 }
 
+/** Customer-service message `content` is a JSON string; only text-like types carry readable words. */
+function chatMessage(row) {
+  let text = ''
+  try {
+    const content = JSON.parse(row.content || '{}')
+    text = content.content || (content.product_id ? `[Product ${content.product_id}]` : content.order_id ? `[Order ${content.order_id}]` : '')
+  } catch {
+    text = String(row.content || '')
+  }
+  if (!text && row.type) text = `[${String(row.type).toLowerCase().replace(/_/g, ' ')}]`
+  const role = String(row.sender?.role || '').toUpperCase()
+  const fromBuyer = role === 'BUYER'
+  return {
+    externalMessageId: String(row.id),
+    text,
+    direction: fromBuyer ? 'inbound' : 'outbound',
+    senderType: fromBuyer ? 'customer' : role === 'ROBOT' ? 'ai' : 'agent',
+    sentAt: row.create_time ? new Date(Number(row.create_time) * 1000) : new Date(),
+    textMessage: !row.type || row.type === 'TEXT',
+  }
+}
+
 class TikTokShopService {
   getAuthUrl(state = '') {
     if (!config.serviceId) {
@@ -263,24 +285,39 @@ class TikTokShopService {
     })
     return (data.conversations || []).map((row) => {
       const latest = row.latest_message || {}
-      const senderRole = String(latest.sender?.role || '').toUpperCase()
-      const fromSeller = /SELLER|AGENT|CUSTOMER_SERVICE/.test(senderRole)
-      const sentAt = latest.create_time ? new Date(Number(latest.create_time) * 1000) : new Date()
+      const message = latest.id ? chatMessage(latest) : null
+      const buyer = (row.participants || []).find((person) => String(person.role).toUpperCase() === 'BUYER')
       return {
         externalThreadId: String(row.id),
+        customerName: buyer?.nickname || (message?.direction === 'inbound' ? latest.sender?.nickname : '') || '',
+        replyable: row.can_send_message !== false,
         status: 'open',
-        lastMessageAt: sentAt,
-        lastMessagePreview: String(latest.content || '').slice(0, 100),
+        lastMessageAt: message?.sentAt || new Date(),
+        lastMessagePreview: String(message?.text || '').slice(0, 100),
         unreadCount: Number(row.unread_count || 0),
-        messages: latest.id ? [{
-          externalMessageId: String(latest.id),
-          text: String(latest.content || ''),
-          direction: fromSeller ? 'outbound' : 'inbound',
-          senderType: fromSeller ? 'agent' : 'customer',
-          sentAt,
-        }] : [],
+        messages: message ? [message] : [],
       }
     })
+  }
+
+  /** Recent visible messages of one conversation, oldest first. */
+  async getThreadMessages(accessToken, shop, conversationId) {
+    const data = await this.call(accessToken, 'GET', `/customer_service/202309/conversations/${conversationId}/messages`, {
+      shop,
+      query: { page_size: 20, sort_order: 'DESC', sort_field: 'create_time' },
+    })
+    return (data.messages || [])
+      .filter((message) => message.is_visible !== false)
+      .map(chatMessage)
+      .sort((a, b) => a.sentAt - b.sentAt)
+  }
+
+  async sendMessage(accessToken, shop, conversationId, text) {
+    const data = await this.call(accessToken, 'POST', `/customer_service/202309/conversations/${conversationId}/messages`, {
+      shop,
+      body: { type: 'TEXT', content: JSON.stringify({ content: String(text).slice(0, 2000) }) },
+    })
+    return { externalMessageId: data.message_id ? String(data.message_id) : null }
   }
 
   async createListing(accessToken, product, options = {}) {

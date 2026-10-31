@@ -12,7 +12,7 @@ import ConversationList from './ConversationList'
 import ThreadView from './ThreadView'
 
 export default function InboxPage() {
-  const { token } = useAuth()
+  const { token, isAdmin } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
   const [status, setStatus] = useState('open')
@@ -32,6 +32,23 @@ export default function InboxPage() {
     [shops, marketplace],
   )
   const noShopForTab = Boolean(marketplace) && !shopsRes.loading && shopIds.length === 0
+  const tabShops = shops.filter((shop) => shop.marketplace === marketplace)
+  const autoReplyOn = tabShops.length > 0 && tabShops.every((shop) => shop.aiReplyEnabled)
+  const [savingAi, setSavingAi] = useState(false)
+
+  const toggleAutoReply = async () => {
+    setSavingAi(true)
+    try {
+      await Promise.all(
+        tabShops.map((shop) => api.patch(`/api/shops/${shop._id}/ai-reply`, { enabled: !autoReplyOn }, token)),
+      )
+      await shopsRes.refetch()
+    } catch (err) {
+      setError(`Could not change AI auto-reply: ${err.message}`)
+    } finally {
+      setSavingAi(false)
+    }
+  }
 
   const handleSyncInbox = async () => {
     setSyncing(true)
@@ -98,7 +115,23 @@ export default function InboxPage() {
     <div className="flex h-[calc(100vh-4rem-3rem)] min-h-[480px] flex-col">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-bold">{section.label} inbox</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && tabShops.length > 0 && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoReplyOn}
+              onClick={toggleAutoReply}
+              disabled={savingAi}
+              title="When on, the AI answers new buyer messages in this shop. Refunds and complaints are passed to you."
+              className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-60"
+            >
+              <span className={`relative h-5 w-9 rounded-full transition-colors ${autoReplyOn ? 'bg-indigo-600' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${autoReplyOn ? 'left-[18px]' : 'left-0.5'}`} />
+              </span>
+              AI auto-reply {autoReplyOn ? 'on' : 'off'}
+            </button>
+          )}
           <div className="w-[140px]">
             <Select
               value={status}

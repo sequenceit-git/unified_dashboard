@@ -37,7 +37,7 @@ router.get('/oauth/callback/:marketplace', async (req, res) => {
         auth: {
           accessTokenEnc: tokenData.access_token || tokenData.accessToken,
           refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
-          expiresAt: tokenData.expires_in ? new Date(Date.now() + Number(tokenData.expires_in) * 1000) : null,
+          expiresAt: marketplaceManager.tokenExpiry(tokenData.expires_in),
         },
         lastSyncAt: new Date(),
       },
@@ -59,10 +59,25 @@ router.use(requireAuth, loadAccess)
 router.get('/', async (req, res) => {
   try {
     const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
-    const shops = await Shop.find(filter).select('name marketplace status externalShopId lastSyncAt').sort({ marketplace: 1 })
+    const shops = await Shop.find(filter).select('name marketplace status externalShopId lastSyncAt aiReplyEnabled').sort({ marketplace: 1 })
     res.json(shops)
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /api/shops/:id/ai-reply — { enabled } turns the inbox auto-reply on or off for a shop
+router.patch('/:id/ai-reply', requireRole('super_admin'), async (req, res) => {
+  try {
+    const shop = await Shop.findByIdAndUpdate(
+      req.params.id,
+      { aiReplyEnabled: Boolean(req.body.enabled) },
+      { returnDocument: 'after' },
+    ).select('name marketplace status aiReplyEnabled')
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    res.json(shop)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
   }
 })
 
@@ -125,7 +140,7 @@ router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (r
         auth: {
           accessTokenEnc: tokenData.access_token || tokenData.accessToken,
           refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
-          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+          expiresAt: marketplaceManager.tokenExpiry(tokenData.expires_in),
         },
         lastSyncAt: new Date(),
       },

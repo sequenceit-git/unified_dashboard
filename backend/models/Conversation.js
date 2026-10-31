@@ -9,6 +9,10 @@ const conversationSchema = new mongoose.Schema(
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
     status: { type: String, enum: ['open', 'closed'], default: 'open' },
     aiEnabled: { type: Boolean, default: true },
+    aiError: { type: String, default: '' },
+    customerName: { type: String },
+    // eBay system notices (FROM_EBAY) cannot be answered.
+    replyable: { type: Boolean, default: true },
     lastMessageAt: { type: Date },
     lastMessagePreview: { type: String },
     unreadCount: { type: Number, default: 0 },

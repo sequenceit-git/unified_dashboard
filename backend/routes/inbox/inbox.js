@@ -7,6 +7,7 @@ const MessageTemplate = require('../../models/MessageTemplate')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
+const { syncAndReply, refreshThread } = require('../../services/inboxBot')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inbox'))
@@ -37,6 +38,10 @@ router.get('/conversations/:id', async (req, res) => {
     const convo = await Conversation.findOne({ _id: req.params.id, ...shopFilter(req, Conversation) })
       .populate('customerId', 'name email')
     if (!convo) return res.status(404).json({ error: 'Not found' })
+    if (convo.replyable !== false && convo.externalThreadId) {
+      const shop = await Shop.findById(convo.shopId)
+      if (shop?.status === 'connected') await refreshThread(shop, convo)
+    }
     const messages = await Message.find({ conversationId: convo._id }).sort({ sentAt: 1 }).limit(200)
     res.json({ ...convo.toObject(), messages })
   } catch (err) {
@@ -51,12 +56,13 @@ router.post('/conversations/:id/messages', async (req, res) => {
     if (!convo) return res.status(404).json({ error: 'Not found' })
     if (!req.body.text) return res.status(400).json({ error: 'text required' })
 
-    const shop = await Shop.findById(convo.shopId).select('+auth.accessTokenEnc')
-    let deliveryStatus = 'sent'
-
-    // If shop has active API credentials, attempt delivery to the channel
-    if (shop?.auth?.accessTokenEnc) {
-      deliveryStatus = 'delivered'
+    const shop = await Shop.findById(convo.shopId)
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    let sent
+    try {
+      sent = await marketplaceManager.sendReply(shop, convo, req.body.text)
+    } catch (err) {
+      return res.status(502).json({ error: `Not sent: ${err.message}` })
     }
 
     const msg = await Message.create({
@@ -66,8 +72,10 @@ router.post('/conversations/:id/messages', async (req, res) => {
       senderType: 'agent',
       senderUserId: req.user.id,
       text: req.body.text,
-      deliveryStatus,
+      ...(sent.externalMessageId ? { externalMessageId: sent.externalMessageId } : {}),
+      deliveryStatus: 'delivered',
       sentAt: new Date(),
+      aiHandled: true,
     })
 
     convo.lastMessageAt = new Date()
@@ -88,10 +96,10 @@ router.post('/sync', async (req, res) => {
     if (req.user.role === 'sub_admin') filter._id = { $in: req.allowedShopIds }
     const marketplace = canonicalMarketplace(req.body?.marketplace)
     if (marketplace) filter.marketplace = marketplace
-    const shops = await Shop.find(filter).select('+auth.accessTokenEnc')
+    const shops = await Shop.find(filter)
     const results = []
     for (const shop of shops) {
-      results.push(await marketplaceManager.syncInboxForShop(shop))
+      results.push(await syncAndReply(shop))
     }
     res.json({ success: results.every((item) => !item.error), results })
   } catch (err) {
@@ -108,7 +116,7 @@ router.patch('/conversations/:id', async (req, res) => {
       { _id: req.params.id, ...shopFilter(req, Conversation) },
       {
         ...(status ? { status } : {}),
-        ...(aiEnabled !== undefined ? { aiEnabled } : {}),
+        ...(aiEnabled !== undefined ? { aiEnabled: Boolean(aiEnabled), aiError: '' } : {}),
       },
       { new: true, runValidators: true },
     )

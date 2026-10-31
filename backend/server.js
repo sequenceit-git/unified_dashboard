@@ -85,6 +85,8 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   marketplaceManager.autoConnectFromEnv().catch((err) => {
     console.warn('Auto-connect from ENV warning:', err.message)
   })
+
+  if (require.main === module) require('./services/inboxBot').startInboxScheduler()
 })
 
 // Local dev: `node server.js` listens. On Vercel the exported app is run by

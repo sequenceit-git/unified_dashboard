@@ -510,33 +510,74 @@ class UnifiedMarketplaceManager {
     return { shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, orders: ordersResult, listings: listingsResult }
   }
 
-  async syncInboxForShop(shop) {
-    if (shop._id && !shop.auth?.accessTokenEnc) {
-      shop = await Shop.findById(shop._id).select('+auth.accessTokenEnc')
-    }
-    const token = shop.auth?.accessTokenEnc || ''
-    if (!token) {
-      return { shopName: shop.name, marketplace: shop.marketplace, imported: 0, error: `${shop.name} is not connected.` }
-    }
-    const service = this.getService(shop.marketplace)
-    if (typeof service.getInbox !== 'function') {
-      return { shopName: shop.name, marketplace: shop.marketplace, imported: 0, error: `${shop.name} inbox sync is not available.` }
-    }
-    let threads = []
-    try {
-      threads = await service.getInbox(token, shop)
-    } catch (err) {
-      const denied = err.status === 401 || /scope|access token|access denied|invalid access/i.test(err.message || '')
-      return {
-        shopName: shop.name,
-        marketplace: shop.marketplace,
-        imported: 0,
-        error: denied
-          ? `${shop.name} is connected, but this login does not include message access. Connect the shop again from Settings.`
-          : err.message,
+  /** TikTok sends an absolute Unix time; eBay sends seconds from now. */
+  tokenExpiry(expiresIn) {
+    const value = Number(expiresIn)
+    if (!value) return null
+    return new Date(value > 1e9 ? value * 1000 : Date.now() + value * 1000)
+  }
+
+  /** Current access token, refreshed first when it ends within 10 minutes (or when `force`). */
+  async freshToken(shop, { force = false } = {}) {
+    const doc = await Shop.findById(shop._id).select('+auth.accessTokenEnc +auth.refreshTokenEnc')
+    if (!doc?.auth?.accessTokenEnc) return ''
+    const expiresAt = doc.auth.expiresAt ? new Date(doc.auth.expiresAt).getTime() : null
+    const endingSoon = expiresAt !== null && expiresAt - Date.now() < 10 * 60 * 1000
+    const canRefresh = doc.auth.refreshTokenEnc && ['ebay', 'tiktok_shop'].includes(doc.marketplace)
+    if (canRefresh && (force || endingSoon)) {
+      try {
+        const next = await this.refreshToken(doc.marketplace, doc.auth.refreshTokenEnc)
+        doc.auth.accessTokenEnc = next.access_token
+        if (next.refresh_token) doc.auth.refreshTokenEnc = next.refresh_token
+        doc.auth.expiresAt = this.tokenExpiry(next.expires_in)
+        await doc.save()
+      } catch (err) {
+        if (force) throw err
+        console.warn(`[tokens] ${doc.name}: refresh failed: ${err.message}`)
       }
     }
-    let imported = 0
+    return doc.auth.accessTokenEnc
+  }
+
+  /** Runs `fn(token)`; on an expired-login error, refreshes once and tries again. */
+  async withShopToken(shop, fn) {
+    const token = await this.freshToken(shop)
+    if (!token) throw Object.assign(new Error(`${shop.name} is not connected.`), { notConnected: true })
+    try {
+      return await fn(token)
+    } catch (err) {
+      if (!(err.status === 401 || /expired|invalid access.?token/i.test(err.message || ''))) throw err
+      return fn(await this.freshToken(shop, { force: true }))
+    }
+  }
+
+  messageAccessError(shop, err) {
+    if (err.notConnected) return err.message
+    const denied = err.status === 401 || /scope|access token|access denied|invalid access/i.test(err.message || '')
+    return denied
+      ? `${shop.name} is connected, but this login does not include message access. Connect the shop again from Settings.`
+      : err.message
+  }
+
+  /** Imports conversations; `newInbound` lists buyer messages seen for the first time. */
+  async syncInboxForShop(shop) {
+    const summary = { shopName: shop.name, marketplace: shop.marketplace, imported: 0, newInbound: [] }
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getInbox !== 'function') {
+      return { ...summary, error: `${shop.name} inbox sync is not available.` }
+    }
+    let result
+    try {
+      result = await this.withShopToken(shop, (token) => service.getInbox(token, shop))
+    } catch (err) {
+      return { ...summary, error: this.messageAccessError(shop, err) }
+    }
+    const threads = Array.isArray(result) ? result : result.threads || []
+    if (result.accountUsername && result.accountUsername !== shop.accountUsername) {
+      await Shop.updateOne({ _id: shop._id }, { accountUsername: result.accountUsername })
+      shop.accountUsername = result.accountUsername
+    }
+
     for (const thread of threads) {
       if (!thread.externalThreadId) continue
       const convo = await Conversation.findOneAndUpdate(
@@ -548,13 +589,15 @@ class UnifiedMarketplaceManager {
             lastMessageAt: thread.lastMessageAt || new Date(),
             lastMessagePreview: thread.lastMessagePreview || '',
             unreadCount: thread.unreadCount || 0,
+            ...(thread.customerName ? { customerName: thread.customerName } : {}),
+            ...(thread.replyable !== undefined ? { replyable: thread.replyable } : {}),
           },
         },
         { upsert: true, returnDocument: 'after' },
       )
       for (const message of thread.messages || []) {
         if (!message.externalMessageId) continue
-        await Message.updateOne(
+        const saved = await Message.updateOne(
           { shopId: shop._id, externalMessageId: message.externalMessageId },
           {
             $setOnInsert: {
@@ -570,10 +613,36 @@ class UnifiedMarketplaceManager {
           },
           { upsert: true },
         )
+        if (saved.upsertedCount && message.direction === 'inbound') {
+          summary.newInbound.push({ conversationId: convo._id, messageId: saved.upsertedId })
+        }
       }
-      imported += 1
+      summary.imported += 1
     }
-    return { shopName: shop.name, marketplace: shop.marketplace, imported }
+    return summary
+  }
+
+  /** Recent messages of a conversation straight from the marketplace, oldest first. */
+  async getThreadHistory(shop, convo) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getThreadMessages !== 'function') return []
+    return this.withShopToken(shop, (token) => service.getThreadMessages(token, shop, convo.externalThreadId))
+  }
+
+  /** Sends text to the buyer on the marketplace; returns `{ externalMessageId }`. */
+  async sendReply(shop, convo, text) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.sendMessage !== 'function') {
+      throw new Error(`Replying from the dashboard is not available for ${shop.name}.`)
+    }
+    if (convo.replyable === false) {
+      throw new Error('This conversation is a marketplace notice and cannot be answered.')
+    }
+    try {
+      return await this.withShopToken(shop, (token) => service.sendMessage(token, shop, convo.externalThreadId, text))
+    } catch (err) {
+      throw new Error(this.messageAccessError(shop, err))
+    }
   }
 
   /**
