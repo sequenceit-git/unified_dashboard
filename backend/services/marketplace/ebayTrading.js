@@ -231,14 +231,21 @@ async function addListing(token, product, opts) {
   return { itemId: doc.ItemID ? String(doc.ItemID) : null }
 }
 
-/** Revises a live listing. Only the fields given are changed. */
+/** Units already sold on this listing. eBay's Quantity counts them, so available = Quantity - sold. */
+async function quantitySold(token, itemId) {
+  const doc = await call(token, 'GetItem', `<ItemID>${escapeXml(itemId)}</ItemID><OutputSelector>Item.SellingStatus.QuantitySold</OutputSelector>`)
+  return Number(doc.Item?.SellingStatus?.QuantitySold || 0)
+}
+
+/** Revises a live listing. Only the fields given are changed. `quantity` is the stock available to buy. */
 async function reviseListing(token, itemId, { title, description, price, quantity, images } = {}) {
+  const sold = quantity != null ? await quantitySold(token, itemId) : 0
   const parts = [
     `<ItemID>${escapeXml(itemId)}</ItemID>`,
     title ? `<Title>${escapeXml(String(title).slice(0, 80))}</Title>` : '',
     description ? `<Description>${cdata(description)}</Description>` : '',
     price != null ? `<StartPrice currencyID="USD">${Number(price).toFixed(2)}</StartPrice>` : '',
-    quantity != null ? `<Quantity>${Math.max(0, Math.floor(Number(quantity)))}</Quantity>` : '',
+    quantity != null ? `<Quantity>${Math.max(0, Math.floor(Number(quantity))) + sold}</Quantity>` : '',
     images?.length ? `<PictureDetails>${images.filter((url) => /^https:\/\//i.test(url)).slice(0, 12).map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('')}</PictureDetails>` : '',
   ]
   await call(token, 'ReviseFixedPriceItem', `<Item>${parts.join('')}</Item>`)
