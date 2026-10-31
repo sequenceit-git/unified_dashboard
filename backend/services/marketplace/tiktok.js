@@ -119,6 +119,11 @@ const NOT_SUBMITTED = {
   W8_NOT_CONFIGURED: 'W-8 tax information has not been provided.',
 }
 
+const PRE_APPROVED = {
+  KYC_PENDING: 'Seller KYC onboarding is incomplete.',
+  RESTRICTED_CATEGORY_PENDING: 'This category needs qualification approval in Seller Center.',
+}
+
 function auditReason(detail, tiktokStatus) {
   const audit = detail?.audit || {}
   const fails = detail?.audit_failed_reasons || audit.audit_failed_reasons || []
@@ -128,15 +133,16 @@ function auditReason(detail, tiktokStatus) {
     .filter(Boolean)
     .join(' ')
   const blocked = (audit.not_submitted_reasons || []).map((code) => NOT_SUBMITTED[code] || code)
+  const pending = (audit.pre_approved_reasons || []).map((code) => PRE_APPROVED[code] || code)
   if (tiktokStatus === 'FAILED' || audit.status === 'FAILED') {
-    return failText || 'TikTok Shop rejected this product in review.'
+    return failText || 'TikTok Shop rejected this product in review, or cancelled the audit.'
   }
   if (tiktokStatus === 'DRAFT') {
     return [...blocked, failText].filter(Boolean).join(' ')
       || 'TikTok Shop saved this as a draft. It is not in review. Publish it after you fix the missing details.'
   }
   if (audit.status === 'PRE_APPROVED') {
-    return 'TikTok approved the listing but it is waiting on a shop prerequisite before it can go live.'
+    return pending.join(' ') || 'TikTok approved the listing but it is waiting on a shop prerequisite before it can go live.'
   }
   return ''
 }
@@ -263,7 +269,7 @@ class TikTokShopService {
       const data = await this.call(accessToken, 'POST', '/product/202502/products/search', {
         shop,
         query: { page_size: 50, ...(pageToken ? { page_token: pageToken } : {}) },
-        body: {},
+        body: { status: 'ALL' },
       })
       for (const product of data.products || []) {
         let detail = product

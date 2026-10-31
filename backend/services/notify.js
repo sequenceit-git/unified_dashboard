@@ -5,10 +5,12 @@
  */
 
 const Notification = require('../models/Notification')
+const Product = require('../models/Product')
 const events = require('./events')
 
 const SHOP_LABEL = { ebay: 'eBay', tiktok_shop: 'TikTok Shop', temu: 'Temu Shop' }
 const FAILED_RAW = new Set(['FAILED', 'FREEZE', 'PLATFORM_DEACTIVATED'])
+const DRAFT_RAW = 'DRAFT'
 
 function shopLabel(marketplace) {
   return SHOP_LABEL[marketplace] || 'Shop'
@@ -51,6 +53,33 @@ function isLow(product) {
   return Number(product.stock) <= threshold
 }
 
+function shopRef(shop) {
+  if (!shop) return { shopId: null, marketplace: undefined }
+  if (shop.marketplace || shop.name) return { shopId: shop._id || null, marketplace: shop.marketplace }
+  return { shopId: shop._id || shop, marketplace: undefined }
+}
+
+function listingNeedsAttention(status, raw) {
+  return status === 'error' || FAILED_RAW.has(raw) || raw === DRAFT_RAW
+}
+
+function listingAlertTitle(raw, { sentBackToDraft } = {}) {
+  if (raw === 'FREEZE') return 'TikTok listing was frozen'
+  if (raw === 'PLATFORM_DEACTIVATED') return 'TikTok listing was suspended'
+  if (raw === 'FAILED') return 'TikTok listing was rejected'
+  if (raw === DRAFT_RAW || sentBackToDraft) return 'TikTok listing is a draft'
+  return 'Listing needs attention'
+}
+
+function listingAlertReason(listing, raw, { sentBackToDraft } = {}) {
+  if (listing.syncError) return listing.syncError
+  if (raw === 'FREEZE') return 'TikTok Shop froze this listing.'
+  if (raw === 'PLATFORM_DEACTIVATED') return 'TikTok Shop suspended this listing.'
+  if (raw === 'FAILED') return 'TikTok Shop rejected this product in review.'
+  if (sentBackToDraft || raw === DRAFT_RAW) return 'TikTok Shop sent this listing back to Draft. It is not in review.'
+  return 'This listing failed shop review.'
+}
+
 /** Notify only when stock first drops to the threshold, not on every later sync. */
 async function stockChanged(product, shop, { was } = {}) {
   if (!product?._id) return
@@ -58,8 +87,7 @@ async function stockChanged(product, shop, { was } = {}) {
   if (!isLow(product)) return resolve(key)
   if (was == null && product.source === 'marketplace_sync') return
   if (was != null && Number(was) <= Number(product.lowStockThreshold ?? 5)) return
-  const shopId = shop?._id || null
-  const marketplace = shop?.marketplace
+  const { shopId, marketplace } = shopRef(shop)
   const count = Number(product.stock)
   await raise({
     type: 'low_stock',
@@ -72,30 +100,36 @@ async function stockChanged(product, shop, { was } = {}) {
   })
 }
 
-async function listingStatusChanged(listing, shop, { wasStatus, wasRaw } = {}) {
+/**
+ * Alert when a listing is rejected, frozen, suspended, or sent back to Draft.
+ * Staying in Draft/Failed does not clear the unread alert. First-time marketplace
+ * imports of already-draft products are skipped so old drafts do not flood the bell.
+ */
+async function listingStatusChanged(listing, shop, { wasStatus, wasRaw, imported } = {}) {
   if (!listing?._id || !shop) return
   const key = `listing_failed:${listing._id}`
   const raw = listing.marketplaceStatus
-  const sentBackToDraft = wasRaw === 'PENDING' && raw === 'DRAFT'
-  const nowFailed = listing.status === 'error' || FAILED_RAW.has(raw) || sentBackToDraft
-  const wasFailed = wasStatus === 'error' || FAILED_RAW.has(wasRaw)
-  if (!nowFailed) return resolve(key)
-  if (wasFailed && !sentBackToDraft) return
-  const reason = listing.syncError
-    || (raw === 'FREEZE'
-      ? 'TikTok Shop froze this listing.'
-      : raw === 'PLATFORM_DEACTIVATED'
-        ? 'TikTok Shop suspended this listing.'
-        : sentBackToDraft
-          ? 'TikTok Shop sent this listing back to Draft. It is not in review.'
-          : 'This listing failed shop review.')
+  const sentBackToDraft = wasRaw === 'PENDING' && raw === DRAFT_RAW
+  const importedDraft = imported && !wasRaw && raw === DRAFT_RAW
+  const nowAlert = !importedDraft && listingNeedsAttention(listing.status, raw)
+  const wasAlert = listingNeedsAttention(wasStatus, wasRaw)
+  if (!nowAlert) return resolve(key)
+  const product = await Product.findById(listing.productId).select('title sku').lean()
+  const name = product?.title || product?.sku || 'A listing'
+  const reason = listingAlertReason(listing, raw, { sentBackToDraft })
+  const message = `${name}: ${reason}`
+  if (wasAlert && raw === wasRaw && !sentBackToDraft) {
+    const seen = await Notification.findOne({ key })
+    if (seen?.isRead) return
+    if (seen && seen.message === message) return
+  }
   await raise({
     type: 'listing_failed',
     shopId: shop._id,
     refId: listing.productId,
     key,
-    title: sentBackToDraft ? 'TikTok listing is a draft' : 'Listing needs attention',
-    message: reason,
+    title: listingAlertTitle(raw, { sentBackToDraft }),
+    message,
     href: shopPath('/products', shop.marketplace),
   })
 }
@@ -116,6 +150,7 @@ async function fromSync(kind, shop, result = {}) {
     return
   }
   await resolve(failKey)
+  await resolve(`token:${shop._id}`)
 
   const created = Number(result.created || result.orders?.created || 0)
   if ((kind === 'orders' || kind === 'full') && created > 0) {

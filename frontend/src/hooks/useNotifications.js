@@ -24,7 +24,8 @@ export function useNotifications() {
   useEffect(() => { load() }, [load])
 
   useLiveEvents((event) => {
-    if (event.type === 'notification' || (event.type === 'sync' && (event.newMessages || !event.ok))) {
+    if (event.type === 'notification') return load()
+    if (event.type === 'sync' && (event.newMessages || !event.ok || event.kind === 'listings' || event.kind === 'full')) {
       load()
     }
   })

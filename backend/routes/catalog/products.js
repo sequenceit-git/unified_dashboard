@@ -252,11 +252,12 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
       publishRes = await marketplaceManager.publishListing(shop, product, listingOptions)
     } catch (apiErr) {
       console.warn(`Marketplace [${shop.marketplace}] listing error:`, apiErr.message)
-      await Listing.findOneAndUpdate(
+      const failed = await Listing.findOneAndUpdate(
         { productId: product._id, shopId: shop._id },
         { productId: product._id, shopId: shop._id, marketplace: shop.marketplace, price, status: 'error', syncError: apiErr.message, lastSyncedAt: new Date() },
-        { upsert: true, runValidators: true },
+        { new: true, upsert: true, runValidators: true },
       )
+      await require('../../services/notify').listingStatusChanged(failed, shop, {}).catch(() => {})
       return res.status(422).json({ error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [] })
     }
 
@@ -285,6 +286,7 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
         { $addToSet: { 'opportunities.$.listedShops': shop.marketplace } },
       )
     }
+    await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     res.status(201).json(listing)
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -307,6 +309,7 @@ router.post('/:id/listing-action', requireRole('super_admin'), async (req, res) 
     listing.syncError = null
     listing.lastSyncedAt = new Date()
     await listing.save()
+    await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     res.json({
       ...listing.toObject(),
       listingUrl: listing.listingUrl,

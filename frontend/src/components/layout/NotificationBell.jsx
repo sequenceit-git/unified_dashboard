@@ -70,7 +70,7 @@ export default function NotificationBell() {
           </div>
           <div className="max-h-96 overflow-y-auto">
             {items.length === 0 ? (
-              <p className="px-3 py-8 text-center text-sm text-gray-500">No alerts yet. New orders, messages, low stock, and shop problems show up here.</p>
+              <p className="px-3 py-8 text-center text-sm text-gray-500">No alerts yet. New orders, messages, low stock, listing review problems, and shop issues show up here.</p>
             ) : (
               items.map((item) => (
                 <button

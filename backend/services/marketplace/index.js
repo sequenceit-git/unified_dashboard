@@ -585,9 +585,7 @@ class UnifiedMarketplaceManager {
       lastSyncedAt: new Date(),
     })
     await listing.save()
-    if (!created) {
-      await require('../notify').listingStatusChanged(listing, shop, { wasStatus, wasRaw }).catch(() => {})
-    }
+    await require('../notify').listingStatusChanged(listing, shop, { wasStatus, wasRaw, imported: created }).catch(() => {})
     return { created }
   }
 
