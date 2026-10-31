@@ -405,9 +405,11 @@ class UnifiedMarketplaceManager {
               price: Number(item.price || 0),
               stock: Number(item.stock || 0),
               images: item.images || [],
-              weight: Number(item.weight || 1),
+              weight: item.weight,
+              dimensions: item.dimensions,
+              attributes: item.attributes,
               category: item.category || 'General',
-              brand: item.brand || shop.name,
+              brand: item.brand || '',
               externalListingId: item.externalListingId,
             }
           : {
@@ -439,13 +441,32 @@ class UnifiedMarketplaceManager {
             brand: item.brand || 'DevBrand',
             images: item.images || [],
             basePrice: item.price || 19.99,
-            stock: item.stock || 10,
+            stock: item.stock || 0,
+            weight: item.weight || 1,
+            dimensions: item.dimensions || undefined,
+            attributes: item.attributes || undefined,
             status: item.status || 'active',
             source: 'marketplace_sync',
           })
           createdProducts++
-        } else if (item.images?.length > 0 && (!product.images || product.images.length === 0)) {
-          product.images = item.images
+        } else {
+          const fill = (field, value, placeholders = []) => {
+            if (value == null || value === '') return
+            const current = product[field]
+            if (current == null || current === '' || placeholders.includes(current)) product[field] = value
+          }
+          fill('description', item.description)
+          fill('category', item.category, ['General'])
+          fill('brand', item.brand, ['TikTok Shop', 'DevBrand', shop.name])
+          if (!product.brand || product.brand === 'TikTok Shop') product.brand = item.brand || ''
+          if (item.images?.length && (!product.images || product.images.length === 0)) product.images = item.images
+          if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
+          if (item.dimensions && product.dimensions?.length === 10 && product.dimensions?.width === 10 && product.dimensions?.height === 5) {
+            product.dimensions = item.dimensions
+          }
+          if (item.attributes && Object.keys(item.attributes).length && (!product.attributes || !Object.keys(product.attributes).length)) {
+            product.attributes = item.attributes
+          }
           await product.save()
         }
 

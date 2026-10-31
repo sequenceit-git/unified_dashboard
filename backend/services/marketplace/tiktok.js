@@ -24,6 +24,57 @@ const ORDER_STATUS = {
   CANCELLED: 'cancelled',
 }
 
+function plainText(html) {
+  return String(html || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function categoryPath(chains) {
+  return (chains || []).map((row) => row.local_name).filter(Boolean).join(' / ')
+}
+
+function toPounds(weight) {
+  const value = Number(weight?.value)
+  if (!Number.isFinite(value)) return null
+  const unit = String(weight.unit || 'POUND').toUpperCase()
+  if (unit.startsWith('KILO')) return Math.round(value * 2.20462 * 100) / 100
+  if (unit === 'GRAM') return Math.round(value * 0.00220462 * 100) / 100
+  return value
+}
+
+function toInches(dimensions) {
+  if (!dimensions) return null
+  const factor = String(dimensions.unit || 'INCH').toUpperCase().startsWith('CENT') ? 0.393701 : 1
+  const num = (key) => {
+    const value = Number(dimensions[key])
+    return Number.isFinite(value) ? Math.round(value * factor * 100) / 100 : null
+  }
+  const length = num('length')
+  const width = num('width')
+  const height = num('height')
+  if (length == null && width == null && height == null) return null
+  return { length, width, height, unit: 'in' }
+}
+
+function attributeMap(rows) {
+  const attributes = {}
+  for (const row of rows || []) {
+    const value = (row.values || []).map((item) => item.name).filter(Boolean).join(', ')
+    if (row.name && value) attributes[row.name] = value
+  }
+  return attributes
+}
+
 function imageUrls(images) {
   const urls = []
   for (const image of images || []) {
@@ -31,6 +82,24 @@ function imageUrls(images) {
     if (url && !urls.includes(url)) urls.push(url)
   }
   return urls.slice(0, 8)
+}
+
+function dateOnly(value) {
+  return new Date(value).toISOString().slice(0, 10)
+}
+
+function nextDate(value) {
+  const date = new Date(value)
+  date.setUTCDate(date.getUTCDate() + 1)
+  return date.toISOString().slice(0, 10)
+}
+
+function amountOf(value) {
+  if (value == null) return 0
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') return Number(value) || 0
+  if (value.overall) return amountOf(value.overall)
+  return Number(value.amount || 0)
 }
 
 class TikTokShopService {
@@ -120,27 +189,33 @@ class TikTokShopService {
         body: {},
       })
       for (const product of data.products || []) {
-        let images = imageUrls(product.main_images)
-        if (!images.length && product.id) {
+        let detail = product
+        if (product.id) {
           try {
-            const detail = await this.call(accessToken, 'GET', `/product/202309/products/${product.id}`, { shop })
-            images = imageUrls(detail.main_images)
+            detail = await this.call(accessToken, 'GET', `/product/202309/products/${product.id}`, { shop })
           } catch {
-            images = []
+            detail = product
           }
         }
-        const catalogStatus = product.status === 'ACTIVATE' ? 'active' : 'draft'
-        for (const sku of product.skus || []) {
+        const images = imageUrls(detail.main_images || product.main_images)
+        const catalogStatus = (detail.product_status || product.status) === 'ACTIVATE' ? 'active' : 'draft'
+        const skus = detail.skus?.length ? detail.skus : product.skus || []
+        const attributes = attributeMap(detail.product_attributes)
+        const brand = attributes.Brand || ''
+        for (const sku of skus) {
           const stock = (sku.inventory || []).reduce((sum, row) => sum + Number(row.quantity || 0), 0)
           items.push({
             sku: sku.seller_sku || String(sku.id),
-            title: product.title || `TikTok Shop ${sku.id}`,
-            description: product.description || '',
+            title: detail.title || product.title || `TikTok Shop ${sku.id}`,
+            description: plainText(detail.description),
             price: Number(sku.price?.sale_price || sku.price?.tax_exclusive_price || 0),
             stock,
             images,
-            category: 'General',
-            brand: 'TikTok Shop',
+            category: categoryPath(detail.category_chains),
+            brand,
+            weight: toPounds(detail.package_weight),
+            dimensions: toInches(detail.package_dimensions),
+            attributes,
             status: catalogStatus,
             externalListingId: `${product.id}:${sku.id}`,
           })
@@ -149,6 +224,36 @@ class TikTokShopService {
       pageToken = data.next_page_token || ''
     } while (pageToken && items.length < limit)
     return { inventoryItems: items }
+  }
+
+  async shopPerformance(accessToken, { shop, from, to } = {}) {
+    const data = await this.call(accessToken, 'GET', '/analytics/202509/shop/performance', {
+      shop,
+      query: {
+        start_date_ge: dateOnly(from),
+        end_date_lt: nextDate(to),
+        granularity: '1D',
+        currency: 'USD',
+      },
+    })
+    return data.performance?.intervals || []
+  }
+
+  async productPerformance(accessToken, { shop, from, to, limit = 10 } = {}) {
+    const query = {
+      start_date_ge: dateOnly(from),
+      end_date_lt: nextDate(to),
+      page_size: Math.min(Number(limit) || 10, 100),
+      currency: 'USD',
+    }
+    try {
+      const data = await this.call(accessToken, 'GET', '/analytics/202509/shop_products/performance', { shop, query })
+      return data.products || []
+    } catch (error) {
+      if (!/version/i.test(error.message)) throw error
+      const data = await this.call(accessToken, 'GET', '/analytics/202405/shop_products/performance', { shop, query })
+      return data.products || []
+    }
   }
 
   async createListing(accessToken, product, options = {}) {
