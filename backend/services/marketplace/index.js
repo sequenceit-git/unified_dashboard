@@ -584,7 +584,13 @@ class UnifiedMarketplaceManager {
         items: items.map((item) => {
           const rawSku = item.sku && !/^none$/i.test(String(item.sku).trim()) ? String(item.sku).trim() : ''
           const cleanSku = rawSku
-            ? (/^\d+$/.test(rawSku) ? `EBAY-${rawSku}` : rawSku.startsWith('EB-') ? rawSku.replace(/^EB-/, 'EBAY-') : rawSku)
+            ? (/^\d+$/.test(rawSku)
+                ? `EBAY-${rawSku}`
+                : rawSku.startsWith('EB-')
+                ? rawSku.replace(/^EB-/, 'EBAY-')
+                : rawSku.startsWith('BOT-')
+                ? `EBAY-${item.itemId}`
+                : rawSku)
             : `EBAY-${item.itemId}`
           return {
             sku: cleanSku,
@@ -734,6 +740,9 @@ class UnifiedMarketplaceManager {
       }
       if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
       if (item.listingStatus === 'live' && product.status === 'draft') product.status = 'active'
+      if (product.sku && product.sku.startsWith('BOT-') && item.sku && !item.sku.startsWith('BOT-')) {
+        product.sku = item.sku
+      }
       await product.save()
     }
 
