@@ -429,20 +429,26 @@ class UnifiedMarketplaceManager {
 
   /**
    * Removes the shop listing when the catalog product is deleted.
-   * TikTok's delete sets status DELETED; search keeps returning that product.
+   * On TikTok, delete sets status DELETED.
+   * On eBay, delete ends the listing via EndFixedPriceItem so it is no longer on sale.
    */
   async removeFromShop(shop, listing) {
-    if (!shop || shop.marketplace !== 'tiktok_shop' || !listing?.externalListingId) return
-    if (listing.marketplaceStatus === 'DELETED') return
+    if (!shop || !listing?.externalListingId) return
+    if (listing.marketplaceStatus === 'DELETED' || listing.status === 'ended') return
     const service = this.getService(shop.marketplace)
-    await this.withShopToken(shop, (token) => service.applyListingAction(token, 'delete', listing, { shop })).catch(() => {})
+    if (typeof service.applyListingAction !== 'function') return
+    await this.withShopToken(shop, (token) => service.applyListingAction(token, 'delete', listing, { shop })).catch((err) => {
+      console.warn(`Failed to remove listing ${listing.externalListingId} from ${shop.name}:`, err.message)
+    })
   }
 
-  /** Keeps a removed shop product from being imported again. TikTok search still returns it. */
+  /** Keeps a removed shop product from being imported again. */
   async forgetListing(listing, extras = []) {
     const shopId = listing?.shopId
     if (!shopId) return
-    for (const productKey of ignoreTokens(listing?.externalListingId, extras)) {
+    const id = listing?.externalListingId
+    const aliasList = id ? [id, `item-${id}`, `EBAY-${id}`] : []
+    for (const productKey of ignoreTokens(id, aliasList, extras)) {
       await IgnoredListing.updateOne(
         { shopId, productKey },
         { $setOnInsert: { shopId, productKey } },

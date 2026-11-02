@@ -105,8 +105,8 @@ const PROFILES = {
       directIntro: 'eBay listing format: 80-character title, condition, category, and item specifics.',
     },
     listingActions: [
-      { id: 'end', label: 'End listing', confirm: 'End this listing on eBay? Buyers will no longer see it.', statuses: ['live', 'out_of_stock'] },
-      { id: 'relist', label: 'Relist', confirm: 'Put this item back on eBay?', statuses: ['ended'] },
+      { id: 'end', label: 'End listing', danger: true, confirm: 'End this listing on eBay? Buyers will no longer see it.', statuses: ['live', 'out_of_stock'] },
+      { id: 'relist', label: 'Relist on eBay', confirm: 'Put this item back on sale on eBay?', statuses: ['ended', 'paused'] },
     ],
   },
 

@@ -238,6 +238,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
               if (!isAdmin) return null
               const listed = ['live', 'out_of_stock', 'pending'].includes(r.shopListing?.status)
               const shopActions = listingActionsFor(profile, r.shopListing)
+              const canDelete = !marketplace || !listed || r.shopListing?.status === 'ended' || r.shopListing?.status === 'error'
               return (
                 <span onClick={(e) => e.stopPropagation()}>
                   <RowMenu
@@ -261,7 +262,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
                         },
                       })),
                       ...(listed || shopActions.length ? [] : [{ label: listLabel, onClick: () => onList(r) }]),
-                      { label: 'Delete', danger: true, onClick: () => remove(r._id) },
+                      ...(canDelete ? [{ label: 'Delete', danger: true, onClick: () => remove(r._id) }] : []),
                     ]}
                   />
                 </span>

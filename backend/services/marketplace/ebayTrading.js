@@ -254,8 +254,15 @@ async function reviseListing(token, itemId, { title, description, price, quantit
 
 /** Ends a live listing. Buyers stop seeing it. */
 async function endListing(token, itemId, reason = 'NotAvailable') {
-  await call(token, 'EndFixedPriceItem', `<ItemID>${escapeXml(itemId)}</ItemID><EndingReason>${escapeXml(reason)}</EndingReason>`)
-  return { status: 'ended' }
+  try {
+    await call(token, 'EndFixedPriceItem', `<ItemID>${escapeXml(itemId)}</ItemID><EndingReason>${escapeXml(reason)}</EndingReason>`)
+  } catch (err) {
+    if (/has ended|already ended|not active|does not exist/i.test(err.message)) {
+      return { status: 'ended', marketplaceStatus: 'Ended' }
+    }
+    throw err
+  }
+  return { status: 'ended', marketplaceStatus: 'Ended' }
 }
 
 /** Puts an ended listing back on eBay. A restock can send the new quantity. May return a new item id. */

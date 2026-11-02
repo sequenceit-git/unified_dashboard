@@ -205,7 +205,7 @@ router.delete('/:id', requireRole('super_admin'), async (req, res) => {
       if (shop) await marketplaceManager.removeFromShop(shop, listing)
     }
     if (!listings.length) {
-      const shops = await Shop.find({ marketplace: 'tiktok_shop', status: 'connected' }).select('_id')
+      const shops = await Shop.find({ status: 'connected' }).select('_id')
       for (const shop of shops) await marketplaceManager.forgetListing({ shopId: shop._id }, [doc.sku])
     }
     await Product.findByIdAndDelete(doc._id)
@@ -322,13 +322,13 @@ router.post('/:id/listing-action', requireRole('super_admin'), async (req, res) 
     listing.syncError = null
     listing.lastSyncedAt = new Date()
     await listing.save()
-    if (action === 'delete') {
+    if (action === 'delete' || action === 'end') {
       const product = await Product.findById(listing.productId).select('sku')
-      await marketplaceManager.forgetListing(listing, [product?.sku])
+      await marketplaceManager.forgetListing(listing, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
     }
     if (action === 'publish' || action === 'relist') {
       const product = await Product.findById(listing.productId).select('sku')
-      await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId])
+      await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
     }
     await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     res.json({

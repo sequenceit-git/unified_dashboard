@@ -247,9 +247,31 @@ class EbayService {
   }
 
   async applyListingAction(accessToken, action, listing) {
-    const itemId = ebayItemId(listing.externalListingId)
-    if (action === 'end') return trading.endListing(accessToken, itemId)
-    if (action === 'relist') return trading.relistListing(accessToken, itemId)
+    let itemId
+    try {
+      itemId = ebayItemId(listing.externalListingId)
+    } catch (err) {
+      if (action === 'end' || action === 'delete') {
+        return { status: 'ended', marketplaceStatus: 'Ended' }
+      }
+      throw err
+    }
+    if (action === 'end' || action === 'delete') {
+      const res = await trading.endListing(accessToken, itemId)
+      // Best-effort removal of inventory item if a SKU exists
+      const sku = listing.sku || (Array.isArray(listing.matchSkus) && listing.matchSkus[0])
+      if (sku) {
+        await fetch(`${config.apiBaseUrl}/sell/inventory/v1/inventory_item/${encodeURIComponent(sku)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }).catch(() => {})
+      }
+      return { status: 'ended', marketplaceStatus: 'Ended' }
+    }
+    if (action === 'relist') {
+      const res = await trading.relistListing(accessToken, itemId)
+      return { status: 'live', marketplaceStatus: 'Active', externalListingId: res.externalListingId || itemId }
+    }
     throw new Error(`eBay cannot ${action} a listing.`)
   }
 
