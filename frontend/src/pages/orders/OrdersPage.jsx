@@ -78,21 +78,24 @@ export default function OrdersPage() {
   if (!section) return <RequireShopSection />
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+    <div className="space-y-4">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold">{section.label} orders</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{section.label} orders</h1>
           {syncMessage && <p className="text-xs text-emerald-600 font-medium">{syncMessage}</p>}
         </div>
-        <Button onClick={handleSyncOrders} disabled={syncing} size="sm">
+        <Button onClick={handleSyncOrders} disabled={syncing} size="sm" className="self-start sm:self-auto">
           {syncing ? 'Syncing...' : `Sync ${section.label}`}
         </Button>
       </div>
       <Card>
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row">
-
-          <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Order ID, tracking, buyer…" />
-          <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex-1 min-w-0">
+            <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Order ID, tracking, buyer…" />
+          </div>
+          <div className="w-full sm:w-48">
+            <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
+          </div>
         </div>
         <DataTable
           columns={[

@@ -67,7 +67,7 @@ export default function SubAdminFormPage() {
       <div className="flex items-center gap-3">
         <Link to="/sub-admins" className="text-sm font-semibold text-indigo-600 hover:underline">← Sub-admins</Link>
         <span className="text-gray-300">/</span>
-        <h1 className="text-2xl font-bold">{editing ? 'Edit sub-admin' : 'Create sub-admin'}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{editing ? 'Edit sub-admin' : 'Create sub-admin'}</h1>
       </div>
       <form onSubmit={save}>
         <Card>

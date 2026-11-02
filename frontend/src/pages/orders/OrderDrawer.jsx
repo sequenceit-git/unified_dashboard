@@ -78,7 +78,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
               value={tracking}
               onChange={(e) => setTracking(e.target.value)}
               placeholder="Tracking number"
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-base sm:text-sm focus:border-indigo-500 focus:outline-none"
             />
             <Button variant="secondary" disabled={busy} onClick={saveTracking}>Save</Button>
           </div>
@@ -112,7 +112,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
               value={returnReason}
               onChange={(e) => setReturnReason(e.target.value)}
               placeholder="Return reason"
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-base sm:text-sm focus:border-indigo-500 focus:outline-none"
             />
             <Button variant="secondary" disabled={busy || !returnReason} onClick={addReturn}>Request</Button>
           </div>

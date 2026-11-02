@@ -129,9 +129,9 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
 
   return (
     <div>
-      <div className={`mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 ${marketplace ? 'xl:grid-cols-[minmax(14rem,1.5fr)_repeat(5,minmax(0,1fr))]' : 'xl:grid-cols-[minmax(14rem,1.5fr)_repeat(4,minmax(0,1fr))]'}`}>
+      <div className={`mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 ${marketplace ? 'xl:grid-cols-[minmax(14rem,1.5fr)_repeat(5,minmax(0,1fr))]' : 'xl:grid-cols-[minmax(14rem,1.5fr)_repeat(4,minmax(0,1fr))]'}`}>
         <SearchInput
-          className="sm:max-w-none sm:col-span-2 xl:col-span-1"
+          className="sm:max-w-none sm:col-span-2 md:col-span-3 xl:col-span-1"
           value={q}
           onChange={(v) => { setQ(v); setPage(1) }}
           placeholder="Search title or SKU…"

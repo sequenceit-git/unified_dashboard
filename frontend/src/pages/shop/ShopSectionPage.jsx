@@ -100,9 +100,9 @@ export default function ShopSectionPage() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{profile.label} {section.label.toLowerCase()}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{profile.label} {section.label.toLowerCase()}</h1>
         <div className="flex items-center gap-3">
           {data?.loadedAt && <span className="text-xs text-gray-500">Updated {new Date(data.loadedAt).toLocaleTimeString()}</span>}
           <Button variant="secondary" size="sm" onClick={() => load({ refresh: true })} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
@@ -113,7 +113,7 @@ export default function ShopSectionPage() {
       {data && (
         <>
           {data.summary?.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {data.summary.map((item) => (
                 <StatCard
                   key={item.label}

@@ -153,7 +153,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
 
             <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600">Pricing & Inventory</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input label="Price ($) *" type="number" step="0.01" value={form.basePrice} onChange={set('basePrice')} required />
                 <Input label="Base price ($)" type="number" step="0.01" value={form.costPrice ?? ''} onChange={set('costPrice')} placeholder="Cost before selling" />
                 <Input label="Stock Quantity *" type="number" value={form.stock} onChange={set('stock')} required />

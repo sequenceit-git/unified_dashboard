@@ -68,24 +68,25 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <Button variant="secondary" size="sm" className="sm:hidden" onClick={onBack}>Back</Button>
-          <span className="truncate font-medium">{thread.customerName || thread.externalThreadId}</span>
+      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 sm:px-4 py-2.5 sm:py-3">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+          <Button variant="secondary" size="sm" className="md:hidden shrink-0 px-2 py-1 text-xs" onClick={onBack}>← Back</Button>
+          <span className="truncate font-medium text-sm sm:text-base">{thread.customerName || thread.externalThreadId}</span>
           <Badge>{thread.status}</Badge>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {thread.replyable !== false && (
             <Button
               variant="secondary"
               size="sm"
+              className="px-2 sm:px-3 text-xs sm:text-sm"
               onClick={toggleAi}
               title="Turn the AI off to answer this buyer yourself. The shop switch must also be on."
             >
               AI {thread.aiEnabled ? 'on' : 'off'}
             </Button>
           )}
-          <Button variant="secondary" size="sm" onClick={toggleStatus}>
+          <Button variant="secondary" size="sm" className="px-2 sm:px-3 text-xs sm:text-sm" onClick={toggleStatus}>
             {thread.status === 'open' ? 'Close' : 'Reopen'}
           </Button>
         </div>
@@ -128,7 +129,7 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Write a reply to the buyer…"
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-base sm:text-sm focus:border-indigo-500 focus:outline-none"
           />
           <Button disabled={busy || !draft.trim()} onClick={send}>{busy ? 'Sending…' : 'Send'}</Button>
         </div>

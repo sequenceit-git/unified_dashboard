@@ -50,8 +50,8 @@ export default function CustomersPage() {
   if (!section) return <RequireShopSection />
 
   return (
-    <div className="space-y-3">
-      <h1 className="text-2xl font-bold">{section.label} customers</h1>
+    <div className="space-y-4">
+      <h1 className="text-xl sm:text-2xl font-bold">{section.label} customers</h1>
       <Card>
         <div className="mb-3">
           <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search name, email, phone…" />

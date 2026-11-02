@@ -39,7 +39,7 @@ const SHOP_SECTIONS = [
     label: 'eBay',
     icon: FiShoppingBag,
     storageKey: 'sidebar-ebay-open',
-    defaultOpen: true,
+    defaultOpen: false,
   },
   {
     id: 'tiktok',
@@ -148,11 +148,9 @@ function shopLinkActive(pathname, search, link) {
 }
 
 function ShopGroup({ section, links, pathname, search, onClose }) {
-  const navigate = useNavigate()
   const currentShop = new URLSearchParams(search).get('shop') === section.id
-  const [open, setOpen] = useState(() => readOpen(section.storageKey, section.defaultOpen) || currentShop)
+  const [open, setOpen] = useState(() => (currentShop ? true : readOpen(section.storageKey, section.defaultOpen)))
   const Icon = section.icon
-  const firstLink = links.find((link) => !link.unavailable)
 
   const setStoredOpen = (next) => {
     setOpen(next)
@@ -164,15 +162,7 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
   }
 
   const toggle = () => {
-    if (!open) {
-      setStoredOpen(true)
-      if (!currentShop && firstLink) {
-        navigate(firstLink.to)
-        onClose?.()
-      }
-      return
-    }
-    setStoredOpen(false)
+    setStoredOpen(!open)
   }
 
   return (
@@ -250,7 +240,7 @@ export default function Sidebar({ open, onClose }) {
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed bottom-0 left-0 top-16 z-40 w-64 transform overflow-x-hidden border-r border-[#E2E8F0] bg-white p-0 text-[#0F172A] shadow-2xl transition-transform duration-200 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
+        className={`fixed bottom-0 left-0 top-16 z-40 w-64 max-w-[85vw] transform overscroll-contain overflow-x-hidden border-r border-[#E2E8F0] bg-white p-0 text-[#0F172A] shadow-2xl transition-transform duration-200 lg:sticky lg:top-16 lg:h-[calc(100dvh-4rem)] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

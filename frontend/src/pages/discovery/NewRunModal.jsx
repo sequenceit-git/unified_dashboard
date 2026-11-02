@@ -124,7 +124,7 @@ export default function NewRunModal({
                   onKeyDown={handleCategoryKeyDown}
                   onBlur={() => { if (categoryInput.trim()) addCategory(categoryInput) }}
                   placeholder={selectedCategories.length === 0 ? 'e.g., Home & Kitchen' : 'Add another…'}
-                  className="min-w-[140px] flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+                  className="min-w-[140px] flex-1 bg-transparent text-base sm:text-sm outline-none placeholder:text-gray-400"
                 />
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -150,7 +150,7 @@ export default function NewRunModal({
                 value={niche}
                 onChange={(e) => setNiche(e.target.value)}
                 placeholder="e.g., ergonomic desk accessories, portable blenders"
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-base sm:text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
@@ -163,7 +163,7 @@ export default function NewRunModal({
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="e.g., Focus on lightweight products under $40, exclude fragile glass items…"
-                className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-base sm:text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
           </div>

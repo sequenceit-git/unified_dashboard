@@ -22,10 +22,10 @@ export default function DiscoveryOverview({ stats = {}, loading = false }) {
       {METRICS.map((metric, index) => (
         <div
           key={metric.key}
-          className={`px-4 py-3 ${index % 2 === 1 ? 'border-l border-gray-200' : ''} ${index >= 2 ? 'border-t border-gray-200 sm:border-t-0' : ''} ${index >= 2 ? 'sm:border-l' : ''}`}
+          className={`px-3 py-2.5 sm:px-4 sm:py-3 ${index % 2 === 1 ? 'border-l border-gray-200' : ''} ${index >= 2 ? 'border-t border-gray-200 sm:border-t-0' : ''} ${index >= 2 ? 'sm:border-l' : ''}`}
         >
           <dt className="text-xs font-medium text-gray-500">{metric.label}</dt>
-          <dd className="mt-1 truncate text-2xl font-bold tracking-tight text-gray-900">
+          <dd className="mt-1 truncate text-lg sm:text-2xl font-bold tracking-tight text-gray-900">
             {loading ? '…' : values[metric.key]}
           </dd>
         </div>

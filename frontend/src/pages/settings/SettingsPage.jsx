@@ -107,7 +107,7 @@ export default function SettingsPage() {
 
       {isAdmin && configsRes.error && <ErrorState message={configsRes.error} onRetry={configsRes.refetch} />}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {CONNECTABLE.map((market) => {
           const shop = shopFor(market.id)
           const configured = Boolean(configsRes.data?.[market.id]?.configured)

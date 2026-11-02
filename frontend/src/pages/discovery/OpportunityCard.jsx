@@ -64,7 +64,7 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
       className="flex cursor-pointer gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-xs transition hover:border-indigo-300 hover:shadow-md"
       onClick={onOpen}
     >
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+      <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
         {imageUrl ? (
           <img src={imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -108,7 +108,7 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
           <p className="mt-1 truncate text-[11px] font-semibold text-indigo-700">{opportunity.demandSignal}</p>
         )}
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1" onClick={(event) => event.stopPropagation()}>
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5" onClick={(event) => event.stopPropagation()}>
           <button type="button" onClick={onOpen} className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">
             Details
           </button>

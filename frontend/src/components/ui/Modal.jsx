@@ -18,19 +18,20 @@ export default function Modal({ title, onClose, children, wide = false, size = '
       onClick={closeOnBackdrop ? onClose : undefined}
     >
       <div
-        className={`w-full max-h-[92vh] flex flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${maxWidthClass}`}
+        className={`w-full max-h-[90dvh] sm:max-h-[90vh] flex flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${maxWidthClass}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 truncate pr-2">{title}</h2>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+            aria-label="Close modal"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
           >
             ✕
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
           {children}
         </div>
       </div>

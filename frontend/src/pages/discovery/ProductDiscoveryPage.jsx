@@ -362,7 +362,7 @@ export default function ProductDiscoveryPage() {
         ) : (
           <div className={reports.length ? 'mt-5 border-t border-gray-100 pt-5' : ''}>
             {hasResults && (
-              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {dynamicCategories.map((cat) => {
                     const count = cat === 'All' ? recommendations.length : (categoryCounts[cat] || categoryCounts[cat.toLowerCase()] || 0)
@@ -382,7 +382,7 @@ export default function ProductDiscoveryPage() {
                     )
                   })}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
                   <Button variant="secondary" size="sm" onClick={() => handleExport('csv')} className="flex items-center gap-1.5">
                     <FiDownload size={13} />
                     CSV

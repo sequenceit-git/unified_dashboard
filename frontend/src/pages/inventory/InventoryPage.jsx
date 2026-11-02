@@ -43,14 +43,14 @@ export default function InventoryPage() {
   if (!section) return <RequireShopSection />
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+    <div className="space-y-4">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold">{section.label} inventory</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{section.label} inventory</h1>
           {syncMessage && <p className="text-xs text-emerald-600 font-medium">{syncMessage}</p>}
         </div>
         {isAdmin && (
-          <Button onClick={handleSyncStock} disabled={syncing} size="sm">
+          <Button onClick={handleSyncStock} disabled={syncing} size="sm" className="self-start sm:self-auto">
             {syncing ? 'Pushing...' : `Push stock to ${section.label}`}
           </Button>
         )}

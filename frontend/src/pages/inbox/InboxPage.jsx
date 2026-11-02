@@ -122,9 +122,9 @@ export default function InboxPage() {
   if (!section) return <RequireShopSection />
 
   return (
-    <div className="flex h-[calc(100vh-4rem-3rem)] min-h-[480px] flex-col">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold">{section.label} inbox</h1>
+    <div className="flex h-[calc(100dvh-4rem-2rem)] sm:h-[calc(100vh-4rem-3rem)] min-h-[480px] flex-col">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <h1 className="text-xl sm:text-2xl font-bold">{section.label} inbox</h1>
         <div className="flex flex-wrap items-center gap-2">
           {isAdmin && tabShops.length > 0 && (
             <button
@@ -134,7 +134,7 @@ export default function InboxPage() {
               onClick={toggleAutoReply}
               disabled={savingAi}
               title="When on, the AI answers new buyer messages in this shop. Refunds and complaints are passed to you."
-              className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-60"
+              className="flex items-center gap-2 rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs sm:text-sm disabled:opacity-60"
             >
               <span className={`relative h-5 w-9 rounded-full transition-colors ${autoReplyOn ? 'bg-indigo-600' : 'bg-gray-300'}`}>
                 <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${autoReplyOn ? 'left-[18px]' : 'left-0.5'}`} />
@@ -142,7 +142,7 @@ export default function InboxPage() {
               AI auto-reply {autoReplyOn ? 'on' : 'off'}
             </button>
           )}
-          <div className="w-[160px]">
+          <div className="flex-1 min-w-[130px] sm:w-[160px] sm:flex-initial">
             <Select
               value={type}
               onChange={(e) => { setType(e.target.value); setPage(1) }}
@@ -153,21 +153,21 @@ export default function InboxPage() {
               ]}
             />
           </div>
-          <div className="w-[140px]">
+          <div className="flex-1 min-w-[110px] sm:w-[130px] sm:flex-initial">
             <Select
               value={status}
               onChange={(e) => { setStatus(e.target.value); setPage(1) }}
               options={['open', 'closed', 'all'].map((s) => ({ value: s, label: s }))}
             />
           </div>
-          <Button onClick={handleSyncInbox} disabled={syncing} size="sm">
+          <Button onClick={handleSyncInbox} disabled={syncing} size="sm" className="w-full sm:w-auto">
             {syncing ? 'Syncing…' : 'Sync inbox'}
           </Button>
         </div>
       </div>
 
       <div className="mt-3 flex min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className={`flex w-full min-h-0 flex-col border-r border-gray-200 sm:w-[320px] sm:shrink-0 ${mobileThread ? 'hidden sm:flex' : 'flex'}`}>
+        <div className={`flex w-full min-h-0 flex-col border-r border-gray-200 md:w-[320px] md:shrink-0 ${mobileThread ? 'hidden md:flex' : 'flex'}`}>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading || shopsRes.loading ? <Spinner /> : error ? <ErrorState message={error} onRetry={fetchConvos} /> :
               convos.length === 0 ? <EmptyState message={noShopForTab ? `Connect ${section.label} in Settings` : 'No conversations'} /> : (
@@ -178,7 +178,7 @@ export default function InboxPage() {
             <Pagination page={meta.page} pages={meta.pages} total={meta.total} onPage={setPage} />
           </div>
         </div>
-        <div className={`min-h-0 min-w-0 flex-1 ${mobileThread ? 'flex flex-col' : 'hidden sm:flex sm:flex-col'}`}>
+        <div className={`min-h-0 min-w-0 flex-1 ${mobileThread ? 'flex flex-col' : 'hidden md:flex md:flex-col'}`}>
           <ThreadView convoId={activeId} refreshKey={threadRefresh} onChanged={fetchConvos} onBack={() => setMobileThread(false)} />
         </div>
       </div>

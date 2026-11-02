@@ -148,14 +148,14 @@ export default function SubAdminManagementPage() {
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-indigo-600">Administration</p>
-          <h1 className="mt-1 text-2xl font-bold">Sub-admin management</h1>
-          <p className="mt-1 text-sm text-gray-500">Assign eBay, TikTok Shop, and Temu, then choose the sections each person can open.</p>
+          <h1 className="mt-1 text-xl sm:text-2xl font-bold">Sub-admin management</h1>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">Assign eBay, TikTok Shop, and Temu, then choose the sections each person can open.</p>
         </div>
-        <Link to="/sub-admins/new"><Button>Create sub-admin</Button></Link>
+        <Link to="/sub-admins/new" className="self-start sm:self-auto"><Button>Create sub-admin</Button></Link>
       </div>
 
       {users.length === 0 ? <EmptyState message="No sub-admin accounts yet." /> : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {users.map((user) => {
             const assignedShops = (user.marketplaces || [])
               .map((marketplace) => shopSectionFromMarketplace(marketplace))

@@ -22,7 +22,7 @@ export default function DiscoverySidebar({
         <h2 className="text-sm font-semibold text-gray-900">Research runs</h2>
         <span className="text-xs text-gray-500">{reports.length} saved</span>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-2">
         {reports.map((report) => {
           const isSelected = selectedReportId === report._id
           const dateObj = new Date(report.createdAt || Date.now())
@@ -45,7 +45,7 @@ export default function DiscoverySidebar({
                 }
               }}
               aria-pressed={isSelected}
-              className={`flex w-44 shrink-0 flex-col rounded-xl border px-3 py-2.5 text-left transition ${
+              className={`flex w-40 sm:w-44 shrink-0 flex-col rounded-xl border px-3 py-2 sm:py-2.5 text-left transition ${
                 isSelected
                   ? 'border-indigo-600 bg-indigo-50 shadow-xs'
                   : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
