@@ -57,18 +57,23 @@ export const Select = forwardRef(function Select(
 
     const openUp = spaceBelow < estimatedHeight && spaceAbove > spaceBelow
     const triggerWidth = rect.width
-    const minWidth = Math.max(triggerWidth, 200)
-    const maxWidth = Math.min(420, window.innerWidth - 16)
+    const maxWidth = Math.max(160, Math.min(420, window.innerWidth - 16))
+    const minWidth = Math.min(maxWidth, Math.max(triggerWidth, 200))
+    const width = Math.min(triggerWidth, maxWidth)
 
     let left = rect.left
     if (left + minWidth > window.innerWidth - 8) {
       left = Math.max(8, window.innerWidth - 8 - minWidth)
     }
+    left = Math.max(8, left)
+
+    const maxSpaceAbove = Math.max(60, spaceAbove - 12)
+    const maxSpaceBelow = Math.max(60, spaceBelow - 12)
 
     const style = {
       position: 'fixed',
       left: `${left}px`,
-      width: `${triggerWidth}px`,
+      width: `${width}px`,
       minWidth: `${minWidth}px`,
       maxWidth: `${maxWidth}px`,
       zIndex: 9999,
@@ -76,10 +81,10 @@ export const Select = forwardRef(function Select(
 
     if (openUp) {
       style.bottom = `${window.innerHeight - rect.top + 4}px`
-      style.maxHeight = `${Math.max(120, Math.min(240, spaceAbove - 16))}px`
+      style.maxHeight = `${Math.min(240, maxSpaceAbove)}px`
     } else {
       style.top = `${rect.bottom + 4}px`
-      style.maxHeight = `${Math.max(120, Math.min(240, spaceBelow - 16))}px`
+      style.maxHeight = `${Math.min(240, maxSpaceBelow)}px`
     }
 
     setMenuStyle(style)
@@ -114,7 +119,8 @@ export const Select = forwardRef(function Select(
       setOpen(false)
     }
 
-    const handleScroll = () => {
+    const handleScroll = (e) => {
+      if (e && e.target === menuRef.current) return
       updatePosition()
     }
 
@@ -261,7 +267,7 @@ export const Select = forwardRef(function Select(
                 title={o.label}
                 onClick={() => handleSelect(o.value)}
                 onMouseEnter={() => setHighlightedIndex(idx)}
-                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs sm:text-sm transition ${
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 sm:py-2 text-left text-sm transition ${
                   o.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
                 } ${
                   isSelected
