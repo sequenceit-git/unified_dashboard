@@ -11,6 +11,7 @@ const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 const { productImages } = require('../../agent/discovery/listingImage')
 const { generateRecommendationsExcel, verifiedLinks } = require('../../services/excelExport')
 const { getAiConfig } = require('../../services/aiSettings')
+const { newSku } = require('../../utils/sku')
 
 const SHOP_LABELS = {
   ebay: 'eBay',
@@ -162,9 +163,8 @@ router.get('/export/:reportId', async (req, res) => {
         const margin = r.estimatedMargin != null ? r.estimatedMargin : (r.estimatedProfitMarginPercent ?? '')
         const score = r.opportunityScore ?? ''
 
-        // Generate clean preview SKU consistent with Product model pattern
-        const catClean = (category || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'GEN'
-        const sku = `BOT-${catClean}-${Date.now().toString().slice(-4)}${i + 1}`
+        // Generate clean preview SKU using official marketplace format
+        const sku = newSku(r.targetMarketplace || 'ebay')
 
         return [
           sanitizeCell(sku),

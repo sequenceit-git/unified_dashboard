@@ -289,8 +289,12 @@ class TikTokShopService {
         const rows = skus.length ? skus : [null]
         for (const sku of rows) {
           const stock = sku ? (sku.inventory || []).reduce((sum, row) => sum + Number(row.quantity || 0), 0) : 0
+          const rawSku = sku?.seller_sku && !/^none$/i.test(String(sku.seller_sku).trim()) ? String(sku.seller_sku).trim() : ''
+          const cleanSku = rawSku
+            ? (/^\d+$/.test(rawSku) ? `TTS-${rawSku}` : rawSku.startsWith('TT-') ? rawSku.replace(/^TT-/, 'TTS-') : rawSku)
+            : `TTS-${sku?.id || product.id}`
           items.push({
-            sku: sku?.seller_sku || (sku?.id ? String(sku.id) : String(product.id)),
+            sku: cleanSku,
             title: detail.title || product.title || `TikTok Shop ${sku?.id || product.id}`,
             description: plainText(detail.description),
             price: Number(sku?.price?.sale_price || sku?.price?.tax_exclusive_price || 0),

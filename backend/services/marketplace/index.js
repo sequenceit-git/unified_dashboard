@@ -552,23 +552,29 @@ class UnifiedMarketplaceManager {
       const items = await service.getListings(token)
       return {
         complete: items.length < 200,
-        items: items.map((item) => ({
-          sku: item.sku || `EBAY-${item.itemId}`,
-          aliases: [item.itemId, `item-${item.itemId}`, ...(item.sku ? [`item-${item.sku}`, `ebay-item-${item.sku}`] : [])],
-          matchSkus: [item.sku, item.itemId, `EBAY-${item.itemId}`].filter(Boolean),
-          externalListingId: item.itemId,
-          title: item.title,
-          description: item.description,
-          price: item.price,
-          stock: item.stock,
-          images: item.images,
-          category: item.category,
-          brand: item.brand,
-          attributes: item.specifics,
-          listingStatus: 'live',
-          marketplaceStatus: item.listingStatus || 'Active',
-          listingUrl: item.url || `https://www.ebay.com/itm/${item.itemId}`,
-        })),
+        items: items.map((item) => {
+          const rawSku = item.sku && !/^none$/i.test(String(item.sku).trim()) ? String(item.sku).trim() : ''
+          const cleanSku = rawSku
+            ? (/^\d+$/.test(rawSku) ? `EBAY-${rawSku}` : rawSku.startsWith('EB-') ? rawSku.replace(/^EB-/, 'EBAY-') : rawSku)
+            : `EBAY-${item.itemId}`
+          return {
+            sku: cleanSku,
+            aliases: [item.itemId, `item-${item.itemId}`, `EBAY-${item.itemId}`, ...(rawSku ? [rawSku, `item-${rawSku}`] : [])],
+            matchSkus: [cleanSku, rawSku, item.itemId, `EBAY-${item.itemId}`].filter(Boolean),
+            externalListingId: item.itemId,
+            title: item.title,
+            description: item.description,
+            price: item.price,
+            stock: item.stock,
+            images: item.images,
+            category: item.category,
+            brand: item.brand,
+            attributes: item.specifics,
+            listingStatus: 'live',
+            marketplaceStatus: item.listingStatus || 'Active',
+            listingUrl: item.url || `https://www.ebay.com/itm/${item.itemId}`,
+          }
+        }),
       }
     }
     if (typeof service.getInventory !== 'function') return { complete: false, items: [] }

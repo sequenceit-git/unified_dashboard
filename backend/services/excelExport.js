@@ -11,6 +11,7 @@
  */
 
 const ExcelJS = require('exceljs')
+const { newSku } = require('../utils/sku')
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const HEADER_BG = '4F46E5'  // indigo-600
@@ -66,9 +67,8 @@ function buildExportRow(rec, i, timestampSuffix) {
   const margin = rec.estimatedMargin != null ? rec.estimatedMargin : (rec.estimatedProfitMarginPercent ?? '')
   const score = rec.opportunityScore ?? ''
 
-  // Preview SKU consistent with Product model pattern (same as CSV export)
-  const catClean = (category || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'GEN'
-  const sku = `BOT-${catClean}-${timestampSuffix}${i + 1}`
+  // Preview SKU using official marketplace pattern
+  const sku = newSku(rec.targetMarketplace || 'ebay')
 
   return {
     sku,
