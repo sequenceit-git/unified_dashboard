@@ -462,7 +462,10 @@ const TEMU = {
           createAtEnd: end,
         })).data?.map((row) => ({
           id: row.parentAfterSalesSn,
+          returnId: row.parentAfterSalesSn,
+          cancelId: row.parentAfterSalesSn,
           order: row.parentOrderSn,
+          orderId: row.parentOrderSn,
           status: AFTERSALES_GROUP[row.afterSalesStatusGroup] || 'Open',
           opened: temuTime(row.createAt),
           updated: temuTime(row.updateAt),

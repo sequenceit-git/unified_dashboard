@@ -292,12 +292,12 @@ function SectionTable({ table, sectionId, marketplace, onAction, isAdmin }) {
           key: '_action',
           label: 'Action',
           render: (row) => {
-            const closed = /closed|complete|finish|reject|declined|approved/i.test(String(row.status || ''))
+            const closed = /closed|complete|finish|reject|declined|approved|refund/i.test(String(row.status || ''))
             if (closed) return <span className="text-xs text-gray-400">Processed</span>
             return (
               <div className="flex items-center gap-1.5">
                 <Button size="sm" onClick={() => onAction('return-approve', row)}>
-                  Approve
+                  {marketplace === 'temu' ? 'Approve & refund' : 'Approve'}
                 </Button>
                 <Button size="sm" variant="secondary" onClick={() => onAction('return-decline', row)}>
                   Decline

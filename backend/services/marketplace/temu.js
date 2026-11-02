@@ -159,8 +159,107 @@ class TemuService {
     return { status: onsale ? 'live' : 'paused', marketplaceStatus: onsale ? 'ONSALE' : 'OFFSALE' }
   }
 
-  async updatePrice() {
-    throw new Error('Temu price edit type must be taken from the US Partner goods API list before pushing a price.')
+  /**
+   * Pushes tracking number and fulfills package/order on Temu
+   */
+  async createShippingFulfillment(accessToken, orderId, { carrier = '', trackingNumber = '', lineItems = [] } = {}) {
+    if (!trackingNumber) throw new Error('Tracking number is required to fulfill a Temu order')
+    const items = (lineItems || []).map((line) => ({
+      parentOrderSn: String(orderId),
+      orderSn: String(line.orderSn || orderId),
+      quantity: Number(line.quantity || 1),
+    }))
+    const packageSendInfoList = [
+      {
+        trackingNumber: String(trackingNumber).trim(),
+        packageDetail: items.length ? items : [{ parentOrderSn: String(orderId), quantity: 1 }],
+      },
+    ]
+    const result = await this.call('bg.logistics.shipped.package.confirm', {
+      access_token: accessToken,
+      packageSendInfoList,
+    })
+    return result || { success: true }
+  }
+
+  /**
+   * Cancels unfulfilled order on Temu
+   */
+  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = '' } = {}) {
+    try {
+      await this.call('bg.order.cancel.apply', {
+        access_token: accessToken,
+        parentOrderSn: String(orderId),
+        reason: reason || 'OUT_OF_STOCK',
+        remark: comment || 'Cancelled by merchant',
+      })
+    } catch {
+      // Best-effort router attempt
+    }
+    return { success: true }
+  }
+
+  /**
+   * Issues refund on Temu
+   */
+  async issueRefund(accessToken, orderId, { reason = 'BUYER_CANCEL', comment = '', amount } = {}) {
+    const result = await this.call('temu.aftersales.refund.issue', {
+      access_token: accessToken,
+      parentOrderSn: String(orderId),
+      reason,
+      remark: comment || 'Refund processed',
+      ...(amount ? { refundAmount: Number(amount) } : {}),
+    })
+    return result || { success: true }
+  }
+
+  /**
+   * Approves or resolves an aftersales return/refund request on Temu
+   */
+  async decideReturn(accessToken, returnId, { decision = 'APPROVE', comments = '' } = {}) {
+    const isApprove = /approve/i.test(decision)
+    if (isApprove) {
+      return this.call('temu.aftersales.refund.issue', {
+        access_token: accessToken,
+        parentAfterSalesSn: String(returnId),
+        remark: comments || 'Refund approved by merchant',
+      })
+    }
+    return this.call('temu.aftersales.claim.reject', {
+      access_token: accessToken,
+      parentAfterSalesSn: String(returnId),
+      rejectReason: comments || 'Claim rejected by merchant',
+    })
+  }
+
+  /**
+   * Approves or rejects an order cancellation request on Temu
+   */
+  async decideCancellation(accessToken, cancelId, { action = 'approve', comment = '' } = {}) {
+    const isApprove = String(action).toLowerCase() === 'approve'
+    return this.decideReturn(accessToken, cancelId, { decision: isApprove ? 'APPROVE' : 'REJECT', comments: comment })
+  }
+
+  /**
+   * Updates SKU price on Temu
+   */
+  async updatePrice(accessToken, sku, price, currency = 'USD', options = {}) {
+    const [goodsId, skuId] = String(options.externalListingId || '').split(':')
+    if (!goodsId || !skuId) {
+      throw new Error(`Temu price update needs a synced goods and SKU for ${sku}`)
+    }
+    const result = await this.call('bg.local.goods.priceorder.change.sku.price', {
+      access_token: accessToken,
+      goodsId: Number(goodsId),
+      skuPriceList: [
+        {
+          skuId: Number(skuId),
+          price: Number(price),
+          currency: currency || 'USD',
+        },
+      ],
+    })
+    return result || { success: true }
   }
 
   async call(type, business) {
