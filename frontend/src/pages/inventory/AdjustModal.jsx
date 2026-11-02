@@ -35,7 +35,7 @@ export default function AdjustModal({ product, onClose, onSaved }) {
         <Input label="Change (e.g. 10 or -5) *" type="number" value={change} onChange={(e) => setChange(e.target.value)} required />
         <Select label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} options={REASONS} />
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={busy}>Apply</Button>
         </div>
