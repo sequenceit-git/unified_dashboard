@@ -58,8 +58,56 @@ export default function CustomersPage() {
         </div>
         <DataTable
           columns={[
-            { key: 'name', label: 'Name' },
-            { key: 'email', label: 'Email' },
+            {
+              key: 'name',
+              label: 'Name',
+              render: (r) => {
+                const username = r.identities?.[0]?.username || r.identities?.[0]?.externalBuyerId
+                const showUsername = username && username !== r.name
+                return (
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{r.name || username || 'Customer'}</div>
+                    {showUsername ? (
+                      <div className="text-[11px] text-gray-500 font-mono truncate">@{username}</div>
+                    ) : null}
+                  </div>
+                )
+              },
+            },
+            {
+              key: 'email',
+              label: 'Email / Contact',
+              render: (r) => {
+                const email = r.email
+                const phone = r.phone
+                const location = [r.address?.city, r.address?.state].filter(Boolean).join(', ')
+
+                return (
+                  <div className="space-y-0.5 text-xs min-w-0">
+                    {email ? (
+                      <div className="font-mono text-gray-900 dark:text-gray-200 truncate max-w-[260px]" title={email}>
+                        {email}
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-gray-500 dark:text-gray-400 text-[11px]">
+                      {phone ? (
+                        <span className="inline-flex items-center gap-1 font-mono">
+                          <span className="opacity-70">📞</span>
+                          <span>{phone}</span>
+                        </span>
+                      ) : null}
+                      {location ? (
+                        <span className="inline-flex items-center gap-1 truncate max-w-[160px]" title={location}>
+                          <span className="opacity-70">📍</span>
+                          <span>{location}</span>
+                        </span>
+                      ) : null}
+                      {!email && !phone && !location && <span className="text-gray-400">—</span>}
+                    </div>
+                  </div>
+                )
+              },
+            },
             { key: 'orderCount', label: 'Orders', sortable: true },
             { key: 'totalSpent', label: 'Spent', sortable: true, render: (r) => `$${r.totalSpent?.toFixed(2)}` },
             { key: 'lastOrderAt', label: 'Last order', sortable: true, render: (r) => r.lastOrderAt && new Date(r.lastOrderAt).toLocaleDateString() },

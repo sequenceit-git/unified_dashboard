@@ -10,11 +10,24 @@ const identitySchema = new mongoose.Schema(
   { _id: false },
 )
 
+const addressSchema = new mongoose.Schema(
+  {
+    street: { type: String },
+    city: { type: String },
+    state: { type: String },
+    zip: { type: String },
+    country: { type: String },
+  },
+  { _id: false },
+)
+
 const customerSchema = new mongoose.Schema(
   {
     name: { type: String },
     email: { type: String },
     phone: { type: String },
+    address: addressSchema,
+    addresses: [addressSchema],
     identities: [identitySchema],
     orderCount: { type: Number, default: 0 },
     totalSpent: { type: Number, default: 0 },

@@ -11,15 +11,31 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const [name, setName] = useState(customer.name || '')
   const [email, setEmail] = useState(customer.email || '')
   const [phone, setPhone] = useState(customer.phone || '')
+  const [street, setStreet] = useState(customer.address?.street || '')
+  const [city, setCity] = useState(customer.address?.city || '')
+  const [state, setState] = useState(customer.address?.state || '')
+  const [zip, setZip] = useState(customer.address?.zip || '')
+  const [country, setCountry] = useState(customer.address?.country || 'US')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  const ebayIdentity = (customer.identities || []).find((i) => i.marketplace === 'ebay')
 
   const save = async (e) => {
     e.preventDefault()
     setBusy(true)
     setError('')
     try {
-      await api.patch(`/api/customers/${customer._id}`, { name, email, phone }, token)
+      await api.patch(
+        `/api/customers/${customer._id}`,
+        {
+          name,
+          email,
+          phone,
+          address: { street, city, state, zip, country },
+        },
+        token,
+      )
       onSaved()
     } catch (err) {
       setError(err.message)
@@ -31,10 +47,55 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
   return (
     <Modal title={customer.name || 'Customer'} onClose={onClose} wide>
       <div className="space-y-4 text-sm">
+        {/* Quick Contact & Action Chips */}
+        <div className="flex flex-wrap items-center gap-2">
+          {email ? (
+            <a
+              href={`mailto:${email}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 transition-colors"
+            >
+              ✉️ {email}
+            </a>
+          ) : null}
+          {phone ? (
+            <a
+              href={`tel:${phone}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 transition-colors"
+            >
+              📞 {phone}
+            </a>
+          ) : null}
+          {ebayIdentity?.username ? (
+            <a
+              href={`https://www.ebay.com/usr/${encodeURIComponent(ebayIdentity.username)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 transition-colors"
+            >
+              ↗ View on eBay (@{ebayIdentity.username})
+            </a>
+          ) : null}
+        </div>
+
         <form onSubmit={save} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
           <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <Input label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+
+          <div className="sm:col-span-3 border-t border-gray-100 pt-3">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Shipping Address</h4>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+              <div className="sm:col-span-2">
+                <Input label="Street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Address line 1" />
+              </div>
+              <Input label="City" value={city} onChange={(e) => setCity(e.target.value)} />
+              <div className="grid grid-cols-2 gap-2">
+                <Input label="State" value={state} onChange={(e) => setState(e.target.value)} />
+                <Input label="ZIP" value={zip} onChange={(e) => setZip(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
           {error && <p className="text-sm text-red-600 sm:col-span-3">{error}</p>}
           <div className="sm:col-span-3">
             <Button type="submit" size="sm" disabled={busy}>Save</Button>
@@ -51,9 +112,18 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
           <h3 className="font-semibold">Marketplace identities</h3>
           <ul className="mt-1 space-y-1">
             {(customer.identities || []).map((idn, i) => (
-              <li key={i} className="flex justify-between rounded bg-gray-50 px-2 py-1">
-                <span>{idn.marketplace} · {idn.username}</span>
-                <span className="text-gray-500">{idn.externalBuyerId}</span>
+              <li key={i} className="flex justify-between items-center rounded bg-gray-50 px-2.5 py-1.5">
+                <span className="font-medium">{idn.marketplace} · @{idn.username}</span>
+                {idn.marketplace === 'ebay' && (
+                  <a
+                    href={`https://www.ebay.com/usr/${encodeURIComponent(idn.username)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    View profile ↗
+                  </a>
+                )}
               </li>
             ))}
           </ul>
@@ -63,8 +133,8 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
           <h3 className="font-semibold">Order history</h3>
           <ul className="mt-1 max-h-48 space-y-1 overflow-y-auto">
             {(customer.orders || []).map((o) => (
-              <li key={o._id} className="flex justify-between rounded bg-gray-50 px-2 py-1">
-                <span>{o.externalOrderId}</span>
+              <li key={o._id} className="flex justify-between items-center rounded bg-gray-50 px-2 py-1">
+                <span className="font-mono text-xs">{o.externalOrderId}</span>
                 <span><Badge color={statusColor(o.status)}>{o.status}</Badge> ${o.totals?.total?.toFixed(2)}</span>
               </li>
             ))}

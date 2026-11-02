@@ -85,10 +85,16 @@ router.get('/:id', async (req, res) => {
 // PATCH /api/customers/:id
 router.patch('/:id', async (req, res) => {
   try {
-    const { name, email, phone } = req.body
+    const { name, email, phone, address } = req.body
+    const update = {
+      ...(name !== undefined ? { name } : {}),
+      ...(email !== undefined ? { email } : {}),
+      ...(phone !== undefined ? { phone } : {}),
+      ...(address !== undefined ? { address, addresses: [address] } : {}),
+    }
     const doc = await Customer.findOneAndUpdate(
       { _id: req.params.id, ...scope(req) },
-      { ...(name !== undefined ? { name } : {}), ...(email !== undefined ? { email } : {}), ...(phone !== undefined ? { phone } : {}) },
+      update,
       { new: true, runValidators: true },
     )
     if (!doc) return res.status(404).json({ error: 'Not found' })

@@ -177,34 +177,54 @@ class UnifiedMarketplaceManager {
       let updatedCount = 0
       if (shop.marketplace === 'ebay') {
         const res = await service.getOrders(token, { limit: 50 })
-        rawOrders = (res.orders || []).map((o) => ({
-          externalOrderId: o.orderId,
-          placedAt: new Date(o.creationDate),
-          status: o.orderFulfillmentStatus === 'FULFILLED' ? 'shipped' : 'paid',
-          buyer: {
-            name: o.buyer?.username || 'eBay Customer',
-            email: o.buyer?.buyerRegistrationAddress?.email || '',
-          },
-          totals: {
-            total: parseFloat(o.pricingSummary?.total?.value || 0),
-            currency: o.pricingSummary?.total?.currency || 'USD',
-          },
-          items: (o.lineItems || []).map((li) => {
-            const rawSku = li.sku && !/^none$/i.test(String(li.sku).trim()) ? String(li.sku).trim() : ''
-            const extId = li.legacyItemId ? String(li.legacyItemId) : undefined
-            const cleanSku = rawSku
-              ? (/^\d+$/.test(rawSku) ? `EBAY-${rawSku}` : rawSku.startsWith('EB-') ? rawSku.replace(/^EB-/, 'EBAY-') : rawSku)
-              : (extId ? `EBAY-${extId}` : '')
-            return {
-              sku: cleanSku,
-              rawSku,
-              externalListingId: extId,
-              title: li.title,
-              quantity: li.quantity,
-              unitPrice: parseFloat(li.lineItemCost?.value || 0),
-            }
-          }),
-        }))
+        rawOrders = (res.orders || []).map((o) => {
+          const reg = o.buyer?.buyerRegistrationAddress
+          const tax = o.buyer?.taxAddress
+          const shipTo = o.fulfillmentStartPlans?.[0]?.shippingStep?.shipTo
+          const username = o.buyer?.username || ''
+          const fullName = reg?.fullName || shipTo?.fullName || username || 'eBay Customer'
+          const email = reg?.email || shipTo?.email || (username ? `${username}@members.ebay.com` : '')
+          const phone = reg?.primaryPhone?.phoneNumber || shipTo?.primaryPhone?.phoneNumber || tax?.primaryPhone?.phoneNumber || ''
+          const address = {
+            street: reg?.contactAddress?.addressLine1 || shipTo?.contactAddress?.addressLine1 || '',
+            city: reg?.contactAddress?.city || shipTo?.contactAddress?.city || tax?.city || '',
+            state: reg?.contactAddress?.stateOrProvince || shipTo?.contactAddress?.stateOrProvince || tax?.stateOrProvince || '',
+            zip: reg?.contactAddress?.postalCode || shipTo?.contactAddress?.postalCode || tax?.postalCode || '',
+            country: reg?.contactAddress?.countryCode || shipTo?.contactAddress?.countryCode || tax?.countryCode || '',
+          }
+
+          return {
+            externalOrderId: o.orderId,
+            placedAt: new Date(o.creationDate),
+            status: o.orderFulfillmentStatus === 'FULFILLED' ? 'shipped' : 'paid',
+            buyer: {
+              name: fullName,
+              username,
+              email,
+              phone,
+            },
+            shippingAddress: address,
+            totals: {
+              total: parseFloat(o.pricingSummary?.total?.value || 0),
+              currency: o.pricingSummary?.total?.currency || 'USD',
+            },
+            items: (o.lineItems || []).map((li) => {
+              const rawSku = li.sku && !/^none$/i.test(String(li.sku).trim()) ? String(li.sku).trim() : ''
+              const extId = li.legacyItemId ? String(li.legacyItemId) : undefined
+              const cleanSku = rawSku
+                ? (/^\d+$/.test(rawSku) ? `EBAY-${rawSku}` : rawSku.startsWith('EB-') ? rawSku.replace(/^EB-/, 'EBAY-') : rawSku)
+                : (extId ? `EBAY-${extId}` : '')
+              return {
+                sku: cleanSku,
+                rawSku,
+                externalListingId: extId,
+                title: li.title,
+                quantity: li.quantity,
+                unitPrice: parseFloat(li.lineItemCost?.value || 0),
+              }
+            }),
+          }
+        })
       } else {
         const res = await service.getOrders(token, { limit: 50, shop })
         rawOrders = res.orders || []
@@ -221,33 +241,65 @@ class UnifiedMarketplaceManager {
 
       for (const ord of rawOrders) {
         let customer = null
-        if (ord.buyer?.name) {
-          customer = await Customer.findOne({ 'identities.externalBuyerId': ord.buyer.name })
+        const buyerUsername = ord.buyer?.username || ord.buyer?.name
+        if (buyerUsername) {
+          customer = await Customer.findOne({
+            $or: [
+              { 'identities.externalBuyerId': buyerUsername },
+              { 'identities.username': buyerUsername },
+              { name: buyerUsername },
+              ...(ord.buyer.name ? [{ name: ord.buyer.name }] : []),
+            ],
+          })
           if (!customer) {
             customer = await Customer.create({
-              name: ord.buyer.name,
+              name: ord.buyer.name || buyerUsername,
               email: ord.buyer.email || undefined,
+              phone: ord.buyer.phone || undefined,
+              address: ord.shippingAddress,
+              addresses: ord.shippingAddress?.city ? [ord.shippingAddress] : [],
               identities: [
                 {
                   shopId: shop._id,
                   marketplace: shop.marketplace,
-                  externalBuyerId: ord.buyer.name,
-                  username: ord.buyer.name,
+                  externalBuyerId: buyerUsername,
+                  username: buyerUsername,
                 },
               ],
             })
           } else {
+            let changed = false
+            if (ord.buyer.name && ord.buyer.name !== buyerUsername && customer.name === buyerUsername) {
+              customer.name = ord.buyer.name
+              changed = true
+            }
+            if (!customer.phone && ord.buyer.phone) {
+              customer.phone = ord.buyer.phone
+              changed = true
+            }
+            if ((!customer.email || !customer.email.includes('@')) && ord.buyer.email) {
+              customer.email = ord.buyer.email
+              changed = true
+            }
+            if (!customer.address?.city && ord.shippingAddress?.city) {
+              customer.address = ord.shippingAddress
+              customer.addresses = [ord.shippingAddress]
+              changed = true
+            }
             const hasId = (customer.identities || []).some(
-              (i) => i.shopId?.toString() === shop._id.toString() && i.externalBuyerId === ord.buyer.name,
+              (i) => i.shopId?.toString() === shop._id.toString() && (i.externalBuyerId === buyerUsername || i.username === buyerUsername),
             )
             if (!hasId) {
               customer.identities = customer.identities || []
               customer.identities.push({
                 shopId: shop._id,
                 marketplace: shop.marketplace,
-                externalBuyerId: ord.buyer.name,
-                username: ord.buyer.name,
+                externalBuyerId: buyerUsername,
+                username: buyerUsername,
               })
+              changed = true
+            }
+            if (changed) {
               await customer.save()
             }
           }
@@ -342,6 +394,15 @@ class UnifiedMarketplaceManager {
         if (existing) {
           existing.status = ord.status
           if (!existing.customerId && customer?._id) existing.customerId = customer._id
+          if (ord.buyer?.phone && !existing.buyer?.phone) {
+            existing.buyer = { ...existing.buyer, phone: ord.buyer.phone }
+          }
+          if (ord.buyer?.email && (!existing.buyer?.email || !existing.buyer?.email.includes('@'))) {
+            existing.buyer = { ...existing.buyer, email: ord.buyer.email }
+          }
+          if (ord.shippingAddress && !existing.shippingAddress) {
+            existing.shippingAddress = ord.shippingAddress
+          }
           await existing.save()
           updatedCount++
         } else {
