@@ -507,6 +507,22 @@ class UnifiedMarketplaceManager {
   }
 
   /**
+   * Cancels unfulfilled order across marketplaces
+   */
+  async cancelOrder(order, { reason = 'OUT_OF_STOCK', comment = '' } = {}) {
+    const shop = await Shop.findById(order.shopId).select('+auth.accessTokenEnc')
+    if (!shop || !shop.auth?.accessTokenEnc) {
+      return { success: false, note: 'Shop not connected or credentials missing' }
+    }
+    const token = await this.freshToken(shop)
+    const service = this.getService(shop.marketplace)
+    if (typeof service.cancelOrder !== 'function') {
+      return { success: false, note: `${shop.marketplace} order cancellation is not supported via API` }
+    }
+    return service.cancelOrder(token, order.externalOrderId, { reason, comment })
+  }
+
+  /**
    * Automatically initializes and connects shop if direct token is present in .env
    */
   async autoConnectFromEnv() {

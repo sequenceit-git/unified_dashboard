@@ -157,6 +157,56 @@ router.post('/:id/returns', async (req, res) => {
   }
 })
 
+// PATCH /api/orders/:id/returns/:index — { status: 'approved' | 'rejected' | 'received' }
+router.patch('/:id/returns/:index', async (req, res) => {
+  try {
+    const { status } = req.body
+    const order = await Order.findOne({ _id: req.params.id, ...shopFilter(req, Order) })
+    if (!order) return res.status(404).json({ error: 'Order not found' })
+
+    const idx = parseInt(req.params.index, 10)
+    if (isNaN(idx) || !order.returns?.[idx]) {
+      return res.status(404).json({ error: 'Return record not found' })
+    }
+
+    order.returns[idx].status = status || order.returns[idx].status
+    if (['approved', 'rejected', 'received'].includes(status)) {
+      order.returns[idx].refundedAt = new Date()
+    }
+    await order.save()
+    res.json(order)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/orders/:id/cancel — cancel order on connected marketplace and mark locally cancelled
+router.post('/:id/cancel', requireRole('super_admin'), async (req, res) => {
+  try {
+    const { reason = 'OUT_OF_STOCK', comment = '' } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ error: 'Order not found' })
+
+    if (['shipped', 'delivered'].includes(order.status)) {
+      return res.status(400).json({ error: 'Cannot cancel an order that has already shipped or delivered' })
+    }
+
+    let marketplaceResult = { success: true }
+    try {
+      marketplaceResult = await marketplaceManager.cancelOrder(order, { reason, comment })
+    } catch (apiErr) {
+      console.warn(`Marketplace order cancellation push failed for [${order.marketplace}]:`, apiErr.message)
+    }
+
+    order.status = 'cancelled'
+    await order.save()
+
+    res.json({ success: true, order, marketplaceResult })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
 // POST /api/orders/:id/refund — process full or partial refund on marketplace
 router.post('/:id/refund', requireRole('super_admin'), async (req, res) => {
   try {

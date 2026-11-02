@@ -351,6 +351,31 @@ class EbayService {
   }
 
   /**
+   * Cancels an order via eBay Sell Fulfillment API
+   */
+  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = 'Order cancelled by merchant' } = {}) {
+    const payload = {
+      cancelReason: reason,
+      comment: comment || 'Order cancelled by merchant',
+    }
+    const response = await fetch(`${config.apiBaseUrl}/sell/fulfillment/v1/order/${encodeURIComponent(orderId)}/cancel`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(`eBay Order Cancellation Error: ${err.errors?.[0]?.message || err.message || response.statusText}`)
+    }
+
+    return response.status === 204 ? { success: true } : response.json().catch(() => ({ success: true }))
+  }
+
+  /**
    * Retrieves financial transactions and fee data from eBay Sell Finances API
    */
   async getFinances(accessToken, { limit = 20 } = {}) {
