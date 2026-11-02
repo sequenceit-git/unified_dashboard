@@ -248,13 +248,21 @@ class TikTokShopService {
             total: Number(order.payment?.total_amount || 0),
             currency: order.payment?.currency || 'USD',
           },
-          items: (order.line_items || []).map((item) => ({
-            sku: item.seller_sku || item.sku_id,
-            title: item.product_name || item.sku_name,
-            quantity: 1,
-            unitPrice: Number(item.sale_price || 0),
-            externalListingId: item.product_id ? `${item.product_id}:${item.sku_id || ''}` : undefined,
-          })),
+          items: (order.line_items || []).map((item) => {
+            const rawSku = item.seller_sku && !/^none$/i.test(String(item.seller_sku).trim()) ? String(item.seller_sku).trim() : ''
+            const extId = item.product_id ? `${item.product_id}:${item.sku_id || ''}` : undefined
+            const cleanSku = rawSku
+              ? (/^\d+$/.test(rawSku) ? `TTS-${rawSku}` : rawSku.startsWith('TT-') ? rawSku.replace(/^TT-/, 'TTS-') : rawSku)
+              : (item.sku_id ? `TTS-${item.sku_id}` : (extId ? `TTS-${extId}` : ''))
+            return {
+              sku: cleanSku,
+              rawSku,
+              title: item.product_name || item.sku_name,
+              quantity: 1,
+              unitPrice: Number(item.sale_price || 0),
+              externalListingId: extId,
+            }
+          }),
         })
       }
       pageToken = data.next_page_token || ''

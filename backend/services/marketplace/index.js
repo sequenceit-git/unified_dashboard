@@ -189,13 +189,21 @@ class UnifiedMarketplaceManager {
             total: parseFloat(o.pricingSummary?.total?.value || 0),
             currency: o.pricingSummary?.total?.currency || 'USD',
           },
-          items: (o.lineItems || []).map((li) => ({
-            sku: li.sku || li.legacyItemId,
-            externalListingId: li.legacyItemId ? String(li.legacyItemId) : undefined,
-            title: li.title,
-            quantity: li.quantity,
-            unitPrice: parseFloat(li.lineItemCost?.value || 0),
-          })),
+          items: (o.lineItems || []).map((li) => {
+            const rawSku = li.sku && !/^none$/i.test(String(li.sku).trim()) ? String(li.sku).trim() : ''
+            const extId = li.legacyItemId ? String(li.legacyItemId) : undefined
+            const cleanSku = rawSku
+              ? (/^\d+$/.test(rawSku) ? `EBAY-${rawSku}` : rawSku.startsWith('EB-') ? rawSku.replace(/^EB-/, 'EBAY-') : rawSku)
+              : (extId ? `EBAY-${extId}` : '')
+            return {
+              sku: cleanSku,
+              rawSku,
+              externalListingId: extId,
+              title: li.title,
+              quantity: li.quantity,
+              unitPrice: parseFloat(li.lineItemCost?.value || 0),
+            }
+          }),
         }))
       } else {
         const res = await service.getOrders(token, { limit: 50, shop })
@@ -248,15 +256,36 @@ class UnifiedMarketplaceManager {
 
         // Ensure catalog products and listings exist for ordered items
         for (const item of ord.items || []) {
-          if (!item.sku) continue
-          let prod = await Product.findOne({ sku: item.sku })
+          if (!item.sku && !item.externalListingId) continue
+
+          let prod = null
+
+          // 1. If listing already exists on this shop, reuse its existing product
+          if (item.externalListingId) {
+            const existingListing = await Listing.findOne({ shopId: shop._id, externalListingId: item.externalListingId })
+            if (existingListing?.productId) {
+              prod = await Product.findById(existingListing.productId)
+            }
+          }
+
+          // 2. If still not found, check product collection by normalized SKU and all aliases
+          if (!prod) {
+            const candidates = [
+              item.sku,
+              item.rawSku,
+              item.externalListingId,
+              item.externalListingId ? `EBAY-${item.externalListingId}` : null,
+              item.externalListingId ? `TTS-${item.externalListingId}` : null,
+            ].filter(Boolean)
+            prod = await Product.findOne({ sku: { $in: candidates } })
+          }
 
           let itemImages = []
           if (!prod || !prod.images || prod.images.length === 0) {
             const tokenToUse = appToken || token
             if (shop.marketplace === 'ebay' && tokenToUse && typeof service.getItemDetails === 'function') {
               try {
-                const details = await service.getItemDetails(tokenToUse, item.sku)
+                const details = await service.getItemDetails(tokenToUse, item.externalListingId || item.rawSku || item.sku)
                 if (details) {
                   if (details.image?.imageUrl) itemImages.push(details.image.imageUrl)
                   if (Array.isArray(details.additionalImages)) {
@@ -273,13 +302,13 @@ class UnifiedMarketplaceManager {
 
           if (!prod) {
             prod = await Product.create({
-              sku: item.sku,
-              title: item.title || `Item ${item.sku}`,
+              sku: item.sku || (item.externalListingId ? `EBAY-${item.externalListingId}` : newSku(shop.marketplace)),
+              title: item.title || `Item ${item.sku || item.externalListingId}`,
               category: 'General',
-              brand: shop.name || 'eBay Store',
+              brand: shop.name || 'Store item',
               images: itemImages,
               basePrice: item.unitPrice || 19.99,
-              stock: 10,
+              stock: 0,
               status: 'active',
               source: 'marketplace_sync',
             })
@@ -289,10 +318,10 @@ class UnifiedMarketplaceManager {
           }
           item.productId = prod._id
 
-          // Links the product to its listing; the listing sync decides whether it is still live.
+          // Links the product to its listing; match on externalListingId to prevent duplicate listings
           if (item.externalListingId) {
             await Listing.updateOne(
-              { productId: prod._id, shopId: shop._id },
+              { shopId: shop._id, externalListingId: item.externalListingId },
               {
                 $setOnInsert: {
                   productId: prod._id,

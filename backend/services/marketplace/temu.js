@@ -78,12 +78,17 @@ class TemuService {
             total: Number(parent.amount || parent.parentOrderAmount || 0),
             currency: 'USD',
           },
-          items: lines.map((line) => ({
-            sku: line.extCode || line.skuId || line.goodsId,
-            title: line.goodsName || line.spec || 'Temu item',
-            quantity: Number(line.quantity || 1),
-            unitPrice: Number(line.price || 0),
-          })),
+          items: lines.map((line) => {
+            const rawSku = line.extCode || line.skuId || line.goodsId
+            const cleanSku = rawSku && !String(rawSku).startsWith('TEMU-') ? `TEMU-${rawSku}` : String(rawSku || '')
+            return {
+              sku: cleanSku,
+              rawSku,
+              title: line.goodsName || line.spec || 'Temu item',
+              quantity: Number(line.quantity || 1),
+              unitPrice: Number(line.price || 0),
+            }
+          }),
         }
       }).filter((order) => order.externalOrderId),
     }
