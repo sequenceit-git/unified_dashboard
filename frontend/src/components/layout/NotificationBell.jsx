@@ -4,13 +4,13 @@ import { FiBell } from 'react-icons/fi'
 import { useNotifications } from '../../hooks/useNotifications'
 
 const TONE = {
-  low_stock: 'text-amber-700',
-  new_order: 'text-indigo-700',
-  new_message: 'text-indigo-700',
-  listing_failed: 'text-red-700',
-  sync_failed: 'text-red-700',
-  token_expiring: 'text-red-700',
-  report_ready: 'text-emerald-700',
+  low_stock: 'text-amber-700 dark:text-amber-400',
+  new_order: 'text-indigo-700 dark:text-indigo-400',
+  new_message: 'text-indigo-700 dark:text-indigo-400',
+  listing_failed: 'text-red-700 dark:text-red-400',
+  sync_failed: 'text-red-700 dark:text-red-400',
+  token_expiring: 'text-red-700 dark:text-red-400',
+  report_ready: 'text-emerald-700 dark:text-emerald-400',
 }
 
 function timeAgo(value) {
@@ -59,18 +59,18 @@ export default function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
-          <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
-            <p className="text-sm font-semibold text-gray-900">Notifications</p>
+        <div className="fixed left-3 right-3 top-16 z-50 max-h-[85vh] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem] sm:max-w-md sm:rounded-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between border-b border-gray-100 px-3.5 py-2.5 dark:border-slate-800">
+            <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Notifications</p>
             {unread > 0 && (
-              <button type="button" onClick={markAllRead} className="text-xs font-semibold text-indigo-600 hover:underline">
+              <button type="button" onClick={markAllRead} className="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
                 Mark all read
               </button>
             )}
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-800">
             {items.length === 0 ? (
-              <p className="px-3 py-8 text-center text-sm text-gray-500">No alerts yet. New orders, messages, low stock, listing review problems, and shop issues show up here.</p>
+              <p className="px-3 py-8 text-center text-sm text-gray-500 dark:text-slate-400">No alerts yet. New orders, messages, low stock, listing review problems, and shop issues show up here.</p>
             ) : (
               items.map((item) => (
                 <button
@@ -81,14 +81,14 @@ export default function NotificationBell() {
                     setOpen(false)
                     if (item.href) navigate(item.href)
                   }}
-                  className={`block w-full px-3 py-2.5 text-left hover:bg-gray-50 ${item.isRead ? 'opacity-70' : ''}`}
+                  className={`block w-full px-3.5 py-2.5 text-left transition hover:bg-gray-50 dark:hover:bg-slate-800/60 ${item.isRead ? 'opacity-70' : ''}`}
                 >
                   <span className="flex items-start justify-between gap-2">
-                    <span className={`text-sm font-semibold ${TONE[item.type] || 'text-gray-900'}`}>{item.title}</span>
-                    {!item.isRead && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-600" />}
+                    <span className={`text-sm font-semibold ${TONE[item.type] || 'text-gray-900 dark:text-slate-100'}`}>{item.title}</span>
+                    {!item.isRead && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-indigo-600" />}
                   </span>
-                  {item.message && <span className="mt-0.5 block text-xs text-gray-600">{item.message}</span>}
-                  <span className="mt-1 block text-[11px] text-gray-400">{timeAgo(item.createdAt)}</span>
+                  {item.message && <span className="mt-0.5 block text-xs text-gray-600 dark:text-slate-300">{item.message}</span>}
+                  <span className="mt-1 block text-[11px] text-gray-400 dark:text-slate-500">{timeAgo(item.createdAt)}</span>
                 </button>
               ))
             )}

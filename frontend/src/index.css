@@ -24,9 +24,12 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   min-width: 320px;
+  max-width: 100vw;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 85% -10%, rgb(81 70 229 / 0.08), transparent 30rem),
     var(--canvas);
@@ -319,12 +322,21 @@ button {
   border-color: #3d4a63;
 }
 
+select {
+  color-scheme: light dark;
+}
+
 .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.bg-transparent),
 .dark select,
 .dark textarea {
   color: var(--ink);
   background-color: #121826;
   border-color: #2c3548;
+}
+
+.dark select option {
+  background-color: #171e2e;
+  color: #f8fafc;
 }
 
 .dark input[type="checkbox"],

@@ -53,9 +53,9 @@ export function productFacts(opportunity) {
 function Fact({ label, value }) {
   if (value == null || value === '') return null
   return (
-    <div className="rounded-lg bg-gray-50 px-3 py-2">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-gray-900">{value}</p>
+    <div className="rounded-lg bg-gray-50 dark:bg-slate-800/60 px-3 py-2 min-w-0">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-400 truncate">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-slate-100 break-words">{value}</p>
     </div>
   )
 }
@@ -133,20 +133,20 @@ export default function ProductDetailModal({ opportunity, onClose }) {
           )}
 
           {specs.length > 0 && (
-            <section>
-              <h3 className="text-sm font-bold text-gray-900">Specifications</h3>
-              <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+            <section className="min-w-0">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">Specifications</h3>
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2 min-w-0">
                 {specs.map((spec) => (
-                  <div key={`${spec.name}-${spec.value}`} className="rounded-lg border border-gray-200 px-3 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{spec.name}</dt>
-                    <dd className="mt-0.5 text-sm text-gray-900">{spec.value}</dd>
+                  <div key={`${spec.name}-${spec.value}`} className="rounded-lg border border-gray-200 dark:border-slate-800 px-3 py-2 min-w-0">
+                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-400 truncate">{spec.name}</dt>
+                    <dd className="mt-0.5 text-sm text-gray-900 dark:text-slate-100 break-words">{spec.value}</dd>
                   </div>
                 ))}
               </dl>
             </section>
           )}
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 min-w-0">
             <Fact label="Sell price" value={sell} />
             <Fact
               label="Evidence"
@@ -163,56 +163,66 @@ export default function ProductDetailModal({ opportunity, onClose }) {
           </div>
 
           {opportunity.confidenceReason && (
-            <p className="text-xs text-gray-500">
-              <span className="font-semibold text-gray-700">Confidence: </span>
+            <p className="text-xs text-gray-500 dark:text-slate-400 break-words">
+              <span className="font-semibold text-gray-700 dark:text-slate-300">Confidence: </span>
               {opportunity.confidenceReason}
             </p>
           )}
 
           {notes && (
-            <section className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-3">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Why this product</h3>
-              <p className="mt-1 text-sm leading-relaxed text-indigo-950">{notes}</p>
+            <section className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-3 min-w-0 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">Why this product</h3>
+              <p className="mt-1 text-sm leading-relaxed text-indigo-950 dark:text-indigo-200 break-words">{notes}</p>
             </section>
           )}
 
           {complaints.length > 0 && (
-            <section>
-              <h3 className="text-sm font-bold text-gray-900">Review complaints</h3>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-600">
-                {complaints.map((item) => <li key={item}>{item}</li>)}
+            <section className="min-w-0">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">Review complaints</h3>
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-600 dark:text-slate-300">
+                {complaints.map((item) => <li key={item} className="break-words">{item}</li>)}
               </ul>
             </section>
           )}
         </div>
       </div>
 
-      <section className="mt-6 border-t border-gray-100 pt-5">
-        <h3 className="text-sm font-bold text-gray-900">Where it is selling</h3>
-        <p className="mt-1 text-xs text-gray-500">
+      <section className="mt-6 border-t border-gray-100 pt-5 min-w-0 dark:border-slate-800">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">Where it is selling</h3>
+        <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
           Listing pages the search found for this product.
         </p>
         {facts.places.length ? (
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 min-w-0">
             {facts.places.map((source) => (
-              <li key={source.url} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
+              <li
+                key={source.url}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2.5 min-w-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
                     {source.label}
                   </p>
-                  <p className="truncate text-xs text-gray-500">{source.url}</p>
+                  <p className="truncate text-xs text-gray-500 dark:text-slate-400" title={source.url}>{source.url}</p>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  {money(source.price) && <span className="text-sm font-semibold text-gray-800">{money(source.price)}</span>}
-                  <a href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-                    Open <FiExternalLink size={14} />
+                <div className="flex shrink-0 items-center justify-between sm:justify-end gap-3 pt-1.5 sm:pt-0 border-t border-gray-100 sm:border-0 dark:border-slate-800">
+                  {money(source.price) && (
+                    <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">{money(source.price)}</span>
+                  )}
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                  >
+                    Open <FiExternalLink size={13} />
                   </a>
                 </div>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-gray-500">No source link was saved for this product.</p>
+          <p className="mt-3 text-sm text-gray-500 dark:text-slate-400">No source link was saved for this product.</p>
         )}
       </section>
     </Modal>

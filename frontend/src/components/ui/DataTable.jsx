@@ -14,8 +14,8 @@ export default function DataTable({ columns, rows, loading, error, onRetry, sort
   }
 
   return (
-    <div className="overflow-x-auto overscroll-x-contain">
-      <table className="w-full min-w-[580px] sm:min-w-[640px] text-left text-xs sm:text-sm">
+    <div className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain">
+      <table className="w-full min-w-[460px] sm:min-w-[640px] text-left text-xs sm:text-sm">
         <thead className="bg-gray-50/80">
           <tr className="border-b border-gray-200 text-[11px] sm:text-xs uppercase tracking-wide text-gray-500">
             {columns.map((c) => (

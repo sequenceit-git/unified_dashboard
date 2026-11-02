@@ -43,7 +43,7 @@ export default function AnalyticsPage() {
   if (!section) return <RequireShopSection />
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <h1 className="text-xl sm:text-2xl font-bold">{section.label} analytics</h1>
         <div className="w-full sm:w-44">
@@ -56,7 +56,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 min-w-0">
         <StatCard label="Revenue" value={summary.loading ? '…' : `$${(summary.data?.revenue ?? 0).toFixed(2)}`} />
         <StatCard label="Orders" value={summary.loading ? '…' : (summary.data?.orders ?? 0)} />
         <StatCard label="Avg order" value={summary.loading ? '…' : `$${(summary.data?.avgOrder ?? 0).toFixed(2)}`} />
@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
 
       <RevenueChart data={revenue.data} />
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2 min-w-0">
         <MarketplaceChart data={markets.data} />
         <TopProducts rows={top.data} loading={top.loading} error={top.error} onRetry={top.refetch} />
       </div>

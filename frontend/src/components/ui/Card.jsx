@@ -1,5 +1,5 @@
 export default function Card({ className = '', children }) {
-  return <div className={`app-card p-4 sm:p-5 ${className}`}>{children}</div>
+  return <div className={`app-card min-w-0 max-w-full p-4 sm:p-5 ${className}`}>{children}</div>
 }
 
 export function StatCard({ label, value, sub, className = 'app-card-hover' }) {
