@@ -376,6 +376,177 @@ class EbayService {
   }
 
   /**
+   * Proactively sends a discount offer to interested buyers/watchers
+   */
+  async sendBuyerOffer(accessToken, listingId, { discountPercentage = 10, message = 'Special discount offer for you!', allowCounterOffer = false } = {}) {
+    const response = await fetch(`${config.apiBaseUrl}/sell/negotiation/v1/send_offer_to_interested_buyers`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+      },
+      body: JSON.stringify({
+        message: String(message || 'Special discount offer for you!').slice(0, 250),
+        allowCounterOffer: Boolean(allowCounterOffer),
+        offeredItems: [
+          {
+            listingId: String(listingId),
+            quantity: 1,
+            discountPercentage: String(discountPercentage || 10),
+          },
+        ],
+      }),
+    })
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
+      throw new Error(`eBay Send Offer Error: ${detail}`)
+    }
+    return payload
+  }
+
+  /**
+   * Approves or rejects a buyer cancellation request via Post-Order API
+   */
+  async decideCancellation(accessToken, cancelId, { action = 'approve', trackingNumber, shipmentDate } = {}) {
+    const isApprove = String(action).toLowerCase() === 'approve'
+    const endpoint = isApprove
+      ? `/post-order/v2/cancellation/${encodeURIComponent(cancelId)}/approve`
+      : `/post-order/v2/cancellation/${encodeURIComponent(cancelId)}/reject`
+    const body = !isApprove && trackingNumber
+      ? { trackingNumber, ...(shipmentDate ? { shipmentDate: { value: shipmentDate } } : {}) }
+      : {}
+    const response = await fetch(`${config.apiBaseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+      },
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
+      throw new Error(`eBay Cancellation Decision Error: ${detail}`)
+    }
+    return response.status === 204 ? { success: true } : (await response.json().catch(() => ({ success: true })))
+  }
+
+  /**
+   * Decides on a buyer return request via Post-Order API (e.g. APPROVE or DECLINE)
+   */
+  async decideReturn(accessToken, returnId, { decision = 'APPROVE', comments = '' } = {}) {
+    const payload = {
+      decision: decision || 'APPROVE',
+      ...(comments ? { comments: { content: String(comments) } } : {}),
+    }
+    const response = await fetch(`${config.apiBaseUrl}/post-order/v2/return/${encodeURIComponent(returnId)}/decide`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+      },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
+      throw new Error(`eBay Return Decision Error: ${detail}`)
+    }
+    return response.status === 204 ? { success: true } : (await response.json().catch(() => ({ success: true })))
+  }
+
+  /**
+   * Creates an item discount promotion via eBay Sell Marketing API
+   */
+  async createPromotion(accessToken, { name, description, percentageOff = 5, listingIds = [], startDate, endDate } = {}) {
+    const start = startDate || new Date(Date.now() + 60000).toISOString()
+    const end = endDate || new Date(Date.now() + 30 * 86400000).toISOString()
+    const payload = {
+      marketplaceId: 'EBAY_US',
+      name: name || `Promotion ${new Date().toLocaleDateString()}`,
+      description: description || 'Store Special Discount',
+      startDate: start,
+      endDate: end,
+      promotionStatus: 'SCHEDULED',
+      inventoryCriterion: {
+        inventoryCriterionType: 'INVENTORY_BY_VALUE',
+        listingIds: (listingIds || []).map(String),
+      },
+      discountRules: [
+        {
+          discountBenefit: {
+            percentageOffItem: String(percentageOff || 5),
+          },
+        },
+      ],
+    }
+    const response = await fetch(`${config.apiBaseUrl}/sell/marketing/v1/item_promotion`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
+      throw new Error(`eBay Create Promotion Error: ${detail}`)
+    }
+    const location = response.headers.get('Location') || ''
+    const promotionId = location.split('/').pop() || null
+    return { success: true, promotionId, location }
+  }
+
+  /**
+   * Pauses an active promotion via eBay Sell Marketing API
+   */
+  async pausePromotion(accessToken, promotionId) {
+    const response = await fetch(`${config.apiBaseUrl}/sell/marketing/v1/promotion/${encodeURIComponent(promotionId)}/pause`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    })
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
+      throw new Error(`eBay Pause Promotion Error: ${detail}`)
+    }
+    return { success: true }
+  }
+
+  /**
+   * Resumes a paused promotion via eBay Sell Marketing API
+   */
+  async resumePromotion(accessToken, promotionId) {
+    const response = await fetch(`${config.apiBaseUrl}/sell/marketing/v1/promotion/${encodeURIComponent(promotionId)}/resume`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    })
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
+      throw new Error(`eBay Resume Promotion Error: ${detail}`)
+    }
+    return { success: true }
+  }
+
+  /**
    * Retrieves financial transactions and fee data from eBay Sell Finances API
    */
   async getFinances(accessToken, { limit = 20 } = {}) {

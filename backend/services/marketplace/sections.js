@@ -162,6 +162,7 @@ const EBAY = {
       title: 'Promotions',
       columns: [col('name', 'Name'), col('type', 'Type'), col('status', 'Status', 'status'), col('start', 'Starts', 'date'), col('end', 'Ends', 'date')],
       load: async () => (await ebayGet(token, '/sell/marketing/v1/promotion?marketplace_id=EBAY_US&limit=100')).promotions?.map((row) => ({
+        promotionId: row.promotionId,
         name: row.name,
         type: words(row.promotionType),
         status: words(row.promotionStatus),
@@ -184,7 +185,7 @@ const EBAY = {
     const list = await tables([{
       id: 'eligible',
       title: 'Listings with interested buyers',
-      note: 'eBay lets you send these buyers an offer. Send offers in Seller Hub.',
+      note: 'Send targeted discount offers directly to buyers and watchers watching these items.',
       columns: [col('listingId', 'Item'), col('title', 'Product'), col('sku', 'SKU'), col('url', '', 'link')],
       load: async () => {
         const ids = (await ebayGet(token, '/sell/negotiation/v1/find_eligible_items?limit=200')).eligibleItems?.map((row) => row.listingId) || []

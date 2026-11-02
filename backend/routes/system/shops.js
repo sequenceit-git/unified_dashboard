@@ -116,6 +116,155 @@ router.get('/sections/:sectionId', async (req, res) => {
   }
 })
 
+// POST /api/shops/sections/offers/send — send discount offer to interested buyers on eBay
+router.post('/sections/offers/send', requireRole('super_admin'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const { listingId, discountPercentage = 10, message, allowCounterOffer = false } = req.body
+    if (!listingId) return res.status(400).json({ error: 'listingId is required' })
+
+    const shop = await Shop.findOne({ marketplace, status: 'connected' })
+    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.sendBuyerOffer !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support sending buyer offers` })
+    }
+
+    const result = await marketplaceManager.withShopToken(shop, (token) =>
+      service.sendBuyerOffer(token, listingId, { discountPercentage, message, allowCounterOffer })
+    )
+
+    await cache.del(`shop:${shop._id}:section:offers`)
+    res.json({ success: true, result })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/sections/returns/decide — approve or decline buyer return on eBay
+router.post('/sections/returns/decide', requireRole('super_admin'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const { returnId, decision = 'APPROVE', comments } = req.body
+    if (!returnId) return res.status(400).json({ error: 'returnId is required' })
+
+    const shop = await Shop.findOne({ marketplace, status: 'connected' })
+    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.decideReturn !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support return decisions via API` })
+    }
+
+    const result = await marketplaceManager.withShopToken(shop, (token) =>
+      service.decideReturn(token, returnId, { decision, comments })
+    )
+
+    await cache.del(`shop:${shop._id}:section:returns`)
+    res.json({ success: true, result })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/sections/cancellations/decide — approve or reject cancellation request on eBay
+router.post('/sections/cancellations/decide', requireRole('super_admin'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const { cancelId, action = 'approve', trackingNumber, shipmentDate } = req.body
+    if (!cancelId) return res.status(400).json({ error: 'cancelId is required' })
+
+    const shop = await Shop.findOne({ marketplace, status: 'connected' })
+    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.decideCancellation !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support cancellation decisions via API` })
+    }
+
+    const result = await marketplaceManager.withShopToken(shop, (token) =>
+      service.decideCancellation(token, cancelId, { action, trackingNumber, shipmentDate })
+    )
+
+    await cache.del(`shop:${shop._id}:section:returns`)
+    res.json({ success: true, result })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/sections/promotions/create — create promotional campaign on eBay
+router.post('/sections/promotions/create', requireRole('super_admin'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const { name, description, percentageOff, listingIds, startDate, endDate } = req.body
+
+    const shop = await Shop.findOne({ marketplace, status: 'connected' })
+    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.createPromotion !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support creating promotions via API` })
+    }
+
+    const result = await marketplaceManager.withShopToken(shop, (token) =>
+      service.createPromotion(token, { name, description, percentageOff, listingIds, startDate, endDate })
+    )
+
+    await cache.del(`shop:${shop._id}:section:promotions`)
+    res.json({ success: true, result })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/sections/promotions/:id/pause — pause active promotion
+router.post('/sections/promotions/:id/pause', requireRole('super_admin'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const shop = await Shop.findOne({ marketplace, status: 'connected' })
+    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.pausePromotion !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support pausing promotions via API` })
+    }
+
+    const result = await marketplaceManager.withShopToken(shop, (token) =>
+      service.pausePromotion(token, req.params.id)
+    )
+
+    await cache.del(`shop:${shop._id}:section:promotions`)
+    res.json({ success: true, result })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/sections/promotions/:id/resume — resume paused promotion
+router.post('/sections/promotions/:id/resume', requireRole('super_admin'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const shop = await Shop.findOne({ marketplace, status: 'connected' })
+    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.resumePromotion !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support resuming promotions via API` })
+    }
+
+    const result = await marketplaceManager.withShopToken(shop, (token) =>
+      service.resumePromotion(token, req.params.id)
+    )
+
+    await cache.del(`shop:${shop._id}:section:promotions`)
+    res.json({ success: true, result })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
 // PATCH /api/shops/:id/ai-reply — { enabled } turns the inbox auto-reply on or off for a shop
 router.patch('/:id/ai-reply', requireRole('super_admin'), async (req, res) => {
   try {
