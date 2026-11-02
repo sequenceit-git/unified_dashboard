@@ -368,6 +368,7 @@ class TikTokShopService {
 
   /** Recent visible messages of one conversation, oldest first. */
   async getThreadMessages(accessToken, shop, conversationId) {
+    this.markConversationAsRead(accessToken, shop, conversationId).catch(() => {})
     const data = await this.call(accessToken, 'GET', `/customer_service/202309/conversations/${conversationId}/messages`, {
       shop,
       query: { page_size: 20, sort_order: 'DESC', sort_field: 'create_time' },
@@ -376,6 +377,17 @@ class TikTokShopService {
       .filter((message) => message.is_visible !== false)
       .map(chatMessage)
       .sort((a, b) => a.sentAt - b.sentAt)
+  }
+
+  async markConversationAsRead(accessToken, shop, conversationId) {
+    try {
+      await this.call(accessToken, 'POST', `/customer_service/202309/conversations/${encodeURIComponent(conversationId)}/messages/read`, {
+        shop,
+        body: {},
+      })
+    } catch {
+      // best-effort
+    }
   }
 
   async sendMessage(accessToken, shop, conversationId, text) {
@@ -603,6 +615,10 @@ class TikTokShopService {
       await this.call(accessToken, 'DELETE', '/product/202309/products', { shop, body: ids })
       return { status: 'ended', marketplaceStatus: 'DELETED' }
     }
+    if (action === 'recover') {
+      await this.call(accessToken, 'POST', '/product/202309/products/recover', { shop, body: ids })
+      return { status: 'paused', marketplaceStatus: 'SELLER_DEACTIVATED' }
+    }
     throw new Error(`TikTok Shop cannot ${action} a listing.`)
   }
 
@@ -643,6 +659,190 @@ class TikTokShopService {
     return this.call(accessToken, 'POST', `/product/202309/products/${productId}/prices/update`, {
       shop: options.shop,
       body: { skus: [{ id: skuId, price: { amount: String(price), currency } }] },
+    })
+  }
+
+  /**
+   * Pushes tracking number and fulfills package/order on TikTok Shop
+   */
+  async createShippingFulfillment(accessToken, orderId, { carrier = '', trackingNumber = '', lineItems = [], shop } = {}) {
+    let lineItemIds = (lineItems || []).map((l) => l.lineItemId || l.id).filter(Boolean)
+    let providerId = ''
+
+    // Query eligible shipping services to find shipping_provider_id
+    try {
+      const services = await this.call(accessToken, 'POST', `/fulfillment/202309/orders/${encodeURIComponent(orderId)}/shipping_services/query`, {
+        shop,
+        body: {},
+      })
+      const list = services.shipping_services || []
+      const match = list.find((s) =>
+        new RegExp(carrier, 'i').test(s.shipping_provider_name) || new RegExp(carrier, 'i').test(s.name)
+      )
+      if (match) {
+        providerId = match.shipping_provider_id
+      } else if (list.length > 0) {
+        providerId = list[0].shipping_provider_id
+      }
+      if (!lineItemIds.length && services.order_line_id?.length) {
+        lineItemIds = services.order_line_id
+      }
+    } catch {}
+
+    if (!lineItemIds.length) {
+      try {
+        const orderData = await this.call(accessToken, 'GET', '/order/202309/orders', {
+          shop,
+          query: { order_id_list: String(orderId) },
+        })
+        const o = orderData.orders?.[0]
+        if (o?.line_items) {
+          lineItemIds = o.line_items.map((li) => li.id)
+        }
+      } catch {}
+    }
+
+    const body = {
+      tracking_number: String(trackingNumber).trim(),
+      ...(providerId ? { shipping_provider_id: String(providerId) } : {}),
+      ...(lineItemIds.length ? { order_line_item_ids: lineItemIds } : {}),
+    }
+
+    return this.call(accessToken, 'POST', `/fulfillment/202309/orders/${encodeURIComponent(orderId)}/packages`, {
+      shop,
+      body,
+    })
+  }
+
+  /**
+   * Cancels unfulfilled order on TikTok Shop
+   */
+  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = '', shop } = {}) {
+    const reasonMap = {
+      OUT_OF_STOCK: 'seller_cancel_reason_out_of_stock',
+      BUYER_ASKED_CANCEL: 'seller_cancel_reason_buyer_request',
+      ADDRESS_ISSUES: 'seller_cancel_reason_undeliverable_address',
+    }
+    const cancel_reason = reasonMap[reason] || 'seller_cancel_reason_out_of_stock'
+    return this.call(accessToken, 'POST', '/return_refund/202309/cancellations', {
+      shop,
+      body: {
+        order_id: String(orderId),
+        cancel_reason,
+      },
+    })
+  }
+
+  /**
+   * Issues refund on TikTok Shop
+   */
+  async issueRefund(accessToken, orderId, { reason = 'BUYER_CANCEL', comment = '', amount, shop } = {}) {
+    try {
+      const returns = await this.call(accessToken, 'POST', '/return_refund/202309/returns/search', {
+        shop,
+        body: { order_id: String(orderId) },
+      })
+      const active = (returns.return_orders || []).find((r) => !/closed|complete|finish|reject/i.test(r.return_status))
+      if (active) {
+        return this.decideReturn(accessToken, active.return_id, {
+          decision: 'APPROVE_REFUND',
+          buyerKeepItem: true,
+          comment,
+          shop,
+        })
+      }
+    } catch {}
+
+    // Fallback: if order is unfulfilled, cancel it with refund
+    return this.cancelOrder(accessToken, orderId, { reason, comment, shop })
+  }
+
+  /**
+   * Approves or rejects a cancellation request on TikTok Shop
+   */
+  async decideCancellation(accessToken, cancelId, { action = 'approve', comment = '', rejectReason = 'seller_reject_apply_product_has_been_packed', shop } = {}) {
+    const isApprove = String(action).toLowerCase() === 'approve'
+    if (isApprove) {
+      return this.call(accessToken, 'POST', `/return_refund/202309/cancellations/${encodeURIComponent(cancelId)}/approve`, {
+        shop,
+        body: {},
+      })
+    }
+    return this.call(accessToken, 'POST', `/return_refund/202309/cancellations/${encodeURIComponent(cancelId)}/reject`, {
+      shop,
+      body: {
+        reject_reason: rejectReason || 'seller_reject_apply_product_has_been_packed',
+        comment: comment || 'Order has already been packed and dispatched',
+      },
+    })
+  }
+
+  /**
+   * Approves or rejects a return request on TikTok Shop
+   */
+  async decideReturn(accessToken, returnId, { decision = 'APPROVE_REFUND', comment = '', rejectReason = 'seller_reject_apply_package_has_not_exceeded_estimated_delivery_time', buyerKeepItem = true, shop } = {}) {
+    const isApprove = /approve/i.test(decision)
+    if (isApprove) {
+      return this.call(accessToken, 'POST', `/return_refund/202309/returns/${encodeURIComponent(returnId)}/approve`, {
+        shop,
+        body: {
+          decision: 'APPROVE_REFUND',
+          buyer_keep_item: Boolean(buyerKeepItem),
+        },
+      })
+    }
+    return this.call(accessToken, 'POST', `/return_refund/202309/returns/${encodeURIComponent(returnId)}/reject`, {
+      shop,
+      body: {
+        decision: 'REJECT_REFUND',
+        reject_reason: rejectReason || 'seller_reject_apply_package_has_not_exceeded_estimated_delivery_time',
+        comment: comment || 'Return request declined according to shop policy',
+      },
+    })
+  }
+
+  /**
+   * Creates a discount activity on TikTok Shop
+   */
+  async createPromotion(accessToken, { name, title, activityType = 'DIRECT_DISCOUNT', percentageOff = 10, productLevel = 'SHOP', startDate, endDate, beginTime, endTime, shop } = {}) {
+    const now = Math.floor(Date.now() / 1000)
+    const start = beginTime ? Math.floor(new Date(beginTime).getTime() / 1000) : startDate ? Math.floor(new Date(startDate).getTime() / 1000) : now + 120
+    const end = endTime ? Math.floor(new Date(endTime).getTime() / 1000) : endDate ? Math.floor(new Date(endDate).getTime() / 1000) : now + 14 * 86400
+
+    const body = {
+      activity_type: activityType || 'DIRECT_DISCOUNT',
+      title: String(title || name || `Sale ${new Date().toLocaleDateString()}`).slice(0, 50),
+      begin_time: start,
+      end_time: end,
+      product_level: productLevel || 'SHOP',
+    }
+    return this.call(accessToken, 'POST', '/promotion/202309/activities', { shop, body })
+  }
+
+  /**
+   * Deactivates an active promotion on TikTok Shop
+   */
+  async deactivatePromotion(accessToken, activityId, { shop } = {}) {
+    return this.call(accessToken, 'POST', `/promotion/202309/activities/${encodeURIComponent(activityId)}/deactivate`, {
+      shop,
+      body: {},
+    })
+  }
+
+  /**
+   * Pauses / deactivates promotion (unified interface with eBay)
+   */
+  async pausePromotion(accessToken, promotionId, options = {}) {
+    return this.deactivatePromotion(accessToken, promotionId, options)
+  }
+
+  /**
+   * Retrieves shipping documents / label URL for a package on TikTok Shop
+   */
+  async getShippingDocument(accessToken, packageId, { documentType = 'SHIPPING_LABEL', shop } = {}) {
+    return this.call(accessToken, 'GET', `/fulfillment/202309/packages/${encodeURIComponent(packageId)}/shipping_documents`, {
+      shop,
+      query: { document_type: documentType },
     })
   }
 

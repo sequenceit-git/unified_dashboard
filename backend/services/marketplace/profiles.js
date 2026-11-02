@@ -159,6 +159,7 @@ const PROFILES = {
       { id: 'publish', label: 'Publish', confirm: 'Publish this product on TikTok Shop? A draft goes to review first.', statuses: ['paused', 'error'], raw: ['SELLER_DEACTIVATED', 'PLATFORM_DEACTIVATED', 'DRAFT', 'FAILED'] },
       { id: 'delete', label: 'Cancel review', danger: true, confirm: 'Cancel this TikTok Shop review and delete the listing?', statuses: ['pending'], raw: ['PENDING'] },
       { id: 'delete', label: 'Delete listing', danger: true, confirm: 'Delete this product from TikTok Shop? This cannot be undone.', statuses: ['paused', 'error'], raw: ['DRAFT', 'FAILED'] },
+      { id: 'recover', label: 'Recover listing', confirm: 'Restore this deleted product on TikTok Shop?', statuses: ['ended'], raw: ['DELETED'] },
     ],
   },
 

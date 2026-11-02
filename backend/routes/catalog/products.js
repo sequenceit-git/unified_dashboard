@@ -326,7 +326,7 @@ router.post('/:id/listing-action', requireRole('super_admin'), async (req, res) 
       const product = await Product.findById(listing.productId).select('sku')
       await marketplaceManager.forgetListing(listing, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
     }
-    if (action === 'publish' || action === 'relist') {
+    if (action === 'publish' || action === 'relist' || action === 'recover') {
       const product = await Product.findById(listing.productId).select('sku')
       await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
     }

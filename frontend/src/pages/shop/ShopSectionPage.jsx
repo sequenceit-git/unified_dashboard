@@ -249,8 +249,8 @@ function SectionTable({ table, sectionId, marketplace, onAction, isAdmin }) {
     render: (row) => formatCell(column.type, row[column.key]),
   }))
 
-  if (isAdmin && marketplace === 'ebay') {
-    if (sectionId === 'offers' && table.id === 'eligible') {
+  if (isAdmin) {
+    if (sectionId === 'offers' && table.id === 'eligible' && marketplace === 'ebay') {
       columns = [
         ...columns,
         {
@@ -307,7 +307,7 @@ function SectionTable({ table, sectionId, marketplace, onAction, isAdmin }) {
           },
         },
       ]
-    } else if (sectionId === 'promotions' && table.id === 'promotions') {
+    } else if (sectionId === 'promotions' && (table.id === 'promotions' || table.id === 'activities')) {
       columns = [
         ...columns,
         {
@@ -315,17 +315,30 @@ function SectionTable({ table, sectionId, marketplace, onAction, isAdmin }) {
           label: 'Action',
           render: (row) => {
             if (!row.promotionId) return null
-            const isPaused = /pause/i.test(String(row.status || ''))
+            const isPaused = /pause|deactivate/i.test(String(row.status || ''))
             return (
               <Button
                 size="sm"
                 variant={isPaused ? 'primary' : 'secondary'}
                 onClick={() => onAction(isPaused ? 'promo-resume' : 'promo-pause', row)}
               >
-                {isPaused ? 'Resume' : 'Pause'}
+                {isPaused ? 'Resume' : marketplace === 'tiktok_shop' ? 'Deactivate' : 'Pause'}
               </Button>
             )
           },
+        },
+      ]
+    } else if (sectionId === 'fulfillment' && table.id === 'packages' && marketplace === 'tiktok_shop') {
+      columns = [
+        ...columns,
+        {
+          key: '_action',
+          label: 'Action',
+          render: (row) => (
+            <Button size="sm" variant="secondary" onClick={() => onAction('fulfillment-label', row)}>
+              Get label
+            </Button>
+          ),
         },
       ]
     }
@@ -391,7 +404,8 @@ export default function ShopSectionPage() {
       return
     }
     if (type === 'promo-pause') {
-      if (!window.confirm(`Pause promotion "${row.name}"?`)) return
+      const title = row.title || row.name || 'this promotion'
+      if (!window.confirm(`${shopSection.marketplace === 'tiktok_shop' ? 'Deactivate' : 'Pause'} promotion "${title}"?`)) return
       setLoading(true)
       try {
         await api.post(`/api/shops/sections/promotions/${row.promotionId}/pause`, { marketplace: shopSection.marketplace }, token)
@@ -404,11 +418,29 @@ export default function ShopSectionPage() {
       return
     }
     if (type === 'promo-resume') {
-      if (!window.confirm(`Resume promotion "${row.name}"?`)) return
+      const title = row.title || row.name || 'this promotion'
+      if (!window.confirm(`Resume promotion "${title}"?`)) return
       setLoading(true)
       try {
         await api.post(`/api/shops/sections/promotions/${row.promotionId}/resume`, { marketplace: shopSection.marketplace }, token)
         load({ refresh: true })
+      } catch (e) {
+        setError(e.message)
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+    if (type === 'fulfillment-label') {
+      setLoading(true)
+      try {
+        const doc = await api.get(`/api/shops/sections/fulfillment/${row.packageId}/label?marketplace=${shopSection.marketplace}`, token)
+        const url = doc.doc_url || doc.url || doc.shipping_document_url
+        if (url) {
+          window.open(url, '_blank')
+        } else {
+          setError('No document download URL was returned for this package.')
+        }
       } catch (e) {
         setError(e.message)
       } finally {
@@ -492,7 +524,7 @@ export default function ShopSectionPage() {
         <h1 className="text-xl sm:text-2xl font-bold">{profile.label} {section.label.toLowerCase()}</h1>
         <div className="flex items-center gap-3">
           {data?.loadedAt && <span className="text-xs text-gray-500">Updated {new Date(data.loadedAt).toLocaleTimeString()}</span>}
-          {isAdmin && shopSection.marketplace === 'ebay' && sectionId === 'promotions' && (
+          {isAdmin && (shopSection.marketplace === 'ebay' || shopSection.marketplace === 'tiktok_shop') && sectionId === 'promotions' && (
             <Button size="sm" onClick={() => setShowCreatePromo(true)}>+ Create promotion</Button>
           )}
           <Button variant="secondary" size="sm" onClick={() => load({ refresh: true })} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>

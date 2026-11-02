@@ -146,6 +146,7 @@ class UnifiedMarketplaceManager {
       carrier,
       trackingNumber,
       lineItems: (order.items || []).map((i) => ({ lineItemId: i.sku, quantity: i.quantity })),
+      shop,
     })
     return { pushed: true }
   }

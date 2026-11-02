@@ -218,6 +218,7 @@ const TIKTOK = {
       columns: [col('id', 'Package'), col('orders', 'Orders'), col('status', 'Status', 'status'), col('carrier', 'Carrier'), col('tracking', 'Tracking'), col('created', 'Created', 'date')],
       load: async () => (await ttPost(token, shop, '/fulfillment/202309/packages/search')).packages?.map((row) => ({
         id: row.id,
+        packageId: row.id,
         orders: (row.orders || []).map((order) => order.id).join(', '),
         status: words(row.package_status || row.status),
         carrier: row.shipping_provider_name || '',
@@ -236,6 +237,7 @@ const TIKTOK = {
         columns: [col('id', 'Return'), col('orderId', 'Order'), col('type', 'Type'), col('reason', 'Reason'), col('status', 'Status', 'status'), col('refund', 'Refund', 'money'), col('created', 'Opened', 'date')],
         load: async () => (await ttPost(token, shop, '/return_refund/202309/returns/search')).return_orders?.map((row) => ({
           id: row.return_id,
+          returnId: row.return_id,
           orderId: row.order_id,
           type: words(row.return_type),
           reason: row.return_reason_text || words(row.return_reason),
@@ -250,6 +252,7 @@ const TIKTOK = {
         columns: [col('id', 'Cancellation'), col('orderId', 'Order'), col('reason', 'Reason'), col('status', 'Status', 'status'), col('refund', 'Refund', 'money'), col('created', 'Requested', 'date')],
         load: async () => (await ttPost(token, shop, '/return_refund/202309/cancellations/search')).cancellations?.map((row) => ({
           id: row.cancel_id,
+          cancelId: row.cancel_id,
           orderId: row.order_id,
           reason: row.cancel_reason_text || words(row.cancel_reason),
           status: words(row.cancel_status),
@@ -274,6 +277,8 @@ const TIKTOK = {
         title: 'Promotions',
         columns: [col('title', 'Name'), col('type', 'Type'), col('scope', 'Applies to'), col('status', 'Status', 'status'), col('start', 'Starts', 'date'), col('end', 'Ends', 'date')],
         load: async () => (await ttPost(token, shop, '/promotion/202309/activities/search', { page_size: 100 }, {})).activities?.map((row) => ({
+          id: row.id || row.activity_id,
+          promotionId: row.id || row.activity_id,
           title: row.title,
           type: words(row.activity_type),
           scope: row.product_level === 'SHOP' ? 'Whole shop' : words(row.product_level),

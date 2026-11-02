@@ -158,7 +158,7 @@ router.post('/sections/returns/decide', requireRole('super_admin'), async (req, 
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.decideReturn(token, returnId, { decision, comments })
+      service.decideReturn(token, returnId, { decision, comments, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)
@@ -168,7 +168,7 @@ router.post('/sections/returns/decide', requireRole('super_admin'), async (req, 
   }
 })
 
-// POST /api/shops/sections/cancellations/decide — approve or reject cancellation request on eBay
+// POST /api/shops/sections/cancellations/decide — approve or reject cancellation request on eBay/TikTok
 router.post('/sections/cancellations/decide', requireRole('super_admin'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
@@ -184,7 +184,7 @@ router.post('/sections/cancellations/decide', requireRole('super_admin'), async 
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.decideCancellation(token, cancelId, { action, trackingNumber, shipmentDate })
+      service.decideCancellation(token, cancelId, { action, trackingNumber, shipmentDate, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)
@@ -194,7 +194,7 @@ router.post('/sections/cancellations/decide', requireRole('super_admin'), async 
   }
 })
 
-// POST /api/shops/sections/promotions/create — create promotional campaign on eBay
+// POST /api/shops/sections/promotions/create — create promotional campaign on eBay/TikTok
 router.post('/sections/promotions/create', requireRole('super_admin'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
@@ -209,7 +209,7 @@ router.post('/sections/promotions/create', requireRole('super_admin'), async (re
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.createPromotion(token, { name, description, percentageOff, listingIds, startDate, endDate })
+      service.createPromotion(token, { name, description, percentageOff, listingIds, startDate, endDate, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:promotions`)
@@ -232,7 +232,7 @@ router.post('/sections/promotions/:id/pause', requireRole('super_admin'), async 
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.pausePromotion(token, req.params.id)
+      service.pausePromotion(token, req.params.id, { shop })
     )
 
     await cache.del(`shop:${shop._id}:section:promotions`)
@@ -255,11 +255,32 @@ router.post('/sections/promotions/:id/resume', requireRole('super_admin'), async
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.resumePromotion(token, req.params.id)
+      service.resumePromotion(token, req.params.id, { shop })
     )
 
     await cache.del(`shop:${shop._id}:section:promotions`)
     res.json({ success: true, result })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// GET /api/shops/sections/fulfillment/:packageId/label — fetch package shipping document from TikTok Shop
+router.get('/sections/fulfillment/:packageId/label', requireRole('super_admin'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.query.marketplace || 'tiktok_shop')
+    const shop = await Shop.findOne({ marketplace, status: 'connected' })
+    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.getShippingDocument !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support shipping document downloads` })
+    }
+
+    const doc = await marketplaceManager.withShopToken(shop, (token) =>
+      service.getShippingDocument(token, req.params.packageId, { shop })
+    )
+    res.json(doc)
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
