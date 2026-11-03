@@ -226,13 +226,21 @@ export default function Sidebar({ open, onClose }) {
     return {
       ...section,
       label: profile?.label || section.label,
-      links: (profile?.sections || DEFAULT_SECTIONS).filter((link) => hasRoute(link.route)).map((link) => ({
-        ...link,
-        icon: SECTION_ICONS[link.id] || FiPackage,
-        shop: section.id,
-        to: `${link.path}?shop=${section.id}`,
-        unavailable: link.available === false,
-      })),
+      links: (profile?.sections || DEFAULT_SECTIONS)
+        .filter((link) => {
+          if (!hasRoute(link.route)) return false
+          if (!isAdmin && Array.isArray(user?.allowedSections) && user.allowedSections.length > 0) {
+            return user.allowedSections.includes(link.id)
+          }
+          return true
+        })
+        .map((link) => ({
+          ...link,
+          icon: SECTION_ICONS[link.id] || FiPackage,
+          shop: section.id,
+          to: `${link.path}?shop=${section.id}`,
+          unavailable: link.available === false,
+        })),
     }
   }).filter((section) => section.links.length > 0)
 

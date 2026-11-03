@@ -374,7 +374,7 @@ function SectionTable({ table, sectionId, marketplace, onAction, isAdmin }) {
 /** Renders any shop-specific section (returns, finances, promotions...) from its profile. */
 export default function ShopSectionPage() {
   const { sectionId } = useParams()
-  const { token, hasRoute, isAdmin } = useAuth()
+  const { token, hasRoute, isAdmin, user } = useAuth()
   const shopSection = useShopSection()
   const { profile, error: profileError } = useShopProfile(shopSection?.marketplace)
   const section = profile?.sections.find((item) => item.id === sectionId)
@@ -385,7 +385,8 @@ export default function ShopSectionPage() {
   const [activeOfferItem, setActiveOfferItem] = useState(null)
   const [showCreatePromo, setShowCreatePromo] = useState(false)
 
-  const canOpen = section && hasRoute(section.route) && section.available !== false
+  const isAllowed = isAdmin || !Array.isArray(user?.allowedSections) || user.allowedSections.length === 0 || user.allowedSections.includes(sectionId)
+  const canOpen = section && hasRoute(section.route) && section.available !== false && isAllowed
   const load = async ({ refresh = false } = {}) => {
     setLoading(true)
     setError('')
@@ -513,7 +514,7 @@ export default function ShopSectionPage() {
   if (profileError) return <ErrorState message={profileError} />
   if (!profile) return <Spinner />
   if (!section) return <EmptyState message={`${profile.label} doesn't have this section.`} />
-  if (!hasRoute(section.route)) return <EmptyState message={`You don't have access to ${section.label}.`} />
+  if (!hasRoute(section.route) || !isAllowed) return <EmptyState message={`You don't have access to ${section.label}.`} />
   if (section.available === false) {
     return <EmptyState message={`${section.label} isn't available for ${profile.label}: ${section.reason}.`} />
   }

@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema(
       enum: ['discovery', 'dashboard', 'analytics', 'market-research', 'products', 'inventory', 'orders', 'customers', 'inbox'],
       default: [],
     },
+    allowedSections: {
+      type: [String],
+      default: [],
+    },
     marketplaces: {
       type: [String],
       enum: ['ebay', 'tiktok_shop', 'temu'],

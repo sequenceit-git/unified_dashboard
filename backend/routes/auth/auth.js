@@ -130,6 +130,7 @@ async function userSummary(user) {
     status: user.status || 'active',
     profileImageUrl: user.profileImageUrl || '',
     mainRoutes: user.mainRoutes,
+    allowedSections: user.allowedSections || [],
     marketplaces: user.marketplaces?.length ? user.marketplaces : derived,
     shopId: user.shopId,
     shops,
@@ -141,7 +142,7 @@ async function userSummary(user) {
 // POST /api/auth/users — super_admin creates sub_admins and their access
 router.post('/users', requireRole('super_admin'), async (req, res) => {
   try {
-    const { name, email, username, password, role = 'sub_admin', shopIds = [], shopId, marketplaces, mainRoutes = [], profileImageUrl = '', status = 'active' } = req.body
+    const { name, email, username, password, role = 'sub_admin', shopIds = [], shopId, marketplaces, mainRoutes = [], allowedSections = [], profileImageUrl = '', status = 'active' } = req.body
     const requestedShopIds = Array.isArray(shopIds) && shopIds.length
       ? shopIds
       : shopId
@@ -178,6 +179,7 @@ router.post('/users', requireRole('super_admin'), async (req, res) => {
       role,
       status: ['active', 'disabled'].includes(status) ? status : 'active',
       mainRoutes: role === 'super_admin' ? MAIN_ROUTES : mainRoutes,
+      allowedSections: role === 'super_admin' ? [] : (Array.isArray(allowedSections) ? allowedSections : []),
       marketplaces: markets,
       shopId: null,
       createdBy: req.user.id,
@@ -209,6 +211,7 @@ router.get('/users', requireRole('super_admin'), async (req, res) => {
       ...user.toObject(),
       shopIds: assignedShopIds,
       mainRoutes: storedRoutes(user.mainRoutes),
+      allowedSections: user.allowedSections || [],
       marketplaces: user.marketplaces?.length ? user.marketplaces : derived,
     }
   }))
@@ -216,7 +219,7 @@ router.get('/users', requireRole('super_admin'), async (req, res) => {
 
 router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    const { name, email, username, password, profileImageUrl, mainRoutes, shopIds, marketplaces, status } = req.body
+    const { name, email, username, password, profileImageUrl, mainRoutes, allowedSections, shopIds, marketplaces, status } = req.body
     if (mainRoutes && (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route)))) {
       return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
     }
@@ -236,6 +239,9 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
     if (password) user.passwordHash = await bcrypt.hash(password, 10)
     if (mainRoutes) user.mainRoutes = mainRoutes
     user.mainRoutes = storedRoutes(user.mainRoutes)
+    if (allowedSections !== undefined) {
+      user.allowedSections = Array.isArray(allowedSections) ? allowedSections : []
+    }
     if (status) {
       if (!['active', 'disabled'].includes(status)) {
         return res.status(400).json({ error: 'status must be active or disabled' })

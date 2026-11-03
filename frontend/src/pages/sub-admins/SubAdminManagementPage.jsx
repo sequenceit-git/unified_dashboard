@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
@@ -8,8 +8,35 @@ import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import Modal from '../../components/ui/Modal'
 import SearchInput from '../../components/ui/SearchInput'
 import { useApi } from '../../hooks/useApi'
-import { PLATFORM_ROUTES, ROUTE_LABELS, SHOP_ROUTES } from '../../lib/access'
+import { PLATFORM_ROUTES, ROUTE_LABELS, MARKETPLACE_SUBSECTIONS, SUBSECTION_LABELS } from '../../lib/access'
 import { SHOP_SECTIONS, shopSectionFromMarketplace } from '../../lib/shops'
+
+const MARKET_META = {
+  ebay: {
+    label: 'eBay',
+    badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
+  },
+  tiktok_shop: {
+    label: 'TikTok Shop',
+    badge: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
+  },
+  temu: {
+    label: 'Temu Shop',
+    badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+  },
+}
+
+function formatDateSafe(val) {
+  if (!val) return '—'
+  const d = new Date(val)
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString()
+}
+
+function formatDateTimeSafe(val) {
+  if (!val) return 'Never'
+  const d = new Date(val)
+  return isNaN(d.getTime()) ? 'Never' : d.toLocaleString()
+}
 
 function AccessPill({ children, variant = 'indigo' }) {
   const styles = {
@@ -33,32 +60,133 @@ function choiceCardClass(on) {
 }
 
 function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
-  const [marketplaces, setMarketplaces] = useState(() => user.marketplaces || [])
-  const [mainRoutes, setMainRoutes] = useState(() => user.mainRoutes || [])
+  const [marketplaces, setMarketplaces] = useState(() => (Array.isArray(user?.marketplaces) ? user.marketplaces : []))
+  const [mainRoutes, setMainRoutes] = useState(() => (Array.isArray(user?.mainRoutes) ? user.mainRoutes : []))
+  const [allowedSections, setAllowedSections] = useState(() => {
+    if (Array.isArray(user?.allowedSections) && user.allowedSections.length > 0) {
+      return user.allowedSections
+    }
+    const initialSubs = []
+    const userMarkets = Array.isArray(user?.marketplaces) ? user.marketplaces : []
+    const userMainRoutes = Array.isArray(user?.mainRoutes) ? user.mainRoutes : []
+    userMarkets.forEach((m) => {
+      const subs = MARKETPLACE_SUBSECTIONS[m] || []
+      subs.forEach((s) => {
+        if (userMainRoutes.includes(s.route) && !initialSubs.includes(s.id)) {
+          initialSubs.push(s.id)
+        }
+      })
+    })
+    return initialSubs
+  })
+  const [activeShopTab, setActiveShopTab] = useState(() => (Array.isArray(user?.marketplaces) && user.marketplaces[0]) || '')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const toggle = (list, setList, value) => {
-    setList(list.includes(value) ? list.filter((item) => item !== value) : [...list, value])
+  useEffect(() => {
+    if (!marketplaces.length) {
+      setActiveShopTab('')
+    } else if (!activeShopTab || (activeShopTab !== 'all' && !marketplaces.includes(activeShopTab))) {
+      setActiveShopTab(marketplaces[0])
+    }
+  }, [marketplaces, activeShopTab])
+
+  const toggleMarketplace = (market) => {
+    setMarketplaces((prev) => {
+      const exists = prev.includes(market)
+      const next = exists ? prev.filter((m) => m !== market) : [...prev, market]
+      if (!exists) {
+        // Pre-select new marketplace subsections
+        const newSubs = (MARKETPLACE_SUBSECTIONS[market] || []).map((s) => s.id)
+        setAllowedSections((curr) => [...new Set([...curr, ...newSubs])])
+        setActiveShopTab(market)
+      } else {
+        if (activeShopTab === market) {
+          setActiveShopTab(next[0] || '')
+        }
+      }
+      return next
+    })
   }
 
-  const selectAllShops = () => setMarketplaces(SHOP_SECTIONS.map((s) => s.marketplace))
-  const clearShops = () => setMarketplaces([])
+  const selectAllShops = () => {
+    const all = SHOP_SECTIONS.map((s) => s.marketplace)
+    setMarketplaces(all)
+    const allSubs = Object.values(MARKETPLACE_SUBSECTIONS).flatMap((list) => list.map((s) => s.id))
+    setAllowedSections((curr) => [...new Set([...curr, ...allSubs])])
+    if (!activeShopTab || !all.includes(activeShopTab)) {
+      setActiveShopTab(all[0] || '')
+    }
+  }
 
-  const selectAllRoutes = () => setMainRoutes([
-    ...PLATFORM_ROUTES.map(([k]) => k),
-    ...SHOP_ROUTES.map(([k]) => k),
-  ])
-  const clearRoutes = () => setMainRoutes([])
+  const clearShops = () => {
+    setMarketplaces([])
+    setAllowedSections([])
+    setActiveShopTab('')
+  }
+
+  const togglePlatformRoute = (key) => {
+    setMainRoutes((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  }
+
+  const toggleSection = (sectionId) => {
+    setAllowedSections((prev) =>
+      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
+    )
+  }
+
+  const selectAllPermissions = () => {
+    setMainRoutes(PLATFORM_ROUTES.map(([k]) => k))
+    const currentSubs = marketplaces.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id))
+    setAllowedSections([...new Set(currentSubs)])
+  }
+
+  const clearAllPermissions = () => {
+    setMainRoutes([])
+    setAllowedSections([])
+  }
+
+  const selectAllTabSections = (tabMarket) => {
+    const targetMarkets = tabMarket === 'all' ? marketplaces : [tabMarket]
+    const targetSubs = targetMarkets.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id))
+    setAllowedSections((curr) => [...new Set([...curr, ...targetSubs])])
+  }
+
+  const clearTabSections = (tabMarket) => {
+    const targetMarkets = tabMarket === 'all' ? marketplaces : [tabMarket]
+    const targetSubs = new Set(targetMarkets.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id)))
+    setAllowedSections((curr) => curr.filter((id) => !targetSubs.has(id)))
+  }
 
   const save = async () => {
     setError('')
     if (!marketplaces.length) return setError('Please select at least one marketplace shop.')
-    if (!mainRoutes.length) return setError('Please select at least one authorized section.')
+
+    // Derive mainRoutes from platform routes + allowed shop subsections
+    const platformSelected = mainRoutes.filter((r) => PLATFORM_ROUTES.some(([k]) => k === r))
+    const shopRoutesSelected = []
+    marketplaces.forEach((m) => {
+      const subs = MARKETPLACE_SUBSECTIONS[m] || []
+      subs.forEach((s) => {
+        if (allowedSections.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
+          shopRoutesSelected.push(s.route)
+        }
+      })
+    })
+    const computedMainRoutes = [...new Set([...platformSelected, ...shopRoutesSelected])]
+
+    if (!computedMainRoutes.length && !allowedSections.length) {
+      return setError('Please select at least one authorized section or module.')
+    }
+
     setBusy(true)
     try {
-      await api.patch(`/api/auth/users/${user._id}`, { marketplaces, mainRoutes }, token)
+      await api.patch(
+        `/api/auth/users/${user._id}`,
+        { marketplaces, mainRoutes: computedMainRoutes, allowedSections },
+        token,
+      )
       onSaved()
     } catch (e) {
       setError(e.message)
@@ -141,11 +269,11 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
                     role="checkbox"
                     tabIndex={0}
                     aria-checked={on}
-                    onClick={() => toggle(marketplaces, setMarketplaces, section.marketplace)}
+                    onClick={() => toggleMarketplace(section.marketplace)}
                     onKeyDown={(e) => {
                       if (e.key === ' ' || e.key === 'Enter') {
                         e.preventDefault()
-                        toggle(marketplaces, setMarketplaces, section.marketplace)
+                        toggleMarketplace(section.marketplace)
                       }
                     }}
                     className={choiceCardClass(on)}
@@ -168,7 +296,7 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
                           }`}
                         />
                         <span className="truncate">
-                          {connectedShop ? 'Connected' : 'Not connected'}
+                          {connectedShop ? (connectedShop.name || 'Connected') : 'Not connected'}
                         </span>
                       </span>
                     </div>
@@ -179,15 +307,15 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
           </section>
 
           {/* Section Permissions */}
-          <section>
-            <div className="mb-2 flex items-center justify-between">
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Authorized Sections
+                Authorized Sections & Subsections
               </p>
               <div className="flex items-center gap-2 text-xs">
                 <button
                   type="button"
-                  onClick={selectAllRoutes}
+                  onClick={selectAllPermissions}
                   className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
                 >
                   Select all
@@ -195,7 +323,7 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
                 <span className="text-gray-300 dark:text-gray-700">|</span>
                 <button
                   type="button"
-                  onClick={clearRoutes}
+                  onClick={clearAllPermissions}
                   className="text-gray-500 hover:underline dark:text-gray-400"
                 >
                   Clear
@@ -203,90 +331,200 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
               </div>
             </div>
 
-            <p className="mb-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500">
-              Platform Modules
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {PLATFORM_ROUTES.map(([value, label, desc]) => {
-                const on = mainRoutes.includes(value)
-                return (
-                  <div
-                    key={value}
-                    role="checkbox"
-                    tabIndex={0}
-                    aria-checked={on}
-                    onClick={() => toggle(mainRoutes, setMainRoutes, value)}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault()
-                        toggle(mainRoutes, setMainRoutes, value)
-                      }
-                    }}
-                    className={choiceCardClass(on)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={() => {}}
-                      tabIndex={-1}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {label}
-                      </span>
-                      {desc && (
-                        <span className="block text-xs text-gray-500 dark:text-gray-400">
-                          {desc}
+            {/* Platform Modules */}
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+                Platform Modules
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {PLATFORM_ROUTES.map(([value, label, desc]) => {
+                  const on = mainRoutes.includes(value)
+                  return (
+                    <div
+                      key={value}
+                      role="checkbox"
+                      tabIndex={0}
+                      aria-checked={on}
+                      onClick={() => togglePlatformRoute(value)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault()
+                          togglePlatformRoute(value)
+                        }
+                      }}
+                      className={choiceCardClass(on)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => {}}
+                        tabIndex={-1}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {label}
                         </span>
-                      )}
+                        {desc && (
+                          <span className="block text-xs text-gray-500 dark:text-gray-400">
+                            {desc}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
 
-            <p className="mb-1.5 mt-3.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500">
-              Shop Management Modules
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {SHOP_ROUTES.map(([value, label, desc]) => {
-                const on = mainRoutes.includes(value)
-                return (
-                  <div
-                    key={value}
-                    role="checkbox"
-                    tabIndex={0}
-                    aria-checked={on}
-                    onClick={() => toggle(mainRoutes, setMainRoutes, value)}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault()
-                        toggle(mainRoutes, setMainRoutes, value)
-                      }
-                    }}
-                    className={choiceCardClass(on)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={() => {}}
-                      tabIndex={-1}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {label}
-                      </span>
-                      {desc && (
-                        <span className="block text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                          {desc}
-                        </span>
-                      )}
-                    </div>
+            {/* Dynamic Shop Subsections */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+                    Shop Management Subsections
+                  </p>
+                  {marketplaces.length > 0 && (
+                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                      {allowedSections.length} selected
+                    </span>
+                  )}
+                </div>
+
+                {marketplaces.length > 0 && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => selectAllTabSections(activeShopTab)}
+                      className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                      Select {activeShopTab === 'all' ? 'all' : MARKET_META[activeShopTab]?.label || 'shop'}
+                    </button>
+                    <span className="text-gray-300 dark:text-gray-700">|</span>
+                    <button
+                      type="button"
+                      onClick={() => clearTabSections(activeShopTab)}
+                      className="text-gray-500 hover:underline dark:text-gray-400"
+                    >
+                      Clear
+                    </button>
                   </div>
-                )
-              })}
+                )}
+              </div>
+
+              {marketplaces.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-300 p-4 text-center dark:border-slate-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    No marketplace shops assigned. Select a shop above to configure subsections.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Shop Tabs if multiple marketplaces */}
+                  {marketplaces.length > 1 && (
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50/80 p-1 dark:border-slate-800 dark:bg-slate-900/60">
+                      {marketplaces.map((m) => {
+                        const meta = MARKET_META[m] || { label: m }
+                        const count = (MARKETPLACE_SUBSECTIONS[m] || []).length
+                        const isTabActive = activeShopTab === m
+                        return (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setActiveShopTab(m)}
+                            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                              isTabActive
+                                ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-800 dark:text-indigo-400'
+                                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                          >
+                            <span>{meta.label}</span>
+                            <span className="rounded-full bg-gray-200/70 px-1.5 py-0.2 text-[10px] text-gray-600 dark:bg-slate-700 dark:text-gray-300">
+                              {count}
+                            </span>
+                          </button>
+                        )
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => setActiveShopTab('all')}
+                        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                          activeShopTab === 'all'
+                            ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-800 dark:text-indigo-400'
+                            : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                        }`}
+                      >
+                        <span>All Assigned</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Render Subsections */}
+                  {(activeShopTab === 'all' ? marketplaces : [activeShopTab]).filter(Boolean).map((marketKey) => {
+                    const meta = MARKET_META[marketKey] || { label: marketKey, badge: '' }
+                    const subs = MARKETPLACE_SUBSECTIONS[marketKey] || []
+
+                    return (
+                      <div key={marketKey} className="space-y-1.5">
+                        {activeShopTab === 'all' && (
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${meta.badge}`}>
+                              {meta.label}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {subs.map((sub) => {
+                            const isSelected = allowedSections.includes(sub.id)
+                            return (
+                              <div
+                                key={`${marketKey}-${sub.id}`}
+                                role="checkbox"
+                                tabIndex={0}
+                                aria-checked={isSelected}
+                                onClick={() => toggleSection(sub.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === ' ' || e.key === 'Enter') {
+                                    e.preventDefault()
+                                    toggleSection(sub.id)
+                                  }
+                                }}
+                                className={choiceCardClass(isSelected)}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  tabIndex={-1}
+                                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                                />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                      {sub.label}
+                                    </span>
+                                    {activeShopTab === 'all' && (
+                                      <span className={`inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-semibold border ${meta.badge}`}>
+                                        {meta.label}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {sub.desc && (
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                                      {sub.desc}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </section>
 
@@ -322,8 +560,8 @@ export default function SubAdminManagementPage() {
   const { token } = useAuth()
   const usersRes = useApi(token ? '/api/auth/users' : null)
   const shopsRes = useApi(token ? '/api/shops' : null)
-  const shops = shopsRes.data || []
-  const users = usersRes.data || []
+  const shops = Array.isArray(shopsRes.data) ? shopsRes.data : []
+  const users = Array.isArray(usersRes.data) ? usersRes.data : []
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'active' | 'disabled'
@@ -347,7 +585,9 @@ export default function SubAdminManagementPage() {
 
   // Filter & search computation
   const filteredUsers = useMemo(() => {
+    if (!Array.isArray(users)) return []
     return users.filter((u) => {
+      if (!u) return false
       // 1. Status filter
       if (statusFilter !== 'all' && (u.status || 'active') !== statusFilter) {
         return false
@@ -357,7 +597,7 @@ export default function SubAdminManagementPage() {
         return false
       }
       // 3. Search query
-      if (search.trim()) {
+      if (search && search.trim()) {
         const q = search.trim().toLowerCase()
         const nameMatch = u.name?.toLowerCase().includes(q)
         const usernameMatch = u.username?.toLowerCase().includes(q)
@@ -369,9 +609,10 @@ export default function SubAdminManagementPage() {
   }, [users, search, statusFilter, marketFilter])
 
   const counts = useMemo(() => {
+    if (!Array.isArray(users)) return { total: 0, active: 0, suspended: 0 }
     const total = users.length
-    const active = users.filter((u) => (u.status || 'active') === 'active').length
-    const suspended = users.filter((u) => u.status === 'disabled').length
+    const active = users.filter((u) => (u?.status || 'active') === 'active').length
+    const suspended = users.filter((u) => u?.status === 'disabled').length
     return { total, active, suspended }
   }, [users])
 
@@ -395,7 +636,7 @@ export default function SubAdminManagementPage() {
             Sub-admin management
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Manage employee access, assign marketplace shops (eBay, TikTok Shop, Temu), and set page permissions.
+            Manage employee access, assign marketplace shops (eBay, TikTok Shop, Temu), and set granular subsection permissions.
           </p>
         </div>
         <Link to="/sub-admins/new" className="self-start sm:self-auto">
@@ -565,13 +806,19 @@ export default function SubAdminManagementPage() {
                       </div>
                     </div>
 
-                    {/* Authorized Sections */}
+                    {/* Authorized Subsections & Sections */}
                     <div>
                       <p className="mb-1.5 font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
-                        Authorized Sections ({user.mainRoutes?.length || 0})
+                        Authorized Subsections ({user.allowedSections?.length || user.mainRoutes?.length || 0})
                       </p>
                       <div className="flex flex-wrap gap-1.5">
-                        {user.mainRoutes?.length ? (
+                        {user.allowedSections?.length ? (
+                          user.allowedSections.map((secId) => (
+                            <AccessPill key={secId} variant="indigo">
+                              {SUBSECTION_LABELS[secId] || ROUTE_LABELS[secId] || secId}
+                            </AccessPill>
+                          ))
+                        ) : user.mainRoutes?.length ? (
                           user.mainRoutes.map((route) => (
                             <AccessPill key={route} variant="indigo">
                               {ROUTE_LABELS[route] || route}
@@ -589,13 +836,11 @@ export default function SubAdminManagementPage() {
                 <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-3 text-[11px] text-gray-500 dark:border-slate-800 dark:text-gray-400">
                   <div className="space-y-0.5">
                     <div>
-                      Created: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                      Created: {formatDateSafe(user.createdAt)}
                     </div>
-                    {user.lastLoginAt ? (
-                      <div>Last active: {new Date(user.lastLoginAt).toLocaleString()}</div>
-                    ) : (
-                      <div>Last active: Never</div>
-                    )}
+                    <div>
+                      Last active: {formatDateTimeSafe(user.lastLoginAt)}
+                    </div>
                   </div>
 
                   <button
