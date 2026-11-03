@@ -116,27 +116,28 @@ export default function SubAdminFormPage() {
 
       const rawAllowed = Array.isArray(existing.allowedSections) ? existing.allowedSections : []
       const byShop = { ebay: [], tiktok_shop: [], temu: [] }
+      const hasScoped = rawAllowed.some((entry) => entry.includes(':'))
 
       for (const market of ['ebay', 'tiktok_shop', 'temu']) {
         const native = MARKETPLACE_SUBSECTIONS[market] || []
         const nativeIds = native.map((s) => s.id)
-        const matched = nativeIds.filter((subId) =>
-          rawAllowed.includes(`${market}:${subId}`) ||
-          (existingMarkets.includes(market) && rawAllowed.includes(subId))
-        )
 
-        if (matched.length > 0) {
-          byShop[market] = matched
-        } else if (existingMarkets.includes(market)) {
-          // If no specific subsection restrictions saved, default to all native
-          byShop[market] = nativeIds
+        if (hasScoped) {
+          // Scoped mode: only match exact prefix 'ebay:products', 'tiktok_shop:orders', etc.
+          byShop[market] = nativeIds.filter((subId) => rawAllowed.includes(`${market}:${subId}`))
+        } else if (existingMarkets.length === 1 && existingMarkets[0] === market && rawAllowed.length > 0) {
+          // Legacy single-shop with bare IDs
+          byShop[market] = nativeIds.filter((subId) => rawAllowed.includes(subId))
+        } else {
+          // Multi-shop or empty allowedSections: NEVER auto-default to mainRoutes
+          byShop[market] = []
         }
       }
       setSectionsByShop(byShop)
     } else {
-      // Default: new sub-admin starts with all eBay sections enabled
+      // Default: clean slate for new sub-admin, no unwanted default selections
       setSectionsByShop({
-        ebay: (MARKETPLACE_SUBSECTIONS.ebay || []).map((s) => s.id),
+        ebay: [],
         tiktok_shop: [],
         temu: [],
       })
@@ -224,8 +225,10 @@ export default function SubAdminFormPage() {
       const subs = MARKETPLACE_SUBSECTIONS[market] || []
       const selectedIds = sectionsByShop[market] || []
       selectedIds.forEach((id) => {
-        allAllowedSections.push(id)
         allAllowedSections.push(`${market}:${id}`)
+        if (finalMarkets.length === 1) {
+          allAllowedSections.push(id)
+        }
       })
       subs.forEach((s) => {
         if (selectedIds.includes(s.id) && !shopRoutesSelected.includes(s.route)) {

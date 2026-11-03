@@ -78,17 +78,19 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
   const [sectionsByShop, setSectionsByShop] = useState(() => {
     const rawAllowed = Array.isArray(user?.allowedSections) ? user.allowedSections : []
     const byShop = { ebay: [], tiktok_shop: [], temu: [] }
+    const hasScoped = rawAllowed.some((x) => x.includes(':'))
+
     for (const market of ['ebay', 'tiktok_shop', 'temu']) {
       const native = MARKETPLACE_SUBSECTIONS[market] || []
       const nativeIds = native.map((s) => s.id)
-      const matched = nativeIds.filter((subId) =>
-        rawAllowed.includes(`${market}:${subId}`) ||
-        (existingMarkets.includes(market) && rawAllowed.includes(subId))
-      )
-      if (matched.length > 0) {
-        byShop[market] = matched
-      } else if (existingMarkets.includes(market)) {
-        byShop[market] = nativeIds
+
+      if (hasScoped) {
+        byShop[market] = nativeIds.filter((subId) => rawAllowed.includes(`${market}:${subId}`))
+      } else if (existingMarkets.length === 1 && existingMarkets[0] === market && rawAllowed.length > 0) {
+        byShop[market] = nativeIds.filter((subId) => rawAllowed.includes(subId))
+      } else {
+        // Multi-shop without scoped entries or empty allowedSections: NEVER auto-default to mainRoutes
+        byShop[market] = []
       }
     }
     return byShop
@@ -168,8 +170,10 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
       const subs = MARKETPLACE_SUBSECTIONS[market] || []
       const selectedIds = sectionsByShop[market] || []
       selectedIds.forEach((id) => {
-        allAllowedSections.push(id)
         allAllowedSections.push(`${market}:${id}`)
+        if (finalMarkets.length === 1) {
+          allAllowedSections.push(id)
+        }
       })
       subs.forEach((s) => {
         if (selectedIds.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
@@ -794,15 +798,20 @@ export default function SubAdminManagementPage() {
             const isActive = (user.status || 'active') === 'active'
             const isToggling = togglingId === user._id
 
+            const rawAllowed = Array.isArray(user.allowedSections) ? user.allowedSections : []
+            const hasScoped = rawAllowed.some((x) => x.includes(':'))
+            const hasExplicit = rawAllowed.length > 0
+
             // Group active subsections across all assigned shops
             const activeSubs = []
             userMarkets.forEach((m) => {
               const subsMeta = MARKETPLACE_SUBSECTIONS[m] || []
-              const matched = subsMeta.filter((s) =>
-                user.allowedSections?.includes(`${m}:${s.id}`) ||
-                user.allowedSections?.includes(s.id) ||
-                user.mainRoutes?.includes(s.route)
-              )
+              let matched = []
+              if (hasScoped) {
+                matched = subsMeta.filter((s) => rawAllowed.includes(`${m}:${s.id}`))
+              } else if (hasExplicit && userMarkets.length === 1) {
+                matched = subsMeta.filter((s) => rawAllowed.includes(s.id))
+              }
               matched.forEach((s) => {
                 activeSubs.push({ ...s, market: m })
               })
@@ -887,7 +896,7 @@ export default function SubAdminManagementPage() {
                   <div className="mt-4 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <p className="font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
-                        {theme.shortLabel} Subsections ({activeSubs.length})
+                        {userMarkets.length > 1 ? 'Assigned Subsections' : `${theme.shortLabel} Subsections`} ({activeSubs.length})
                       </p>
                     </div>
 
