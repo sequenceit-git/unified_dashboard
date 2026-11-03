@@ -176,7 +176,20 @@ class UnifiedMarketplaceManager {
       const service = this.getService(shop.marketplace)
       let updatedCount = 0
       if (shop.marketplace === 'ebay') {
-        const res = await service.getOrders(token, { limit: 50 })
+        const [res, rawCancellations] = await Promise.all([
+          service.getOrders(token, { limit: 50 }),
+          typeof service.getCancellations === 'function' ? service.getCancellations(token).catch(() => []) : [],
+        ])
+
+        const cancelledOrderIds = new Set()
+        for (const c of rawCancellations || []) {
+          const cStatus = String(c.cancelStatus || '').toUpperCase()
+          if (!cStatus.includes('REJECT')) {
+            if (c.orderId) cancelledOrderIds.add(String(c.orderId))
+            if (c.legacyOrderId) cancelledOrderIds.add(String(c.legacyOrderId))
+          }
+        }
+
         rawOrders = (res.orders || []).map((o) => {
           const reg = o.buyer?.buyerRegistrationAddress
           const tax = o.buyer?.taxAddress
@@ -193,10 +206,57 @@ class UnifiedMarketplaceManager {
             country: reg?.contactAddress?.countryCode || shipTo?.contactAddress?.countryCode || tax?.countryCode || '',
           }
 
+          // Accurate eBay order status detection:
+          const extId = String(o.orderId || '')
+          const legacyId = String(o.legacyOrderId || '')
+          const cancelState = String(
+            o.cancelStatus?.cancelState ||
+            o.cancelStatus?.status ||
+            o.cancelStatus ||
+            ''
+          ).toUpperCase()
+          const hasCancelledDate = Boolean(o.cancelStatus?.cancelledDate)
+
+          let orderStatus = 'paid'
+          if (
+            cancelledOrderIds.has(extId) ||
+            (legacyId && cancelledOrderIds.has(legacyId)) ||
+            hasCancelledDate ||
+            cancelState === 'CANCELED' ||
+            cancelState === 'CANCELLED' ||
+            cancelState === 'CANCEL_CLOSED' ||
+            cancelState === 'CANCEL_CLOSED_WITH_REFUND' ||
+            cancelState === 'CANCEL_COMPLETE' ||
+            cancelState === 'CLOSED_WITH_REFUND' ||
+            (cancelState.startsWith('CANCEL') && !cancelState.includes('REJECTED') && !cancelState.includes('NONE'))
+          ) {
+            orderStatus = 'cancelled'
+          } else {
+            const paymentStatus = String(o.orderPaymentStatus || '').toUpperCase()
+            const refundedValue = parseFloat(o.pricingSummary?.refundedAmount?.value || 0)
+            const totalValue = parseFloat(o.pricingSummary?.total?.value || 0)
+            const isFullyRefunded =
+              paymentStatus === 'FULLY_REFUNDED' ||
+              paymentStatus === 'REFUNDED' ||
+              (refundedValue > 0 && totalValue > 0 && refundedValue >= totalValue)
+
+            if (isFullyRefunded) {
+              orderStatus = o.orderFulfillmentStatus === 'FULFILLED' ? 'returned' : 'refunded'
+            } else if (o.orderFulfillmentStatus === 'FULFILLED') {
+              orderStatus = 'shipped'
+            } else if (o.orderFulfillmentStatus === 'IN_PROGRESS') {
+              orderStatus = 'processing'
+            } else if (paymentStatus === 'PAID') {
+              orderStatus = 'paid'
+            } else if (paymentStatus === 'FAILED' || paymentStatus === 'PENDING') {
+              orderStatus = 'pending'
+            }
+          }
+
           return {
             externalOrderId: o.orderId,
             placedAt: new Date(o.creationDate),
-            status: o.orderFulfillmentStatus === 'FULFILLED' ? 'shipped' : 'paid',
+            status: orderStatus,
             buyer: {
               name: fullName,
               username,
@@ -392,7 +452,13 @@ class UnifiedMarketplaceManager {
 
         const existing = await Order.findOne({ shopId: shop._id, externalOrderId: ord.externalOrderId })
         if (existing) {
-          existing.status = ord.status
+          // If the order was already marked as cancelled or refunded in our system,
+          // never regress it back to 'paid', 'pending', or 'processing'
+          if (['cancelled', 'refunded'].includes(existing.status) && ['paid', 'pending', 'processing'].includes(ord.status)) {
+            // Keep existing cancelled or refunded status
+          } else {
+            existing.status = ord.status
+          }
           if (!existing.customerId && customer?._id) existing.customerId = customer._id
           if (ord.buyer?.phone && !existing.buyer?.phone) {
             existing.buyer = { ...existing.buyer, phone: ord.buyer.phone }

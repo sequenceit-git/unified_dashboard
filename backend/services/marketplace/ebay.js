@@ -148,6 +148,37 @@ class EbayService {
   }
 
   /**
+   * Retrieves post-order cancellation requests from eBay Post-Order API
+   */
+  async getCancellations(accessToken) {
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/post-order/v2/cancellation/search?limit=50`, {
+        headers: {
+          Authorization: `IAF ${accessToken}`,
+          Accept: 'application/json',
+          'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        },
+      })
+      if (!response.ok) {
+        const fallback = await fetch(`${config.apiBaseUrl}/post-order/v2/cancellation/search?limit=50`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/json',
+            'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+          },
+        })
+        if (!fallback.ok) return []
+        const data = await fallback.json().catch(() => ({}))
+        return data.cancellations || []
+      }
+      const data = await response.json().catch(() => ({}))
+      return data.cancellations || []
+    } catch {
+      return []
+    }
+  }
+
+  /**
    * Updates shipping tracking information for an eBay order
    */
   async createShippingFulfillment(accessToken, orderId, { carrier, trackingNumber, lineItems = [] }) {
