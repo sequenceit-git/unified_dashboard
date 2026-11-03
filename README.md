@@ -22,7 +22,7 @@ Backend:
 ```sh
 cd backend
 npm install
-npm run dev            # http://localhost:5000
+npm run dev            # http://localhost:5001
 ```
 
 Frontend:
@@ -32,7 +32,7 @@ npm install
 npm run dev            # http://localhost:5173
 ```
 
-- Vite proxies `/api` → `http://localhost:5000` (see `frontend/vite.config.js`).
+- Vite proxies `/api` → `http://localhost:5001` (see `frontend/vite.config.js`).
 - Health check: `GET /api/health`.
 - Items example: `GET /api/items`, `POST /api/items { "name": "..." }`.....
 .

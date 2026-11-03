@@ -24,15 +24,21 @@ const eventRoutes = require('./routes/system/events')
 const notificationRoutes = require('./routes/system/notifications')
 
 const app = express()
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5001
 // Comma-separated frontend origins, so local + deployed frontends both work
 // without code changes, e.g. CLIENT_URL=http://localhost:5173,https://unified-dashboard-lime.vercel.app
-const CLIENT_URLS = (process.env.CLIENT_URL || 'http://localhost:5173')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean)
+const CLIENT_URLS = [
+  ...new Set([
+    ...(process.env.CLIENT_URL || 'http://localhost:5173')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ]),
+]
 
-app.use(cors({ origin: CLIENT_URLS.length === 1 ? CLIENT_URLS[0] : CLIENT_URLS }))
+app.use(cors({ origin: CLIENT_URLS, credentials: true }))
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
