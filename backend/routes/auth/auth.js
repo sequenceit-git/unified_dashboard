@@ -14,16 +14,26 @@ function storedRoutes(routes) {
   return (routes || []).filter((route) => STORED_ROUTES.has(route))
 }
 
-function parseUsername(value) {
-  const username = String(value || '').trim().toLowerCase()
-  if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username)) {
-    return { error: 'Username must be 2–32 characters and use letters, numbers, dots, or hyphens' }
+function parseIdentity(value) {
+  const str = String(value || '').trim().toLowerCase()
+  if (!str) return { error: 'Username or email is required' }
+  // Allow email format
+  if (str.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str)) {
+      return { error: 'Please enter a valid email address' }
+    }
+    return { email: str, username: str }
   }
-  return { username }
+  // Allow username format
+  if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(str)) {
+    return { error: 'Username must be 2–32 characters using letters, numbers, dots, or hyphens' }
+  }
+  return { email: str, username: str }
 }
 
-async function usernameTaken(username, exceptId) {
-  const query = { $or: [{ username }, { email: username }] }
+async function identityTaken(val, exceptId) {
+  const str = String(val || '').trim().toLowerCase()
+  const query = { $or: [{ username: str }, { email: str }] }
   if (exceptId) query._id = { $ne: exceptId }
   return Boolean(await User.findOne(query).select('_id'))
 }
@@ -122,16 +132,19 @@ async function userSummary(user) {
       ? await Shop.find({ _id: user.shopId }).select('name marketplace status')
       : []
   const derived = [...new Set(shops.map((shop) => shop.marketplace).filter((market) => SHOP_MARKETS.includes(market)))]
+  const markets = user.marketplaces?.length ? user.marketplaces : derived
   return {
     id: user._id,
     name: user.name,
     username: user.username || user.email,
+    email: user.email || user.username,
     role: user.role,
     status: user.status || 'active',
     profileImageUrl: user.profileImageUrl || '',
     mainRoutes: user.mainRoutes,
     allowedSections: user.allowedSections || [],
-    marketplaces: user.marketplaces?.length ? user.marketplaces : derived,
+    marketplace: markets[0] || 'ebay',
+    marketplaces: markets,
     shopId: user.shopId,
     shops,
     createdAt: user.createdAt,
@@ -142,38 +155,50 @@ async function userSummary(user) {
 // POST /api/auth/users — super_admin creates sub_admins and their access
 router.post('/users', requireRole('super_admin'), async (req, res) => {
   try {
-    const { name, email, username, password, role = 'sub_admin', shopIds = [], shopId, marketplaces, mainRoutes = [], allowedSections = [], profileImageUrl = '', status = 'active' } = req.body
-    const requestedShopIds = Array.isArray(shopIds) && shopIds.length
-      ? shopIds
-      : shopId
-        ? [shopId]
-        : []
-    const parsedName = parseUsername(username || email)
+    const {
+      name,
+      email,
+      username,
+      password,
+      role = 'sub_admin',
+      marketplace,
+      marketplaces,
+      shopIds = [],
+      shopId,
+      mainRoutes = [],
+      allowedSections = [],
+      profileImageUrl = '',
+      status = 'active',
+    } = req.body
+
+    const parsedIdentity = parseIdentity(username || email)
     if (!name || !password || !role || !['super_admin', 'sub_admin'].includes(role)) {
-      return res.status(400).json({ error: 'name, username, password, and a valid role are required' })
+      return res.status(400).json({ error: 'name, username or email, password, and a valid role are required' })
     }
-    if (parsedName.error) return res.status(400).json({ error: parsedName.error })
-    if (await usernameTaken(parsedName.username)) {
-      return res.status(400).json({ error: 'That username is already in use' })
+    if (parsedIdentity.error) return res.status(400).json({ error: parsedIdentity.error })
+    if (await identityTaken(parsedIdentity.username)) {
+      return res.status(400).json({ error: 'That username or email is already in use' })
     }
+
     if (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route))) {
       return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
     }
+
     let markets = []
-    const assigningShops = Array.isArray(marketplaces) || requestedShopIds.length > 0
-    if (role === 'sub_admin' && assigningShops) {
-      const parsed = Array.isArray(marketplaces)
-        ? parseMarkets(marketplaces)
-        : { markets: await marketsFromShopIds(requestedShopIds) }
-      if (parsed.error) return res.status(400).json({ error: parsed.error })
-      markets = parsed.markets
-      if (!markets.length) return res.status(400).json({ error: 'Select at least one shop' })
+    if (role === 'sub_admin') {
+      const selected = marketplace || (Array.isArray(marketplaces) && marketplaces[0]) || 'ebay'
+      const canonical = canonicalMarketplace(selected)
+      if (!canonical || !SHOP_MARKETS.includes(canonical)) {
+        return res.status(400).json({ error: 'Please select a valid marketplace shop (eBay, TikTok Shop, or Temu)' })
+      }
+      markets = [canonical]
     }
+
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await User.create({
       name,
-      username: parsedName.username,
-      email: parsedName.username,
+      username: parsedIdentity.username,
+      email: parsedIdentity.email,
       passwordHash,
       profileImageUrl,
       role,
@@ -184,7 +209,9 @@ router.post('/users', requireRole('super_admin'), async (req, res) => {
       shopId: null,
       createdBy: req.user.id,
     })
-    if (role === 'sub_admin' && markets.length) await syncShopAccess(user, markets, req.user.id)
+    if (role === 'sub_admin' && markets.length) {
+      await syncShopAccess(user, markets, req.user.id)
+    }
     await user.save()
     res.status(201).json(await userSummary(user))
   } catch (err) {
@@ -207,38 +234,55 @@ router.get('/users', requireRole('super_admin'), async (req, res) => {
   res.json(users.map((user) => {
     const assignedShopIds = byUser.get(String(user._id)) || []
     const derived = [...new Set(assignedShopIds.map((id) => marketByShop.get(String(id))).filter((market) => SHOP_MARKETS.includes(market)))]
+    const markets = user.marketplaces?.length ? user.marketplaces : derived
     return {
       ...user.toObject(),
       shopIds: assignedShopIds,
       mainRoutes: storedRoutes(user.mainRoutes),
       allowedSections: user.allowedSections || [],
-      marketplaces: user.marketplaces?.length ? user.marketplaces : derived,
+      marketplace: markets[0] || 'ebay',
+      marketplaces: markets,
     }
   }))
 })
 
 router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    const { name, email, username, password, profileImageUrl, mainRoutes, allowedSections, shopIds, marketplaces, status } = req.body
+    const {
+      name,
+      email,
+      username,
+      password,
+      profileImageUrl,
+      mainRoutes,
+      allowedSections,
+      marketplace,
+      marketplaces,
+      shopIds,
+      status,
+    } = req.body
+
     if (mainRoutes && (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route)))) {
       return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
     }
+
     const user = await User.findOne({ _id: req.params.id, role: 'sub_admin', isDeleted: { $ne: true } })
     if (!user) return res.status(404).json({ error: 'Sub-admin not found' })
+
     if (name !== undefined) user.name = name
     if (username !== undefined || email !== undefined) {
-      const parsedName = parseUsername(username || email)
-      if (parsedName.error) return res.status(400).json({ error: parsedName.error })
-      if (await usernameTaken(parsedName.username, user._id)) {
-        return res.status(400).json({ error: 'That username is already in use' })
+      const parsedIdentity = parseIdentity(username || email)
+      if (parsedIdentity.error) return res.status(400).json({ error: parsedIdentity.error })
+      if (await identityTaken(parsedIdentity.username, user._id)) {
+        return res.status(400).json({ error: 'That username or email is already in use' })
       }
-      user.username = parsedName.username
-      user.email = parsedName.username
+      user.username = parsedIdentity.username
+      user.email = parsedIdentity.email
     }
+
     if (profileImageUrl !== undefined) user.profileImageUrl = profileImageUrl
     if (password) user.passwordHash = await bcrypt.hash(password, 10)
-    if (mainRoutes) user.mainRoutes = mainRoutes
-    user.mainRoutes = storedRoutes(user.mainRoutes)
+    if (mainRoutes) user.mainRoutes = storedRoutes(mainRoutes)
     if (allowedSections !== undefined) {
       user.allowedSections = Array.isArray(allowedSections) ? allowedSections : []
     }
@@ -248,14 +292,21 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
       }
       user.status = status
     }
-    if (marketplaces !== undefined || shopIds) {
-      const parsed = Array.isArray(marketplaces)
-        ? parseMarkets(marketplaces)
-        : { markets: await marketsFromShopIds(shopIds) }
-      if (parsed.error) return res.status(400).json({ error: parsed.error })
-      if (!parsed.markets.length) return res.status(400).json({ error: 'Select at least one shop' })
-      await syncShopAccess(user, parsed.markets, req.user.id)
+
+    if (marketplace !== undefined || marketplaces !== undefined || shopIds) {
+      const selected = marketplace || (Array.isArray(marketplaces) && marketplaces[0])
+      if (selected) {
+        const canonical = canonicalMarketplace(selected)
+        if (!canonical || !SHOP_MARKETS.includes(canonical)) {
+          return res.status(400).json({ error: 'Please choose a valid marketplace shop' })
+        }
+        await syncShopAccess(user, [canonical], req.user.id)
+      } else if (shopIds) {
+        const derivedMarkets = await marketsFromShopIds(shopIds)
+        if (derivedMarkets.length) await syncShopAccess(user, [derivedMarkets[0]], req.user.id)
+      }
     }
+
     await user.save()
     clearUserAccessCache(String(user._id))
     res.json(await userSummary(user))

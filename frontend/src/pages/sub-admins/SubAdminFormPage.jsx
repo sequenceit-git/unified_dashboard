@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import Button from '../../components/ui/Button'
@@ -10,20 +10,47 @@ import { useApi } from '../../hooks/useApi'
 import { PLATFORM_ROUTES, MARKETPLACE_SUBSECTIONS } from '../../lib/access'
 import { SHOP_SECTIONS } from '../../lib/shops'
 
-const MARKET_META = {
-  ebay: {
-    label: 'eBay',
-    badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
+const SHOPS = [
+  {
+    id: 'ebay',
+    marketplace: 'ebay',
+    label: 'eBay Sub-Admin',
+    shopName: 'eBay Store',
+    desc: 'Manage listings, buyer offers, orders, disputes, cases, payouts & messaging.',
+    theme: {
+      border: 'border-blue-500',
+      bgActive: 'bg-blue-50/80 dark:bg-blue-950/30',
+      badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
+      indicator: 'bg-blue-500',
+    },
   },
-  tiktok_shop: {
-    label: 'TikTok Shop',
-    badge: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
+  {
+    id: 'tiktok_shop',
+    marketplace: 'tiktok_shop',
+    label: 'TikTok Shop Sub-Admin',
+    shopName: 'TikTok Shop (Scentro)',
+    desc: 'Manage live products, package fulfillment, creator affiliates, video analytics & finance.',
+    theme: {
+      border: 'border-rose-500',
+      bgActive: 'bg-rose-50/80 dark:bg-rose-950/30',
+      badge: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
+      indicator: 'bg-rose-500',
+    },
   },
-  temu: {
-    label: 'Temu Shop',
-    badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+  {
+    id: 'temu',
+    marketplace: 'temu',
+    label: 'Temu Shop Sub-Admin',
+    shopName: 'Temu Store',
+    desc: 'Manage seller goods, inventory, warehouse shipping, price reviews & return claims.',
+    theme: {
+      border: 'border-amber-500',
+      bgActive: 'bg-amber-50/80 dark:bg-amber-950/30',
+      badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+      indicator: 'bg-amber-500',
+    },
   },
-}
+]
 
 export default function SubAdminFormPage() {
   const { token } = useAuth()
@@ -34,30 +61,32 @@ export default function SubAdminFormPage() {
   const usersRes = useApi(editing && token ? '/api/auth/users' : null)
   const shopsRes = useApi(token ? '/api/shops' : null)
   const existing = editing ? usersRes.data?.find((user) => user._id === id) : null
-  const shops = Array.isArray(shopsRes.data) ? shopsRes.data : []
+  const connectedShops = Array.isArray(shopsRes.data) ? shopsRes.data : []
 
+  const [marketplace, setMarketplace] = useState('ebay')
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [status, setStatus] = useState('active')
-  const [marketplaces, setMarketplaces] = useState([])
   const [mainRoutes, setMainRoutes] = useState([])
   const [allowedSections, setAllowedSections] = useState([])
-  const [activeShopTab, setActiveShopTab] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
+  // Selected shop config & native subsections
+  const selectedShop = SHOPS.find((s) => s.marketplace === marketplace) || SHOPS[0]
+  const nativeSubsections = MARKETPLACE_SUBSECTIONS[marketplace] || []
+
+  // Initialize or reset form when existing data loads
   useEffect(() => {
     if (existing) {
       setName(existing.name || '')
       setUsername(existing.username || existing.email || '')
       setPassword('')
       setStatus(existing.status || 'active')
-      const userMarkets = Array.isArray(existing.marketplaces) ? existing.marketplaces : []
-      setMarketplaces(userMarkets)
-      if (userMarkets.length > 0) {
-        setActiveShopTab(userMarkets[0])
-      }
+
+      const userMarket = existing.marketplace || existing.marketplaces?.[0] || 'ebay'
+      setMarketplace(userMarket)
 
       const userMainRoutes = Array.isArray(existing.mainRoutes) ? existing.mainRoutes : []
       setMainRoutes(userMainRoutes)
@@ -65,62 +94,24 @@ export default function SubAdminFormPage() {
       if (Array.isArray(existing.allowedSections) && existing.allowedSections.length > 0) {
         setAllowedSections(existing.allowedSections)
       } else {
-        // Pre-populate allowed sections based on existing user mainRoutes for their assigned shops
-        const initialSubs = []
-        userMarkets.forEach((m) => {
-          const subs = MARKETPLACE_SUBSECTIONS[m] || []
-          subs.forEach((s) => {
-            if (userMainRoutes.includes(s.route) && !initialSubs.includes(s.id)) {
-              initialSubs.push(s.id)
-            }
-          })
-        })
-        setAllowedSections(initialSubs)
+        // Pre-populate native subsections derived from userMainRoutes
+        const subs = MARKETPLACE_SUBSECTIONS[userMarket] || []
+        const initial = subs.filter((s) => userMainRoutes.includes(s.route)).map((s) => s.id)
+        setAllowedSections(initial.length > 0 ? initial : subs.map((s) => s.id))
       }
+    } else {
+      // Default: new sub-admin has all native subsections of the active shop pre-selected
+      const subs = MARKETPLACE_SUBSECTIONS['ebay'] || []
+      setAllowedSections(subs.map((s) => s.id))
     }
   }, [existing])
 
-  // Ensure active shop tab stays in sync with assigned marketplaces
-  useEffect(() => {
-    if (!marketplaces.length) {
-      setActiveShopTab('')
-    } else if (!activeShopTab || (activeShopTab !== 'all' && !marketplaces.includes(activeShopTab))) {
-      setActiveShopTab(marketplaces[0])
-    }
-  }, [marketplaces, activeShopTab])
-
-  const toggleMarketplace = (marketplace) => {
-    setMarketplaces((prev) => {
-      const exists = prev.includes(marketplace)
-      const next = exists ? prev.filter((m) => m !== marketplace) : [...prev, marketplace]
-      if (!exists) {
-        // When newly adding a marketplace, pre-select its subsections for a frictionless setup
-        const newSubs = (MARKETPLACE_SUBSECTIONS[marketplace] || []).map((s) => s.id)
-        setAllowedSections((curr) => [...new Set([...curr, ...newSubs])])
-        setActiveShopTab(marketplace)
-      } else {
-        if (activeShopTab === marketplace) {
-          setActiveShopTab(next[0] || '')
-        }
-      }
-      return next
-    })
-  }
-
-  const selectAllShops = () => {
-    const all = SHOP_SECTIONS.map((s) => s.marketplace)
-    setMarketplaces(all)
-    const allSubs = Object.values(MARKETPLACE_SUBSECTIONS).flatMap((list) => list.map((s) => s.id))
-    setAllowedSections((curr) => [...new Set([...curr, ...allSubs])])
-    if (!activeShopTab || !all.includes(activeShopTab)) {
-      setActiveShopTab(all[0] || '')
-    }
-  }
-
-  const clearShops = () => {
-    setMarketplaces([])
-    setAllowedSections([])
-    setActiveShopTab('')
+  // Handle switching target shop
+  const handleSelectShop = (marketId) => {
+    setMarketplace(marketId)
+    // Pre-select all native subsections of the new shop for convenience
+    const subs = MARKETPLACE_SUBSECTIONS[marketId] || []
+    setAllowedSections(subs.map((s) => s.id))
   }
 
   const togglePlatformRoute = (key) => {
@@ -133,27 +124,22 @@ export default function SubAdminFormPage() {
     )
   }
 
+  const selectAllShopSections = () => {
+    setAllowedSections(nativeSubsections.map((s) => s.id))
+  }
+
+  const clearShopSections = () => {
+    setAllowedSections([])
+  }
+
   const selectAllPermissions = () => {
     setMainRoutes(PLATFORM_ROUTES.map(([k]) => k))
-    const currentSubs = marketplaces.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id))
-    setAllowedSections([...new Set(currentSubs)])
+    setAllowedSections(nativeSubsections.map((s) => s.id))
   }
 
   const clearAllPermissions = () => {
     setMainRoutes([])
     setAllowedSections([])
-  }
-
-  const selectAllTabSections = (tabMarket) => {
-    const targetMarkets = tabMarket === 'all' ? marketplaces : [tabMarket]
-    const targetSubs = targetMarkets.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id))
-    setAllowedSections((curr) => [...new Set([...curr, ...targetSubs])])
-  }
-
-  const clearTabSections = (tabMarket) => {
-    const targetMarkets = tabMarket === 'all' ? marketplaces : [tabMarket]
-    const targetSubs = new Set(targetMarkets.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id)))
-    setAllowedSections((curr) => curr.filter((id) => !targetSubs.has(id)))
   }
 
   const save = async (event) => {
@@ -164,30 +150,24 @@ export default function SubAdminFormPage() {
     const trimmedUsername = username.trim()
 
     if (!trimmedName || !trimmedUsername) {
-      return setError('Name and username are required.')
+      return setError('Name and username/email are required.')
     }
     if (!editing && !password) {
       return setError('Password is required for new sub-admins.')
     }
-    if (!marketplaces.length) {
-      return setError('Please assign at least one marketplace shop.')
-    }
 
-    // Derive mainRoutes from platform routes + allowed shop subsections
+    // Derive mainRoutes: platform routes + parent routes of all selected subsections
     const platformSelected = mainRoutes.filter((r) => PLATFORM_ROUTES.some(([k]) => k === r))
     const shopRoutesSelected = []
-    marketplaces.forEach((m) => {
-      const subs = MARKETPLACE_SUBSECTIONS[m] || []
-      subs.forEach((s) => {
-        if (allowedSections.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
-          shopRoutesSelected.push(s.route)
-        }
-      })
+    nativeSubsections.forEach((s) => {
+      if (allowedSections.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
+        shopRoutesSelected.push(s.route)
+      }
     })
     const computedMainRoutes = [...new Set([...platformSelected, ...shopRoutesSelected])]
 
     if (!computedMainRoutes.length && !allowedSections.length) {
-      return setError('Please select at least one authorized section or module.')
+      return setError('Please select at least one authorized subsection or platform module.')
     }
 
     setBusy(true)
@@ -195,8 +175,10 @@ export default function SubAdminFormPage() {
       const body = {
         name: trimmedName,
         username: trimmedUsername,
+        email: trimmedUsername,
         status,
-        marketplaces,
+        marketplace,
+        marketplaces: [marketplace],
         mainRoutes: computedMainRoutes,
         allowedSections,
       }
@@ -231,15 +213,93 @@ export default function SubAdminFormPage() {
         </Link>
         <span className="text-gray-300 dark:text-gray-700">/</span>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {editing ? 'Edit sub-admin account & access' : 'Create new sub-admin'}
+          {editing ? `Edit ${selectedShop.label}` : `Create ${selectedShop.label}`}
         </h1>
       </div>
 
       <form onSubmit={save} className="space-y-6">
-        {/* Card 1: Account Credentials */}
+        {/* Step 1: Target Marketplace Shop Selection */}
         <Card>
           <div className="space-y-4">
             <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Step 1
+              </p>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                Target Marketplace Shop
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Select which store this sub-admin is assigned to manage. The permissions below will adapt exclusively to this shop.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {SHOPS.map((shop) => {
+                const isSelected = marketplace === shop.marketplace
+                const conn = connectedShops.find((s) => s.marketplace === shop.marketplace && s.status === 'connected')
+
+                return (
+                  <div
+                    key={shop.id}
+                    role="radio"
+                    tabIndex={0}
+                    aria-checked={isSelected}
+                    onClick={() => handleSelectShop(shop.marketplace)}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault()
+                        handleSelectShop(shop.marketplace)
+                      }
+                    }}
+                    className={`group relative flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                      isSelected
+                        ? `${shop.theme.border} ${shop.theme.bgActive} shadow-sm ring-1 ${shop.theme.border}`
+                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                          {shop.label}
+                        </span>
+                        <input
+                          type="radio"
+                          name="marketplace_shop"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          tabIndex={-1}
+                          className="mt-0.5 h-4 w-4 border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700"
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        {shop.desc}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-slate-800">
+                      <span
+                        className={`h-2 w-2 rounded-full shrink-0 ${
+                          conn ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                      />
+                      <span className="truncate">
+                        {conn ? (conn.name || 'Store Connected') : 'Not Connected'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </Card>
+
+        {/* Step 2: Account Credentials */}
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Step 2
+              </p>
               <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Account Credentials</h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Login identity and account activation state.
@@ -258,7 +318,7 @@ export default function SubAdminFormPage() {
                 label="Username / Email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. sjenkins"
+                placeholder="e.g. sarah.jenkins@company.com or sjenkins"
                 autoComplete="off"
                 required
               />
@@ -310,99 +370,19 @@ export default function SubAdminFormPage() {
           </div>
         </Card>
 
-        {/* Card 2: Assigned Marketplace Stores */}
-        <Card>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Assigned Marketplace Shops</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Select which marketplace store sections this sub-admin can access.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={selectAllShops}
-                  className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  Select all
-                </button>
-                <span className="text-gray-300 dark:text-gray-700">|</span>
-                <button
-                  type="button"
-                  onClick={clearShops}
-                  className="text-gray-500 hover:underline dark:text-gray-400"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {SHOP_SECTIONS.map((section) => {
-                const connectedShop = shops.find((s) => s.marketplace === section.marketplace && s.status === 'connected')
-                const isConfigured = shops.some((s) => s.marketplace === section.marketplace)
-                const isSelected = marketplaces.includes(section.marketplace)
-
-                return (
-                  <div
-                    key={section.id}
-                    role="checkbox"
-                    tabIndex={0}
-                    aria-checked={isSelected}
-                    onClick={() => toggleMarketplace(section.marketplace)}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault()
-                        toggleMarketplace(section.marketplace)
-                      }
-                    }}
-                    className={`group relative flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                      isSelected
-                        ? 'border-indigo-500 bg-indigo-50/80 shadow-sm dark:border-indigo-500 dark:bg-indigo-950/30'
-                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <span className="block font-semibold text-gray-900 dark:text-gray-100">
-                          {section.label}
-                        </span>
-                        <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                          <span
-                            className={`h-2 w-2 rounded-full shrink-0 ${
-                              connectedShop ? 'bg-emerald-500' : isConfigured ? 'bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
-                            }`}
-                          />
-                          <span className="truncate">
-                            {connectedShop ? (connectedShop.name || 'Connected') : isConfigured ? 'Configured' : 'Not connected'}
-                          </span>
-                        </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}} // handled by parent container
-                        tabIndex={-1}
-                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700"
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </Card>
-
-        {/* Card 3: Dynamic Section Permissions */}
+        {/* Step 3: Scoped Section Permissions */}
         <Card>
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Section Permissions</h2>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  Step 3
+                </p>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedShop.shopName} Permissions
+                </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Granular control over which dashboard pages and shop subsections this sub-admin can open.
+                  Granular control over which {selectedShop.shopName} pages and platform modules this sub-admin can open.
                 </p>
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -474,164 +454,80 @@ export default function SubAdminFormPage() {
               </div>
             </div>
 
-            {/* Dynamic Shop Management Subsections */}
+            {/* Shop Native Subsections */}
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                    Shop Management Subsections
+                    {selectedShop.shopName} Subsections
                   </p>
-                  {marketplaces.length > 0 && (
-                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-                      {allowedSections.length} selected
-                    </span>
-                  )}
+                  <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${selectedShop.theme.badge}`}>
+                    {allowedSections.length} of {nativeSubsections.length} enabled
+                  </span>
                 </div>
 
-                {marketplaces.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => selectAllTabSections(activeShopTab)}
-                      className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                    >
-                      Select {activeShopTab === 'all' ? 'all shop' : MARKET_META[activeShopTab]?.label || 'shop'} subsections
-                    </button>
-                    <span className="text-gray-300 dark:text-gray-700">|</span>
-                    <button
-                      type="button"
-                      onClick={() => clearTabSections(activeShopTab)}
-                      className="text-gray-500 hover:underline dark:text-gray-400"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={selectAllShopSections}
+                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    Select all shop sections
+                  </button>
+                  <span className="text-gray-300 dark:text-gray-700">|</span>
+                  <button
+                    type="button"
+                    onClick={clearShopSections}
+                    className="text-gray-500 hover:underline dark:text-gray-400"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
 
-              {marketplaces.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center dark:border-slate-700">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    No marketplace shops assigned yet.
-                  </p>
-                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                    Select eBay, TikTok Shop, or Temu Shop above to configure its native subsections.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3.5">
-                  {/* Shop Tabs if multiple marketplaces are assigned */}
-                  {marketplaces.length > 1 && (
-                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50/80 p-1 dark:border-slate-800 dark:bg-slate-900/60">
-                      {marketplaces.map((m) => {
-                        const meta = MARKET_META[m] || { label: m }
-                        const count = (MARKETPLACE_SUBSECTIONS[m] || []).length
-                        const isTabActive = activeShopTab === m
-                        return (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => setActiveShopTab(m)}
-                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                              isTabActive
-                                ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-800 dark:text-indigo-400'
-                                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                            }`}
-                          >
-                            <span>{meta.label}</span>
-                            <span className="rounded-full bg-gray-200/70 px-1.5 py-0.2 text-[10px] text-gray-600 dark:bg-slate-700 dark:text-gray-300">
-                              {count}
-                            </span>
-                          </button>
-                        )
-                      })}
-                      <button
-                        type="button"
-                        onClick={() => setActiveShopTab('all')}
-                        className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                          activeShopTab === 'all'
-                            ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-800 dark:text-indigo-400'
-                            : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                        }`}
-                      >
-                        <span>All Assigned Shops</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Render Subsections for Single Shop or Selected Tab */}
-                  {(activeShopTab === 'all' ? marketplaces : [activeShopTab]).filter(Boolean).map((marketKey) => {
-                    const meta = MARKET_META[marketKey] || { label: marketKey, badge: '' }
-                    const subs = MARKETPLACE_SUBSECTIONS[marketKey] || []
-
-                    return (
-                      <div key={marketKey} className="space-y-2">
-                        {activeShopTab === 'all' && (
-                          <div className="flex items-center gap-2 pt-1">
-                            <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${meta.badge}`}>
-                              {meta.label}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
-                              ({subs.length} native subsections)
-                            </span>
-                          </div>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {nativeSubsections.map((sub) => {
+                  const isSelected = allowedSections.includes(sub.id)
+                  return (
+                    <div
+                      key={sub.id}
+                      role="checkbox"
+                      tabIndex={0}
+                      aria-checked={isSelected}
+                      onClick={() => toggleSection(sub.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault()
+                          toggleSection(sub.id)
+                        }
+                      }}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                        isSelected
+                          ? `${selectedShop.theme.border} ${selectedShop.theme.bgActive} shadow-xs`
+                          : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        tabIndex={-1}
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {sub.label}
+                        </span>
+                        {sub.desc && (
+                          <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {sub.desc}
+                          </span>
                         )}
-
-                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                          {subs.map((sub) => {
-                            const isSelected = allowedSections.includes(sub.id)
-                            return (
-                              <div
-                                key={`${marketKey}-${sub.id}`}
-                                role="checkbox"
-                                tabIndex={0}
-                                aria-checked={isSelected}
-                                onClick={() => toggleSection(sub.id)}
-                                onKeyDown={(e) => {
-                                  if (e.key === ' ' || e.key === 'Enter') {
-                                    e.preventDefault()
-                                    toggleSection(sub.id)
-                                  }
-                                }}
-                                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                                  isSelected
-                                    ? 'border-indigo-500 bg-indigo-50/70 dark:border-indigo-500 dark:bg-indigo-950/30'
-                                    : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                  tabIndex={-1}
-                                  className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
-                                />
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                      {sub.label}
-                                    </span>
-                                    {activeShopTab === 'all' && (
-                                      <span className={`inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-semibold border ${meta.badge}`}>
-                                        {meta.label}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {sub.desc && (
-                                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                      {sub.desc}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </Card>
@@ -654,7 +550,7 @@ export default function SubAdminFormPage() {
             </Button>
           </Link>
           <Button type="submit" disabled={busy}>
-            {busy ? 'Saving…' : editing ? 'Save Changes' : 'Create Sub-admin'}
+            {busy ? 'Saving…' : editing ? 'Save Changes' : `Create ${selectedShop.label}`}
           </Button>
         </div>
       </form>

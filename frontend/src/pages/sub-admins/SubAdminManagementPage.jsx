@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
@@ -11,18 +11,24 @@ import { useApi } from '../../hooks/useApi'
 import { PLATFORM_ROUTES, ROUTE_LABELS, MARKETPLACE_SUBSECTIONS, SUBSECTION_LABELS } from '../../lib/access'
 import { SHOP_SECTIONS, shopSectionFromMarketplace } from '../../lib/shops'
 
-const MARKET_META = {
+const SHOP_THEMES = {
   ebay: {
-    label: 'eBay',
+    label: 'eBay Sub-Admin',
+    shortLabel: 'eBay',
     badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
+    indicator: 'bg-blue-500',
   },
   tiktok_shop: {
-    label: 'TikTok Shop',
+    label: 'TikTok Shop Sub-Admin',
+    shortLabel: 'TikTok Shop',
     badge: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
+    indicator: 'bg-rose-500',
   },
   temu: {
-    label: 'Temu Shop',
+    label: 'Temu Shop Sub-Admin',
+    shortLabel: 'Temu Shop',
     badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+    indicator: 'bg-amber-500',
   },
 }
 
@@ -43,6 +49,9 @@ function AccessPill({ children, variant = 'indigo' }) {
     indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200/60 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/50',
     emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50',
     gray: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-800 dark:text-gray-400 dark:border-slate-700',
+    blue: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
+    rose: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800',
+    amber: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
   }
   return (
     <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${styles[variant] || styles.indigo}`}>
@@ -59,72 +68,24 @@ function choiceCardClass(on) {
   }`
 }
 
-function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
-  const [marketplaces, setMarketplaces] = useState(() => (Array.isArray(user?.marketplaces) ? user.marketplaces : []))
+function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
+  const userMarket = user.marketplace || user.marketplaces?.[0] || 'ebay'
+  const [marketplace, setMarketplace] = useState(userMarket)
   const [mainRoutes, setMainRoutes] = useState(() => (Array.isArray(user?.mainRoutes) ? user.mainRoutes : []))
   const [allowedSections, setAllowedSections] = useState(() => {
     if (Array.isArray(user?.allowedSections) && user.allowedSections.length > 0) {
       return user.allowedSections
     }
-    const initialSubs = []
-    const userMarkets = Array.isArray(user?.marketplaces) ? user.marketplaces : []
-    const userMainRoutes = Array.isArray(user?.mainRoutes) ? user.mainRoutes : []
-    userMarkets.forEach((m) => {
-      const subs = MARKETPLACE_SUBSECTIONS[m] || []
-      subs.forEach((s) => {
-        if (userMainRoutes.includes(s.route) && !initialSubs.includes(s.id)) {
-          initialSubs.push(s.id)
-        }
-      })
-    })
-    return initialSubs
+    const subs = MARKETPLACE_SUBSECTIONS[userMarket] || []
+    const mRoutes = Array.isArray(user?.mainRoutes) ? user.mainRoutes : []
+    return subs.filter((s) => mRoutes.includes(s.route)).map((s) => s.id)
   })
-  const [activeShopTab, setActiveShopTab] = useState(() => (Array.isArray(user?.marketplaces) && user.marketplaces[0]) || '')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (!marketplaces.length) {
-      setActiveShopTab('')
-    } else if (!activeShopTab || (activeShopTab !== 'all' && !marketplaces.includes(activeShopTab))) {
-      setActiveShopTab(marketplaces[0])
-    }
-  }, [marketplaces, activeShopTab])
-
-  const toggleMarketplace = (market) => {
-    setMarketplaces((prev) => {
-      const exists = prev.includes(market)
-      const next = exists ? prev.filter((m) => m !== market) : [...prev, market]
-      if (!exists) {
-        // Pre-select new marketplace subsections
-        const newSubs = (MARKETPLACE_SUBSECTIONS[market] || []).map((s) => s.id)
-        setAllowedSections((curr) => [...new Set([...curr, ...newSubs])])
-        setActiveShopTab(market)
-      } else {
-        if (activeShopTab === market) {
-          setActiveShopTab(next[0] || '')
-        }
-      }
-      return next
-    })
-  }
-
-  const selectAllShops = () => {
-    const all = SHOP_SECTIONS.map((s) => s.marketplace)
-    setMarketplaces(all)
-    const allSubs = Object.values(MARKETPLACE_SUBSECTIONS).flatMap((list) => list.map((s) => s.id))
-    setAllowedSections((curr) => [...new Set([...curr, ...allSubs])])
-    if (!activeShopTab || !all.includes(activeShopTab)) {
-      setActiveShopTab(all[0] || '')
-    }
-  }
-
-  const clearShops = () => {
-    setMarketplaces([])
-    setAllowedSections([])
-    setActiveShopTab('')
-  }
+  const theme = SHOP_THEMES[marketplace] || SHOP_THEMES.ebay
+  const nativeSubsections = MARKETPLACE_SUBSECTIONS[marketplace] || []
 
   const togglePlatformRoute = (key) => {
     setMainRoutes((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
@@ -136,10 +97,17 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
     )
   }
 
+  const selectAllShopSections = () => {
+    setAllowedSections(nativeSubsections.map((s) => s.id))
+  }
+
+  const clearShopSections = () => {
+    setAllowedSections([])
+  }
+
   const selectAllPermissions = () => {
     setMainRoutes(PLATFORM_ROUTES.map(([k]) => k))
-    const currentSubs = marketplaces.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id))
-    setAllowedSections([...new Set(currentSubs)])
+    setAllowedSections(nativeSubsections.map((s) => s.id))
   }
 
   const clearAllPermissions = () => {
@@ -147,44 +115,39 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
     setAllowedSections([])
   }
 
-  const selectAllTabSections = (tabMarket) => {
-    const targetMarkets = tabMarket === 'all' ? marketplaces : [tabMarket]
-    const targetSubs = targetMarkets.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id))
-    setAllowedSections((curr) => [...new Set([...curr, ...targetSubs])])
-  }
-
-  const clearTabSections = (tabMarket) => {
-    const targetMarkets = tabMarket === 'all' ? marketplaces : [tabMarket]
-    const targetSubs = new Set(targetMarkets.flatMap((m) => (MARKETPLACE_SUBSECTIONS[m] || []).map((s) => s.id)))
-    setAllowedSections((curr) => curr.filter((id) => !targetSubs.has(id)))
+  const handleSwitchShop = (nextMarket) => {
+    setMarketplace(nextMarket)
+    const subs = MARKETPLACE_SUBSECTIONS[nextMarket] || []
+    setAllowedSections(subs.map((s) => s.id))
   }
 
   const save = async () => {
     setError('')
-    if (!marketplaces.length) return setError('Please select at least one marketplace shop.')
 
-    // Derive mainRoutes from platform routes + allowed shop subsections
+    // Derive parent mainRoutes from platform modules + selected subsections
     const platformSelected = mainRoutes.filter((r) => PLATFORM_ROUTES.some(([k]) => k === r))
     const shopRoutesSelected = []
-    marketplaces.forEach((m) => {
-      const subs = MARKETPLACE_SUBSECTIONS[m] || []
-      subs.forEach((s) => {
-        if (allowedSections.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
-          shopRoutesSelected.push(s.route)
-        }
-      })
+    nativeSubsections.forEach((s) => {
+      if (allowedSections.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
+        shopRoutesSelected.push(s.route)
+      }
     })
     const computedMainRoutes = [...new Set([...platformSelected, ...shopRoutesSelected])]
 
     if (!computedMainRoutes.length && !allowedSections.length) {
-      return setError('Please select at least one authorized section or module.')
+      return setError('Please select at least one authorized subsection or module.')
     }
 
     setBusy(true)
     try {
       await api.patch(
         `/api/auth/users/${user._id}`,
-        { marketplaces, mainRoutes: computedMainRoutes, allowedSections },
+        {
+          marketplace,
+          marketplaces: [marketplace],
+          mainRoutes: computedMainRoutes,
+          allowedSections,
+        },
         token,
       )
       onSaved()
@@ -234,73 +197,38 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
         </div>
       ) : (
         <div className="space-y-5">
-          {/* Marketplace Stores Section */}
+          {/* Target Shop Designation */}
           <section>
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Assigned Marketplace Shops
-              </p>
-              <div className="flex items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={selectAllShops}
-                  className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  Select all
-                </button>
-                <span className="text-gray-300 dark:text-gray-700">|</span>
-                <button
-                  type="button"
-                  onClick={clearShops}
-                  className="text-gray-500 hover:underline dark:text-gray-400"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Assigned Marketplace Shop
+            </p>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-              {SHOP_SECTIONS.map((section) => {
-                const connectedShop = shops.find((s) => s.marketplace === section.marketplace && s.status === 'connected')
-                const on = marketplaces.includes(section.marketplace)
+              {[
+                { id: 'ebay', label: 'eBay Store' },
+                { id: 'tiktok_shop', label: 'TikTok Shop' },
+                { id: 'temu', label: 'Temu Shop' },
+              ].map((shop) => {
+                const isSelected = marketplace === shop.id
                 return (
-                  <div
-                    key={section.id}
-                    role="checkbox"
-                    tabIndex={0}
-                    aria-checked={on}
-                    onClick={() => toggleMarketplace(section.marketplace)}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault()
-                        toggleMarketplace(section.marketplace)
-                      }
-                    }}
-                    className={choiceCardClass(on)}
+                  <button
+                    key={shop.id}
+                    type="button"
+                    onClick={() => handleSwitchShop(shop.id)}
+                    className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
+                      isSelected
+                        ? 'border-indigo-500 bg-indigo-50/80 ring-1 ring-indigo-500 dark:bg-indigo-950/40'
+                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
+                    }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={() => {}}
-                      tabIndex={-1}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                    <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                      {shop.label}
+                    </span>
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        isSelected ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
                     />
-                    <div className="min-w-0">
-                      <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {section.label}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        <span
-                          className={`h-2 w-2 rounded-full shrink-0 ${
-                            connectedShop ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
-                        />
-                        <span className="truncate">
-                          {connectedShop ? (connectedShop.name || 'Connected') : 'Not connected'}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -310,7 +238,7 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Authorized Sections & Subsections
+                Authorized Modules & Subsections
               </p>
               <div className="flex items-center gap-2 text-xs">
                 <button
@@ -377,154 +305,76 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
               </div>
             </div>
 
-            {/* Dynamic Shop Subsections */}
+            {/* Shop Native Subsections */}
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
-                    Shop Management Subsections
+                    {theme.shortLabel} Subsections
                   </p>
-                  {marketplaces.length > 0 && (
-                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-                      {allowedSections.length} selected
-                    </span>
-                  )}
+                  <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${theme.badge}`}>
+                    {allowedSections.length} of {nativeSubsections.length} enabled
+                  </span>
                 </div>
 
-                {marketplaces.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => selectAllTabSections(activeShopTab)}
-                      className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                    >
-                      Select {activeShopTab === 'all' ? 'all' : MARKET_META[activeShopTab]?.label || 'shop'}
-                    </button>
-                    <span className="text-gray-300 dark:text-gray-700">|</span>
-                    <button
-                      type="button"
-                      onClick={() => clearTabSections(activeShopTab)}
-                      className="text-gray-500 hover:underline dark:text-gray-400"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={selectAllShopSections}
+                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    Select all
+                  </button>
+                  <span className="text-gray-300 dark:text-gray-700">|</span>
+                  <button
+                    type="button"
+                    onClick={clearShopSections}
+                    className="text-gray-500 hover:underline dark:text-gray-400"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
 
-              {marketplaces.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-300 p-4 text-center dark:border-slate-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    No marketplace shops assigned. Select a shop above to configure subsections.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Shop Tabs if multiple marketplaces */}
-                  {marketplaces.length > 1 && (
-                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50/80 p-1 dark:border-slate-800 dark:bg-slate-900/60">
-                      {marketplaces.map((m) => {
-                        const meta = MARKET_META[m] || { label: m }
-                        const count = (MARKETPLACE_SUBSECTIONS[m] || []).length
-                        const isTabActive = activeShopTab === m
-                        return (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => setActiveShopTab(m)}
-                            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                              isTabActive
-                                ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-800 dark:text-indigo-400'
-                                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                            }`}
-                          >
-                            <span>{meta.label}</span>
-                            <span className="rounded-full bg-gray-200/70 px-1.5 py-0.2 text-[10px] text-gray-600 dark:bg-slate-700 dark:text-gray-300">
-                              {count}
-                            </span>
-                          </button>
-                        )
-                      })}
-                      <button
-                        type="button"
-                        onClick={() => setActiveShopTab('all')}
-                        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                          activeShopTab === 'all'
-                            ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-800 dark:text-indigo-400'
-                            : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                        }`}
-                      >
-                        <span>All Assigned</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Render Subsections */}
-                  {(activeShopTab === 'all' ? marketplaces : [activeShopTab]).filter(Boolean).map((marketKey) => {
-                    const meta = MARKET_META[marketKey] || { label: marketKey, badge: '' }
-                    const subs = MARKETPLACE_SUBSECTIONS[marketKey] || []
-
-                    return (
-                      <div key={marketKey} className="space-y-1.5">
-                        {activeShopTab === 'all' && (
-                          <div className="flex items-center gap-1.5 pt-1">
-                            <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${meta.badge}`}>
-                              {meta.label}
-                            </span>
-                          </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {nativeSubsections.map((sub) => {
+                  const isSelected = allowedSections.includes(sub.id)
+                  return (
+                    <div
+                      key={sub.id}
+                      role="checkbox"
+                      tabIndex={0}
+                      aria-checked={isSelected}
+                      onClick={() => toggleSection(sub.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault()
+                          toggleSection(sub.id)
+                        }
+                      }}
+                      className={choiceCardClass(isSelected)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        tabIndex={-1}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {sub.label}
+                        </span>
+                        {sub.desc && (
+                          <span className="block text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                            {sub.desc}
+                          </span>
                         )}
-
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                          {subs.map((sub) => {
-                            const isSelected = allowedSections.includes(sub.id)
-                            return (
-                              <div
-                                key={`${marketKey}-${sub.id}`}
-                                role="checkbox"
-                                tabIndex={0}
-                                aria-checked={isSelected}
-                                onClick={() => toggleSection(sub.id)}
-                                onKeyDown={(e) => {
-                                  if (e.key === ' ' || e.key === 'Enter') {
-                                    e.preventDefault()
-                                    toggleSection(sub.id)
-                                  }
-                                }}
-                                className={choiceCardClass(isSelected)}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                  tabIndex={-1}
-                                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
-                                />
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1 flex-wrap">
-                                    <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                      {sub.label}
-                                    </span>
-                                    {activeShopTab === 'all' && (
-                                      <span className={`inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-semibold border ${meta.badge}`}>
-                                        {meta.label}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {sub.desc && (
-                                    <span className="block text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                                      {sub.desc}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </section>
 
@@ -559,13 +409,11 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
 export default function SubAdminManagementPage() {
   const { token } = useAuth()
   const usersRes = useApi(token ? '/api/auth/users' : null)
-  const shopsRes = useApi(token ? '/api/shops' : null)
-  const shops = Array.isArray(shopsRes.data) ? shopsRes.data : []
   const users = Array.isArray(usersRes.data) ? usersRes.data : []
 
   const [search, setSearch] = useState('')
+  const [shopFilter, setShopFilter] = useState('all') // 'all' | 'ebay' | 'tiktok_shop' | 'temu'
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'active' | 'disabled'
-  const [marketFilter, setMarketFilter] = useState('all') // 'all' | 'ebay' | 'tiktok_shop' | 'temu'
   const [editingAccessUser, setEditingAccessUser] = useState(null)
   const [togglingId, setTogglingId] = useState(null)
 
@@ -588,14 +436,18 @@ export default function SubAdminManagementPage() {
     if (!Array.isArray(users)) return []
     return users.filter((u) => {
       if (!u) return false
-      // 1. Status filter
+
+      // 1. Shop filter (dedicated per-shop segregation)
+      const userMarket = u.marketplace || u.marketplaces?.[0] || 'ebay'
+      if (shopFilter !== 'all' && userMarket !== shopFilter) {
+        return false
+      }
+
+      // 2. Status filter
       if (statusFilter !== 'all' && (u.status || 'active') !== statusFilter) {
         return false
       }
-      // 2. Marketplace filter
-      if (marketFilter !== 'all' && !(u.marketplaces || []).includes(marketFilter)) {
-        return false
-      }
+
       // 3. Search query
       if (search && search.trim()) {
         const q = search.trim().toLowerCase()
@@ -606,17 +458,32 @@ export default function SubAdminManagementPage() {
       }
       return true
     })
-  }, [users, search, statusFilter, marketFilter])
+  }, [users, search, shopFilter, statusFilter])
 
+  // Aggregate counts per shop & status
   const counts = useMemo(() => {
-    if (!Array.isArray(users)) return { total: 0, active: 0, suspended: 0 }
-    const total = users.length
-    const active = users.filter((u) => (u?.status || 'active') === 'active').length
-    const suspended = users.filter((u) => u?.status === 'disabled').length
-    return { total, active, suspended }
+    if (!Array.isArray(users)) return { total: 0, active: 0, suspended: 0, ebay: 0, tiktok: 0, temu: 0 }
+    let active = 0
+    let suspended = 0
+    let ebay = 0
+    let tiktok = 0
+    let temu = 0
+
+    users.forEach((u) => {
+      const isAct = (u?.status || 'active') === 'active'
+      if (isAct) active += 1
+      else suspended += 1
+
+      const market = u?.marketplace || u?.marketplaces?.[0] || 'ebay'
+      if (market === 'ebay') ebay += 1
+      else if (market === 'tiktok_shop') tiktok += 1
+      else if (market === 'temu') temu += 1
+    })
+
+    return { total: users.length, active, suspended, ebay, tiktok, temu }
   }, [users])
 
-  if (usersRes.loading || shopsRes.loading) return <Spinner />
+  if (usersRes.loading) return <Spinner />
   if (usersRes.error) return <ErrorState message={usersRes.error} onRetry={usersRes.refetch} />
 
   const closeAndRefresh = () => {
@@ -636,12 +503,80 @@ export default function SubAdminManagementPage() {
             Sub-admin management
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Manage employee access, assign marketplace shops (eBay, TikTok Shop, Temu), and set granular subsection permissions.
+            Manage employee access across your marketplace shops (eBay, TikTok Shop, Temu) in one unified dashboard.
           </p>
         </div>
         <Link to="/sub-admins/new" className="self-start sm:self-auto">
-          <Button className="shadow-sm">Create sub-admin</Button>
+          <Button className="shadow-sm">+ Create Sub-Admin</Button>
         </Link>
+      </div>
+
+      {/* Shop Metric Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setShopFilter('all')}
+          className={`cursor-pointer rounded-xl border p-4 transition-all ${
+            shopFilter === 'all'
+              ? 'border-indigo-500 bg-indigo-50/60 shadow-xs dark:bg-indigo-950/30'
+              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
+          }`}
+        >
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">All Sub-Admins</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{counts.total}</p>
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setShopFilter('ebay')}
+          className={`cursor-pointer rounded-xl border p-4 transition-all ${
+            shopFilter === 'ebay'
+              ? 'border-blue-500 bg-blue-50/60 shadow-xs dark:bg-blue-950/30'
+              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
+          }`}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-blue-500" />
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">eBay Admins</p>
+          </div>
+          <p className="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">{counts.ebay}</p>
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setShopFilter('tiktok_shop')}
+          className={`cursor-pointer rounded-xl border p-4 transition-all ${
+            shopFilter === 'tiktok_shop'
+              ? 'border-rose-500 bg-rose-50/60 shadow-xs dark:bg-rose-950/30'
+              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
+          }`}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-rose-500" />
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">TikTok Shop</p>
+          </div>
+          <p className="mt-1 text-2xl font-bold text-rose-600 dark:text-rose-400">{counts.tiktok}</p>
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setShopFilter('temu')}
+          className={`cursor-pointer rounded-xl border p-4 transition-all ${
+            shopFilter === 'temu'
+              ? 'border-amber-500 bg-amber-50/60 shadow-xs dark:bg-amber-950/30'
+              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
+          }`}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Temu Shop</p>
+          </div>
+          <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{counts.temu}</p>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -656,26 +591,74 @@ export default function SubAdminManagementPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Shop Segmentation Tabs */}
+            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50/80 p-0.5 text-xs dark:border-slate-800 dark:bg-slate-900">
+              <button
+                type="button"
+                onClick={() => setShopFilter('all')}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  shopFilter === 'all'
+                    ? 'bg-white text-gray-900 shadow-xs dark:bg-slate-800 dark:text-white'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                All Shops ({counts.total})
+              </button>
+              <button
+                type="button"
+                onClick={() => setShopFilter('ebay')}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  shopFilter === 'ebay'
+                    ? 'bg-white text-blue-700 shadow-xs dark:bg-slate-800 dark:text-blue-400'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                eBay ({counts.ebay})
+              </button>
+              <button
+                type="button"
+                onClick={() => setShopFilter('tiktok_shop')}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  shopFilter === 'tiktok_shop'
+                    ? 'bg-white text-rose-700 shadow-xs dark:bg-slate-800 dark:text-rose-400'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                TikTok ({counts.tiktok})
+              </button>
+              <button
+                type="button"
+                onClick={() => setShopFilter('temu')}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  shopFilter === 'temu'
+                    ? 'bg-white text-amber-700 shadow-xs dark:bg-slate-800 dark:text-amber-400'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                Temu ({counts.temu})
+              </button>
+            </div>
+
             {/* Status tabs */}
             <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50/80 p-0.5 text-xs dark:border-slate-800 dark:bg-slate-900">
               <button
                 type="button"
                 onClick={() => setStatusFilter('all')}
-                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                className={`rounded-md px-2 py-1 font-medium transition-colors ${
                   statusFilter === 'all'
                     ? 'bg-white text-gray-900 shadow-xs dark:bg-slate-800 dark:text-white'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
-                All ({counts.total})
+                All Status
               </button>
               <button
                 type="button"
                 onClick={() => setStatusFilter('active')}
-                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                className={`rounded-md px-2 py-1 font-medium transition-colors ${
                   statusFilter === 'active'
                     ? 'bg-white text-emerald-700 shadow-xs dark:bg-slate-800 dark:text-emerald-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
                 Active ({counts.active})
@@ -683,48 +666,41 @@ export default function SubAdminManagementPage() {
               <button
                 type="button"
                 onClick={() => setStatusFilter('disabled')}
-                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                className={`rounded-md px-2 py-1 font-medium transition-colors ${
                   statusFilter === 'disabled'
                     ? 'bg-white text-rose-700 shadow-xs dark:bg-slate-800 dark:text-rose-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
                 Suspended ({counts.suspended})
               </button>
             </div>
-
-            {/* Marketplace filter select */}
-            <select
-              value={marketFilter}
-              onChange={(e) => setMarketFilter(e.target.value)}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-gray-300"
-            >
-              <option value="all">All Marketplaces</option>
-              <option value="ebay">eBay Only</option>
-              <option value="tiktok_shop">TikTok Shop Only</option>
-              <option value="temu">Temu Shop Only</option>
-            </select>
           </div>
         </div>
       </Card>
 
-      {/* Main List */}
+      {/* Main Sub-Admins Grid */}
       {filteredUsers.length === 0 ? (
         <EmptyState
           message={
             users.length === 0
-              ? 'No sub-admin accounts created yet.'
-              : 'No sub-admins match your search or filter criteria.'
+              ? 'No sub-admin accounts created yet. Click "+ Create Sub-Admin" to get started.'
+              : 'No sub-admins match your current shop or status filter.'
           }
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {filteredUsers.map((user) => {
-            const assignedShops = (user.marketplaces || [])
-              .map((marketplace) => shopSectionFromMarketplace(marketplace))
-              .filter(Boolean)
+            const userMarket = user.marketplace || user.marketplaces?.[0] || 'ebay'
+            const theme = SHOP_THEMES[userMarket] || SHOP_THEMES.ebay
             const isActive = (user.status || 'active') === 'active'
             const isToggling = togglingId === user._id
+
+            // Native subsections defined for this user's shop
+            const subsMeta = MARKETPLACE_SUBSECTIONS[userMarket] || []
+            const activeSubs = user.allowedSections?.length
+              ? subsMeta.filter((s) => user.allowedSections.includes(s.id))
+              : subsMeta.filter((s) => user.mainRoutes?.includes(s.route))
 
             return (
               <Card key={user._id} className="relative flex flex-col justify-between transition-all hover:shadow-md">
@@ -744,10 +720,13 @@ export default function SubAdminManagementPage() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h2 className="truncate font-semibold text-gray-900 dark:text-gray-100">
                             {user.name}
                           </h2>
+                          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${theme.badge}`}>
+                            {theme.shortLabel}
+                          </span>
                           <span
                             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                               isActive
@@ -767,7 +746,7 @@ export default function SubAdminManagementPage() {
 
                     <div className="flex items-center gap-1.5">
                       <Link to={`/sub-admins/${user._id}/edit`}>
-                        <Button variant="secondary" size="sm" title="Edit account & password">
+                        <Button variant="secondary" size="sm" title="Edit account details">
                           Edit
                         </Button>
                       </Link>
@@ -775,59 +754,31 @@ export default function SubAdminManagementPage() {
                         variant="secondary"
                         size="sm"
                         onClick={() => setEditingAccessUser(user)}
-                        title="Quickly edit permissions"
+                        title="Configure subsections"
                       >
                         Permissions
                       </Button>
                     </div>
                   </div>
 
-                  {/* Badges section */}
-                  <div className="mt-4 space-y-3.5 text-xs">
-                    {/* Assigned Shops */}
-                    <div>
-                      <p className="mb-1.5 font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
-                        Assigned Marketplace Shops
+                  {/* Subsections & Access summary */}
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
+                        {theme.shortLabel} Subsections ({activeSubs.length})
                       </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {assignedShops.length ? (
-                          assignedShops.map((shop) => {
-                            const isConn = shops.some((s) => s.marketplace === shop.marketplace && s.status === 'connected')
-                            return (
-                              <AccessPill key={shop.id} variant={isConn ? 'emerald' : 'indigo'}>
-                                <span className={`h-1.5 w-1.5 rounded-full ${isConn ? 'bg-emerald-500' : 'bg-indigo-400'}`} />
-                                {shop.label}
-                              </AccessPill>
-                            )
-                          })
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500 italic">None assigned</span>
-                        )}
-                      </div>
                     </div>
 
-                    {/* Authorized Subsections & Sections */}
-                    <div>
-                      <p className="mb-1.5 font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
-                        Authorized Subsections ({user.allowedSections?.length || user.mainRoutes?.length || 0})
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {user.allowedSections?.length ? (
-                          user.allowedSections.map((secId) => (
-                            <AccessPill key={secId} variant="indigo">
-                              {SUBSECTION_LABELS[secId] || ROUTE_LABELS[secId] || secId}
-                            </AccessPill>
-                          ))
-                        ) : user.mainRoutes?.length ? (
-                          user.mainRoutes.map((route) => (
-                            <AccessPill key={route} variant="indigo">
-                              {ROUTE_LABELS[route] || route}
-                            </AccessPill>
-                          ))
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500 italic">None assigned</span>
-                        )}
-                      </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {activeSubs.length > 0 ? (
+                        activeSubs.map((sub) => (
+                          <AccessPill key={sub.id} variant={userMarket === 'ebay' ? 'blue' : userMarket === 'tiktok_shop' ? 'rose' : 'amber'}>
+                            {sub.label}
+                          </AccessPill>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 italic">No subsections assigned</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -866,7 +817,6 @@ export default function SubAdminManagementPage() {
       {editingAccessUser && (
         <EditAccessModal
           user={editingAccessUser}
-          shops={shops}
           token={token}
           onClose={() => setEditingAccessUser(null)}
           onSaved={closeAndRefresh}
