@@ -181,11 +181,15 @@ router.patch('/:id/returns/:index', async (req, res) => {
 })
 
 // POST /api/orders/:id/cancel — cancel order on connected marketplace and mark locally cancelled
-router.post('/:id/cancel', requireRole('super_admin'), async (req, res) => {
+router.post('/:id/cancel', async (req, res) => {
   try {
     const { reason = 'OUT_OF_STOCK', comment = '' } = req.body
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ error: 'Order not found' })
+
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(order.shopId))) {
+      return res.status(403).json({ error: 'You do not have permission to manage orders for this shop' })
+    }
 
     if (['shipped', 'delivered'].includes(order.status)) {
       return res.status(400).json({ error: 'Cannot cancel an order that has already shipped or delivered' })
@@ -208,11 +212,15 @@ router.post('/:id/cancel', requireRole('super_admin'), async (req, res) => {
 })
 
 // POST /api/orders/:id/refund — process full or partial refund on marketplace
-router.post('/:id/refund', requireRole('super_admin'), async (req, res) => {
+router.post('/:id/refund', async (req, res) => {
   try {
     const { reason, comment, amount } = req.body
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ error: 'Order not found' })
+
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(order.shopId))) {
+      return res.status(403).json({ error: 'You do not have permission to manage orders for this shop' })
+    }
 
     const refundAmount = amount ? Number(amount) : order.totals?.total || 0
 

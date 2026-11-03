@@ -235,7 +235,6 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
           {
             key: 'actions', label: '',
             render: (r) => {
-              if (!isAdmin) return null
               const listed = ['live', 'out_of_stock', 'pending'].includes(r.shopListing?.status)
               const shopActions = listingActionsFor(profile, r.shopListing)
               const canDelete = !marketplace || !listed || r.shopListing?.status === 'ended' || r.shopListing?.status === 'error'

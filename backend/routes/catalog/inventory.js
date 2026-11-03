@@ -78,7 +78,7 @@ router.get('/logs', async (req, res) => {
 })
 
 // POST /api/inventory/adjust — { productId, variantSku?, change, reason, shopId? }
-router.post('/adjust', requireRole('super_admin'), async (req, res) => {
+router.post('/adjust', async (req, res) => {
   try {
     const { productId, variantSku, change, reason, shopId } = req.body
     if (!productId || !Number.isInteger(change) || !reason) {
@@ -145,7 +145,7 @@ router.post('/adjust', requireRole('super_admin'), async (req, res) => {
 })
 
 // POST /api/inventory/sync — push all live product inventory levels to connected marketplace listings
-router.post('/sync', requireRole('super_admin'), async (req, res) => {
+router.post('/sync', async (req, res) => {
   try {
     const listingFilter = { status: { $in: ['live', 'out_of_stock'] } }
     const marketplace = canonicalMarketplace(req.body?.marketplace)

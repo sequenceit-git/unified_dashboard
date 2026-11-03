@@ -11,7 +11,13 @@ export default function ShopSectionGate({ sectionId, children }) {
   if (!shopSection || !profile) return children
   const section = profile.sections.find((item) => item.id === sectionId)
   if (!section) return <EmptyState message={`${profile.label} doesn't have this section.`} />
-  if (!isAdmin && Array.isArray(user?.allowedSections) && user.allowedSections.length > 0 && !user.allowedSections.includes(sectionId)) {
+  if (
+    !isAdmin &&
+    Array.isArray(user?.allowedSections) &&
+    user.allowedSections.length > 0 &&
+    !user.allowedSections.includes(sectionId) &&
+    !user.allowedSections.includes(`${shopSection?.marketplace}:${sectionId}`)
+  ) {
     return <EmptyState message={`You do not have permission to access ${section.label}.`} />
   }
   if (section.available === false) {

@@ -64,7 +64,7 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
           { key: 'lowStockThreshold', label: 'Threshold' },
           {
             key: 'adjust', label: '',
-            render: (r) => isAdmin && (
+            render: (r) => (
               <span onClick={(e) => e.stopPropagation()}>
                 <RowMenu items={[{ label: 'Adjust stock', onClick: () => onAdjust(r) }]} />
               </span>

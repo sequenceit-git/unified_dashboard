@@ -64,13 +64,17 @@ export default function SubAdminFormPage() {
   const existing = editing ? usersRes.data?.find((user) => user._id === id) : null
   const connectedShops = Array.isArray(shopsRes.data) ? shopsRes.data : []
 
-  const [marketplace, setMarketplace] = useState('ebay')
+  const [activeShop, setActiveShop] = useState('ebay')
+  const [sectionsByShop, setSectionsByShop] = useState({
+    ebay: (MARKETPLACE_SUBSECTIONS.ebay || []).map((s) => s.id),
+    tiktok_shop: [],
+    temu: [],
+  })
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [status, setStatus] = useState('active')
   const [mainRoutes, setMainRoutes] = useState([])
-  const [allowedSections, setAllowedSections] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -89,9 +93,10 @@ export default function SubAdminFormPage() {
     }
   }
 
-  // Selected shop config & native subsections
-  const selectedShop = SHOPS.find((s) => s.marketplace === marketplace) || SHOPS[0]
-  const nativeSubsections = MARKETPLACE_SUBSECTIONS[marketplace] || []
+  // Selected shop config & native subsections for the currently active tab
+  const selectedShop = SHOPS.find((s) => s.marketplace === activeShop) || SHOPS[0]
+  const nativeSubsections = MARKETPLACE_SUBSECTIONS[activeShop] || []
+  const currentShopSections = sectionsByShop[activeShop] || []
 
   // Initialize or reset form when existing data loads
   useEffect(() => {
@@ -101,33 +106,47 @@ export default function SubAdminFormPage() {
       setPassword('')
       setStatus(existing.status || 'active')
 
-      const userMarket = existing.marketplace || existing.marketplaces?.[0] || 'ebay'
-      setMarketplace(userMarket)
+      const existingMarkets = Array.isArray(existing.marketplaces) && existing.marketplaces.length > 0
+        ? existing.marketplaces
+        : [existing.marketplace || 'ebay']
+      setActiveShop(existingMarkets[0] || 'ebay')
 
       const userMainRoutes = Array.isArray(existing.mainRoutes) ? existing.mainRoutes : []
       setMainRoutes(userMainRoutes)
 
-      if (Array.isArray(existing.allowedSections) && existing.allowedSections.length > 0) {
-        setAllowedSections(existing.allowedSections)
-      } else {
-        // Pre-populate native subsections derived from userMainRoutes
-        const subs = MARKETPLACE_SUBSECTIONS[userMarket] || []
-        const initial = subs.filter((s) => userMainRoutes.includes(s.route)).map((s) => s.id)
-        setAllowedSections(initial.length > 0 ? initial : subs.map((s) => s.id))
+      const rawAllowed = Array.isArray(existing.allowedSections) ? existing.allowedSections : []
+      const byShop = { ebay: [], tiktok_shop: [], temu: [] }
+
+      for (const market of ['ebay', 'tiktok_shop', 'temu']) {
+        const native = MARKETPLACE_SUBSECTIONS[market] || []
+        const nativeIds = native.map((s) => s.id)
+        const matched = nativeIds.filter((subId) =>
+          rawAllowed.includes(`${market}:${subId}`) ||
+          (existingMarkets.includes(market) && rawAllowed.includes(subId))
+        )
+
+        if (matched.length > 0) {
+          byShop[market] = matched
+        } else if (existingMarkets.includes(market)) {
+          // If no specific subsection restrictions saved, default to all native
+          byShop[market] = nativeIds
+        }
       }
+      setSectionsByShop(byShop)
     } else {
-      // Default: new sub-admin has all native subsections of the active shop pre-selected
-      const subs = MARKETPLACE_SUBSECTIONS['ebay'] || []
-      setAllowedSections(subs.map((s) => s.id))
+      // Default: new sub-admin starts with all eBay sections enabled
+      setSectionsByShop({
+        ebay: (MARKETPLACE_SUBSECTIONS.ebay || []).map((s) => s.id),
+        tiktok_shop: [],
+        temu: [],
+      })
+      setActiveShop('ebay')
     }
   }, [existing])
 
-  // Handle switching target shop
+  // Switching shop tab keeps previous shop sections intact
   const handleSelectShop = (marketId) => {
-    setMarketplace(marketId)
-    // Pre-select all native subsections of the new shop for convenience
-    const subs = MARKETPLACE_SUBSECTIONS[marketId] || []
-    setAllowedSections(subs.map((s) => s.id))
+    setActiveShop(marketId)
   }
 
   const togglePlatformRoute = (key) => {
@@ -135,27 +154,45 @@ export default function SubAdminFormPage() {
   }
 
   const toggleSection = (sectionId) => {
-    setAllowedSections((prev) =>
-      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
-    )
+    setSectionsByShop((prev) => {
+      const current = prev[activeShop] || []
+      const next = current.includes(sectionId)
+        ? current.filter((id) => id !== sectionId)
+        : [...current, sectionId]
+      return { ...prev, [activeShop]: next }
+    })
   }
 
   const selectAllShopSections = () => {
-    setAllowedSections(nativeSubsections.map((s) => s.id))
+    const subs = MARKETPLACE_SUBSECTIONS[activeShop] || []
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: subs.map((s) => s.id),
+    }))
   }
 
   const clearShopSections = () => {
-    setAllowedSections([])
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: [],
+    }))
   }
 
   const selectAllPermissions = () => {
     setMainRoutes(PLATFORM_ROUTES.map(([k]) => k))
-    setAllowedSections(nativeSubsections.map((s) => s.id))
+    const subs = MARKETPLACE_SUBSECTIONS[activeShop] || []
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: subs.map((s) => s.id),
+    }))
   }
 
   const clearAllPermissions = () => {
     setMainRoutes([])
-    setAllowedSections([])
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: [],
+    }))
   }
 
   const save = async (event) => {
@@ -172,17 +209,35 @@ export default function SubAdminFormPage() {
       return setError('Password is required for new sub-admins.')
     }
 
-    // Derive mainRoutes: platform routes + parent routes of all selected subsections
+    // Find active shops that have sections selected
+    const activeMarkets = Object.keys(sectionsByShop).filter(
+      (m) => (sectionsByShop[m] || []).length > 0
+    )
+    const finalMarkets = activeMarkets.length > 0 ? activeMarkets : [activeShop]
+
+    // Derive mainRoutes: platform routes + parent routes of all selected subsections across all active shops
     const platformSelected = mainRoutes.filter((r) => PLATFORM_ROUTES.some(([k]) => k === r))
     const shopRoutesSelected = []
-    nativeSubsections.forEach((s) => {
-      if (allowedSections.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
-        shopRoutesSelected.push(s.route)
-      }
+    const allAllowedSections = []
+
+    finalMarkets.forEach((market) => {
+      const subs = MARKETPLACE_SUBSECTIONS[market] || []
+      const selectedIds = sectionsByShop[market] || []
+      selectedIds.forEach((id) => {
+        allAllowedSections.push(id)
+        allAllowedSections.push(`${market}:${id}`)
+      })
+      subs.forEach((s) => {
+        if (selectedIds.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
+          shopRoutesSelected.push(s.route)
+        }
+      })
     })
+
+    const uniqueAllowedSections = [...new Set(allAllowedSections)]
     const computedMainRoutes = [...new Set([...platformSelected, ...shopRoutesSelected])]
 
-    if (!computedMainRoutes.length && !allowedSections.length) {
+    if (!computedMainRoutes.length && !uniqueAllowedSections.length) {
       return setError('Please select at least one authorized subsection or platform module.')
     }
 
@@ -193,10 +248,10 @@ export default function SubAdminFormPage() {
         username: trimmedUsername,
         email: trimmedUsername,
         status,
-        marketplace,
-        marketplaces: [marketplace],
+        marketplace: finalMarkets[0],
+        marketplaces: finalMarkets,
         mainRoutes: computedMainRoutes,
-        allowedSections,
+        allowedSections: uniqueAllowedSections,
       }
       if (password) body.password = password
 
@@ -251,7 +306,9 @@ export default function SubAdminFormPage() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {SHOPS.map((shop) => {
-                const isSelected = marketplace === shop.marketplace
+                const isSelected = activeShop === shop.marketplace
+                const count = (sectionsByShop[shop.marketplace] || []).length
+                const total = (MARKETPLACE_SUBSECTIONS[shop.marketplace] || []).length
                 const conn = connectedShops.find((s) => s.marketplace === shop.marketplace && s.status === 'connected')
 
                 return (
@@ -292,14 +349,21 @@ export default function SubAdminFormPage() {
                       </p>
                     </div>
 
-                    <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-slate-800">
-                      <span
-                        className={`h-2 w-2 rounded-full shrink-0 ${
-                          conn ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      />
-                      <span className="truncate">
-                        {conn ? (conn.name || 'Store Connected') : 'Not Connected'}
+                    <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-gray-100 dark:border-slate-800">
+                      <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 min-w-0">
+                        <span
+                          className={`h-2 w-2 rounded-full shrink-0 ${
+                            conn ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        />
+                        <span className="truncate">
+                          {conn ? (conn.name || 'Store Connected') : 'Not Connected'}
+                        </span>
+                      </div>
+                      <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold shrink-0 ${
+                        count > 0 ? shop.theme.badge : 'text-gray-400 bg-gray-50 dark:bg-slate-800 dark:text-gray-500'
+                      }`}>
+                        {count > 0 ? `${count}/${total} selected` : '0 selected'}
                       </span>
                     </div>
                   </div>
@@ -478,7 +542,7 @@ export default function SubAdminFormPage() {
                     {selectedShop.shopName} Subsections
                   </p>
                   <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${selectedShop.theme.badge}`}>
-                    {allowedSections.length} of {nativeSubsections.length} enabled
+                    {currentShopSections.length} of {nativeSubsections.length} enabled
                   </span>
                 </div>
 
@@ -503,7 +567,7 @@ export default function SubAdminFormPage() {
 
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {nativeSubsections.map((sub) => {
-                  const isSelected = allowedSections.includes(sub.id)
+                  const isSelected = currentShopSections.includes(sub.id)
                   return (
                     <div
                       key={sub.id}

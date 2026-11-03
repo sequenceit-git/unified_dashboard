@@ -239,7 +239,7 @@ function PromotionModal({ onClose, onSuccess, token, marketplace }) {
   )
 }
 
-function SectionTable({ table, sectionId, marketplace, onAction, isAdmin }) {
+function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }) {
   const [page, setPage] = useState(1)
   const pages = Math.max(1, Math.ceil(table.rows.length / PAGE_SIZE))
   const rows = table.rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((row, index) => ({ ...row, _key: `${page}-${index}` }))
@@ -249,7 +249,7 @@ function SectionTable({ table, sectionId, marketplace, onAction, isAdmin }) {
     render: (row) => formatCell(column.type, row[column.key]),
   }))
 
-  if (isAdmin) {
+  if (canAct) {
     if (sectionId === 'offers' && table.id === 'eligible' && marketplace === 'ebay') {
       columns = [
         ...columns,
@@ -385,7 +385,12 @@ export default function ShopSectionPage() {
   const [activeOfferItem, setActiveOfferItem] = useState(null)
   const [showCreatePromo, setShowCreatePromo] = useState(false)
 
-  const isAllowed = isAdmin || !Array.isArray(user?.allowedSections) || user.allowedSections.length === 0 || user.allowedSections.includes(sectionId)
+  const isAllowed =
+    isAdmin ||
+    !Array.isArray(user?.allowedSections) ||
+    user.allowedSections.length === 0 ||
+    user.allowedSections.includes(sectionId) ||
+    user.allowedSections.includes(`${shopSection?.marketplace}:${sectionId}`)
   const canOpen = section && hasRoute(section.route) && section.available !== false && isAllowed
   const load = async ({ refresh = false } = {}) => {
     setLoading(true)
@@ -525,7 +530,7 @@ export default function ShopSectionPage() {
         <h1 className="text-xl sm:text-2xl font-bold">{profile.label} {section.label.toLowerCase()}</h1>
         <div className="flex items-center gap-3">
           {data?.loadedAt && <span className="text-xs text-gray-500">Updated {new Date(data.loadedAt).toLocaleTimeString()}</span>}
-          {isAdmin && (shopSection.marketplace === 'ebay' || shopSection.marketplace === 'tiktok_shop') && sectionId === 'promotions' && (
+          {(isAdmin || isAllowed) && (shopSection.marketplace === 'ebay' || shopSection.marketplace === 'tiktok_shop') && sectionId === 'promotions' && (
             <Button size="sm" onClick={() => setShowCreatePromo(true)}>+ Create promotion</Button>
           )}
           <Button variant="secondary" size="sm" onClick={() => load({ refresh: true })} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
@@ -553,7 +558,7 @@ export default function ShopSectionPage() {
               sectionId={sectionId}
               marketplace={shopSection.marketplace}
               onAction={handleAction}
-              isAdmin={isAdmin}
+              canAct={isAdmin || isAllowed}
             />
           ))}
         </>

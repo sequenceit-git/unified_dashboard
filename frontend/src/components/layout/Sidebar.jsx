@@ -230,7 +230,10 @@ export default function Sidebar({ open, onClose }) {
         .filter((link) => {
           if (!hasRoute(link.route)) return false
           if (!isAdmin && Array.isArray(user?.allowedSections) && user.allowedSections.length > 0) {
-            return user.allowedSections.includes(link.id)
+            return (
+              user.allowedSections.includes(link.id) ||
+              user.allowedSections.includes(`${marketplace}:${link.id}`)
+            )
           }
           return true
         })

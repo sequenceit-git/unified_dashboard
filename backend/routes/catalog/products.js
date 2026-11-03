@@ -113,7 +113,7 @@ router.get('/', async (req, res) => {
 })
 
 // POST /api/products/import-url — { url } → editable draft read from a product page
-router.post('/import-url', requireRole('super_admin'), async (req, res) => {
+router.post('/import-url', async (req, res) => {
   try {
     res.json(await importProductFromUrl(req.body.url, {
       useAi: req.body.useAi !== false,
@@ -125,7 +125,7 @@ router.post('/import-url', requireRole('super_admin'), async (req, res) => {
 })
 
 // POST /api/products/fill-attributes — map known facts onto a shop category schema
-router.post('/fill-attributes', requireRole('super_admin'), async (req, res) => {
+router.post('/fill-attributes', async (req, res) => {
   try {
     res.json(await fillShopAttributes({
       title: req.body.title,
@@ -165,7 +165,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // POST /api/products
-router.post('/', requireRole('super_admin'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     res.status(201).json(await Product.create(req.body))
   } catch (err) {
@@ -174,7 +174,7 @@ router.post('/', requireRole('super_admin'), async (req, res) => {
 })
 
 // PATCH /api/products/:id
-router.patch('/:id', requireRole('super_admin'), async (req, res) => {
+router.patch('/:id', async (req, res) => {
   try {
     const before = await Product.findById(req.params.id).lean()
     if (!before) return res.status(404).json({ error: 'Not found' })
@@ -194,7 +194,7 @@ router.patch('/:id', requireRole('super_admin'), async (req, res) => {
 
 // DELETE /api/products/:id — remove the product and its shop listings.
 // TikTok Delete leaves the product in search as DELETED, so the id is remembered and is not imported again.
-router.delete('/:id', requireRole('super_admin'), async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const doc = await Product.findById(req.params.id)
     if (!doc) return res.status(404).json({ error: 'Not found' })
@@ -217,7 +217,7 @@ router.delete('/:id', requireRole('super_admin'), async (req, res) => {
 })
 
 // POST /api/products/:id/list — list a product on a shop { shopId, price?, title?, categoryId?, condition?, weight?, dimensions?, images?, aspects? }
-router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
+router.post('/:id/list', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ error: 'Product not found' })
@@ -307,7 +307,7 @@ router.post('/:id/list', requireRole('super_admin'), async (req, res) => {
 })
 
 // POST /api/products/:id/listing-action — { action: end|relist|unpublish|publish|delete }
-router.post('/:id/listing-action', requireRole('super_admin'), async (req, res) => {
+router.post('/:id/listing-action', async (req, res) => {
   try {
     const action = String(req.body.action || '')
     const listing = await Listing.findOne({ productId: req.params.id, ...(req.body.marketplace ? { marketplace: req.body.marketplace } : {}) })
@@ -341,7 +341,7 @@ router.post('/:id/listing-action', requireRole('super_admin'), async (req, res) 
 })
 
 // PATCH /api/products/:id/sync — push local price/stock to its listings
-router.patch('/:id/sync', requireRole('super_admin'), async (req, res) => {
+router.patch('/:id/sync', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ error: 'Product not found' })
@@ -358,7 +358,7 @@ router.patch('/:id/sync', requireRole('super_admin'), async (req, res) => {
 })
 
 // PATCH /api/products/:id/price — update price and push to connected shops
-router.patch('/:id/price', requireRole('super_admin'), async (req, res) => {
+router.patch('/:id/price', async (req, res) => {
   try {
     const { price } = req.body
     if (price === undefined || price === null || isNaN(Number(price))) {

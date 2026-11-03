@@ -51,16 +51,14 @@ export default function ProductsPage() {
     <div className="flex flex-col">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <h1 className="text-xl sm:text-2xl font-bold">{section.label} {pageLabel.toLowerCase()}</h1>
-        {isAdmin && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setShowDirect(true)}>
-              {directSession.fetching ? 'Direct listing…' : directWork ? 'Continue listing' : 'Direct listing'}
-            </Button>
-            <Button onClick={() => setShowNew(true)}>New product</Button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setShowDirect(true)}>
+            {directSession.fetching ? 'Direct listing…' : directWork ? 'Continue listing' : 'Direct listing'}
+          </Button>
+          <Button onClick={() => setShowNew(true)}>New product</Button>
+        </div>
       </div>
-      {isAdmin && directWork && !showDirect && (
+      {directWork && !showDirect && (
         <button
           type="button"
           onClick={() => setShowDirect(true)}

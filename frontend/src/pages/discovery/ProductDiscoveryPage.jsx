@@ -303,12 +303,10 @@ export default function ProductDiscoveryPage() {
           </p>
         </div>
 
-        {isAdmin && (
-          <Button onClick={openLaunch} size="md" className="flex items-center gap-2 self-start sm:self-auto">
-            <TbBrandOpenai size={17} />
-            <span>Launch AI Research</span>
-          </Button>
-        )}
+        <Button onClick={openLaunch} size="md" className="flex items-center gap-2 self-start sm:self-auto">
+          <TbBrandOpenai size={17} />
+          <span>Launch AI Research</span>
+        </Button>
       </div>
 
       {/* ── Active Agent Workflow Loading Bar ────────────────────────────── */}

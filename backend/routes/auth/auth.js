@@ -186,12 +186,15 @@ router.post('/users', requireRole('super_admin'), async (req, res) => {
 
     let markets = []
     if (role === 'sub_admin') {
-      const selected = marketplace || (Array.isArray(marketplaces) && marketplaces[0]) || 'ebay'
-      const canonical = canonicalMarketplace(selected)
-      if (!canonical || !SHOP_MARKETS.includes(canonical)) {
-        return res.status(400).json({ error: 'Please select a valid marketplace shop (eBay, TikTok Shop, or Temu)' })
+      const requested = Array.isArray(marketplaces) && marketplaces.length > 0
+        ? marketplaces
+        : (marketplace ? [marketplace] : ['ebay'])
+      markets = requested
+        .map(canonicalMarketplace)
+        .filter((m) => m && SHOP_MARKETS.includes(m))
+      if (!markets.length) {
+        return res.status(400).json({ error: 'Please select at least one valid marketplace shop (eBay, TikTok Shop, or Temu)' })
       }
-      markets = [canonical]
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
@@ -294,16 +297,18 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
     }
 
     if (marketplace !== undefined || marketplaces !== undefined || shopIds) {
-      const selected = marketplace || (Array.isArray(marketplaces) && marketplaces[0])
-      if (selected) {
-        const canonical = canonicalMarketplace(selected)
-        if (!canonical || !SHOP_MARKETS.includes(canonical)) {
-          return res.status(400).json({ error: 'Please choose a valid marketplace shop' })
-        }
-        await syncShopAccess(user, [canonical], req.user.id)
+      let targetMarkets = []
+      if (Array.isArray(marketplaces) && marketplaces.length > 0) {
+        targetMarkets = marketplaces.map(canonicalMarketplace).filter((m) => m && SHOP_MARKETS.includes(m))
+      } else if (marketplace) {
+        const canonical = canonicalMarketplace(marketplace)
+        if (canonical && SHOP_MARKETS.includes(canonical)) targetMarkets = [canonical]
       } else if (shopIds) {
-        const derivedMarkets = await marketsFromShopIds(shopIds)
-        if (derivedMarkets.length) await syncShopAccess(user, [derivedMarkets[0]], req.user.id)
+        targetMarkets = await marketsFromShopIds(shopIds)
+      }
+      if (targetMarkets.length) {
+        user.marketplaces = targetMarkets
+        await syncShopAccess(user, targetMarkets, req.user.id)
       }
     }
 

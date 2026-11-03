@@ -103,7 +103,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
             <Badge color={statusColor(order.status)}>{order.status}</Badge>
             <Badge color="blue">{marketplaceLabel(order.marketplace)}</Badge>
           </div>
-          {isAdmin && canCancel && (
+          {canCancel && (
             <Button
               size="sm"
               variant="secondary"
@@ -169,7 +169,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
         <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-slate-800">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-slate-100">Returns & refunds</h3>
-            {isAdmin && canRefund && !showRefundForm && (
+            {canRefund && !showRefundForm && (
               <Button
                 size="sm"
                 variant="secondary"
@@ -230,7 +230,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
           {(order.returns || []).map((r, i) => (
             <div key={i} className="mt-1 flex items-center justify-between rounded-lg border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 p-2.5">
               <span>{r.reason} <Badge color={statusColor(r.status)}>{r.status}</Badge></span>
-              {isAdmin && r.status === 'requested' && (
+              {r.status === 'requested' && (
                 <Button size="sm" variant="secondary" disabled={busy} onClick={() => setReturnStatus(i, 'approved')}>
                   Approve return
                 </Button>

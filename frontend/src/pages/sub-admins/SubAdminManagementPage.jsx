@@ -69,72 +69,119 @@ function choiceCardClass(on) {
 }
 
 function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
-  const userMarket = user.marketplace || user.marketplaces?.[0] || 'ebay'
-  const [marketplace, setMarketplace] = useState(userMarket)
+  const existingMarkets = Array.isArray(user?.marketplaces) && user.marketplaces.length > 0
+    ? user.marketplaces
+    : [user?.marketplace || 'ebay']
+  const [activeShop, setActiveShop] = useState(existingMarkets[0] || 'ebay')
   const [mainRoutes, setMainRoutes] = useState(() => (Array.isArray(user?.mainRoutes) ? user.mainRoutes : []))
-  const [allowedSections, setAllowedSections] = useState(() => {
-    if (Array.isArray(user?.allowedSections) && user.allowedSections.length > 0) {
-      return user.allowedSections
+
+  const [sectionsByShop, setSectionsByShop] = useState(() => {
+    const rawAllowed = Array.isArray(user?.allowedSections) ? user.allowedSections : []
+    const byShop = { ebay: [], tiktok_shop: [], temu: [] }
+    for (const market of ['ebay', 'tiktok_shop', 'temu']) {
+      const native = MARKETPLACE_SUBSECTIONS[market] || []
+      const nativeIds = native.map((s) => s.id)
+      const matched = nativeIds.filter((subId) =>
+        rawAllowed.includes(`${market}:${subId}`) ||
+        (existingMarkets.includes(market) && rawAllowed.includes(subId))
+      )
+      if (matched.length > 0) {
+        byShop[market] = matched
+      } else if (existingMarkets.includes(market)) {
+        byShop[market] = nativeIds
+      }
     }
-    const subs = MARKETPLACE_SUBSECTIONS[userMarket] || []
-    const mRoutes = Array.isArray(user?.mainRoutes) ? user.mainRoutes : []
-    return subs.filter((s) => mRoutes.includes(s.route)).map((s) => s.id)
+    return byShop
   })
+
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const theme = SHOP_THEMES[marketplace] || SHOP_THEMES.ebay
-  const nativeSubsections = MARKETPLACE_SUBSECTIONS[marketplace] || []
+  const theme = SHOP_THEMES[activeShop] || SHOP_THEMES.ebay
+  const nativeSubsections = MARKETPLACE_SUBSECTIONS[activeShop] || []
+  const currentShopSections = sectionsByShop[activeShop] || []
 
   const togglePlatformRoute = (key) => {
     setMainRoutes((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
   }
 
   const toggleSection = (sectionId) => {
-    setAllowedSections((prev) =>
-      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
-    )
+    setSectionsByShop((prev) => {
+      const current = prev[activeShop] || []
+      const next = current.includes(sectionId)
+        ? current.filter((id) => id !== sectionId)
+        : [...current, sectionId]
+      return { ...prev, [activeShop]: next }
+    })
   }
 
   const selectAllShopSections = () => {
-    setAllowedSections(nativeSubsections.map((s) => s.id))
+    const subs = MARKETPLACE_SUBSECTIONS[activeShop] || []
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: subs.map((s) => s.id),
+    }))
   }
 
   const clearShopSections = () => {
-    setAllowedSections([])
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: [],
+    }))
   }
 
   const selectAllPermissions = () => {
     setMainRoutes(PLATFORM_ROUTES.map(([k]) => k))
-    setAllowedSections(nativeSubsections.map((s) => s.id))
+    const subs = MARKETPLACE_SUBSECTIONS[activeShop] || []
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: subs.map((s) => s.id),
+    }))
   }
 
   const clearAllPermissions = () => {
     setMainRoutes([])
-    setAllowedSections([])
+    setSectionsByShop((prev) => ({
+      ...prev,
+      [activeShop]: [],
+    }))
   }
 
   const handleSwitchShop = (nextMarket) => {
-    setMarketplace(nextMarket)
-    const subs = MARKETPLACE_SUBSECTIONS[nextMarket] || []
-    setAllowedSections(subs.map((s) => s.id))
+    setActiveShop(nextMarket)
   }
 
   const save = async () => {
     setError('')
 
-    // Derive parent mainRoutes from platform modules + selected subsections
+    const activeMarkets = Object.keys(sectionsByShop).filter(
+      (m) => (sectionsByShop[m] || []).length > 0
+    )
+    const finalMarkets = activeMarkets.length > 0 ? activeMarkets : [activeShop]
+
     const platformSelected = mainRoutes.filter((r) => PLATFORM_ROUTES.some(([k]) => k === r))
     const shopRoutesSelected = []
-    nativeSubsections.forEach((s) => {
-      if (allowedSections.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
-        shopRoutesSelected.push(s.route)
-      }
+    const allAllowedSections = []
+
+    finalMarkets.forEach((market) => {
+      const subs = MARKETPLACE_SUBSECTIONS[market] || []
+      const selectedIds = sectionsByShop[market] || []
+      selectedIds.forEach((id) => {
+        allAllowedSections.push(id)
+        allAllowedSections.push(`${market}:${id}`)
+      })
+      subs.forEach((s) => {
+        if (selectedIds.includes(s.id) && !shopRoutesSelected.includes(s.route)) {
+          shopRoutesSelected.push(s.route)
+        }
+      })
     })
+
+    const uniqueAllowedSections = [...new Set(allAllowedSections)]
     const computedMainRoutes = [...new Set([...platformSelected, ...shopRoutesSelected])]
 
-    if (!computedMainRoutes.length && !allowedSections.length) {
+    if (!computedMainRoutes.length && !uniqueAllowedSections.length) {
       return setError('Please select at least one authorized subsection or module.')
     }
 
@@ -143,10 +190,10 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
       await api.patch(
         `/api/auth/users/${user._id}`,
         {
-          marketplace,
-          marketplaces: [marketplace],
+          marketplace: finalMarkets[0],
+          marketplaces: finalMarkets,
           mainRoutes: computedMainRoutes,
-          allowedSections,
+          allowedSections: uniqueAllowedSections,
         },
         token,
       )
@@ -208,7 +255,9 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
                 { id: 'tiktok_shop', label: 'TikTok Shop' },
                 { id: 'temu', label: 'Temu Shop' },
               ].map((shop) => {
-                const isSelected = marketplace === shop.id
+                const isSelected = activeShop === shop.id
+                const count = (sectionsByShop[shop.id] || []).length
+                const total = (MARKETPLACE_SUBSECTIONS[shop.id] || []).length
                 return (
                   <button
                     key={shop.id}
@@ -220,12 +269,17 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
                         : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
                     }`}
                   >
-                    <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                      {shop.label}
-                    </span>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-900 dark:text-gray-100">
+                        {shop.label}
+                      </span>
+                      <span className="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        {count > 0 ? `${count}/${total} selected` : '0 selected'}
+                      </span>
+                    </div>
                     <span
                       className={`h-2 w-2 rounded-full ${
-                        isSelected ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-gray-300 dark:bg-gray-600'
+                        isSelected ? 'bg-indigo-600 dark:bg-indigo-400' : count > 0 ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     />
                   </button>
@@ -313,7 +367,7 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
                     {theme.shortLabel} Subsections
                   </p>
                   <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${theme.badge}`}>
-                    {allowedSections.length} of {nativeSubsections.length} enabled
+                    {currentShopSections.length} of {nativeSubsections.length} enabled
                   </span>
                 </div>
 
@@ -338,7 +392,7 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {nativeSubsections.map((sub) => {
-                  const isSelected = allowedSections.includes(sub.id)
+                  const isSelected = currentShopSections.includes(sub.id)
                   return (
                     <div
                       key={sub.id}
@@ -733,16 +787,26 @@ export default function SubAdminManagementPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {filteredUsers.map((user) => {
-            const userMarket = user.marketplace || user.marketplaces?.[0] || 'ebay'
-            const theme = SHOP_THEMES[userMarket] || SHOP_THEMES.ebay
+            const userMarkets = Array.isArray(user.marketplaces) && user.marketplaces.length > 0
+              ? user.marketplaces
+              : [user.marketplace || 'ebay']
+            const theme = SHOP_THEMES[userMarkets[0]] || SHOP_THEMES.ebay
             const isActive = (user.status || 'active') === 'active'
             const isToggling = togglingId === user._id
 
-            // Native subsections defined for this user's shop
-            const subsMeta = MARKETPLACE_SUBSECTIONS[userMarket] || []
-            const activeSubs = user.allowedSections?.length
-              ? subsMeta.filter((s) => user.allowedSections.includes(s.id))
-              : subsMeta.filter((s) => user.mainRoutes?.includes(s.route))
+            // Group active subsections across all assigned shops
+            const activeSubs = []
+            userMarkets.forEach((m) => {
+              const subsMeta = MARKETPLACE_SUBSECTIONS[m] || []
+              const matched = subsMeta.filter((s) =>
+                user.allowedSections?.includes(`${m}:${s.id}`) ||
+                user.allowedSections?.includes(s.id) ||
+                user.mainRoutes?.includes(s.route)
+              )
+              matched.forEach((s) => {
+                activeSubs.push({ ...s, market: m })
+              })
+            })
 
             return (
               <Card key={user._id} className="relative flex flex-col justify-between transition-all hover:shadow-md">
@@ -766,9 +830,14 @@ export default function SubAdminManagementPage() {
                           <h2 className="truncate font-semibold text-gray-900 dark:text-gray-100">
                             {user.name}
                           </h2>
-                          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${theme.badge}`}>
-                            {theme.shortLabel}
-                          </span>
+                          {userMarkets.map((m) => {
+                            const mTheme = SHOP_THEMES[m] || SHOP_THEMES.ebay
+                            return (
+                              <span key={m} className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${mTheme.badge}`}>
+                                {mTheme.shortLabel}
+                              </span>
+                            )
+                          })}
                           <span
                             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                               isActive
@@ -824,9 +893,12 @@ export default function SubAdminManagementPage() {
 
                     <div className="flex flex-wrap gap-1.5">
                       {activeSubs.length > 0 ? (
-                        activeSubs.map((sub) => (
-                          <AccessPill key={sub.id} variant={userMarket === 'ebay' ? 'blue' : userMarket === 'tiktok_shop' ? 'rose' : 'amber'}>
-                            {sub.label}
+                        activeSubs.map((sub, idx) => (
+                          <AccessPill
+                            key={`${sub.market || 'm'}-${sub.id}-${idx}`}
+                            variant={sub.market === 'ebay' ? 'blue' : sub.market === 'tiktok_shop' ? 'rose' : 'amber'}
+                          >
+                            {userMarkets.length > 1 ? `${SHOP_THEMES[sub.market]?.shortLabel || ''}: ${sub.label}` : sub.label}
                           </AccessPill>
                         ))
                       ) : (

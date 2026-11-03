@@ -49,11 +49,9 @@ export default function InventoryPage() {
           <h1 className="text-xl sm:text-2xl font-bold">{section.label} inventory</h1>
           {syncMessage && <p className="text-xs text-emerald-600 font-medium">{syncMessage}</p>}
         </div>
-        {isAdmin && (
-          <Button onClick={handleSyncStock} disabled={syncing} size="sm" className="self-start sm:self-auto">
-            {syncing ? 'Pushing...' : `Push stock to ${section.label}`}
-          </Button>
-        )}
+        <Button onClick={handleSyncStock} disabled={syncing} size="sm" className="self-start sm:self-auto">
+          {syncing ? 'Pushing...' : `Push stock to ${section.label}`}
+        </Button>
       </div>
 
       <Tabs

@@ -117,7 +117,7 @@ router.get('/sections/:sectionId', async (req, res) => {
 })
 
 // POST /api/shops/sections/offers/send — send discount offer to interested buyers on eBay
-router.post('/sections/offers/send', requireRole('super_admin'), async (req, res) => {
+router.post('/sections/offers/send', async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { listingId, discountPercentage = 10, message, allowCounterOffer = false } = req.body
@@ -125,6 +125,9 @@ router.post('/sections/offers/send', requireRole('super_admin'), async (req, res
 
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
     if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.sendBuyerOffer !== 'function') {
@@ -143,7 +146,7 @@ router.post('/sections/offers/send', requireRole('super_admin'), async (req, res
 })
 
 // POST /api/shops/sections/returns/decide — approve or decline buyer return on eBay
-router.post('/sections/returns/decide', requireRole('super_admin'), async (req, res) => {
+router.post('/sections/returns/decide', async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { returnId, decision = 'APPROVE', comments } = req.body
@@ -151,6 +154,9 @@ router.post('/sections/returns/decide', requireRole('super_admin'), async (req, 
 
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
     if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.decideReturn !== 'function') {
@@ -169,7 +175,7 @@ router.post('/sections/returns/decide', requireRole('super_admin'), async (req, 
 })
 
 // POST /api/shops/sections/cancellations/decide — approve or reject cancellation request on eBay/TikTok
-router.post('/sections/cancellations/decide', requireRole('super_admin'), async (req, res) => {
+router.post('/sections/cancellations/decide', async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { cancelId, action = 'approve', trackingNumber, shipmentDate } = req.body
@@ -177,6 +183,9 @@ router.post('/sections/cancellations/decide', requireRole('super_admin'), async 
 
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
     if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.decideCancellation !== 'function') {
@@ -195,13 +204,16 @@ router.post('/sections/cancellations/decide', requireRole('super_admin'), async 
 })
 
 // POST /api/shops/sections/promotions/create — create promotional campaign on eBay/TikTok
-router.post('/sections/promotions/create', requireRole('super_admin'), async (req, res) => {
+router.post('/sections/promotions/create', async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { name, description, percentageOff, listingIds, startDate, endDate } = req.body
 
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
     if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.createPromotion !== 'function') {
@@ -220,11 +232,14 @@ router.post('/sections/promotions/create', requireRole('super_admin'), async (re
 })
 
 // POST /api/shops/sections/promotions/:id/pause — pause active promotion
-router.post('/sections/promotions/:id/pause', requireRole('super_admin'), async (req, res) => {
+router.post('/sections/promotions/:id/pause', async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
     if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.pausePromotion !== 'function') {
@@ -243,11 +258,14 @@ router.post('/sections/promotions/:id/pause', requireRole('super_admin'), async 
 })
 
 // POST /api/shops/sections/promotions/:id/resume — resume paused promotion
-router.post('/sections/promotions/:id/resume', requireRole('super_admin'), async (req, res) => {
+router.post('/sections/promotions/:id/resume', async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
     if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.resumePromotion !== 'function') {
@@ -266,11 +284,14 @@ router.post('/sections/promotions/:id/resume', requireRole('super_admin'), async
 })
 
 // GET /api/shops/sections/fulfillment/:packageId/label — fetch package shipping document from TikTok Shop
-router.get('/sections/fulfillment/:packageId/label', requireRole('super_admin'), async (req, res) => {
+router.get('/sections/fulfillment/:packageId/label', async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.query.marketplace || 'tiktok_shop')
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
     if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
+    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.getShippingDocument !== 'function') {
@@ -432,9 +453,13 @@ router.get('/:id/finances', async (req, res) => {
 })
 
 // POST /api/shops/sync-all — Synchronizes orders, customers, and product listings from all shops
-router.post('/sync-all', requireRole('super_admin'), async (req, res) => {
+router.post('/sync-all', async (req, res) => {
   try {
-    const shops = await Shop.find({ status: 'connected' }).select('_id')
+    const filter = { status: 'connected' }
+    if (req.user.role === 'sub_admin') {
+      filter._id = { $in: req.allowedShopIds }
+    }
+    const shops = await Shop.find(filter).select('_id')
     const results = await Promise.all(shops.map((shop) => syncQueue.enqueue('full', shop._id, { wait: true })))
     res.json({ success: true, results })
   } catch (err) {

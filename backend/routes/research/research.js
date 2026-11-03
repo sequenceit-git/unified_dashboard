@@ -363,7 +363,7 @@ router.post('/generate', async (req, res) => {
 })
 
 // ─── POST /api/research/add-to-catalog — convert opportunity to catalog product
-router.post('/add-to-catalog', requireRole('super_admin'), async (req, res) => {
+router.post('/add-to-catalog', async (req, res) => {
   try {
     const { reportId, rank, title, price, stock, description, marketplace: rawMarketplace } = req.body
     const marketplace = canonicalMarketplace(rawMarketplace)

@@ -125,21 +125,19 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
               {source.label}
             </a>
           ))}
-          {isAdmin && (
-            <select
-              value=""
-              onChange={handleList}
-              disabled={adding || listedShops.length === SHOP_SECTIONS.length}
-              className="ml-auto max-w-[8.5rem] rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-800 outline-none focus:border-indigo-500"
-            >
-              <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
-              {SHOP_SECTIONS.map((section) => (
-                <option key={section.id} value={section.marketplace} disabled={listedShops.includes(section.marketplace)}>
-                  {listedShops.includes(section.marketplace) ? `${section.label} · listed` : section.label}
-                </option>
-              ))}
-            </select>
-          )}
+          <select
+            value=""
+            onChange={handleList}
+            disabled={adding || listedShops.length === SHOP_SECTIONS.length}
+            className="ml-auto max-w-[8.5rem] rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-800 outline-none focus:border-indigo-500"
+          >
+            <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
+            {SHOP_SECTIONS.map((section) => (
+              <option key={section.id} value={section.marketplace} disabled={listedShops.includes(section.marketplace)}>
+                {listedShops.includes(section.marketplace) ? `${section.label} · listed` : section.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>
