@@ -10,9 +10,15 @@ const OpenAI = require('openai')
 const ResearchReport2 = require('../../models/ResearchReport')
 const { getAiConfig } = require('../../services/aiSettings')
 const { skillManager } = require('./skills/index')
-const { computeOpportunityScore } = require('./economics')
+const { computeOpportunityScore, calculateUnitEconomics } = require('./economics')
 const { productImages } = require('./listingImage')
 const { placeOf, validatedUsListings } = require('./usListings')
+const {
+  getEvidence,
+  saveVerifiedEvidence,
+  saveNegativeEvidence,
+  isExcluded,
+} = require('./evidenceMemory')
 
 async function updateWhileRunning(reportId, update) {
   const result = await ResearchReport2.updateOne(
@@ -205,6 +211,12 @@ async function callWebSearch({ client, prompt, allowedDomains = [], maxRetries =
         tools,
         input: prompt,
       })
+
+      // Track token telemetry on client
+      if (client.usage && response.usage) {
+        client.usage.promptTokens += Number(response.usage.input_tokens || response.usage.prompt_tokens || 0)
+        client.usage.completionTokens += Number(response.usage.output_tokens || response.usage.completion_tokens || 0)
+      }
 
       return response.output_text || ''
     } catch (err) {

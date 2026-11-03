@@ -5,6 +5,7 @@ const US_PLACES = [
   { id: 'amazon', label: 'Amazon' },
   { id: 'walmart', label: 'Walmart' },
   { id: 'temu', label: 'Temu' },
+  { id: 'tiktok_shop', label: 'TikTok Shop' },
 ]
 
 function placeOf(url) {
@@ -22,6 +23,10 @@ function placeOf(url) {
   if (host === 'amazon.com' && /\/(?:dp|gp\/product)\/[A-Z0-9]{10}/i.test(parsed.pathname)) return 'amazon'
   if (host === 'walmart.com' && /\/ip\/(?:[^/]+\/)?\d{5,}/i.test(parsed.pathname)) return 'walmart'
   if (host === 'temu.com' && /(?:goods\.html|[?&]goods_id=|-g-\d+)/i.test(path)) return 'temu'
+  if (
+    (host === 'tiktok.com' || host === 'shop.tiktok.com' || host === 'm.tiktok.com') &&
+    (/(?:view\/product|shop\/product|goods)\/\d+/i.test(path) || /\/@[\w.-]+\/video\/\d+/i.test(path))
+  ) return 'tiktok_shop'
   return null
 }
 

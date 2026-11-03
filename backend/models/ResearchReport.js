@@ -61,6 +61,16 @@ const reportSchema = new mongoose.Schema(
       instructions: { type: String },
       minMargin: { type: Number, default: null },
       model: { type: String },
+      tokenUsage: {
+        promptTokens: { type: Number, default: 0 },
+        completionTokens: { type: Number, default: 0 },
+        totalTokens: { type: Number, default: 0 },
+        estimatedCostUsd: { type: Number, default: 0 },
+      },
+      memoryStats: {
+        hits: { type: Number, default: 0 },
+        misses: { type: Number, default: 0 },
+      },
     },
     status: {
       type: String,
