@@ -8,8 +8,17 @@ import Modal from '../../components/ui/Modal'
 
 export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const { token } = useAuth()
+  const ebayIdentity = (customer.identities || []).find((i) => i.marketplace === 'ebay')
+  const buyerUsername =
+    ebayIdentity?.username ||
+    customer.identities?.[0]?.username ||
+    customer.identities?.[0]?.externalBuyerId ||
+    (!customer.name?.includes(' ') ? customer.name : '')
+  const defaultEmail =
+    customer.email || (buyerUsername ? `${buyerUsername.toLowerCase()}@members.ebay.com` : '')
+
   const [name, setName] = useState(customer.name || '')
-  const [email, setEmail] = useState(customer.email || '')
+  const [email, setEmail] = useState(defaultEmail)
   const [phone, setPhone] = useState(customer.phone || '')
   const [street, setStreet] = useState(customer.address?.street || '')
   const [city, setCity] = useState(customer.address?.city || '')
@@ -18,8 +27,6 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const [country, setCountry] = useState(customer.address?.country || 'US')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-
-  const ebayIdentity = (customer.identities || []).find((i) => i.marketplace === 'ebay')
 
   const save = async (e) => {
     e.preventDefault()

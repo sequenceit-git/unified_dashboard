@@ -78,7 +78,12 @@ export default function CustomersPage() {
               key: 'email',
               label: 'Email / Contact',
               render: (r) => {
-                const email = r.email
+                const username =
+                  r.identities?.[0]?.username ||
+                  r.identities?.[0]?.externalBuyerId ||
+                  (!r.name?.includes(' ') ? r.name : '')
+                const email =
+                  r.email || (marketplace === 'ebay' && username ? `${username.toLowerCase()}@members.ebay.com` : '')
                 const phone = r.phone
                 const location = [r.address?.city, r.address?.state].filter(Boolean).join(', ')
 

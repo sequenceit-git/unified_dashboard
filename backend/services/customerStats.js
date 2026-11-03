@@ -44,7 +44,9 @@ async function withOrderStats(customers, marketplace) {
   const list = customers.map((customer) => (customer.toObject ? customer.toObject() : customer))
   if (!list.length) return list
 
-  const orders = await Order.find(orderMatch(list, marketplace)).select('customerId buyer.name buyer.email totals.total items placedAt')
+  const orders = await Order.find(orderMatch(list, marketplace)).select(
+    'customerId buyer.name buyer.username buyer.email buyer.phone shippingAddress totals.total items placedAt'
+  )
   const stats = new Map()
   for (const order of orders) {
     const customer = (order.customerId && list.find((item) => String(order.customerId) === String(item._id)))
@@ -54,18 +56,46 @@ async function withOrderStats(customers, marketplace) {
       ))
     if (!customer) continue
     const key = String(customer._id)
-    const row = stats.get(key) || { orderCount: 0, totalSpent: 0, lastOrderAt: null }
+    const row = stats.get(key) || {
+      orderCount: 0,
+      totalSpent: 0,
+      lastOrderAt: null,
+      email: null,
+      phone: null,
+      address: null,
+    }
     row.orderCount += 1
     row.totalSpent += orderAmount(order)
     const placed = order.placedAt ? new Date(order.placedAt) : null
     if (placed && (!row.lastOrderAt || placed > row.lastOrderAt)) row.lastOrderAt = placed
+    if (!row.email && order.buyer?.email) row.email = order.buyer.email
+    if (!row.phone && (order.buyer?.phone || order.shippingAddress?.phone)) {
+      row.phone = order.buyer?.phone || order.shippingAddress?.phone
+    }
+    if (!row.address && order.shippingAddress?.city) row.address = order.shippingAddress
     stats.set(key, row)
   }
 
   return list.map((customer) => {
     const row = stats.get(String(customer._id)) || { orderCount: 0, totalSpent: 0, lastOrderAt: null }
+    const buyerUsername =
+      (customer.identities || []).find((i) => i.marketplace === 'ebay')?.username ||
+      customer.identities?.[0]?.username ||
+      customer.identities?.[0]?.externalBuyerId ||
+      (!customer.name?.includes(' ') ? customer.name : '')
+
+    const isEbay = marketplace === 'ebay' || (customer.identities || []).some((i) => i.marketplace === 'ebay')
+    const fallbackEmail = isEbay && buyerUsername ? `${buyerUsername.toLowerCase()}@members.ebay.com` : null
+
+    const resolvedEmail = customer.email || row.email || fallbackEmail || ''
+    const resolvedPhone = customer.phone || row.phone || ''
+    const resolvedAddress = customer.address || row.address || null
+
     return {
       ...customer,
+      email: resolvedEmail,
+      phone: resolvedPhone,
+      address: resolvedAddress,
       orderCount: row.orderCount,
       totalSpent: Math.round(row.totalSpent * 100) / 100,
       lastOrderAt: row.lastOrderAt,
