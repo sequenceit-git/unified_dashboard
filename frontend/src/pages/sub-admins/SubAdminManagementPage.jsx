@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
@@ -6,16 +6,30 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import Modal from '../../components/ui/Modal'
+import SearchInput from '../../components/ui/SearchInput'
 import { useApi } from '../../hooks/useApi'
 import { PLATFORM_ROUTES, ROUTE_LABELS, SHOP_ROUTES } from '../../lib/access'
 import { SHOP_SECTIONS, shopSectionFromMarketplace } from '../../lib/shops'
 
-function AccessPill({ children }) {
-  return <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{children}</span>
+function AccessPill({ children, variant = 'indigo' }) {
+  const styles = {
+    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200/60 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/50',
+    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50',
+    gray: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-800 dark:text-gray-400 dark:border-slate-700',
+  }
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${styles[variant] || styles.indigo}`}>
+      {children}
+    </span>
+  )
 }
 
-function choiceClass(on) {
-  return `flex cursor-pointer items-center gap-3 rounded-xl border p-3 ${on ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'}`
+function choiceCardClass(on) {
+  return `flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+    on
+      ? 'border-indigo-500 bg-indigo-50/80 shadow-sm dark:border-indigo-500 dark:bg-indigo-950/40'
+      : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
+  }`
 }
 
 function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
@@ -25,14 +39,23 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const toggle = (list, setList, value) => setList(
-    list.includes(value) ? list.filter((item) => item !== value) : [...list, value],
-  )
+  const toggle = (list, setList, value) => {
+    setList(list.includes(value) ? list.filter((item) => item !== value) : [...list, value])
+  }
+
+  const selectAllShops = () => setMarketplaces(SHOP_SECTIONS.map((s) => s.marketplace))
+  const clearShops = () => setMarketplaces([])
+
+  const selectAllRoutes = () => setMainRoutes([
+    ...PLATFORM_ROUTES.map(([k]) => k),
+    ...SHOP_ROUTES.map(([k]) => k),
+  ])
+  const clearRoutes = () => setMainRoutes([])
 
   const save = async () => {
     setError('')
-    if (!marketplaces.length) return setError('Select at least one shop.')
-    if (!mainRoutes.length) return setError('Select at least one section.')
+    if (!marketplaces.length) return setError('Please select at least one marketplace shop.')
+    if (!mainRoutes.length) return setError('Please select at least one authorized section.')
     setBusy(true)
     try {
       await api.patch(`/api/auth/users/${user._id}`, { marketplaces, mainRoutes }, token)
@@ -59,66 +82,234 @@ function EditAccessModal({ user, shops, token, onClose, onSaved, onDeleted }) {
   }
 
   return (
-    <Modal title={`Edit access — ${user.name}`} onClose={onClose} wide>
+    <Modal title={`Permissions & Access — ${user.name}`} onClose={onClose} wide>
       {confirmDelete ? (
         <div className="space-y-4 text-sm">
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-red-700">
-            Delete <span className="font-semibold">{user.name} ({user.username || user.email})</span>? The account
-            will be deactivated immediately and will no longer be able to log in. Its record is
-            kept for audit history.
-          </p>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setConfirmDelete(false)} disabled={busy}>Back</Button>
-            <Button variant="danger" onClick={remove} disabled={busy}>{busy ? 'Deleting…' : 'Confirm delete'}</Button>
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 p-3.5 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+          >
+            <p className="font-semibold">Confirm Deactivation</p>
+            <p className="mt-1 text-xs">
+              Deactivate <span className="font-bold">{user.name} (@{user.username || user.email})</span>? The account will be immediately blocked from logging in. Historical order and audit logs are preserved.
+            </p>
+          </div>
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setConfirmDelete(false)} disabled={busy}>
+              Back
+            </Button>
+            <Button variant="danger" onClick={remove} disabled={busy}>
+              {busy ? 'Deactivating…' : 'Confirm Deactivation'}
+            </Button>
           </div>
         </div>
       ) : (
         <div className="space-y-5">
+          {/* Marketplace Stores Section */}
           <section>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Shops</p>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Assigned Marketplace Shops
+              </p>
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={selectAllShops}
+                  className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  Select all
+                </button>
+                <span className="text-gray-300 dark:text-gray-700">|</span>
+                <button
+                  type="button"
+                  onClick={clearShops}
+                  className="text-gray-500 hover:underline dark:text-gray-400"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
               {SHOP_SECTIONS.map((section) => {
-                const connected = shops.some((shop) => shop.marketplace === section.marketplace)
+                const connectedShop = shops.find((s) => s.marketplace === section.marketplace && s.status === 'connected')
                 const on = marketplaces.includes(section.marketplace)
                 return (
-                  <label key={section.id} className={choiceClass(on)}>
-                    <input type="checkbox" checked={on} onChange={() => toggle(marketplaces, setMarketplaces, section.marketplace)} />
-                    <span>
-                      <span className="block text-sm font-semibold">{section.label}</span>
-                      <span className="text-xs text-gray-500">{connected ? 'Connected' : 'Not connected yet'}</span>
-                    </span>
-                  </label>
+                  <div
+                    key={section.id}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-checked={on}
+                    onClick={() => toggle(marketplaces, setMarketplaces, section.marketplace)}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault()
+                        toggle(marketplaces, setMarketplaces, section.marketplace)
+                      }
+                    }}
+                    className={choiceCardClass(on)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => {}}
+                      tabIndex={-1}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {section.label}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <span
+                          className={`h-2 w-2 rounded-full shrink-0 ${
+                            connectedShop ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        />
+                        <span className="truncate">
+                          {connectedShop ? 'Connected' : 'Not connected'}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
                 )
               })}
             </div>
           </section>
+
+          {/* Section Permissions */}
           <section>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Platform</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {PLATFORM_ROUTES.map(([value, label]) => (
-                <label key={value} className={choiceClass(mainRoutes.includes(value))}>
-                  <input type="checkbox" checked={mainRoutes.includes(value)} onChange={() => toggle(mainRoutes, setMainRoutes, value)} />
-                  <span className="text-sm font-semibold">{label}</span>
-                </label>
-              ))}
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Authorized Sections
+              </p>
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={selectAllRoutes}
+                  className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  Select all
+                </button>
+                <span className="text-gray-300 dark:text-gray-700">|</span>
+                <button
+                  type="button"
+                  onClick={clearRoutes}
+                  className="text-gray-500 hover:underline dark:text-gray-400"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
-            <p className="mb-2 mt-4 text-xs font-bold uppercase tracking-wide text-gray-400">Inside each assigned shop</p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {SHOP_ROUTES.map(([value, label]) => (
-                <label key={value} className={choiceClass(mainRoutes.includes(value))}>
-                  <input type="checkbox" checked={mainRoutes.includes(value)} onChange={() => toggle(mainRoutes, setMainRoutes, value)} />
-                  <span className="text-sm font-semibold">{label}</span>
-                </label>
-              ))}
+
+            <p className="mb-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+              Platform Modules
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {PLATFORM_ROUTES.map(([value, label, desc]) => {
+                const on = mainRoutes.includes(value)
+                return (
+                  <div
+                    key={value}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-checked={on}
+                    onClick={() => toggle(mainRoutes, setMainRoutes, value)}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault()
+                        toggle(mainRoutes, setMainRoutes, value)
+                      }
+                    }}
+                    className={choiceCardClass(on)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => {}}
+                      tabIndex={-1}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {label}
+                      </span>
+                      {desc && (
+                        <span className="block text-xs text-gray-500 dark:text-gray-400">
+                          {desc}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <p className="mb-1.5 mt-3.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+              Shop Management Modules
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {SHOP_ROUTES.map(([value, label, desc]) => {
+                const on = mainRoutes.includes(value)
+                return (
+                  <div
+                    key={value}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-checked={on}
+                    onClick={() => toggle(mainRoutes, setMainRoutes, value)}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault()
+                        toggle(mainRoutes, setMainRoutes, value)
+                      }
+                    }}
+                    className={choiceCardClass(on)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => {}}
+                      tabIndex={-1}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-0 dark:border-slate-700 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {label}
+                      </span>
+                      {desc && (
+                        <span className="block text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                          {desc}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </section>
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-          <div className="flex items-center justify-between gap-2">
-            <Button variant="danger" onClick={() => setConfirmDelete(true)} disabled={busy}>Delete</Button>
+
+          {error && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+            >
+              {error}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 dark:border-slate-800">
+            <Button variant="danger" size="sm" onClick={() => setConfirmDelete(true)} disabled={busy}>
+              Deactivate account
+            </Button>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
-              <Button onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save access'}</Button>
+              <Button variant="secondary" size="sm" onClick={onClose} disabled={busy}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={save} disabled={busy}>
+                {busy ? 'Saving…' : 'Save permissions'}
+              </Button>
             </div>
           </div>
         </div>
@@ -133,67 +324,292 @@ export default function SubAdminManagementPage() {
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = shopsRes.data || []
   const users = usersRes.data || []
-  const [editing, setEditing] = useState(null)
+
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'active' | 'disabled'
+  const [marketFilter, setMarketFilter] = useState('all') // 'all' | 'ebay' | 'tiktok_shop' | 'temu'
+  const [editingAccessUser, setEditingAccessUser] = useState(null)
+  const [togglingId, setTogglingId] = useState(null)
+
+  // Status toggle handler
+  const handleToggleStatus = async (user) => {
+    const nextStatus = user.status === 'active' ? 'disabled' : 'active'
+    setTogglingId(user._id)
+    try {
+      await api.patch(`/api/auth/users/${user._id}`, { status: nextStatus }, token)
+      usersRes.refetch()
+    } catch (err) {
+      alert(`Could not update status: ${err.message}`)
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
+  // Filter & search computation
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      // 1. Status filter
+      if (statusFilter !== 'all' && (u.status || 'active') !== statusFilter) {
+        return false
+      }
+      // 2. Marketplace filter
+      if (marketFilter !== 'all' && !(u.marketplaces || []).includes(marketFilter)) {
+        return false
+      }
+      // 3. Search query
+      if (search.trim()) {
+        const q = search.trim().toLowerCase()
+        const nameMatch = u.name?.toLowerCase().includes(q)
+        const usernameMatch = u.username?.toLowerCase().includes(q)
+        const emailMatch = u.email?.toLowerCase().includes(q)
+        if (!nameMatch && !usernameMatch && !emailMatch) return false
+      }
+      return true
+    })
+  }, [users, search, statusFilter, marketFilter])
+
+  const counts = useMemo(() => {
+    const total = users.length
+    const active = users.filter((u) => (u.status || 'active') === 'active').length
+    const suspended = users.filter((u) => u.status === 'disabled').length
+    return { total, active, suspended }
+  }, [users])
 
   if (usersRes.loading || shopsRes.loading) return <Spinner />
   if (usersRes.error) return <ErrorState message={usersRes.error} onRetry={usersRes.refetch} />
 
   const closeAndRefresh = () => {
-    setEditing(null)
+    setEditingAccessUser(null)
     usersRes.refetch()
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+    <div className="space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-indigo-600">Administration</p>
-          <h1 className="mt-1 text-xl sm:text-2xl font-bold">Sub-admin management</h1>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500">Assign eBay, TikTok Shop, and Temu, then choose the sections each person can open.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-400">
+            Administration
+          </p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Sub-admin management
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+            Manage employee access, assign marketplace shops (eBay, TikTok Shop, Temu), and set page permissions.
+          </p>
         </div>
-        <Link to="/sub-admins/new" className="self-start sm:self-auto"><Button>Create sub-admin</Button></Link>
+        <Link to="/sub-admins/new" className="self-start sm:self-auto">
+          <Button className="shadow-sm">Create sub-admin</Button>
+        </Link>
       </div>
 
-      {users.length === 0 ? <EmptyState message="No sub-admin accounts yet." /> : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {users.map((user) => {
+      {/* Filter and Search Bar */}
+      <Card>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full sm:max-w-xs">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search sub-admins…"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status tabs */}
+            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50/80 p-0.5 text-xs dark:border-slate-800 dark:bg-slate-900">
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  statusFilter === 'all'
+                    ? 'bg-white text-gray-900 shadow-xs dark:bg-slate-800 dark:text-white'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                All ({counts.total})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('active')}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  statusFilter === 'active'
+                    ? 'bg-white text-emerald-700 shadow-xs dark:bg-slate-800 dark:text-emerald-400'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                Active ({counts.active})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('disabled')}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  statusFilter === 'disabled'
+                    ? 'bg-white text-rose-700 shadow-xs dark:bg-slate-800 dark:text-rose-400'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                Suspended ({counts.suspended})
+              </button>
+            </div>
+
+            {/* Marketplace filter select */}
+            <select
+              value={marketFilter}
+              onChange={(e) => setMarketFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-gray-300"
+            >
+              <option value="all">All Marketplaces</option>
+              <option value="ebay">eBay Only</option>
+              <option value="tiktok_shop">TikTok Shop Only</option>
+              <option value="temu">Temu Shop Only</option>
+            </select>
+          </div>
+        </div>
+      </Card>
+
+      {/* Main List */}
+      {filteredUsers.length === 0 ? (
+        <EmptyState
+          message={
+            users.length === 0
+              ? 'No sub-admin accounts created yet.'
+              : 'No sub-admins match your search or filter criteria.'
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {filteredUsers.map((user) => {
             const assignedShops = (user.marketplaces || [])
               .map((marketplace) => shopSectionFromMarketplace(marketplace))
               .filter(Boolean)
+            const isActive = (user.status || 'active') === 'active'
+            const isToggling = togglingId === user._id
+
             return (
-              <Card key={user._id} className="app-card-hover">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    {user.profileImageUrl ? (
-                      <img src={user.profileImageUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-indigo-100 text-lg font-bold text-indigo-700">
-                        {user.name?.charAt(0)?.toUpperCase() || '?'}
+              <Card key={user._id} className="relative flex flex-col justify-between transition-all hover:shadow-md">
+                <div>
+                  {/* Top user row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {user.profileImageUrl ? (
+                        <img
+                          src={user.profileImageUrl}
+                          alt=""
+                          className="h-12 w-12 rounded-full object-cover ring-2 ring-indigo-100 dark:ring-indigo-900/50"
+                        />
+                      ) : (
+                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-500 text-base font-bold text-white shadow-sm">
+                          {user.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h2 className="truncate font-semibold text-gray-900 dark:text-gray-100">
+                            {user.name}
+                          </h2>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              isActive
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            {isActive ? 'Active' : 'Suspended'}
+                          </span>
+                        </div>
+                        <p className="truncate text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+                          @{user.username || user.email}
+                        </p>
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <h2 className="truncate font-semibold text-gray-900">{user.name}</h2>
-                      <p className="truncate text-sm text-gray-500">{user.username || user.email}</p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Link to={`/sub-admins/${user._id}/edit`}>
+                        <Button variant="secondary" size="sm" title="Edit account & password">
+                          Edit
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setEditingAccessUser(user)}
+                        title="Quickly edit permissions"
+                      >
+                        Permissions
+                      </Button>
                     </div>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => setEditing(user)}>Edit</Button>
-                </div>
-                <div className="mt-5 space-y-4 text-sm">
-                  <section>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Shops</p>
-                    <div className="flex flex-wrap gap-2">
-                      {assignedShops.length ? assignedShops.map((shop) => <AccessPill key={shop.id}>{shop.label}</AccessPill>) : <span className="text-gray-400">None assigned</span>}
+
+                  {/* Badges section */}
+                  <div className="mt-4 space-y-3.5 text-xs">
+                    {/* Assigned Shops */}
+                    <div>
+                      <p className="mb-1.5 font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
+                        Assigned Marketplace Shops
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {assignedShops.length ? (
+                          assignedShops.map((shop) => {
+                            const isConn = shops.some((s) => s.marketplace === shop.marketplace && s.status === 'connected')
+                            return (
+                              <AccessPill key={shop.id} variant={isConn ? 'emerald' : 'indigo'}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${isConn ? 'bg-emerald-500' : 'bg-indigo-400'}`} />
+                                {shop.label}
+                              </AccessPill>
+                            )
+                          })
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500 italic">None assigned</span>
+                        )}
+                      </div>
                     </div>
-                  </section>
-                  <section>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Sections</p>
-                    <div className="flex flex-wrap gap-2">
-                      {user.mainRoutes?.length ? user.mainRoutes.map((route) => <AccessPill key={route}>{ROUTE_LABELS[route] || route}</AccessPill>) : <span className="text-gray-400">None assigned</span>}
+
+                    {/* Authorized Sections */}
+                    <div>
+                      <p className="mb-1.5 font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
+                        Authorized Sections ({user.mainRoutes?.length || 0})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {user.mainRoutes?.length ? (
+                          user.mainRoutes.map((route) => (
+                            <AccessPill key={route} variant="indigo">
+                              {ROUTE_LABELS[route] || route}
+                            </AccessPill>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500 italic">None assigned</span>
+                        )}
+                      </div>
                     </div>
-                  </section>
+                  </div>
                 </div>
-                <div className="mt-5 border-t border-gray-100 pt-3 text-xs text-gray-500">
-                  Status: <span className={user.status === 'active' ? 'font-semibold text-emerald-600' : 'font-semibold text-red-600'}>{user.status}</span>
+
+                {/* Audit & Quick Toggle Footer */}
+                <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-3 text-[11px] text-gray-500 dark:border-slate-800 dark:text-gray-400">
+                  <div className="space-y-0.5">
+                    <div>
+                      Created: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                    </div>
+                    {user.lastLoginAt ? (
+                      <div>Last active: {new Date(user.lastLoginAt).toLocaleString()}</div>
+                    ) : (
+                      <div>Last active: Never</div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStatus(user)}
+                    disabled={isToggling}
+                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-semibold text-xs transition-colors ${
+                      isActive
+                        ? 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40'
+                        : 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'
+                    }`}
+                  >
+                    {isToggling ? 'Updating…' : isActive ? 'Suspend Account' : 'Activate Account'}
+                  </button>
                 </div>
               </Card>
             )
@@ -201,12 +617,13 @@ export default function SubAdminManagementPage() {
         </div>
       )}
 
-      {editing && (
+      {/* Permissions Modal */}
+      {editingAccessUser && (
         <EditAccessModal
-          user={editing}
+          user={editingAccessUser}
           shops={shops}
           token={token}
-          onClose={() => setEditing(null)}
+          onClose={() => setEditingAccessUser(null)}
           onSaved={closeAndRefresh}
           onDeleted={closeAndRefresh}
         />

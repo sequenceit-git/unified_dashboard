@@ -127,18 +127,21 @@ async function userSummary(user) {
     name: user.name,
     username: user.username || user.email,
     role: user.role,
+    status: user.status || 'active',
     profileImageUrl: user.profileImageUrl || '',
     mainRoutes: user.mainRoutes,
     marketplaces: user.marketplaces?.length ? user.marketplaces : derived,
     shopId: user.shopId,
     shops,
+    createdAt: user.createdAt,
+    lastLoginAt: user.lastLoginAt,
   }
 }
 
 // POST /api/auth/users — super_admin creates sub_admins and their access
 router.post('/users', requireRole('super_admin'), async (req, res) => {
   try {
-    const { name, email, username, password, role, shopIds = [], shopId, marketplaces, mainRoutes = [], profileImageUrl = '' } = req.body
+    const { name, email, username, password, role = 'sub_admin', shopIds = [], shopId, marketplaces, mainRoutes = [], profileImageUrl = '', status = 'active' } = req.body
     const requestedShopIds = Array.isArray(shopIds) && shopIds.length
       ? shopIds
       : shopId
@@ -173,6 +176,7 @@ router.post('/users', requireRole('super_admin'), async (req, res) => {
       passwordHash,
       profileImageUrl,
       role,
+      status: ['active', 'disabled'].includes(status) ? status : 'active',
       mainRoutes: role === 'super_admin' ? MAIN_ROUTES : mainRoutes,
       marketplaces: markets,
       shopId: null,
@@ -180,7 +184,7 @@ router.post('/users', requireRole('super_admin'), async (req, res) => {
     })
     if (role === 'sub_admin' && markets.length) await syncShopAccess(user, markets, req.user.id)
     await user.save()
-    res.status(201).json({ id: user._id, username: user.username, role: user.role })
+    res.status(201).json(await userSummary(user))
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
