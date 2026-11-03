@@ -180,18 +180,18 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
             role="alert"
             className="rounded-lg border border-red-200 bg-red-50 p-3.5 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
           >
-            <p className="font-semibold">Confirm Deactivation</p>
+            <p className="font-semibold">Permanently Delete Sub-Admin</p>
             <p className="mt-1 text-xs">
-              Deactivate <span className="font-bold">{user.name} (@{user.username || user.email})</span>? The account will be immediately blocked from logging in. Historical order and audit logs are preserved.
+              Are you sure you want to permanently delete <span className="font-bold">{user.name} (@{user.username || user.email})</span>? All permissions for {theme.label} will be revoked and this account will be removed immediately.
             </p>
           </div>
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setConfirmDelete(false)} disabled={busy}>
-              Back
+              Cancel
             </Button>
             <Button variant="danger" onClick={remove} disabled={busy}>
-              {busy ? 'Deactivating…' : 'Confirm Deactivation'}
+              {busy ? 'Deleting…' : 'Confirm Delete'}
             </Button>
           </div>
         </div>
@@ -389,7 +389,7 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
 
           <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 dark:border-slate-800">
             <Button variant="danger" size="sm" onClick={() => setConfirmDelete(true)} disabled={busy}>
-              Deactivate account
+              Delete Sub-Admin
             </Button>
             <div className="flex gap-2">
               <Button variant="secondary" size="sm" onClick={onClose} disabled={busy}>
@@ -415,7 +415,29 @@ export default function SubAdminManagementPage() {
   const [shopFilter, setShopFilter] = useState('all') // 'all' | 'ebay' | 'tiktok_shop' | 'temu'
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'active' | 'disabled'
   const [editingAccessUser, setEditingAccessUser] = useState(null)
+  const [deletingUser, setDeletingUser] = useState(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const [successBanner, setSuccessBanner] = useState('')
   const [togglingId, setTogglingId] = useState(null)
+
+  const handleConfirmDelete = async () => {
+    if (!deletingUser) return
+    setDeleteBusy(true)
+    setDeleteError('')
+    try {
+      await api.del(`/api/auth/users/${deletingUser._id}`, token)
+      const name = deletingUser.name
+      setDeletingUser(null)
+      setSuccessBanner(`Sub-admin "${name}" has been permanently deleted.`)
+      setTimeout(() => setSuccessBanner(''), 5000)
+      await usersRes.refetch()
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete sub-admin')
+    } finally {
+      setDeleteBusy(false)
+    }
+  }
 
   // Status toggle handler
   const handleToggleStatus = async (user) => {
@@ -510,6 +532,26 @@ export default function SubAdminManagementPage() {
           <Button className="shadow-sm">+ Create Sub-Admin</Button>
         </Link>
       </div>
+
+      {/* Success Notification */}
+      {successBanner && (
+        <div
+          role="status"
+          className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-bold">✓</span>
+            <span>{successBanner}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccessBanner('')}
+            className="text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Shop Metric Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -744,7 +786,7 @@ export default function SubAdminManagementPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <Link to={`/sub-admins/${user._id}/edit`}>
                         <Button variant="secondary" size="sm" title="Edit account details">
                           Edit
@@ -757,6 +799,17 @@ export default function SubAdminManagementPage() {
                         title="Configure subsections"
                       >
                         Permissions
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          setDeleteError('')
+                          setDeletingUser(user)
+                        }}
+                        title="Delete sub-admin account"
+                      >
+                        Delete
                       </Button>
                     </div>
                   </div>
@@ -822,6 +875,62 @@ export default function SubAdminManagementPage() {
           onSaved={closeAndRefresh}
           onDeleted={closeAndRefresh}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingUser && (
+        <Modal
+          title="Delete Sub-Admin"
+          onClose={() => !deleteBusy && setDeletingUser(null)}
+        >
+          <div className="space-y-4 text-sm">
+            <div
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <h4 className="font-bold text-red-950 dark:text-red-100 mb-1">
+                    Permanently delete this sub-admin?
+                  </h4>
+                  <p className="text-xs text-red-800 dark:text-red-300 leading-relaxed">
+                    Are you sure you want to delete <span className="font-bold underline">{deletingUser.name}</span> (<span className="font-mono">{deletingUser.username || deletingUser.email}</span>)?
+                  </p>
+                  <p className="text-xs text-red-700 dark:text-red-400 mt-2">
+                    All shop permissions for <span className="font-semibold">{SHOP_THEMES[deletingUser.marketplace || deletingUser.marketplaces?.[0] || 'ebay']?.label || 'Marketplace'}</span> will be permanently revoked, and this account will be removed immediately.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div
+                role="alert"
+                className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+              >
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-800">
+              <Button
+                variant="secondary"
+                onClick={() => setDeletingUser(null)}
+                disabled={deleteBusy}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleConfirmDelete}
+                disabled={deleteBusy}
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete Sub-Admin'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )

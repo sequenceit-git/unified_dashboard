@@ -315,23 +315,17 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
   }
 })
 
-// DELETE /api/auth/users/:id — super_admin soft-deletes (partial delete) a sub-admin.
-// The row is kept for audit history: isDeleted=true, status=disabled,
-// shop access revoked. Deleted accounts are hidden from GET /users and
-// blocked at login + loadAccess even with a previously issued token.
+// DELETE /api/auth/users/:id — super_admin permanently deletes a sub-admin.
+// Clears cached access, removes all shop permissions, and deletes the user document.
 router.delete('/users/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin', isDeleted: { $ne: true } })
+    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin' })
     if (!user) return res.status(404).json({ error: 'Sub-admin not found' })
-    user.mainRoutes = storedRoutes(user.mainRoutes)
-    user.isDeleted = true
-    user.deletedAt = new Date()
-    user.deletedBy = req.user.id
-    user.status = 'disabled'
-    await user.save()
+
     clearUserAccessCache(String(user._id))
     await UserShopAccess.deleteMany({ userId: user._id })
-    res.json({ deleted: true, id: user._id })
+    await User.deleteOne({ _id: user._id })
+    res.json({ deleted: true, id: req.params.id })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

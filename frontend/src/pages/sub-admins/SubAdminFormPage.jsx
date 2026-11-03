@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { ErrorState, Spinner } from '../../components/ui/Feedback'
 import { Input } from '../../components/ui/Input'
+import Modal from '../../components/ui/Modal'
 import { api } from '../../lib/api'
 import { useApi } from '../../hooks/useApi'
 import { PLATFORM_ROUTES, MARKETPLACE_SUBSECTIONS } from '../../lib/access'
@@ -72,6 +73,21 @@ export default function SubAdminFormPage() {
   const [allowedSections, setAllowedSections] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+
+  const handleDelete = async () => {
+    setDeleteBusy(true)
+    setDeleteError('')
+    try {
+      await api.del(`/api/auth/users/${id}`, token)
+      navigate('/sub-admins')
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete sub-admin')
+      setDeleteBusy(false)
+    }
+  }
 
   // Selected shop config & native subsections
   const selectedShop = SHOPS.find((s) => s.marketplace === marketplace) || SHOPS[0]
@@ -543,17 +559,93 @@ export default function SubAdminFormPage() {
         )}
 
         {/* Form Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <Link to="/sub-admins">
-            <Button type="button" variant="secondary" disabled={busy}>
-              Cancel
+        <div className="flex items-center justify-between gap-3 pt-2">
+          {editing ? (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                setDeleteError('')
+                setShowDeleteModal(true)
+              }}
+              disabled={busy || deleteBusy}
+            >
+              Delete Sub-Admin
             </Button>
-          </Link>
-          <Button type="submit" disabled={busy}>
-            {busy ? 'Saving…' : editing ? 'Save Changes' : `Create ${selectedShop.label}`}
-          </Button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-3">
+            <Link to="/sub-admins">
+              <Button type="button" variant="secondary" disabled={busy || deleteBusy}>
+                Cancel
+              </Button>
+            </Link>
+            <Button type="submit" disabled={busy || deleteBusy}>
+              {busy ? 'Saving…' : editing ? 'Save Changes' : `Create ${selectedShop.label}`}
+            </Button>
+          </div>
         </div>
       </form>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <Modal
+          title="Delete Sub-Admin"
+          onClose={() => !deleteBusy && setShowDeleteModal(false)}
+        >
+          <div className="space-y-4 text-sm">
+            <div
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <h4 className="font-bold text-red-950 dark:text-red-100 mb-1">
+                    Permanently delete this sub-admin?
+                  </h4>
+                  <p className="text-xs text-red-800 dark:text-red-300 leading-relaxed">
+                    Are you sure you want to delete <span className="font-bold underline">{name}</span> (<span className="font-mono">{username}</span>)?
+                  </p>
+                  <p className="text-xs text-red-700 dark:text-red-400 mt-2">
+                    All shop permissions for <span className="font-semibold">{selectedShop.label}</span> will be permanently revoked and their account removed immediately.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div
+                role="alert"
+                className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+              >
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-800">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleteBusy}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={handleDelete}
+                disabled={deleteBusy}
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete Sub-Admin'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
