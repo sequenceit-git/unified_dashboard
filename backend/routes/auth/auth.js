@@ -288,6 +288,19 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
     if (mainRoutes) user.mainRoutes = storedRoutes(mainRoutes)
     if (allowedSections !== undefined) {
       user.allowedSections = Array.isArray(allowedSections) ? allowedSections : []
+      // Auto-include any marketplace prefix present in allowedSections (e.g. 'tiktok_shop:products' -> 'tiktok_shop')
+      const scopedFromSections = user.allowedSections
+        .filter((x) => typeof x === 'string' && x.includes(':'))
+        .map((x) => canonicalMarketplace(x.split(':')[0]))
+        .filter((m) => m && SHOP_MARKETS.includes(m))
+      if (scopedFromSections.length > 0) {
+        const currentMarkets = Array.isArray(user.marketplaces) ? user.marketplaces : []
+        const merged = [...new Set([...currentMarkets, ...scopedFromSections])]
+        if (merged.length !== currentMarkets.length) {
+          user.marketplaces = merged
+          await syncShopAccess(user, merged, req.user.id)
+        }
+      }
     }
     if (status) {
       if (!['active', 'disabled'].includes(status)) {

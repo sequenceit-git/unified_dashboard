@@ -143,7 +143,7 @@ function getQueueEvents() {
  * reused, so repeated clicks don't pile up. With `wait`, resolves with the job's result, or
  * `{ queued: true }` when it takes longer than `timeoutMs` (the job keeps running).
  */
-async function enqueue(kind, shopId, { wait = false, timeoutMs = 90000 } = {}) {
+async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000 } = {}) {
   if (!KINDS[kind]) throw new Error(`Unknown sync job ${kind}`)
   const id = String(shopId)
   if (!redis.enabled()) {
@@ -154,13 +154,25 @@ async function enqueue(kind, shopId, { wait = false, timeoutMs = 90000 } = {}) {
     }
     return promise
   }
-  const job = await getQueue().add(kind, { shopId: id }, { deduplication: { id: `${kind}-${id}` } })
-  if (!wait) return { queued: true, jobId: job.id }
+
   try {
-    return await job.waitUntilFinished(getQueueEvents(), timeoutMs)
+    const job = await getQueue().add(kind, { shopId: id }, { deduplication: { id: `${kind}-${id}` } })
+    if (!wait) return { queued: true, jobId: job.id }
+    try {
+      return await job.waitUntilFinished(getQueueEvents(), timeoutMs)
+    } catch (err) {
+      console.warn(`[syncQueue] Job ${kind}-${id} timed out or worker not running (${err.message}). Executing inline...`)
+      return await runInline(kind, id)
+    }
   } catch (err) {
-    if (/timed out/i.test(err.message)) return { queued: true, jobId: job.id }
-    return { error: err.message }
+    console.warn(`[syncQueue] Redis enqueue error (${err.message}). Falling back to inline execution...`)
+    if (typeof redis.disable === 'function') redis.disable(err.message)
+    const promise = runInline(kind, id)
+    if (!wait) {
+      promise.catch(() => {})
+      return { queued: true }
+    }
+    return promise
   }
 }
 

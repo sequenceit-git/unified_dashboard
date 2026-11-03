@@ -791,14 +791,20 @@ export default function SubAdminManagementPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {filteredUsers.map((user) => {
-            const userMarkets = Array.isArray(user.marketplaces) && user.marketplaces.length > 0
+            const explicitMarkets = Array.isArray(user.marketplaces) && user.marketplaces.length > 0
               ? user.marketplaces
               : [user.marketplace || 'ebay']
+            const rawAllowed = Array.isArray(user.allowedSections) ? user.allowedSections : []
+            const scopedMarkets = rawAllowed
+              .filter((x) => typeof x === 'string' && x.includes(':'))
+              .map((x) => x.split(':')[0])
+            const userMarkets = [...new Set([...explicitMarkets, ...scopedMarkets])].filter((m) =>
+              ['ebay', 'tiktok_shop', 'temu'].includes(m)
+            )
             const theme = SHOP_THEMES[userMarkets[0]] || SHOP_THEMES.ebay
             const isActive = (user.status || 'active') === 'active'
             const isToggling = togglingId === user._id
 
-            const rawAllowed = Array.isArray(user.allowedSections) ? user.allowedSections : []
             const hasScoped = rawAllowed.some((x) => x.includes(':'))
             const hasExplicit = rawAllowed.length > 0
 
