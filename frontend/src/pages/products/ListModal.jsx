@@ -141,7 +141,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
       const filled = Object.fromEntries(
         Object.entries(aspects).map(([key, value]) => [key, String(value).trim()]).filter(([, value]) => value),
       )
-      await api.post(
+      const res = await api.post(
         `/api/products/${product._id}/list`,
         {
           shopId,
@@ -161,7 +161,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
         },
         token,
       )
-      onSaved()
+      onSaved(res?.product || res)
     } catch (err) {
       const missing = err.data?.missingSpecifics || []
       if (missing.length) {
@@ -323,6 +323,9 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
         {caps.canList && (
           <div>
             <ImageDropzone images={images} onChange={setImages} label={`Listing Images (up to ${caps.maxImages || 12})`} maxImages={caps.maxImages || 12} />
+            {marketplace === 'ebay' && (
+              <p className="mt-1 text-xs text-indigo-600 font-medium">eBay requires pictures to be at least 500px on the longest side.</p>
+            )}
             {images.length === 0 && <p className="mt-1 text-xs text-amber-600">At least 1 image is needed to publish.</p>}
           </div>
         )}

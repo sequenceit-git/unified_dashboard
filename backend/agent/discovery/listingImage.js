@@ -1,4 +1,5 @@
 const ebay = require('../../services/marketplace/ebay')
+const { upgradeImageUrlToHighRes } = require('../../utils/imageResolution')
 
 const LISTING_HOST = /(^|\.)(ebay\.com|amazon\.com|walmart\.com|temu\.com|tiktok\.com)$/i
 const IMAGE_HOST = /(ebayimg\.com|media-amazon\.com|ssl-images-amazon\.com|images-amazon\.com|walmartimages\.com|kwcdn\.com|ibyteimg\.com|tiktokcdn\.com)/i
@@ -31,7 +32,9 @@ function imageUrlsFromHtml(html) {
     if (content) found.push(decodeHtml(content))
   }
   const cdn = String(html || '').match(/https?:\/\/[^"'\\\s>]*(?:ebayimg\.com|media-amazon\.com|walmartimages\.com|kwcdn\.com)[^"'\\\s>]*/gi) || []
-  return [...found, ...cdn].filter(isDirectImage)
+  return [...found, ...cdn]
+    .map(upgradeImageUrlToHighRes)
+    .filter(isDirectImage)
 }
 
 async function imagesFromListing(pageUrl) {
@@ -93,7 +96,7 @@ async function ebayImages({ pages = [], title = '' }) {
     const urls = [
       item?.image?.imageUrl,
       ...(item?.additionalImages || []).map((image) => image?.imageUrl),
-    ].filter(isDirectImage).map((url) => url.replace(/\/s-l\d+\./i, '/s-l960.'))
+    ].map(upgradeImageUrlToHighRes).filter(isDirectImage)
     if (urls.length) return urls.slice(0, 4)
   }
 
@@ -101,14 +104,15 @@ async function ebayImages({ pages = [], title = '' }) {
   if (!query) return []
   const matches = await ebay.getMarketData(token, query, 5)
   const hit = matches.find((item) => isDirectImage(item.image))
-  return hit ? [hit.image] : []
+  return hit ? [upgradeImageUrlToHighRes(hit.image)] : []
 }
 
 async function productImages({ hinted = [], pages = [], title = '' }) {
   const direct = []
   const seen = new Set()
   for (const value of hinted) {
-    const url = typeof value === 'string' ? value.trim() : ''
+    const rawUrl = typeof value === 'string' ? value.trim() : ''
+    const url = upgradeImageUrlToHighRes(rawUrl)
     if (!isDirectImage(url) || seen.has(url)) continue
     seen.add(url)
     direct.push(url)

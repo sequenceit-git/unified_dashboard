@@ -273,9 +273,27 @@ router.post('/:id/list', async (req, res) => {
       return res.status(422).json({ error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [] })
     }
 
-    if (stock !== product.stock || product.status === 'draft') {
-      await Product.updateOne({ _id: product._id }, { stock, status: 'active' })
+    const productUpdates = {
+      stock,
+      status: 'active',
+      ...(listingOptions.title ? { title: listingOptions.title } : {}),
+      ...(price !== undefined && price !== '' ? { basePrice: price } : {}),
+      ...(Array.isArray(listingOptions.images) && listingOptions.images.length > 0 ? { images: listingOptions.images } : {}),
+      ...(listingOptions.brand ? { brand: listingOptions.brand } : {}),
+      ...(listingOptions.description ? { description: listingOptions.description } : {}),
+      ...(listingOptions.condition ? { condition: listingOptions.condition } : {}),
+      ...(listingOptions.weight ? { weight: listingOptions.weight } : {}),
+      ...(listingOptions.dimensions ? { dimensions: listingOptions.dimensions } : {}),
+      ...(listingOptions.aspects && Object.keys(listingOptions.aspects).length > 0
+        ? { attributes: { ...product.attributes, ...listingOptions.aspects } }
+        : {}),
     }
+    const updatedProduct = await Product.findByIdAndUpdate(
+      product._id,
+      { $set: productUpdates },
+      { new: true },
+    )
+
     const listing = await Listing.findOneAndUpdate(
       { productId: product._id, shopId: shop._id },
       {
@@ -300,7 +318,9 @@ router.post('/:id/list', async (req, res) => {
     }
     await marketplaceManager.rememberListing(shop._id, [product.sku, publishRes.externalListingId])
     await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
-    res.status(201).json(listing)
+    const out = listing.toObject ? listing.toObject() : { ...listing }
+    out.product = updatedProduct || product
+    res.status(201).json(out)
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

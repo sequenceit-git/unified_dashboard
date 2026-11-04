@@ -5,6 +5,7 @@
 
 const { XMLParser } = require('fast-xml-parser')
 const config = require('../../config/marketplaces').ebay
+const { filterEbayCompliantImages } = require('../../utils/imageResolution')
 
 const LIST_TAGS = new Set(['Errors', 'PictureURL', 'NameValueList', 'Value', 'ShippingServiceOptions', 'ShipToLocations'])
 const parser = new XMLParser({
@@ -193,8 +194,11 @@ function specificsXml(aspects) {
  * Returns `{ itemId, fees }`.
  */
 async function addListing(token, product, opts) {
-  const images = (opts.images || []).filter((url) => /^https:\/\//i.test(url)).slice(0, 12)
-  if (!images.length) throw new Error('eBay needs at least one product image with a public https link.')
+  const rawImages = opts.images?.length ? opts.images : (product.images || [])
+  const images = await filterEbayCompliantImages(rawImages)
+  if (!images.length) {
+    throw new Error("eBay requires pictures to be at least 500 pixels on the longest side. None of the provided image(s) met this requirement. Please upload a higher resolution image.")
+  }
   const quantity = Math.floor(Number(opts.stock ?? product.stock ?? 0))
   if (!(quantity > 0)) throw new Error('Set stock to at least 1 before listing on eBay.')
   const price = Number(opts.price ?? product.basePrice)
@@ -240,13 +244,17 @@ async function quantitySold(token, itemId) {
 /** Revises a live listing. Only the fields given are changed. `quantity` is the stock available to buy. */
 async function reviseListing(token, itemId, { title, description, price, quantity, images } = {}) {
   const sold = quantity != null ? await quantitySold(token, itemId) : 0
+  let compliantImages = []
+  if (images && images.length) {
+    compliantImages = await filterEbayCompliantImages(images)
+  }
   const parts = [
     `<ItemID>${escapeXml(itemId)}</ItemID>`,
     title ? `<Title>${escapeXml(String(title).slice(0, 80))}</Title>` : '',
     description ? `<Description>${cdata(description)}</Description>` : '',
     price != null ? `<StartPrice currencyID="USD">${Number(price).toFixed(2)}</StartPrice>` : '',
     quantity != null ? `<Quantity>${Math.max(0, Math.floor(Number(quantity))) + sold}</Quantity>` : '',
-    images?.length ? `<PictureDetails>${images.filter((url) => /^https:\/\//i.test(url)).slice(0, 12).map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('')}</PictureDetails>` : '',
+    compliantImages.length ? `<PictureDetails>${compliantImages.map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('')}</PictureDetails>` : '',
   ]
   await call(token, 'ReviseFixedPriceItem', `<Item>${parts.join('')}</Item>`)
   return { success: true }
