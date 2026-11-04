@@ -273,9 +273,16 @@ router.post('/:id/list', async (req, res) => {
       return res.status(422).json({ error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [] })
     }
 
+    const isDraftProductSku = product.sku && (product.sku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(product.sku) || product.sku.startsWith('EP-'))
+    let finalSku = product.sku
+    if (shop.marketplace === 'ebay' && publishRes.externalListingId && isDraftProductSku) {
+      finalSku = `EBAY-${publishRes.externalListingId}`
+    }
+
     const productUpdates = {
       stock,
       status: 'active',
+      ...(finalSku !== product.sku ? { sku: finalSku } : {}),
       ...(listingOptions.title ? { title: listingOptions.title } : {}),
       ...(price !== undefined && price !== '' ? { basePrice: price } : {}),
       ...(Array.isArray(listingOptions.images) && listingOptions.images.length > 0 ? { images: listingOptions.images } : {}),
@@ -316,7 +323,7 @@ router.post('/:id/list', async (req, res) => {
         { $addToSet: { 'opportunities.$.listedShops': shop.marketplace } },
       )
     }
-    await marketplaceManager.rememberListing(shop._id, [product.sku, publishRes.externalListingId])
+    await marketplaceManager.rememberListing(shop._id, [product.sku, finalSku, publishRes.externalListingId].filter(Boolean))
     await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     const out = listing.toObject ? listing.toObject() : { ...listing }
     out.product = updatedProduct || product

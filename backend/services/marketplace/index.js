@@ -341,8 +341,15 @@ class UnifiedMarketplaceManager {
             items: (o.lineItems || []).map((li) => {
               const rawSku = li.sku && !/^none$/i.test(String(li.sku).trim()) ? String(li.sku).trim() : ''
               const extId = li.legacyItemId ? String(li.legacyItemId) : undefined
+              const isDraftSku = rawSku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(rawSku) || rawSku.startsWith('EP-')
               const cleanSku = rawSku
-                ? (/^\d+$/.test(rawSku) ? `EBAY-${rawSku}` : rawSku.startsWith('EB-') ? rawSku.replace(/^EB-/, 'EBAY-') : rawSku)
+                ? (/^\d+$/.test(rawSku)
+                    ? `EBAY-${rawSku}`
+                    : rawSku.startsWith('EB-')
+                    ? rawSku.replace(/^EB-/, 'EBAY-')
+                    : isDraftSku
+                    ? (extId ? `EBAY-${extId}` : rawSku)
+                    : rawSku)
                 : (extId ? `EBAY-${extId}` : '')
               return {
                 sku: cleanSku,
@@ -792,12 +799,13 @@ class UnifiedMarketplaceManager {
         complete: items.length < 200,
         items: items.map((item) => {
           const rawSku = item.sku && !/^none$/i.test(String(item.sku).trim()) ? String(item.sku).trim() : ''
+          const isDraftSku = rawSku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(rawSku) || rawSku.startsWith('EP-')
           const cleanSku = rawSku
             ? (/^\d+$/.test(rawSku)
                 ? `EBAY-${rawSku}`
                 : rawSku.startsWith('EB-')
                 ? rawSku.replace(/^EB-/, 'EBAY-')
-                : rawSku.startsWith('BOT-')
+                : isDraftSku
                 ? `EBAY-${item.itemId}`
                 : rawSku)
             : `EBAY-${item.itemId}`
@@ -949,7 +957,9 @@ class UnifiedMarketplaceManager {
       }
       if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
       if (item.listingStatus === 'live' && product.status === 'draft') product.status = 'active'
-      if (product.sku && product.sku.startsWith('BOT-') && item.sku && !item.sku.startsWith('BOT-')) {
+      const isDraftProductSku = product.sku && (product.sku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(product.sku) || product.sku.startsWith('EP-'))
+      const isItemSkuValid = item.sku && !item.sku.startsWith('BOT-') && !/^EBAY-\d{6}-[A-F0-9]{6}$/i.test(item.sku) && !item.sku.startsWith('EP-')
+      if (isDraftProductSku && isItemSkuValid) {
         product.sku = item.sku
       }
       await product.save()
