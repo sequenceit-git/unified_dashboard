@@ -94,7 +94,14 @@ export default function OrdersPage() {
             <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Order ID, tracking, buyer…" />
           </div>
           <div className="w-full sm:w-48">
-            <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s }))} />
+            <Select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value); setPage(1) }}
+              options={STATUSES.map((s) => ({
+                value: s,
+                label: s === 'all' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1),
+              }))}
+            />
           </div>
         </div>
         <DataTable

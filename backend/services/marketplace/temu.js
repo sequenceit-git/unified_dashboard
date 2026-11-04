@@ -11,7 +11,7 @@ const config = require('../../config/marketplaces').temu
 
 const ORDER_STATUS = {
   1: 'pending',
-  2: 'processing',
+  2: 'paid',
   3: 'cancelled',
   4: 'shipped',
   5: 'delivered',

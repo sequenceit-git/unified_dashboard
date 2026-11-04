@@ -176,9 +176,10 @@ class UnifiedMarketplaceManager {
       const service = this.getService(shop.marketplace)
       let updatedCount = 0
       if (shop.marketplace === 'ebay') {
-        const [res, rawCancellations] = await Promise.all([
+        const [res, rawCancellations, rawReturns] = await Promise.all([
           service.getOrders(token, { limit: 50 }),
           typeof service.getCancellations === 'function' ? service.getCancellations(token).catch(() => []) : [],
+          typeof service.getReturns === 'function' ? service.getReturns(token).catch(() => []) : [],
         ])
 
         const cancelledOrderIds = new Set()
@@ -190,10 +191,17 @@ class UnifiedMarketplaceManager {
           }
         }
 
+        const returnedOrderMap = new Map()
+        for (const r of rawReturns || []) {
+          if (r.orderId) returnedOrderMap.set(String(r.orderId), r)
+        }
+
+        const now = new Date()
+
         rawOrders = (res.orders || []).map((o) => {
           const reg = o.buyer?.buyerRegistrationAddress
           const tax = o.buyer?.taxAddress
-          const shipTo = o.fulfillmentStartPlans?.[0]?.shippingStep?.shipTo
+          const shipTo = o.fulfillmentStartPlans?.[0]?.shippingStep?.shipTo || o.fulfillmentStartInstructions?.[0]?.shippingStep?.shipTo
           const username = o.buyer?.username || ''
           const fullName = reg?.fullName || shipTo?.fullName || username || 'eBay Customer'
           const email = reg?.email || shipTo?.email || (username ? `${username}@members.ebay.com` : '')
@@ -217,8 +225,51 @@ class UnifiedMarketplaceManager {
           ).toUpperCase()
           const hasCancelledDate = Boolean(o.cancelStatus?.cancelledDate)
 
+          // Delivery & shipping metadata:
+          const shipPlan = o.fulfillmentStartPlans?.[0] || o.fulfillmentStartInstructions?.[0]
+          const carrier = shipPlan?.shippingStep?.shippingCarrierCode || ''
+          const maxEstimatedDeliveryStr = shipPlan?.maxEstimatedDeliveryDate || ''
+          const maxEstimatedDelivery = maxEstimatedDeliveryStr ? new Date(maxEstimatedDeliveryStr) : null
+          const isPastEstimatedDelivery = Boolean(maxEstimatedDelivery && maxEstimatedDelivery <= now)
+
+          // Tracking number from fulfillment hrefs if available:
+          let trackingNumber = undefined
+          if (Array.isArray(o.fulfillmentHrefs) && o.fulfillmentHrefs.length > 0) {
+            const rawHrefId = String(o.fulfillmentHrefs[0]).split('/').pop()
+            if (rawHrefId && /^\d+$/.test(rawHrefId)) {
+              trackingNumber = rawHrefId
+            }
+          }
+
+          // Refunds detection:
+          const refundsList = Array.isArray(o.paymentSummary?.refunds) ? o.paymentSummary.refunds : []
+          const totalRefundedFromList = refundsList.reduce((sum, r) => sum + parseFloat(r.amount?.value || 0), 0)
+          const totalRefundedFromPricing = parseFloat(o.pricingSummary?.refundedAmount?.value || 0)
+          const refundedValue = Math.max(totalRefundedFromList, totalRefundedFromPricing)
+          const totalValue = parseFloat(o.pricingSummary?.total?.value || 0)
+          const paymentStatus = String(o.orderPaymentStatus || '').toUpperCase()
+
+          const isFullyRefunded =
+            paymentStatus === 'FULLY_REFUNDED' ||
+            paymentStatus === 'REFUNDED' ||
+            (refundedValue > 0 && totalValue > 0 && refundedValue >= totalValue)
+
+          // Post-order returns check:
+          const ret = returnedOrderMap.get(extId) || (legacyId ? returnedOrderMap.get(legacyId) : null)
+          const orderReturns = []
+          if (ret) {
+            const refundAmt = Number(ret.sellerTotalRefund?.actualRefundAmount?.value ?? ret.buyerTotalRefund?.actualRefundAmount?.value ?? 0)
+            orderReturns.push({
+              reason: ret.creationInfo?.comments?.content || ret.creationInfo?.reason || 'Customer return',
+              status: ret.status === 'CLOSED' ? 'received' : 'requested',
+              refundAmount: refundAmt || undefined,
+              requestedAt: ret.creationInfo?.creationDate?.value ? new Date(ret.creationInfo.creationDate.value) : undefined,
+              refundedAt: ret.status === 'CLOSED' ? (ret.creationInfo?.creationDate?.value ? new Date(ret.creationInfo.creationDate.value) : new Date()) : undefined,
+            })
+          }
+
           let orderStatus = 'paid'
-          if (
+          const isCancelled =
             cancelledOrderIds.has(extId) ||
             (legacyId && cancelledOrderIds.has(legacyId)) ||
             hasCancelledDate ||
@@ -229,34 +280,53 @@ class UnifiedMarketplaceManager {
             cancelState === 'CANCEL_COMPLETE' ||
             cancelState === 'CLOSED_WITH_REFUND' ||
             (cancelState.startsWith('CANCEL') && !cancelState.includes('REJECTED') && !cancelState.includes('NONE'))
-          ) {
-            orderStatus = 'cancelled'
-          } else {
-            const paymentStatus = String(o.orderPaymentStatus || '').toUpperCase()
-            const refundedValue = parseFloat(o.pricingSummary?.refundedAmount?.value || 0)
-            const totalValue = parseFloat(o.pricingSummary?.total?.value || 0)
-            const isFullyRefunded =
-              paymentStatus === 'FULLY_REFUNDED' ||
-              paymentStatus === 'REFUNDED' ||
-              (refundedValue > 0 && totalValue > 0 && refundedValue >= totalValue)
 
-            if (isFullyRefunded) {
-              orderStatus = o.orderFulfillmentStatus === 'FULFILLED' ? 'returned' : 'refunded'
-            } else if (o.orderFulfillmentStatus === 'FULFILLED') {
-              orderStatus = 'shipped'
-            } else if (o.orderFulfillmentStatus === 'IN_PROGRESS') {
-              orderStatus = 'processing'
-            } else if (paymentStatus === 'PAID') {
-              orderStatus = 'paid'
-            } else if (paymentStatus === 'FAILED' || paymentStatus === 'PENDING') {
-              orderStatus = 'pending'
+          if (isCancelled) {
+            orderStatus = 'cancelled'
+          } else if (ret) {
+            const retState = String(ret.state || ret.status || '').toUpperCase()
+            const refundAmt = Number(ret.sellerTotalRefund?.actualRefundAmount?.value ?? 0)
+            if (retState.includes('CLOSED') && (refundAmt > 0 || isFullyRefunded)) {
+              orderStatus = 'refunded'
+            } else {
+              orderStatus = 'returned'
             }
+          } else if (isFullyRefunded) {
+            orderStatus = o.orderFulfillmentStatus === 'FULFILLED' ? 'returned' : 'refunded'
+          } else if (o.orderFulfillmentStatus === 'FULFILLED') {
+            // If the package was fulfilled and its estimated delivery date has passed, it's delivered
+            if (isPastEstimatedDelivery) {
+              orderStatus = 'delivered'
+            } else {
+              orderStatus = 'shipped'
+            }
+          } else if (o.orderFulfillmentStatus === 'IN_PROGRESS') {
+            orderStatus = 'processing'
+          } else if (paymentStatus === 'PAID') {
+            orderStatus = 'paid'
+          } else if (
+            paymentStatus === 'FAILED' ||
+            paymentStatus === 'PENDING' ||
+            paymentStatus === 'BUYER_PAYMENT_DUE' ||
+            paymentStatus === 'UNPAID' ||
+            paymentStatus === 'NOT_APPLICABLE'
+          ) {
+            orderStatus = 'pending'
+          }
+
+          const shippingObj = {
+            carrier: carrier || undefined,
+            trackingNumber: trackingNumber || undefined,
+            shippedAt: o.orderFulfillmentStatus === 'FULFILLED' ? new Date(o.creationDate) : undefined,
+            deliveredAt: (orderStatus === 'delivered' && maxEstimatedDelivery) ? maxEstimatedDelivery : undefined,
           }
 
           return {
             externalOrderId: o.orderId,
             placedAt: new Date(o.creationDate),
             status: orderStatus,
+            shipping: shippingObj,
+            returns: orderReturns,
             buyer: {
               name: fullName,
               username,
@@ -468,6 +538,18 @@ class UnifiedMarketplaceManager {
           }
           if (ord.shippingAddress && !existing.shippingAddress) {
             existing.shippingAddress = ord.shippingAddress
+          }
+          if (ord.shipping) {
+            existing.shipping = {
+              ...(existing.shipping?.toObject?.() || existing.shipping || {}),
+              carrier: ord.shipping.carrier || existing.shipping?.carrier,
+              trackingNumber: existing.shipping?.trackingNumber || ord.shipping.trackingNumber,
+              shippedAt: existing.shipping?.shippedAt || ord.shipping.shippedAt,
+              deliveredAt: ord.shipping.deliveredAt || existing.shipping?.deliveredAt,
+            }
+          }
+          if (Array.isArray(ord.returns) && ord.returns.length > 0) {
+            existing.returns = ord.returns
           }
           await existing.save()
           updatedCount++

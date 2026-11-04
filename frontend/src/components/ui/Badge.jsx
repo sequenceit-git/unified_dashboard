@@ -21,6 +21,7 @@ export function statusColor(status) {
     active: 'green', live: 'green', delivered: 'green', success: 'green', connected: 'green',
     open: 'blue', paid: 'blue', shipped: 'blue', processing: 'blue',
     pending: 'yellow', queued: 'yellow', running: 'blue',
+    returned: 'purple', refunded: 'indigo',
     low_stock: 'yellow', sync_failed: 'red', failed: 'red', error: 'red',
     cancelled: 'red', disconnected: 'red', disabled: 'red',
     draft: 'gray', archived: 'gray', closed: 'gray', paused: 'gray', ended: 'gray',

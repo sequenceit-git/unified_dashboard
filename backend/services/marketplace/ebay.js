@@ -179,6 +179,56 @@ class EbayService {
   }
 
   /**
+   * Retrieves post-order return requests and cases from eBay Post-Order API
+   */
+  async getReturns(accessToken) {
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/post-order/v2/return/search?limit=50`, {
+        headers: {
+          Authorization: `IAF ${accessToken}`,
+          Accept: 'application/json',
+          'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        },
+      })
+      if (!response.ok) {
+        const fallback = await fetch(`${config.apiBaseUrl}/post-order/v2/return/search?limit=50`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/json',
+            'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+          },
+        })
+        if (!fallback.ok) return []
+        const data = await fallback.json().catch(() => ({}))
+        return data.members || []
+      }
+      const data = await response.json().catch(() => ({}))
+      return data.members || []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * Retrieves shipping fulfillment records (tracking number, carrier, shipped date) for an eBay order
+   */
+  async getShippingFulfillments(accessToken, orderId) {
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/sell/fulfillment/v1/order/${encodeURIComponent(orderId)}/shipping_fulfillment`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      })
+      if (!response.ok) return []
+      const data = await response.json().catch(() => ({}))
+      return data.fulfillments || []
+    } catch {
+      return []
+    }
+  }
+
+  /**
    * Updates shipping tracking information for an eBay order
    */
   async createShippingFulfillment(accessToken, orderId, { carrier, trackingNumber, lineItems = [] }) {

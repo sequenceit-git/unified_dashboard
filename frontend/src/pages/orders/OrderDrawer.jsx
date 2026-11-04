@@ -134,7 +134,10 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
         <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3 space-y-2">
           <h3 className="font-semibold text-gray-900 dark:text-slate-100">Shipping & tracking</h3>
           <p className="text-xs text-gray-500 dark:text-slate-400">
-            Current: {order.shipping?.carrier || 'None'} · {order.shipping?.trackingNumber || 'No tracking'}
+            Carrier: <span className="font-semibold text-gray-700 dark:text-gray-300">{order.shipping?.carrier || 'None'}</span>
+            {order.shipping?.trackingNumber && <> · Tracking: <span className="font-mono text-gray-700 dark:text-gray-300">{order.shipping.trackingNumber}</span></>}
+            {order.shipping?.deliveredAt && <> · Delivered: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{new Date(order.shipping.deliveredAt).toLocaleDateString()}</span></>}
+            {!order.shipping?.deliveredAt && order.shipping?.shippedAt && <> · Shipped: <span className="text-gray-600 dark:text-gray-400">{new Date(order.shipping.shippedAt).toLocaleDateString()}</span></>}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_auto] gap-2 pt-1">
             <Select

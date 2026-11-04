@@ -243,7 +243,24 @@ class TikTokShopService {
           externalOrderId: order.id,
           placedAt: order.create_time ? new Date(order.create_time * 1000) : new Date(),
           status: ORDER_STATUS[order.status] || 'pending',
-          buyer: { name: order.recipient_address?.name || order.user_id || 'TikTok Shop customer', email: '' },
+          buyer: {
+            name: order.recipient_address?.name || order.user_id || 'TikTok Shop customer',
+            email: '',
+            phone: order.recipient_address?.phone_number || '',
+          },
+          shippingAddress: order.recipient_address ? {
+            street: order.recipient_address.address_line1 || order.recipient_address.full_address || '',
+            city: order.recipient_address.city || '',
+            state: order.recipient_address.state || '',
+            zip: order.recipient_address.postal_code || '',
+            country: order.recipient_address.region_code || 'US',
+          } : undefined,
+          shipping: {
+            carrier: order.shipping_provider_name || order.packages?.[0]?.shipping_provider_name || undefined,
+            trackingNumber: order.tracking_number || order.packages?.[0]?.tracking_number || undefined,
+            shippedAt: order.rts_time ? new Date(order.rts_time * 1000) : undefined,
+            deliveredAt: order.delivery_time ? new Date(order.delivery_time * 1000) : undefined,
+          },
           totals: {
             total: Number(order.payment?.total_amount || 0),
             currency: order.payment?.currency || 'USD',
