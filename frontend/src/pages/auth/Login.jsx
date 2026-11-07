@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { QUICK_ACCOUNTS, useAuth } from '../../auth/AuthContext'
+import { useAuth } from '../../auth/AuthContext'
 import { ThemeToggle } from '../../theme/ThemeContext'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 
 export default function Login() {
-  const { login, quickLogin } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,19 +22,6 @@ export default function Login() {
     setError('')
     try {
       await login(email, password)
-      done()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const quick = async (accountEmail) => {
-    setBusy(true)
-    setError('')
-    try {
-      await quickLogin(accountEmail)
       done()
     } catch (err) {
       setError(err.message)
@@ -67,17 +54,6 @@ export default function Login() {
             {busy ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
-
-        <div className="mt-6 sm:mt-7 border-t border-gray-200 pt-5">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Developer access</p>
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {QUICK_ACCOUNTS.map((a) => (
-              <Button key={a.email} variant="secondary" size="sm" disabled={busy} onClick={() => quick(a.email)}>
-                {a.label}
-              </Button>
-            ))}
-          </div>
-        </div>
       </Card>
     </div>
   )

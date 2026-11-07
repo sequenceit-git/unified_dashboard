@@ -3,11 +3,9 @@ import { api } from '../lib/api'
 
 const AuthContext = createContext(null)
 
-// Dev quick sign-in accounts.
-export const QUICK_ACCOUNTS = [
-  { label: 'Super Admin', email: 'admin@sequenceit.com', role: 'super_admin' },
-]
-const QUICK_PASSWORD = 'Temp1234!'
+// Dev quick sign-in accounts (disabled in production).
+export const QUICK_ACCOUNTS = []
+const QUICK_PASSWORD = ''
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token') || '')
