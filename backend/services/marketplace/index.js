@@ -537,6 +537,12 @@ class UnifiedMarketplaceManager {
             existing.status = ord.status
           }
           if (!existing.customerId && customer?._id) existing.customerId = customer._id
+          if (ord.buyer?.name && (!existing.buyer?.name || existing.buyer?.name === 'eBay Customer')) {
+            existing.buyer = { ...existing.buyer, name: ord.buyer.name }
+          }
+          if (ord.buyer?.username && !existing.buyer?.username) {
+            existing.buyer = { ...existing.buyer, username: ord.buyer.username }
+          }
           if (ord.buyer?.phone && !existing.buyer?.phone) {
             existing.buyer = { ...existing.buyer, phone: ord.buyer.phone }
           }

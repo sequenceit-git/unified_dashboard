@@ -46,6 +46,39 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
   const [refundAmount, setRefundAmount] = useState(order.totals?.total != null ? String(order.totals.total) : '')
   const [refundReason, setRefundReason] = useState('BUYER_CANCEL')
   const [refundComment, setRefundComment] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const buyerName = order.buyer?.name || order.customerId?.name || 'Customer'
+  const buyerUsername = order.buyer?.username
+    || order.customerId?.identities?.find((id) => id.marketplace === order.marketplace)?.username
+    || order.customerId?.identities?.find((id) => id.marketplace === order.marketplace)?.externalBuyerId
+    || ''
+  const buyerEmail = order.buyer?.email || order.customerId?.email || ''
+  const buyerPhone = order.buyer?.phone || order.customerId?.phone || ''
+
+  const addr = order.shippingAddress || order.customerId?.address || {}
+  const addressLines = [
+    addr.street || addr.addressLine1 || addr.street1 || '',
+    addr.street2 || addr.addressLine2 || '',
+    [addr.city, addr.state || addr.stateOrProvince, addr.zip || addr.postalCode].filter(Boolean).join(', '),
+    addr.country || addr.countryCode || '',
+  ].filter(Boolean)
+
+  const hasAddress = addressLines.length > 0
+  const fullAddressText = [
+    buyerName,
+    ...addressLines,
+    buyerPhone ? `Phone: ${buyerPhone}` : '',
+  ].filter(Boolean).join('\n')
+
+  const copyAddress = async () => {
+    if (!fullAddressText) return
+    try {
+      await navigator.clipboard.writeText(fullAddressText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
 
   const mutate = async (fn) => {
     setBusy(true)
@@ -129,6 +162,87 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
           <p className="mt-1.5 text-right font-bold text-gray-900 dark:text-slate-100">
             Total: ${order.totals?.total?.toFixed(2)}
           </p>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3.5 space-y-3">
+          <div className="flex items-center justify-between border-b border-gray-200/60 dark:border-slate-800 pb-2">
+            <h3 className="font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
+              <span>Buyer & shipping details</span>
+            </h3>
+            {hasAddress && (
+              <button
+                type="button"
+                onClick={copyAddress}
+                className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
+              >
+                {copied ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ Copied</span>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>Copy address</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Buyer Contact Column */}
+            <div className="space-y-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 block">
+                Buyer
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-semibold text-gray-900 dark:text-slate-100">{buyerName}</span>
+                {buyerUsername && (
+                  <span className="rounded bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 font-mono text-[11px] font-medium text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                    @{buyerUsername}
+                  </span>
+                )}
+              </div>
+              {buyerEmail && (
+                <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300">
+                  <span className="text-gray-400">✉</span>
+                  <a
+                    href={`mailto:${buyerEmail}`}
+                    className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline break-all"
+                  >
+                    {buyerEmail}
+                  </a>
+                </div>
+              )}
+              {buyerPhone ? (
+                <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300">
+                  <span className="text-gray-400">📞</span>
+                  <a href={`tel:${buyerPhone}`} className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline">
+                    {buyerPhone}
+                  </a>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-400 dark:text-slate-500 italic">No phone provided</div>
+              )}
+            </div>
+
+            {/* Shipping Destination Column */}
+            <div className="space-y-1.5 border-t md:border-t-0 md:border-l border-gray-200/60 dark:border-slate-800 pt-2.5 md:pt-0 md:pl-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 block">
+                Ship to
+              </span>
+              {hasAddress ? (
+                <div className="text-xs text-gray-700 dark:text-slate-300 leading-relaxed font-sans">
+                  <p className="font-medium text-gray-900 dark:text-slate-100">{buyerName}</p>
+                  {addressLines.map((line, idx) => (
+                    <p key={idx}>{line}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 dark:text-slate-500 italic">No shipping address recorded</p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3 space-y-2">

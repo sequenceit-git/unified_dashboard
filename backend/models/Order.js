@@ -36,6 +36,7 @@ const orderSchema = new mongoose.Schema(
     items: [orderItemSchema],
     buyer: {
       name: { type: String },
+      username: { type: String },
       email: { type: String },
       phone: { type: String },
     },

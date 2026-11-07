@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const doc = await Order.findOne({ _id: req.params.id, ...shopFilter(req, Order) })
-      .populate('customerId', 'name email phone')
+      .populate('customerId', 'name email phone identities address')
       .populate('shopId', 'name marketplace')
     if (!doc) return res.status(404).json({ error: 'Not found' })
     res.json(doc)

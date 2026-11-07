@@ -245,6 +245,7 @@ class TikTokShopService {
           status: ORDER_STATUS[order.status] || 'pending',
           buyer: {
             name: order.recipient_address?.name || order.user_id || 'TikTok Shop customer',
+            username: order.buyer_nickname || order.user_id || '',
             email: '',
             phone: order.recipient_address?.phone_number || '',
           },
