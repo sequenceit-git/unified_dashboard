@@ -20,6 +20,7 @@ const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 const { saveCustomerStats } = require('../customerStats')
 const { listingUrl } = require('../../utils/listingUrl')
+const { newSku, ebaySku, isMachineSku } = require('../../utils/sku')
 
 const marketplaceServices = {
   ebay,
@@ -396,16 +397,7 @@ class UnifiedMarketplaceManager {
             items: (o.lineItems || []).map((li) => {
               const rawSku = li.sku && !/^none$/i.test(String(li.sku).trim()) ? String(li.sku).trim() : ''
               const extId = li.legacyItemId ? String(li.legacyItemId) : undefined
-              const isDraftSku = rawSku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(rawSku) || rawSku.startsWith('EP-')
-              const cleanSku = rawSku
-                ? (/^\d+$/.test(rawSku)
-                    ? `EBAY-${rawSku}`
-                    : rawSku.startsWith('EB-')
-                    ? rawSku.replace(/^EB-/, 'EBAY-')
-                    : isDraftSku
-                    ? (extId ? `EBAY-${extId}` : rawSku)
-                    : rawSku)
-                : (extId ? `EBAY-${extId}` : '')
+              const cleanSku = ebaySku(rawSku, extId)
               return {
                 sku: cleanSku,
                 rawSku,
@@ -544,6 +536,13 @@ class UnifiedMarketplaceManager {
                   }
                 }
               } catch {}
+              // The Browse API can't see ended or out-of-stock items; the seller's own GetItem can.
+              if (!itemImages.length && item.externalListingId && token && typeof service.getListingDetail === 'function') {
+                try {
+                  const detail = await service.getListingDetail(token, item.externalListingId)
+                  itemImages.push(...(detail?.images || []))
+                } catch {}
+              }
             }
           }
 
@@ -977,16 +976,7 @@ class UnifiedMarketplaceManager {
       if (!detail && !detailedAt.has(row.itemId)) continue
       const source = detail || row
       const rawSku = source.sku || ''
-      const isDraftSku = rawSku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(rawSku) || rawSku.startsWith('EP-')
-      const cleanSku = rawSku
-        ? (/^\d+$/.test(rawSku)
-            ? `EBAY-${rawSku}`
-            : rawSku.startsWith('EB-')
-            ? rawSku.replace(/^EB-/, 'EBAY-')
-            : isDraftSku
-            ? `EBAY-${row.itemId}`
-            : rawSku)
-        : `EBAY-${row.itemId}`
+      const cleanSku = ebaySku(rawSku, row.itemId)
       const price = Number.isFinite(source.price) && source.price > 0 ? source.price : row.price
       const stock = Number.isFinite(source.stock) ? source.stock : row.stock
       items.push({
@@ -1231,9 +1221,9 @@ class UnifiedMarketplaceManager {
       }
       if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
       if (item.listingStatus === 'live' && product.status === 'draft') product.status = 'active'
-      const isDraftProductSku = product.sku && (product.sku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(product.sku) || product.sku.startsWith('EP-'))
-      const isItemSkuValid = item.sku && !item.sku.startsWith('BOT-') && !/^EBAY-\d{6}-[A-F0-9]{6}$/i.test(item.sku) && !item.sku.startsWith('EP-')
-      if (isDraftProductSku && isItemSkuValid) {
+      // A made-up SKU (draft or random ID) becomes the real one, if no other product uses it.
+      if (isMachineSku(product.sku) && item.sku && !isMachineSku(item.sku) && item.sku !== product.sku
+        && !(await Product.exists({ sku: item.sku, _id: { $ne: product._id } }))) {
         product.sku = item.sku
       }
       await product.save()
