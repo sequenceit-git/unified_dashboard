@@ -14,6 +14,7 @@ const SyncLog = require('../../models/SyncLog')
 const Shop = require('../../models/Shop')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
+const InventoryLog = require('../../models/InventoryLog')
 const IgnoredListing = require('../../models/IgnoredListing')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
@@ -567,13 +568,42 @@ class UnifiedMarketplaceManager {
           await existing.save()
           updatedCount++
         } else {
-          await Order.create({
+          const newOrder = await Order.create({
             ...ord,
             shopId: shop._id,
             marketplace: shop.marketplace,
             customerId: customer?._id || null,
           })
           createdCount++
+
+          // Deduct stock for newly imported order
+          for (const item of ord.items || []) {
+            if (item.productId && item.quantity > 0) {
+              try {
+                const prod = await Product.findById(item.productId)
+                if (prod && prod.stock > 0) {
+                  const stockBefore = prod.stock
+                  const stockAfter = Math.max(0, prod.stock - item.quantity)
+                  await Product.findByIdAndUpdate(item.productId, { $set: { stock: stockAfter } })
+                  await Listing.updateMany(
+                    { productId: item.productId },
+                    { $set: { stock: stockAfter, ...(stockAfter === 0 ? { status: 'out_of_stock' } : {}) } }
+                  )
+                  await InventoryLog.create({
+                    productId: item.productId,
+                    shopId: shop._id,
+                    stockBefore,
+                    stockAfter,
+                    change: -item.quantity,
+                    reason: 'sale',
+                    refId: newOrder._id,
+                  })
+                }
+              } catch (logErr) {
+                console.warn('[syncOrders] Failed to deduct stock for order item:', logErr.message)
+              }
+            }
+          }
         }
       }
 

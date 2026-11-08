@@ -237,8 +237,13 @@ async function addListing(token, product, opts) {
 
 /** Units already sold on this listing. eBay's Quantity counts them, so available = Quantity - sold. */
 async function quantitySold(token, itemId) {
-  const doc = await call(token, 'GetItem', `<ItemID>${escapeXml(itemId)}</ItemID><OutputSelector>Item.SellingStatus.QuantitySold</OutputSelector>`)
-  return Number(doc.Item?.SellingStatus?.QuantitySold || 0)
+  try {
+    const doc = await call(token, 'GetItem', `<ItemID>${escapeXml(itemId)}</ItemID><OutputSelector>Item.SellingStatus.QuantitySold</OutputSelector>`)
+    return Number(doc.Item?.SellingStatus?.QuantitySold || 0)
+  } catch (err) {
+    console.warn(`[ebayTrading] Failed to fetch quantity sold for item ${itemId}:`, err.message)
+    return 0
+  }
 }
 
 /** Revises a live listing. Only the fields given are changed. `quantity` is the stock available to buy. */

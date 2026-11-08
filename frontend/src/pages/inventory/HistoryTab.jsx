@@ -50,7 +50,36 @@ export default function HistoryTab({ marketplace, refreshKey }) {
       <DataTable
         columns={[
           { key: 'createdAt', label: 'When', render: (r) => new Date(r.createdAt).toLocaleString() },
-          { key: 'product', label: 'Product', render: (r) => r.productId ? `${r.productId.sku} · ${r.productId.title}` : '—' },
+          {
+            key: 'product',
+            label: 'Product',
+            render: (r) => {
+              if (!r.productId) return '—'
+              const img = Array.isArray(r.productId.images) && r.productId.images[0]
+              return (
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
+                    {img ? (
+                      <img
+                        src={img}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      <span className="text-[9px] text-gray-400">No img</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-slate-100 truncate">{r.productId.title}</p>
+                    <p className="text-xs text-gray-500 font-mono">{r.productId.sku}</p>
+                  </div>
+                </div>
+              )
+            },
+          },
           { key: 'variantSku', label: 'Variant', render: (r) => r.variantSku || '—' },
           { key: 'change', label: 'Change', render: (r) => <span className={r.change < 0 ? 'text-red-600' : 'text-green-700'}>{r.change > 0 ? `+${r.change}` : r.change}</span> },
           { key: 'stockAfter', label: 'After', render: (r) => `${r.stockBefore} → ${r.stockAfter}` },

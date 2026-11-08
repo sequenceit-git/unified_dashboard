@@ -16,6 +16,29 @@ export default function LowStockTab({ marketplace, refreshKey }) {
     <Card>
       <DataTable
         columns={[
+          {
+            key: 'image',
+            label: 'Image',
+            render: (r) => {
+              const img = Array.isArray(r.images) && r.images[0]
+              return (
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
+                  {img ? (
+                    <img
+                      src={img}
+                      alt={r.title}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <span className="text-[10px] text-gray-400">No img</span>
+                  )}
+                </div>
+              )
+            },
+          },
           { key: 'sku', label: 'SKU' },
           { key: 'title', label: 'Title' },
           { key: 'stock', label: 'Stock', render: (r) => <span className="font-bold text-red-600">{r.stock}</span> },

@@ -67,7 +67,7 @@ router.get('/logs', async (req, res) => {
     const pg = paging(req)
     const out = await paged(InventoryLog, filter, pg, { createdAt: -1 })
     out.data = await InventoryLog.populate(out.data, [
-      { path: 'productId', select: 'sku title' },
+      { path: 'productId', select: 'sku title images' },
       { path: 'shopId', select: 'name marketplace' },
       { path: 'createdBy', select: 'name email' },
     ])
@@ -77,32 +77,56 @@ router.get('/logs', async (req, res) => {
   }
 })
 
-// POST /api/inventory/adjust — { productId, variantSku?, change, reason, shopId? }
+// POST /api/inventory/adjust — { productId, variantSku?, change?, newStock?, reason, shopId? }
 router.post('/adjust', async (req, res) => {
   try {
-    const { productId, variantSku, change, reason, shopId } = req.body
-    if (!productId || !Number.isInteger(change) || !reason) {
-      return res.status(400).json({ error: 'productId, integer change, reason required' })
+    const { productId, variantSku, reason, shopId } = req.body
+    if (!productId || !reason) {
+      return res.status(400).json({ error: 'productId and reason are required' })
     }
     const product = await Product.findById(productId)
     if (!product) return res.status(404).json({ error: 'Product not found' })
 
+    let change = req.body.change
     let stockBefore
     let stockAfter
+
     if (variantSku) {
       const v = product.variants.find((x) => x.sku === variantSku)
       if (!v) return res.status(404).json({ error: 'Variant not found' })
       stockBefore = v.stock
-      stockAfter = v.stock + change
+
+      if (req.body.newStock !== undefined && req.body.newStock !== '') {
+        const target = Math.max(0, Math.floor(Number(req.body.newStock)))
+        change = target - stockBefore
+      } else if (change !== undefined && change !== '') {
+        change = Math.floor(Number(change))
+      } else {
+        return res.status(400).json({ error: 'Either newStock or change must be provided' })
+      }
+
+      stockAfter = stockBefore + change
       if (stockAfter < 0) return res.status(400).json({ error: 'Insufficient variant stock' })
+
       await Product.findOneAndUpdate(
         { _id: productId, 'variants.sku': variantSku },
         { $inc: { 'variants.$.stock': change } },
       )
     } else {
       stockBefore = product.stock
-      stockAfter = product.stock + change
+
+      if (req.body.newStock !== undefined && req.body.newStock !== '') {
+        const target = Math.max(0, Math.floor(Number(req.body.newStock)))
+        change = target - stockBefore
+      } else if (change !== undefined && change !== '') {
+        change = Math.floor(Number(change))
+      } else {
+        return res.status(400).json({ error: 'Either newStock or change must be provided' })
+      }
+
+      stockAfter = stockBefore + change
       if (stockAfter < 0) return res.status(400).json({ error: 'Insufficient stock' })
+
       await Product.findByIdAndUpdate(productId, { $inc: { stock: change } })
     }
 
@@ -112,10 +136,23 @@ router.post('/adjust', async (req, res) => {
       reason, createdBy: req.user.id,
     })
 
-    // Synchronize adjusted stock to active marketplace listings
+    // Update MongoDB Listing documents for this product
+    await Listing.updateMany(
+      { productId },
+      {
+        $set: {
+          stock: stockAfter,
+          ...(stockAfter > 0 ? { status: 'live' } : { status: 'out_of_stock' }),
+          lastSyncedAt: new Date(),
+        },
+      },
+    )
+
+    // Synchronize adjusted stock to active and pending marketplace listings
     let pushedCount = 0
+    const warnings = []
     try {
-      const listings = await Listing.find({ productId, status: { $in: ['live', 'out_of_stock'] } }).populate('shopId')
+      const listings = await Listing.find({ productId, status: { $in: ['live', 'out_of_stock', 'pending'] } }).populate('shopId')
       for (const item of listings) {
         if (item.shopId) {
           try {
@@ -128,17 +165,19 @@ router.post('/adjust', async (req, res) => {
             pushedCount++
           } catch (apiErr) {
             console.warn(`Stock push failed for shop ${item.shopId.name}:`, apiErr.message)
+            warnings.push(`${item.shopId.name}: ${apiErr.message}`)
           }
         }
       }
     } catch (err) {
       console.warn('Listing query failed during stock adjust:', err.message)
+      warnings.push(`Listing query error: ${err.message}`)
     }
 
     const updated = await Product.findById(productId)
     await require('../../services/notify').stockChangedOnShops(updated, { was: stockBefore, stock: stockAfter }).catch(() => {})
 
-    res.status(201).json({ stockBefore, stockAfter, log, pushedToMarketplaces: pushedCount })
+    res.status(201).json({ stockBefore, stockAfter, change, log, pushedToMarketplaces: pushedCount, warnings })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
