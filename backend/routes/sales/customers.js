@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection } = require('../../middleware/auth')
 const { paging, sortOf } = require('../../utils/query')
 const Conversation = require('../../models/Conversation')
 const Customer = require('../../models/Customer')
@@ -8,7 +8,7 @@ const { canonicalMarketplace } = require('../../utils/marketplace')
 const { orderMatch, withOrderStats } = require('../../services/customerStats')
 
 const router = express.Router()
-router.use(requireAuth, loadAccess, requireMainRoute('customers'))
+router.use(requireAuth, loadAccess, requireMainRoute('customers'), limitToSection('customers'))
 
 function scope(req) {
   if (req.user.role !== 'sub_admin') return {}

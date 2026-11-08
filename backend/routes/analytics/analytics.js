@@ -1,6 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
-const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection } = require('../../middleware/auth')
 const Order = require('../../models/Order')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
@@ -10,7 +10,7 @@ const { canonicalMarketplace } = require('../../utils/marketplace')
 const { cachedResponse } = require('../../services/cache')
 
 const router = express.Router()
-router.use(requireAuth, loadAccess, requireMainRoute('analytics'), cachedResponse('analytics', 120))
+router.use(requireAuth, loadAccess, requireMainRoute('analytics'), limitToSection('analytics'), cachedResponse('analytics', 120))
 
 function dates(req) {
   const to = req.query.to ? new Date(req.query.to) : new Date()

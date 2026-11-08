@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, canAccessShop } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, canAccessShop, limitToSection } = require('../../middleware/auth')
 const { requireProductAccess } = require('../../services/productAccess')
 const { paging, paged } = require('../../utils/query')
 const InventoryLog = require('../../models/InventoryLog')
@@ -9,7 +9,7 @@ const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
 
 const router = express.Router()
-router.use(requireAuth, loadAccess, requireMainRoute('inventory'))
+router.use(requireAuth, loadAccess, requireMainRoute('inventory'), limitToSection('inventory'))
 
 
 // GET /api/inventory/low-stock

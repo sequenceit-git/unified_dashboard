@@ -48,6 +48,7 @@ async function loadAccess(req, res, next) {
     if (cached && Date.now() - cached.timestamp < ACCESS_CACHE_TTL) {
       req.authUser = cached.user
       req.allowedShopIds = cached.allowedShopIds
+      req.shopMarkets = cached.shopMarkets
       return next()
     }
 
@@ -77,12 +78,19 @@ async function loadAccess(req, res, next) {
       allowedShopIds = [...ids.values()]
     }
     req.allowedShopIds = allowedShopIds
+    // Marketplace of each allowed shop, so a section limit like `ebay:orders` can be applied per shop.
+    const shopMarkets = new Map()
+    if (allowedShopIds?.length) {
+      const shops = await Shop.find({ _id: { $in: allowedShopIds } }).select('marketplace').lean()
+      for (const shop of shops) shopMarkets.set(String(shop._id), shop.marketplace)
+    }
+    req.shopMarkets = shopMarkets
 
     if (accessCache.size > MAX_ACCESS_CACHE) {
       const oldestKey = accessCache.keys().next().value
       accessCache.delete(oldestKey)
     }
-    accessCache.set(req.user.id, { user, allowedShopIds, timestamp: Date.now() })
+    accessCache.set(req.user.id, { user, allowedShopIds, shopMarkets, timestamp: Date.now() })
     next()
   } catch (err) {
     next(err)
@@ -113,6 +121,21 @@ function canUseSection(user, marketplace, sectionId, route) {
   return list.includes(sectionId) || list.includes(`${marketplace}:${sectionId}`)
 }
 
+/**
+ * Narrows a sub-admin's shops to those where they may use `sectionId` (their `allowedSections`
+ * can grant e.g. `ebay:orders` but not `tiktok_shop:orders`). Everything downstream that reads
+ * `req.allowedShopIds` or uses `shopFilter` then only sees those shops. Put it after `loadAccess`.
+ */
+function limitToSection(sectionId) {
+  return (req, res, next) => {
+    const user = req.authUser || req.user
+    if (user.role !== 'sub_admin' || !Array.isArray(req.allowedShopIds)) return next()
+    req.allowedShopIds = req.allowedShopIds.filter((id) =>
+      canUseSection(user, req.shopMarkets?.get(String(id)), sectionId))
+    next()
+  }
+}
+
 /** True when the user may act on this shop (super admins: any shop). */
 function canAccessShop(req, shopId) {
   if ((req.authUser || req.user).role !== 'sub_admin') return true
@@ -135,5 +158,5 @@ function verifyOAuthState(state, marketplace, userId) {
 
 module.exports = {
   signToken, requireAuth, loadAccess, requireRole, requireMainRoute, shopFilter, clearUserAccessCache,
-  canUseSection, canAccessShop, signOAuthState, verifyOAuthState,
+  canUseSection, canAccessShop, limitToSection, signOAuthState, verifyOAuthState,
 }

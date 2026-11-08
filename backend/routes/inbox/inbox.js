@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection } = require('../../middleware/auth')
 const { paging, paged } = require('../../utils/query')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
@@ -12,7 +12,7 @@ const syncQueue = require('../../services/syncQueue')
 const cache = require('../../services/cache')
 
 const router = express.Router()
-router.use(requireAuth, loadAccess, requireMainRoute('inbox'))
+router.use(requireAuth, loadAccess, requireMainRoute('inbox'), limitToSection('inbox'))
 
 
 // GET /api/inbox/conversations?shopId=&status=&page=&limit=

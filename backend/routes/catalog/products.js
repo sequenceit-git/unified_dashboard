@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, limitToSection } = require('../../middleware/auth')
 const { productAccess, requireProductAccess } = require('../../services/productAccess')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Listing = require('../../models/Listing')
@@ -13,7 +13,7 @@ const { listingUrl } = require('../../utils/listingUrl')
 
 const router = express.Router()
 
-router.use(requireAuth, loadAccess, requireMainRoute('products'))
+router.use(requireAuth, loadAccess, requireMainRoute('products'), limitToSection('products'))
 
 const SORTABLE = ['createdAt', 'title', 'basePrice', 'costPrice', 'stock']
 

@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, limitToSection } = require('../../middleware/auth')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Order = require('../../models/Order')
 const Shop = require('../../models/Shop')
@@ -8,7 +8,7 @@ const { canonicalMarketplace } = require('../../utils/marketplace')
 const syncQueue = require('../../services/syncQueue')
 
 const router = express.Router()
-router.use(requireAuth, loadAccess, requireMainRoute('orders'))
+router.use(requireAuth, loadAccess, requireMainRoute('orders'), limitToSection('orders'))
 
 
 const SORTABLE = ['placedAt', 'totals.total', 'createdAt', 'status']
