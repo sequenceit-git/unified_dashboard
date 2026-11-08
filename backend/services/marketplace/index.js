@@ -651,6 +651,7 @@ class UnifiedMarketplaceManager {
           })
           createdCount++
 
+          const soldProductIds = new Set()
           // Deduct stock for newly imported order. Not for orders that arrive already cancelled or
           // refunded, and not for eBay sales the last listing sync already counted (eBay's own
           // stock fell when the item sold, and listing sync copies that number).
@@ -658,19 +659,23 @@ class UnifiedMarketplaceManager {
             if (['cancelled', 'refunded'].includes(ord.status)) break
             if (item.productId && item.quantity > 0) {
               try {
-                if (shop.marketplace === 'ebay') {
-                  const synced = await Listing.findOne({ shopId: shop._id, productId: item.productId }).select('lastSyncedAt').lean()
-                  if (synced?.lastSyncedAt && ord.placedAt && new Date(synced.lastSyncedAt) > new Date(ord.placedAt)) continue
-                }
+                const own = await Listing.findOne({ shopId: shop._id, productId: item.productId }).select('lastSyncedAt stock').lean()
+                if (own?.lastSyncedAt && ord.placedAt && new Date(own.lastSyncedAt) > new Date(ord.placedAt)) continue
                 const prod = await Product.findById(item.productId)
                 if (prod && prod.stock > 0) {
                   const stockBefore = prod.stock
                   const stockAfter = Math.max(0, prod.stock - item.quantity)
                   await Product.findByIdAndUpdate(item.productId, { $set: { stock: stockAfter } })
-                  await Listing.updateMany(
-                    { productId: item.productId },
-                    { $set: { stock: stockAfter, ...(stockAfter === 0 ? { status: 'out_of_stock' } : {}) } }
-                  )
+                  // This shop's own stock fell by the sold quantity; its next listing sync then sees
+                  // no change. The other shops are brought down by propagateStock below.
+                  if (own && Number.isFinite(own.stock)) {
+                    const shopStock = Math.max(0, own.stock - item.quantity)
+                    await Listing.updateOne(
+                      { shopId: shop._id, productId: item.productId },
+                      { $set: { stock: shopStock, ...(shopStock === 0 ? { status: 'out_of_stock' } : {}) } },
+                    )
+                  }
+                  soldProductIds.add(String(item.productId))
                   await InventoryLog.create({
                     productId: item.productId,
                     shopId: shop._id,
@@ -685,6 +690,11 @@ class UnifiedMarketplaceManager {
                 console.warn('[syncOrders] Failed to deduct stock for order item:', logErr.message)
               }
             }
+          }
+          // A sale here lowers the shared stock; tell the other shops that sell the same product.
+          for (const productId of soldProductIds) {
+            const sold = await Product.findById(productId)
+            if (sold) await this.propagateStock(sold, { exceptShopId: shop._id })
           }
         }
       }
@@ -1086,6 +1096,80 @@ class UnifiedMarketplaceManager {
     return { productsImported: createdProducts, listingsLinked: updatedListings, listingsEnded: ended, failed: failures.length }
   }
 
+  /**
+   * Applies a shop's stock change to the shared product stock. Only the change since this shop
+   * was last read counts (a sale or an edit on that marketplace), so shops never overwrite each
+   * other's numbers. The new shared stock is then pushed to the other shops.
+   * `was` is the stock last seen on this listing (undefined if it was never read before).
+   */
+  async reconcileStock(product, listing, shop, was, now) {
+    const before = Number(product.stock) || 0
+    let stock = before
+    let changed = false
+    if (!Number.isFinite(was)) {
+      const others = await Listing.countDocuments({ productId: product._id, _id: { $ne: listing._id } })
+      if (!others) {
+        // Only this shop sells it, so the marketplace number is the truth.
+        stock = now
+        changed = stock !== before
+      } else if (now !== stock) {
+        // First read of a listing on a product other shops also sell: it adopts the shared stock.
+        await this.propagateStock(product, { onlyListingId: listing._id })
+        return
+      }
+    } else if (now !== was) {
+      stock = Math.max(0, stock + (now - was))
+      changed = true
+    }
+    if (!changed) return
+    product.stock = stock
+    await Product.updateOne({ _id: product._id }, { $set: { stock } })
+    await InventoryLog.create({
+      productId: product._id,
+      shopId: shop._id,
+      stockBefore: before,
+      stockAfter: stock,
+      change: stock - before,
+      reason: 'sync',
+    }).catch(() => {})
+    await this.propagateStock(product, { exceptShopId: shop._id })
+  }
+
+  /**
+   * Pushes the shared product stock to the live listings of the other shops. A listing's stored
+   * stock is set before the push (and put back if it fails) so that shop's next sync reads no
+   * change and does not count the push as a sale.
+   */
+  async propagateStock(product, { exceptShopId = null, onlyListingId = null } = {}) {
+    const quantity = Math.max(0, Math.floor(Number(product.stock) || 0))
+    const filter = { productId: product._id, status: { $in: ['live', 'out_of_stock'] } }
+    if (exceptShopId) filter.shopId = { $ne: exceptShopId }
+    if (onlyListingId) filter._id = onlyListingId
+    const listings = await Listing.find(filter)
+    const results = []
+    for (const listing of listings) {
+      if (listing.stock === quantity) continue
+      const shop = await Shop.findById(listing.shopId)
+      if (!shop || shop.status !== 'connected') continue
+      const before = { stock: listing.stock, status: listing.status }
+      listing.stock = quantity
+      listing.status = quantity > 0 ? 'live' : 'out_of_stock'
+      await listing.save()
+      try {
+        await this.pushStock(shop, { sku: product.sku, quantity, externalListingId: listing.externalListingId, productId: product._id })
+        listing.syncError = null
+        await listing.save()
+        results.push({ shopName: shop.name, ok: true })
+      } catch (err) {
+        Object.assign(listing, before, { syncError: `Stock update failed: ${err.message}` })
+        await listing.save()
+        console.warn(`[stock] ${shop.name}: could not set ${product.sku} to ${quantity}: ${err.message}`)
+        results.push({ shopName: shop.name, ok: false, error: err.message })
+      }
+    }
+    return results
+  }
+
   /** Saves one marketplace listing, creating or updating its product. */
   async saveSyncedListing(shop, item) {
     const key = productKey(item.externalListingId)
@@ -1140,6 +1224,9 @@ class UnifiedMarketplaceManager {
       })
     } else {
       for (const [field, value] of Object.entries(fromMarketplace)) {
+        // Stock is not copied: a shop's stock only moves the shared stock by what changed on it
+        // (see the stock block below), so shops do not overwrite each other.
+        if (field === 'stock') continue
         if (value !== undefined && value !== '') product[field] = value
       }
       if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
@@ -1178,6 +1265,7 @@ class UnifiedMarketplaceManager {
       ...(item.detailed ? { detailSyncedAt: new Date() } : {}),
     })
     await listing.save()
+    if (!created && Number.isFinite(item.stock)) await this.reconcileStock(product, listing, shop, wasStock, item.stock)
     const notify = require('../notify')
     await notify.listingStatusChanged(listing, shop, { wasStatus, wasRaw, imported: created }).catch(() => {})
     if (Number.isFinite(item.stock)) {
@@ -1206,6 +1294,7 @@ class UnifiedMarketplaceManager {
         await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop }))
         listing.syncError = null
         if (changes.price != null) listing.price = changes.price
+        if (changes.quantity != null) listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
         if (changes.quantity != null && ['live', 'out_of_stock'].includes(listing.status)) {
           listing.status = Number(changes.quantity) > 0 ? 'live' : 'out_of_stock'
         }

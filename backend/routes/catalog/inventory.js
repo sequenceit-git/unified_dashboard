@@ -234,6 +234,8 @@ router.post('/sync', async (req, res) => {
             productId: item.productId._id,
           })
           item.lastSyncedAt = new Date()
+          // The shop now holds this number; its next listing sync must read it as "no change".
+          item.stock = Math.max(0, Math.floor(Number(item.productId.stock) || 0))
           await item.save()
           successCount++
         } catch {
