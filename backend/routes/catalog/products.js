@@ -1,6 +1,6 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, limitToSection } = require('../../middleware/auth')
-const { productAccess, requireProductAccess } = require('../../services/productAccess')
+const { productAccess, requireProductAccess, ownDrafts } = require('../../services/productAccess')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
@@ -44,10 +44,14 @@ function listingStatusFilter(value) {
   }
 }
 
+/** Sub-admins: products listed on their shops, plus their own drafts that aren't listed yet. */
 async function scopedIds(req) {
   if (req.user.role !== 'sub_admin') return null
-  const rows = await Listing.find({ shopId: { $in: req.allowedShopIds } }).select('productId')
-  return rows.map((r) => r.productId)
+  const [rows, drafts] = await Promise.all([
+    Listing.find({ shopId: { $in: req.allowedShopIds } }).select('productId'),
+    ownDrafts(req),
+  ])
+  return [...rows.map((r) => r.productId), ...drafts.map((row) => row._id)]
 }
 
 // GET /api/products?q=&status=&category=&stock=low|out&shop=&sort=&page=&limit=
@@ -80,6 +84,14 @@ router.get('/', async (req, res) => {
         productIds = productIds.filter((id) => allowed.has(String(id)))
       }
       const unlisted = !ids && (!req.query.listing || req.query.listing === 'all')
+      // A sub-admin's own drafts show on the tab of the shop they're meant for (or every tab if none).
+      if (ids && (!req.query.listing || req.query.listing === 'all')) {
+        const drafts = await ownDrafts(req)
+        for (const row of drafts) {
+          const target = row.attributes?.targetMarketplace
+          if (!target || target === marketplace) productIds.push(row._id)
+        }
+      }
       if (unlisted) {
         filter.$and = [{ $or: [{ _id: { $in: productIds } }, { 'attributes.targetMarketplace': marketplace }] }]
       } else {
@@ -154,7 +166,7 @@ router.get('/:id', async (req, res) => {
   try {
     const listingFilter = { productId: req.params.id, ...shopFilter(req, Listing) }
     const listings = await Listing.find(listingFilter).populate('shopId', 'name marketplace')
-    if (req.user.role === 'sub_admin' && listings.length === 0) {
+    if (req.user.role === 'sub_admin' && !(await productAccess(req, req.params.id)).visible) {
       return res.status(404).json({ error: 'Not found' })
     }
     const doc = await Product.findById(req.params.id)
@@ -168,7 +180,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/products
 router.post('/', async (req, res) => {
   try {
-    res.status(201).json(await Product.create(req.body))
+    res.status(201).json(await Product.create({ ...req.body, createdBy: req.user.id }))
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
@@ -180,8 +192,9 @@ router.patch('/:id', async (req, res) => {
     if (!(await requireProductAccess(req, res, req.params.id))) return
     const before = await Product.findById(req.params.id).lean()
     if (!before) return res.status(404).json({ error: 'Not found' })
-    // The SKU links the product to its marketplace listings, so it never changes.
-    const { sku, ...update } = req.body
+    // The SKU links the product to its marketplace listings, so it never changes. The creator
+    // decides who sees a draft, so it can't be edited either.
+    const { sku, createdBy, ...update } = req.body
     const doc = await Product.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true })
     const changes = changedListingFields(before, doc)
     const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
@@ -242,9 +255,9 @@ router.post('/:id/list', async (req, res) => {
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
 
     if (req.user.role === 'sub_admin') {
+      // Allowed shops already cover both a marketplace grant and a direct shop grant.
       const isAllowedShop = req.allowedShopIds?.some((id) => String(id) === String(shop._id))
-      const isAllowedMarket = req.authUser?.marketplaces?.includes(shop.marketplace)
-      if (!isAllowedShop || !isAllowedMarket) {
+      if (!isAllowedShop) {
         return res.status(403).json({ error: 'You do not have permission to list on this shop' })
       }
     }

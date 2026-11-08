@@ -34,6 +34,8 @@ const productSchema = new mongoose.Schema(
       unit: { type: String, default: 'in' },
     },
     attributes: { type: mongoose.Schema.Types.Mixed, default: {} },
+    // Who made it in the dashboard. Lets a sub-admin see their own drafts before they are listed.
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
     variants: [variantSchema],
     status: { type: String, enum: ['draft', 'active', 'archived'], default: 'draft' },
@@ -60,6 +62,7 @@ productSchema.pre('validate', async function assignSku() {
 })
 
 productSchema.index({ sku: 1 }, { unique: true })
+productSchema.index({ createdBy: 1 })
 productSchema.index({ 'variants.sku': 1 }, { sparse: true })
 productSchema.index({ status: 1, category: 1 })
 productSchema.index({ title: 'text', sku: 'text' })

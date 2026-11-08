@@ -585,6 +585,7 @@ router.post('/add-to-catalog', async (req, res) => {
         status: 'draft',
         source: 'research_bot',
         sourceReportId: report._id,
+        createdBy: req.user.id,
         attributes: {
           ...specifics,
           ...(opp.brand ? { Brand: opp.brand } : {}),
