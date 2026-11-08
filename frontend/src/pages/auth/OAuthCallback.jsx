@@ -13,6 +13,7 @@ export default function OAuthCallback() {
 
   const { marketplace: marketplaceParam } = useParams()
   const code = searchParams.get('code')
+  const state = searchParams.get('state')
   const marketplace = canonicalShopMarketplace(marketplaceParam)
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export default function OAuthCallback() {
       }
 
       try {
-        await api.post(`/api/shops/oauth/callback/${marketplace}`, { code }, token)
+        await api.post(`/api/shops/oauth/callback/${marketplace}`, { code, state }, token)
         navigate(`/settings?connected=${marketplace}`, { replace: true })
       } catch (err) {
         setError(err.message || 'Failed to exchange authorization code')
@@ -31,7 +32,7 @@ export default function OAuthCallback() {
     }
 
     exchange()
-  }, [code, marketplace, navigate, token])
+  }, [code, state, marketplace, navigate, token])
 
   if (error) {
     return (

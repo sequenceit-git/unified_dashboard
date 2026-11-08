@@ -1,5 +1,6 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
+const { productAccess, requireProductAccess } = require('../../services/productAccess')
 const { paging, sortOf, paged } = require('../../utils/query')
 const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
@@ -176,6 +177,7 @@ router.post('/', async (req, res) => {
 // PATCH /api/products/:id
 router.patch('/:id', async (req, res) => {
   try {
+    if (!(await requireProductAccess(req, res, req.params.id))) return
     const before = await Product.findById(req.params.id).lean()
     if (!before) return res.status(404).json({ error: 'Not found' })
     // The SKU links the product to its marketplace listings, so it never changes.
@@ -198,11 +200,21 @@ router.delete('/:id', async (req, res) => {
   try {
     const doc = await Product.findById(req.params.id)
     if (!doc) return res.status(404).json({ error: 'Not found' })
-    const listings = await Listing.find({ productId: doc._id })
+    // A sub-admin only removes their own shops' listings; the product itself goes once none are left.
+    const access = await productAccess(req, doc._id)
+    if (!access.visible) return res.status(404).json({ error: 'Not found' })
+    const partial = access.mine !== null && access.others > 0
+    const listings = access.mine
+      ? await Listing.find({ _id: { $in: access.mine.map((row) => row._id) } })
+      : await Listing.find({ productId: doc._id })
     for (const listing of listings) {
       await marketplaceManager.forgetListing(listing, [doc.sku])
       const shop = await Shop.findById(listing.shopId)
       if (shop) await marketplaceManager.removeFromShop(shop, listing)
+    }
+    if (partial) {
+      await Listing.deleteMany({ _id: { $in: listings.map((row) => row._id) } })
+      return res.json({ deleted: false, removedListings: listings.length, note: 'The product is still listed on shops outside your access.' })
     }
     if (!listings.length) {
       const shops = await Shop.find({ status: 'connected' }).select('_id')
@@ -231,7 +243,7 @@ router.post('/:id/list', async (req, res) => {
 
     if (req.user.role === 'sub_admin') {
       const isAllowedShop = req.allowedShopIds?.some((id) => String(id) === String(shop._id))
-      const isAllowedMarket = req.user.marketplaces?.includes(shop.marketplace)
+      const isAllowedMarket = req.authUser?.marketplaces?.includes(shop.marketplace)
       if (!isAllowedShop || !isAllowedMarket) {
         return res.status(403).json({ error: 'You do not have permission to list on this shop' })
       }
@@ -349,7 +361,11 @@ router.post('/:id/list', async (req, res) => {
 router.post('/:id/listing-action', async (req, res) => {
   try {
     const action = String(req.body.action || '')
-    const listing = await Listing.findOne({ productId: req.params.id, ...(req.body.marketplace ? { marketplace: req.body.marketplace } : {}) })
+    const listing = await Listing.findOne({
+      productId: req.params.id,
+      ...shopFilter(req, Listing),
+      ...(req.body.marketplace ? { marketplace: req.body.marketplace } : {}),
+    })
     if (!listing?.externalListingId) return res.status(404).json({ error: 'This product is not listed on a shop yet.' })
     const shop = await Shop.findById(listing.shopId)
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
@@ -396,6 +412,7 @@ router.post('/:id/listing-action', async (req, res) => {
 // PATCH /api/products/:id/sync — push local price/stock to its listings
 router.patch('/:id/sync', async (req, res) => {
   try {
+    if (!(await requireProductAccess(req, res, req.params.id))) return
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ error: 'Product not found' })
 
@@ -418,6 +435,7 @@ router.patch('/:id/price', async (req, res) => {
       return res.status(400).json({ error: 'Valid price is required' })
     }
 
+    if (!(await requireProductAccess(req, res, req.params.id))) return
     const numPrice = Number(price)
     const product = await Product.findByIdAndUpdate(req.params.id, { basePrice: numPrice }, { new: true })
     if (!product) return res.status(404).json({ error: 'Product not found' })

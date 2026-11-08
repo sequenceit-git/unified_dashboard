@@ -24,6 +24,8 @@ const eventRoutes = require('./routes/system/events')
 const notificationRoutes = require('./routes/system/notifications')
 
 const app = express()
+// Behind Traefik / Vercel: use the real client IP (login throttle, req.protocol).
+app.set('trust proxy', 1)
 const PORT = process.env.PORT || 5001
 // Comma-separated frontend origins, so local + deployed frontends both work
 // without code changes, e.g. CLIENT_URL=http://localhost:5173,https://unified-dashboard-lime.vercel.app
@@ -39,7 +41,13 @@ const CLIENT_URLS = [
 ]
 
 app.use(cors({ origin: CLIENT_URLS, credentials: true }))
-app.use(express.json({ limit: '50mb' }))
+app.use(express.json({
+  limit: '50mb',
+  // eBay signs the exact bytes of its deletion notices, so keep them for signature checks.
+  verify: (req, res, buf) => {
+    if (req.originalUrl.startsWith('/api/ebay/deletion')) req.rawBody = buf
+  },
+}))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 

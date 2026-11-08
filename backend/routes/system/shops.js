@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireRole } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireRole, canUseSection, canAccessShop, signOAuthState, verifyOAuthState } = require('../../middleware/auth')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const config = require('../../config/marketplaces')
@@ -24,6 +24,10 @@ router.get('/oauth/callback/:marketplace', async (req, res) => {
 
     const market = canonicalMarketplace(marketplace)
     if (!market) return res.redirect(`${clientUrl}/settings?error=${encodeURIComponent('Unknown marketplace')}`)
+    // This route has no login, so only a connect flow a super admin started here may complete it.
+    if (!verifyOAuthState(req.query.state, market)) {
+      return res.redirect(`${clientUrl}/settings?error=${encodeURIComponent('Invalid or expired connect request. Start the connection again from Settings.')}`)
+    }
     const tokenData = await marketplaceManager.exchangeCode(market, code)
     const existing = tokenData.externalShopId
       ? null
@@ -57,6 +61,21 @@ router.get('/oauth/callback/:marketplace', async (req, res) => {
 })
 
 router.use(requireAuth, loadAccess)
+
+/**
+ * Guards a shop-section write: the user needs the section's main route and, when they have a
+ * restricted `allowedSections` list, the section itself on that marketplace.
+ */
+function sectionGuard(sectionId, defaultMarketplace = 'ebay') {
+  return (req, res, next) => {
+    const marketplace = canonicalMarketplace(req.body?.marketplace || req.query.marketplace || defaultMarketplace)
+    const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === sectionId)
+    if (!section || !canUseSection(req.authUser || req.user, marketplace, sectionId, section.route)) {
+      return res.status(403).json({ error: `You do not have access to ${section?.label || sectionId} on this shop` })
+    }
+    next()
+  }
+}
 
 // GET /api/shops — id/name/marketplace for dropdowns and tabs.
 // Sub-admins only see their own shop.
@@ -92,8 +111,8 @@ router.get('/sections/:sectionId', async (req, res) => {
     const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === req.params.sectionId)
     if (!section || !sections.hasLoader(marketplace, section.id)) return res.status(404).json({ error: 'This shop has no such section' })
     const user = req.authUser || req.user
-    if (user.role !== 'super_admin' && !user.mainRoutes?.includes(section.route)) {
-      return res.status(403).json({ error: `You do not have access to the ${section.route} section` })
+    if (!canUseSection(user, marketplace, section.id, section.route)) {
+      return res.status(403).json({ error: `You do not have access to ${section.label} on this shop` })
     }
     const filter = { marketplace, status: 'connected' }
     if (req.user.role === 'sub_admin') filter._id = { $in: req.allowedShopIds }
@@ -117,7 +136,7 @@ router.get('/sections/:sectionId', async (req, res) => {
 })
 
 // POST /api/shops/sections/offers/send — send discount offer to interested buyers on eBay
-router.post('/sections/offers/send', async (req, res) => {
+router.post('/sections/offers/send', sectionGuard('offers'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { listingId, discountPercentage = 10, message, allowCounterOffer = false } = req.body
@@ -146,7 +165,7 @@ router.post('/sections/offers/send', async (req, res) => {
 })
 
 // POST /api/shops/sections/returns/decide — approve or decline buyer return on eBay
-router.post('/sections/returns/decide', async (req, res) => {
+router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { returnId, decision = 'APPROVE', comments } = req.body
@@ -175,7 +194,7 @@ router.post('/sections/returns/decide', async (req, res) => {
 })
 
 // POST /api/shops/sections/cancellations/decide — approve or reject cancellation request on eBay/TikTok
-router.post('/sections/cancellations/decide', async (req, res) => {
+router.post('/sections/cancellations/decide', sectionGuard('returns'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { cancelId, action = 'approve', trackingNumber, shipmentDate } = req.body
@@ -204,7 +223,7 @@ router.post('/sections/cancellations/decide', async (req, res) => {
 })
 
 // POST /api/shops/sections/promotions/create — create promotional campaign on eBay/TikTok
-router.post('/sections/promotions/create', async (req, res) => {
+router.post('/sections/promotions/create', sectionGuard('promotions'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { name, description, percentageOff, listingIds, startDate, endDate } = req.body
@@ -232,7 +251,7 @@ router.post('/sections/promotions/create', async (req, res) => {
 })
 
 // POST /api/shops/sections/promotions/:id/pause — pause active promotion
-router.post('/sections/promotions/:id/pause', async (req, res) => {
+router.post('/sections/promotions/:id/pause', sectionGuard('promotions'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
@@ -258,7 +277,7 @@ router.post('/sections/promotions/:id/pause', async (req, res) => {
 })
 
 // POST /api/shops/sections/promotions/:id/resume — resume paused promotion
-router.post('/sections/promotions/:id/resume', async (req, res) => {
+router.post('/sections/promotions/:id/resume', sectionGuard('promotions'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
@@ -284,7 +303,7 @@ router.post('/sections/promotions/:id/resume', async (req, res) => {
 })
 
 // GET /api/shops/sections/fulfillment/:packageId/label — fetch package shipping document from TikTok Shop
-router.get('/sections/fulfillment/:packageId/label', async (req, res) => {
+router.get('/sections/fulfillment/:packageId/label', sectionGuard('fulfillment', 'tiktok_shop'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.query.marketplace || 'tiktok_shop')
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
@@ -346,7 +365,7 @@ router.get('/oauth/connect/:marketplace', requireRole('super_admin'), (req, res)
   try {
     const marketplace = canonicalMarketplace(req.params.marketplace)
     if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
-    const state = req.query.state || `${marketplace}-${Date.now()}`
+    const state = signOAuthState(req.user.id, marketplace)
     const url = marketplaceManager.getAuthUrl(marketplace, state)
     res.json({ url, state })
   } catch (err) {
@@ -359,8 +378,11 @@ router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (r
   try {
     const marketplace = canonicalMarketplace(req.params.marketplace)
     if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
-    const { code, shopName } = req.body
+    const { code, shopName, state } = req.body
     if (!code) return res.status(400).json({ error: 'Authorization code is required' })
+    if (state && !verifyOAuthState(state, marketplace, req.user.id)) {
+      return res.status(400).json({ error: 'Invalid or expired connect request. Start the connection again from Settings.' })
+    }
 
     const tokenData = await marketplaceManager.exchangeCode(marketplace, code)
     const existingMarketShop = tokenData.externalShopId
@@ -404,6 +426,7 @@ router.get('/:id/categories', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
     const query = String(req.query.q || '').trim().toLowerCase()
     const categories = await cache.wrap(`taxonomy:${shop._id}:categories:${query}`, 6 * 3600, async () => (await marketplaceManager.getCategories(shop, req.query.q)) || [])
     res.json(categories)
@@ -417,6 +440,7 @@ router.get('/:id/categories/:categoryId/attributes', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
     const attributes = await cache.wrap(`taxonomy:${shop._id}:attributes:${req.params.categoryId}`, 24 * 3600, async () => (await marketplaceManager.getCategoryAttributes(shop, req.params.categoryId)) || [])
     res.json(attributes)
   } catch (err) {
@@ -429,6 +453,7 @@ router.get('/:id/categories/:categoryId/rules', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
     const rules = await cache.wrap(
       `taxonomy:${shop._id}:rules:${req.params.categoryId}`,
       24 * 3600,
@@ -443,8 +468,11 @@ router.get('/:id/categories/:categoryId/rules', async (req, res) => {
 // GET /api/shops/:id/finances — Settlement and fee breakdown
 router.get('/:id/finances', async (req, res) => {
   try {
-    const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
+    const shop = await Shop.findById(req.params.id)
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (!canAccessShop(req, shop._id) || !canUseSection(req.authUser || req.user, shop.marketplace, 'finances', 'analytics')) {
+      return res.status(403).json({ error: 'You do not have permission for this shop' })
+    }
     const finances = await marketplaceManager.getFinances(shop)
     res.json(finances || {})
   } catch (err) {
@@ -472,6 +500,7 @@ router.post('/:id/sync', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('_id')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
     const result = await syncQueue.enqueue('full', shop._id, { wait: true })
     res.json({ success: true, result })
   } catch (err) {

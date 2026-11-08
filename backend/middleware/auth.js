@@ -103,4 +103,37 @@ function shopFilter(req, model) {
   return { shopId: { $in: req.allowedShopIds || [] } }
 }
 
-module.exports = { signToken, requireAuth, loadAccess, requireRole, requireMainRoute, shopFilter, clearUserAccessCache }
+/** True when the user may reach one shop-specific section (e.g. `returns` on eBay). Mirrors the frontend gate. */
+function canUseSection(user, marketplace, sectionId, route) {
+  if (!user) return false
+  if (user.role === 'super_admin') return true
+  if (route && !user.mainRoutes?.includes(route)) return false
+  const list = user.allowedSections
+  if (!Array.isArray(list) || list.length === 0) return true
+  return list.includes(sectionId) || list.includes(`${marketplace}:${sectionId}`)
+}
+
+/** True when the user may act on this shop (super admins: any shop). */
+function canAccessShop(req, shopId) {
+  if ((req.authUser || req.user).role !== 'sub_admin') return true
+  return (req.allowedShopIds || []).some((id) => String(id) === String(shopId))
+}
+
+/** Short-lived signed `state` for OAuth connect, bound to the super admin who started it. */
+function signOAuthState(userId, marketplace) {
+  return jwt.sign({ u: String(userId), m: marketplace, p: 'oauth' }, process.env.JWT_SECRET, { expiresIn: '15m' })
+}
+
+function verifyOAuthState(state, marketplace, userId) {
+  try {
+    const payload = jwt.verify(String(state || ''), process.env.JWT_SECRET)
+    return payload.p === 'oauth' && payload.m === marketplace && (!userId || payload.u === String(userId))
+  } catch {
+    return false
+  }
+}
+
+module.exports = {
+  signToken, requireAuth, loadAccess, requireRole, requireMainRoute, shopFilter, clearUserAccessCache,
+  canUseSection, canAccessShop, signOAuthState, verifyOAuthState,
+}

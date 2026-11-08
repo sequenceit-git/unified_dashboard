@@ -59,6 +59,12 @@ async function syncReportOpportunities(report) {
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('market-research'))
 
+/** Sub-admins may only stop or delete research runs they started themselves. */
+function ownsReport(req, report) {
+  if ((req.authUser || req.user).role !== 'sub_admin') return true
+  return Boolean(report.runBy) && String(report.runBy) === String(req.user.id)
+}
+
 // ─── GET /api/research/reports — list all reports ────────────────────────────
 router.get('/reports', async (req, res) => {
   try {
@@ -260,10 +266,11 @@ router.post('/stop/:reportId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
 
-    const current = await ResearchReport.findById(reportId).select('status opportunities')
+    const current = await ResearchReport.findById(reportId).select('status opportunities runBy')
     if (!current) {
       return res.status(404).json({ error: 'Report not found' })
     }
+    if (!ownsReport(req, current)) return res.status(403).json({ error: 'Only the person who started this search can stop it.' })
     if (!['queued', 'running', 'stopping'].includes(current.status)) {
       return res.status(409).json({ error: 'This search has already finished.', status: current.status })
     }
@@ -300,10 +307,12 @@ router.delete('/reports/:reportId', async (req, res) => {
     if (!mongoose.isValidObjectId(reportId)) {
       return res.status(400).json({ error: 'Invalid report ID' })
     }
-    const report = await ResearchReport.findByIdAndDelete(reportId)
+    const report = await ResearchReport.findById(reportId).select('runBy')
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
+    if (!ownsReport(req, report)) return res.status(403).json({ error: 'Only the person who started this search can delete it.' })
+    await ResearchReport.deleteOne({ _id: reportId })
     res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -413,7 +422,7 @@ router.post('/add-to-catalog', async (req, res) => {
       return res.status(400).json({ error: 'Select eBay, TikTok Shop, or Temu Shop' })
     }
 
-    if (req.user.role === 'sub_admin' && !req.user.marketplaces?.includes(marketplace)) {
+    if (req.user.role === 'sub_admin' && !req.authUser?.marketplaces?.includes(marketplace)) {
       return res.status(403).json({ error: `You do not have permission to list on ${SHOP_LABELS[marketplace] || marketplace}` })
     }
 

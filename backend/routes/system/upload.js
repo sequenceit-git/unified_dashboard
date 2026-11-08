@@ -2,7 +2,7 @@ const express = require('express')
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
-const { requireAuth } = require('../../middleware/auth')
+const { requireAuth, loadAccess } = require('../../middleware/auth')
 
 const router = express.Router()
 
@@ -12,7 +12,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 
 // POST /api/upload — accepts base64 data URL or raw image payloads
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, loadAccess, async (req, res) => {
   try {
     const { image, images, filename } = req.body
 

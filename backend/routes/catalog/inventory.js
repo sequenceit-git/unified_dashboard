@@ -1,5 +1,6 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, canAccessShop } = require('../../middleware/auth')
+const { requireProductAccess } = require('../../services/productAccess')
 const { paging, paged } = require('../../utils/query')
 const InventoryLog = require('../../models/InventoryLog')
 const Product = require('../../models/Product')
@@ -106,6 +107,8 @@ router.post('/adjust', async (req, res) => {
     if (!productId || !reason) {
       return res.status(400).json({ error: 'productId and reason are required' })
     }
+    if (!(await requireProductAccess(req, res, productId))) return
+    if (shopId && !canAccessShop(req, shopId)) return res.status(403).json({ error: 'You do not have permission for this shop' })
     const product = await Product.findById(productId)
     if (!product) return res.status(404).json({ error: 'Product not found' })
 
@@ -214,7 +217,7 @@ router.post('/adjust', async (req, res) => {
 // POST /api/inventory/sync — push all live product inventory levels to connected marketplace listings
 router.post('/sync', async (req, res) => {
   try {
-    const listingFilter = { status: { $in: ['live', 'out_of_stock'] } }
+    const listingFilter = { status: { $in: ['live', 'out_of_stock'] }, ...shopFilter(req, Listing) }
     const marketplace = canonicalMarketplace(req.body?.marketplace)
     if (marketplace) listingFilter.marketplace = marketplace
     const listings = await Listing.find(listingFilter).populate('productId').populate('shopId')

@@ -96,6 +96,12 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
   }
 })
 
+// Account records (names, emails, roles) are for super admins only.
+router.use('/users', (req, res, next) => {
+  if ((req.authUser || req.user).role !== 'super_admin') return res.status(403).json({ error: 'Forbidden' })
+  next()
+})
+
 for (const [name, model] of Object.entries(resources)) {
   // GET /api/dashboard/<collection>?limit=50
   router.get(`/${name}`, async (req, res) => {
@@ -114,20 +120,8 @@ for (const [name, model] of Object.entries(resources)) {
     }
   })
 
-  // POST /api/dashboard/<collection>
-  router.post(`/${name}`, async (req, res) => {
-    try {
-      const body = { ...req.body }
-      // sub_admin can only write into their own shop
-      if (req.user.role === 'sub_admin' && model.schema.path('shopId')) {
-        body.shopId = req.allowedShopIds[0]
-      }
-      const doc = await model.create(body)
-      res.status(201).json(doc)
-    } catch (err) {
-      res.status(400).json({ error: err.message })
-    }
-  })
+  // No POST here: the dashboard only reads. A generic create let any user with the dashboard
+  // permission write into any collection, including `users` (privilege escalation).
 
   // GET /api/dashboard/<collection>/:id
   router.get(`/${name}/:id`, async (req, res) => {
