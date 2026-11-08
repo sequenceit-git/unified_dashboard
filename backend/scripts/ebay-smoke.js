@@ -59,6 +59,20 @@ async function main() {
     for (const section of PROFILES.ebay.sections) {
       await check(`Section probe: ${section.label} (${section.needs})`, async () => { await section.probe(token, shop) })
     }
+    await check('Active listing pages (stock/price/SKU present)', async () => {
+      const { items, complete } = await ebay.getListingSummaries(token)
+      const missing = items.filter((row) => !Number.isFinite(row.stock) || !Number.isFinite(row.price)).length
+      if (missing) throw new Error(`${missing} of ${items.length} listings lack stock or price on the list page (they will use GetItem)`)
+      return `${items.length} listings, complete=${complete}`
+    })
+    await check('Order paging and tracking record', async () => {
+      const page = await ebayFetch(token, '/sell/fulfillment/v1/order?limit=5')
+      const shipped = (page.orders || []).find((order) => order.fulfillmentHrefs?.length)
+      if (!shipped) return `${page.total ?? '?'} orders, none shipped to inspect`
+      const records = await ebay.getShippingFulfillments(token, shipped.orderId)
+      if (!records[0]?.shipmentTrackingNumber) throw new Error('shipment record has no shipmentTrackingNumber')
+      return `tracking ${records[0].shipmentTrackingNumber}`
+    })
     await check('Post-Order cases search (IAF)', async () => {
       const body = await ebayFetch(token, '/post-order/v2/casemanagement/search?limit=1', { iaf: true })
       return `${(body.members || []).length} rows`

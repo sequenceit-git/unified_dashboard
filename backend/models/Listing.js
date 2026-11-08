@@ -18,6 +18,8 @@ const listingSchema = new mongoose.Schema(
     marketplaceStatus: { type: String },
     syncError: { type: String },
     lastSyncedAt: { type: Date },
+    // Last time the full listing (description, images, specifics) was read from the marketplace.
+    detailSyncedAt: { type: Date },
   },
   { timestamps: true },
 )

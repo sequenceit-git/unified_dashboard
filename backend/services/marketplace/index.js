@@ -157,6 +157,59 @@ class UnifiedMarketplaceManager {
   }
 
   /**
+   * All eBay orders changed since the last complete sync (everything eBay still returns on the
+   * first run), read page by page. `complete` is false if the page cap was hit, so the sync
+   * cursor is not advanced and the remainder is picked up next time.
+   */
+  async fetchEbayOrders(shop, token, service) {
+    const OVERLAP_MS = 60 * 60 * 1000
+    const PAGE = 200
+    const MAX_PAGES = 25
+    const since = shop.ordersSyncedAt ? new Date(new Date(shop.ordersSyncedAt).getTime() - OVERLAP_MS) : null
+    const filter = since ? `lastmodifieddate:[${since.toISOString()}..]` : ''
+    const orders = []
+    let complete = true
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const res = await service.getOrders(token, { limit: PAGE, offset: page * PAGE, filter })
+      orders.push(...(res.orders || []))
+      if (!res.next || !(res.orders || []).length) break
+      if (page === MAX_PAGES - 1) complete = false
+    }
+    return { orders, complete }
+  }
+
+  /**
+   * Fills in the real tracking number, carrier and ship date of shipped eBay orders from their
+   * shipment records. Orders already verified are skipped; at most 40 are read per run so a
+   * large backlog heals over several runs.
+   */
+  async attachEbayTracking(shop, token, service, rawOrders) {
+    const shipped = rawOrders.filter((order) => order.hasFulfillment)
+    if (!shipped.length || typeof service.getShippingFulfillments !== 'function') return
+    const stored = await Order.find({ shopId: shop._id, externalOrderId: { $in: shipped.map((order) => order.externalOrderId) } })
+      .select('externalOrderId shipping.trackingVerified').lean()
+    const verified = new Set(stored.filter((order) => order.shipping?.trackingVerified).map((order) => order.externalOrderId))
+    const queue = shipped.filter((order) => !verified.has(order.externalOrderId)).slice(0, 40)
+    const worker = async () => {
+      while (queue.length) {
+        const order = queue.shift()
+        const records = await service.getShippingFulfillments(token, order.externalOrderId)
+        const latest = [...records].sort((a, b) => new Date(b.shippedDate || 0) - new Date(a.shippedDate || 0))[0]
+        const tracking = latest?.shipmentTrackingNumber || latest?.trackingNumber
+        if (!tracking) continue
+        order.shipping = {
+          ...order.shipping,
+          carrier: latest.shippingCarrierCode || order.shipping?.carrier,
+          trackingNumber: String(tracking),
+          shippedAt: latest.shippedDate ? new Date(latest.shippedDate) : undefined,
+          trackingVerified: true,
+        }
+      }
+    }
+    await Promise.all([worker(), worker(), worker()])
+  }
+
+  /**
    * Synchronizes and imports orders from a marketplace store
    */
   async syncOrdersForShop(shop) {
@@ -177,12 +230,14 @@ class UnifiedMarketplaceManager {
     }
 
     let rawOrders = []
+    const syncStartedAt = new Date()
+    let ordersComplete = true
     try {
       const service = this.getService(shop.marketplace)
       let updatedCount = 0
       if (shop.marketplace === 'ebay') {
         const [res, rawCancellations, rawReturns] = await Promise.all([
-          service.getOrders(token, { limit: 50 }),
+          this.fetchEbayOrders(shop, token, service),
           typeof service.getCancellations === 'function' ? service.getCancellations(token).catch(() => []) : [],
           typeof service.getReturns === 'function' ? service.getReturns(token).catch(() => []) : [],
         ])
@@ -209,7 +264,8 @@ class UnifiedMarketplaceManager {
           const shipTo = o.fulfillmentStartPlans?.[0]?.shippingStep?.shipTo || o.fulfillmentStartInstructions?.[0]?.shippingStep?.shipTo
           const username = o.buyer?.username || ''
           const fullName = reg?.fullName || shipTo?.fullName || username || 'eBay Customer'
-          const email = reg?.email || shipTo?.email || (username ? `${username}@members.ebay.com` : '')
+          // eBay hides most buyer emails; keep it empty rather than inventing an address.
+          const email = reg?.email || shipTo?.email || ''
           const phone = reg?.primaryPhone?.phoneNumber || shipTo?.primaryPhone?.phoneNumber || tax?.primaryPhone?.phoneNumber || ''
           const address = {
             street: reg?.contactAddress?.addressLine1 || shipTo?.contactAddress?.addressLine1 || '',
@@ -237,14 +293,9 @@ class UnifiedMarketplaceManager {
           const maxEstimatedDelivery = maxEstimatedDeliveryStr ? new Date(maxEstimatedDeliveryStr) : null
           const isPastEstimatedDelivery = Boolean(maxEstimatedDelivery && maxEstimatedDelivery <= now)
 
-          // Tracking number from fulfillment hrefs if available:
-          let trackingNumber = undefined
-          if (Array.isArray(o.fulfillmentHrefs) && o.fulfillmentHrefs.length > 0) {
-            const rawHrefId = String(o.fulfillmentHrefs[0]).split('/').pop()
-            if (rawHrefId && /^\d+$/.test(rawHrefId)) {
-              trackingNumber = rawHrefId
-            }
-          }
+          // fulfillmentHrefs hold eBay's fulfillment IDs, not tracking numbers; the real tracking
+          // number, carrier and ship date are read from the shipment records afterwards.
+          const hasFulfillment = Array.isArray(o.fulfillmentHrefs) && o.fulfillmentHrefs.length > 0
 
           // Refunds detection:
           const refundsList = Array.isArray(o.paymentSummary?.refunds) ? o.paymentSummary.refunds : []
@@ -321,13 +372,12 @@ class UnifiedMarketplaceManager {
 
           const shippingObj = {
             carrier: carrier || undefined,
-            trackingNumber: trackingNumber || undefined,
-            shippedAt: o.orderFulfillmentStatus === 'FULFILLED' ? new Date(o.creationDate) : undefined,
             deliveredAt: (orderStatus === 'delivered' && maxEstimatedDelivery) ? maxEstimatedDelivery : undefined,
           }
 
           return {
             externalOrderId: o.orderId,
+            hasFulfillment,
             placedAt: new Date(o.creationDate),
             status: orderStatus,
             shipping: shippingObj,
@@ -368,6 +418,8 @@ class UnifiedMarketplaceManager {
             }),
           }
         })
+        await this.attachEbayTracking(shop, token, service, rawOrders)
+        ordersComplete = res.complete
       } else {
         const res = await service.getOrders(token, { limit: 50, shop })
         rawOrders = res.orders || []
@@ -502,7 +554,7 @@ class UnifiedMarketplaceManager {
               category: 'General',
               brand: shop.name || 'Store item',
               images: itemImages,
-              basePrice: item.unitPrice || 19.99,
+              basePrice: item.unitPrice || undefined,
               stock: 0,
               status: 'active',
               source: 'marketplace_sync',
@@ -537,8 +589,9 @@ class UnifiedMarketplaceManager {
         if (existing) {
           // If the order was already marked as cancelled or refunded in our system,
           // never regress it back to 'paid', 'pending', or 'processing'
-          if (['cancelled', 'refunded'].includes(existing.status) && ['paid', 'pending', 'processing'].includes(ord.status)) {
-            // Keep existing cancelled or refunded status
+          if (['cancelled', 'refunded', 'shipped', 'delivered'].includes(existing.status) && ['paid', 'pending', 'processing'].includes(ord.status)) {
+            // Keep the status we already have: eBay has no shipment yet (or the tracking push is
+            // still pending), and a cancelled/refunded order must not come back to life.
           } else {
             existing.status = ord.status
           }
@@ -565,13 +618,24 @@ class UnifiedMarketplaceManager {
             existing.shippingAddress = ord.shippingAddress
           }
           if (ord.shipping) {
-            existing.shipping = {
-              ...(existing.shipping?.toObject?.() || existing.shipping || {}),
-              carrier: ord.shipping.carrier || existing.shipping?.carrier,
-              trackingNumber: existing.shipping?.trackingNumber || ord.shipping.trackingNumber,
-              shippedAt: existing.shipping?.shippedAt || ord.shipping.shippedAt,
-              deliveredAt: ord.shipping.deliveredAt || existing.shipping?.deliveredAt,
-            }
+            const prev = existing.shipping?.toObject?.() || existing.shipping || {}
+            existing.shipping = ord.shipping.trackingVerified
+              // The marketplace's own shipment record replaces whatever was stored before.
+              ? {
+                  ...prev,
+                  carrier: ord.shipping.carrier || prev.carrier,
+                  trackingNumber: ord.shipping.trackingNumber,
+                  shippedAt: ord.shipping.shippedAt || prev.shippedAt,
+                  deliveredAt: ord.shipping.deliveredAt || prev.deliveredAt,
+                  trackingVerified: true,
+                }
+              : {
+                  ...prev,
+                  carrier: ord.shipping.carrier || prev.carrier,
+                  trackingNumber: prev.trackingNumber || ord.shipping.trackingNumber,
+                  shippedAt: prev.shippedAt || ord.shipping.shippedAt,
+                  deliveredAt: ord.shipping.deliveredAt || prev.deliveredAt,
+                }
           }
           if (Array.isArray(ord.returns) && ord.returns.length > 0) {
             existing.returns = ord.returns
@@ -587,10 +651,17 @@ class UnifiedMarketplaceManager {
           })
           createdCount++
 
-          // Deduct stock for newly imported order
+          // Deduct stock for newly imported order. Not for orders that arrive already cancelled or
+          // refunded, and not for eBay sales the last listing sync already counted (eBay's own
+          // stock fell when the item sold, and listing sync copies that number).
           for (const item of ord.items || []) {
+            if (['cancelled', 'refunded'].includes(ord.status)) break
             if (item.productId && item.quantity > 0) {
               try {
+                if (shop.marketplace === 'ebay') {
+                  const synced = await Listing.findOne({ shopId: shop._id, productId: item.productId }).select('lastSyncedAt').lean()
+                  if (synced?.lastSyncedAt && ord.placedAt && new Date(synced.lastSyncedAt) > new Date(ord.placedAt)) continue
+                }
                 const prod = await Product.findById(item.productId)
                 if (prod && prod.stock > 0) {
                   const stockBefore = prod.stock
@@ -620,7 +691,10 @@ class UnifiedMarketplaceManager {
 
       await saveCustomerStats(touchedCustomerIds)
 
-      await Shop.updateOne({ _id: shop._id }, { lastSyncAt: new Date() })
+      await Shop.updateOne({ _id: shop._id }, {
+        lastSyncAt: new Date(),
+        ...(shop.marketplace === 'ebay' && ordersComplete ? { ordersSyncedAt: syncStartedAt } : {}),
+      })
 
       syncLog.stats = {
         fetched: rawOrders.length,
@@ -842,45 +916,95 @@ class UnifiedMarketplaceManager {
     }
   }
 
+  /**
+   * eBay listings in few calls. Every run reads the listing pages (id, SKU, title, price, stock),
+   * which is all that changes day to day. Full details (description, images, specifics) are read
+   * with GetItem only for listings we have never imported and for the ones not refreshed in a day.
+   * Returns `seenIds` (every id eBay listed) so a listing whose detail call failed is never
+   * mistaken for an ended one; `complete` is false if any listing page could not be read.
+   */
+  async fetchEbayListings(shop, token, service) {
+    const DETAIL_STALE_MS = 24 * 60 * 60 * 1000
+    const NEW_PER_RUN = 60
+    const STALE_PER_RUN = 20
+    const { items: summaries, complete } = await service.getListingSummaries(token)
+
+    const aliasOf = new Map()
+    for (const row of summaries) for (const alias of listingAliases(row.itemId)) aliasOf.set(alias, row.itemId)
+    const known = await Listing.find({ shopId: shop._id, externalListingId: { $in: [...aliasOf.keys()] } })
+      .select('externalListingId detailSyncedAt').lean()
+    const detailedAt = new Map()
+    for (const row of known) {
+      const id = aliasOf.get(row.externalListingId) || aliasOf.get(productKey(row.externalListingId))
+      if (id) detailedAt.set(id, row.detailSyncedAt ? new Date(row.detailSyncedAt).getTime() : 0)
+    }
+    const needsPrice = (row) => !Number.isFinite(row.price) || !Number.isFinite(row.stock)
+    const isNew = summaries.filter((row) => !detailedAt.has(row.itemId))
+    const stale = summaries
+      .filter((row) => detailedAt.has(row.itemId) && (needsPrice(row) || Date.now() - detailedAt.get(row.itemId) > DETAIL_STALE_MS))
+      .sort((a, b) => detailedAt.get(a.itemId) - detailedAt.get(b.itemId))
+    const toFetch = [...isNew.slice(0, NEW_PER_RUN), ...stale.slice(0, STALE_PER_RUN)]
+
+    const details = new Map()
+    const queue = [...toFetch]
+    const worker = async () => {
+      while (queue.length) {
+        const row = queue.shift()
+        try {
+          const detail = await service.getListingDetail(token, row.itemId)
+          if (detail) details.set(row.itemId, detail)
+        } catch (err) {
+          console.warn(`[ebay sync] ${shop.name}: could not read item ${row.itemId}: ${err.message}`)
+        }
+      }
+    }
+    await Promise.all([worker(), worker(), worker()])
+
+    const items = []
+    for (const row of summaries) {
+      const detail = details.get(row.itemId)
+      // A listing we have never imported needs its details; skip it for now (it counts as seen).
+      if (!detail && !detailedAt.has(row.itemId)) continue
+      const source = detail || row
+      const rawSku = source.sku || ''
+      const isDraftSku = rawSku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(rawSku) || rawSku.startsWith('EP-')
+      const cleanSku = rawSku
+        ? (/^\d+$/.test(rawSku)
+            ? `EBAY-${rawSku}`
+            : rawSku.startsWith('EB-')
+            ? rawSku.replace(/^EB-/, 'EBAY-')
+            : isDraftSku
+            ? `EBAY-${row.itemId}`
+            : rawSku)
+        : `EBAY-${row.itemId}`
+      const price = Number.isFinite(source.price) && source.price > 0 ? source.price : row.price
+      const stock = Number.isFinite(source.stock) ? source.stock : row.stock
+      items.push({
+        sku: cleanSku,
+        aliases: [row.itemId, `item-${row.itemId}`, `EBAY-${row.itemId}`, ...(rawSku ? [rawSku, `item-${rawSku}`] : [])],
+        matchSkus: [cleanSku, rawSku, row.itemId, `EBAY-${row.itemId}`].filter(Boolean),
+        externalListingId: row.itemId,
+        title: source.title || row.title,
+        description: detail?.description,
+        price,
+        stock,
+        images: detail?.images,
+        category: detail?.category,
+        brand: detail?.brand,
+        attributes: detail?.specifics,
+        listingStatus: 'live',
+        marketplaceStatus: source.listingStatus || 'Active',
+        listingUrl: source.url || row.url || `https://www.ebay.com/itm/${row.itemId}`,
+        detailed: Boolean(detail),
+      })
+    }
+    return { complete, items, seenIds: summaries.map((row) => row.itemId) }
+  }
+
   /** Listings as they are on the marketplace right now, in one shape for every shop. */
   async fetchShopListings(shop, token) {
     const service = this.getService(shop.marketplace)
-    if (shop.marketplace === 'ebay') {
-      const items = await service.getListings(token)
-      return {
-        complete: items.length < 200,
-        items: items.map((item) => {
-          const rawSku = item.sku && !/^none$/i.test(String(item.sku).trim()) ? String(item.sku).trim() : ''
-          const isDraftSku = rawSku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(rawSku) || rawSku.startsWith('EP-')
-          const cleanSku = rawSku
-            ? (/^\d+$/.test(rawSku)
-                ? `EBAY-${rawSku}`
-                : rawSku.startsWith('EB-')
-                ? rawSku.replace(/^EB-/, 'EBAY-')
-                : isDraftSku
-                ? `EBAY-${item.itemId}`
-                : rawSku)
-            : `EBAY-${item.itemId}`
-          return {
-            sku: cleanSku,
-            aliases: [item.itemId, `item-${item.itemId}`, `EBAY-${item.itemId}`, ...(rawSku ? [rawSku, `item-${rawSku}`] : [])],
-            matchSkus: [cleanSku, rawSku, item.itemId, `EBAY-${item.itemId}`].filter(Boolean),
-            externalListingId: item.itemId,
-            title: item.title,
-            description: item.description,
-            price: item.price,
-            stock: item.stock,
-            images: item.images,
-            category: item.category,
-            brand: item.brand,
-            attributes: item.specifics,
-            listingStatus: 'live',
-            marketplaceStatus: item.listingStatus || 'Active',
-            listingUrl: item.url || `https://www.ebay.com/itm/${item.itemId}`,
-          }
-        }),
-      }
-    }
+    if (shop.marketplace === 'ebay') return this.fetchEbayListings(shop, token, service)
     if (typeof service.getInventory !== 'function') return { complete: false, items: [] }
     const res = await service.getInventory(token, { limit: 200, shop })
     const items = res.inventoryItems || []
@@ -926,7 +1050,18 @@ class UnifiedMarketplaceManager {
     }
 
     let ended = 0
-    if (fetched.complete) {
+    for (const id of fetched.seenIds || []) seenListingIds.push(id)
+    // An empty answer for a shop that has live listings is treated as a failed read, not as
+    // "everything ended"; ending listings needs a real, complete list.
+    let complete = fetched.complete
+    if (complete && !seenListingIds.length) {
+      const live = await Listing.countDocuments({ shopId: shop._id, status: { $in: ['live', 'out_of_stock'] } })
+      if (live > 0) {
+        complete = false
+        console.warn(`Listing sync for ${shop.name}: the marketplace returned no listings but ${live} are live here; not ending any.`)
+      }
+    }
+    if (complete) {
       const seen = new Set()
       for (const id of seenListingIds) listingAliases(id).forEach((key) => seen.add(key))
       const cutoff = new Date(Date.now() - 10 * 60 * 1000)
@@ -1033,13 +1168,14 @@ class UnifiedMarketplaceManager {
     Object.assign(listing, {
       marketplace: shop.marketplace,
       externalListingId: item.externalListingId,
-      price: item.price,
+      price: Number.isFinite(item.price) ? item.price : listing.price,
       stock: Number.isFinite(item.stock) ? item.stock : listing.stock,
       status: item.listingStatus === 'live' && item.stock === 0 ? 'out_of_stock' : item.listingStatus,
       marketplaceStatus: item.marketplaceStatus || undefined,
       listingUrl: item.listingUrl || undefined,
       syncError: item.listingError || null,
       lastSyncedAt: new Date(),
+      ...(item.detailed ? { detailSyncedAt: new Date() } : {}),
     })
     await listing.save()
     const notify = require('../notify')

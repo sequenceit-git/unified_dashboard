@@ -55,6 +55,8 @@ const orderSchema = new mongoose.Schema(
       trackingNumber: { type: String },
       shippedAt: { type: Date },
       deliveredAt: { type: Date },
+      // True once the tracking number/carrier/date came from the marketplace's shipment record.
+      trackingVerified: { type: Boolean },
     },
     returns: [returnSchema],
     placedAt: { type: Date },

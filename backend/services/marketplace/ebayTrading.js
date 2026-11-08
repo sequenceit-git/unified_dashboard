@@ -42,7 +42,19 @@ async function call(token, name, inner) {
     },
     body: `<?xml version="1.0" encoding="utf-8"?><${name}Request xmlns="urn:ebay:apis:eBLBaseComponents"><ErrorLanguage>en_US</ErrorLanguage><WarningLevel>High</WarningLevel>${inner}</${name}Request>`,
   })
-  const doc = parser.parse(await response.text())[`${name}Response`] || {}
+  const text = await response.text()
+  let doc
+  try {
+    doc = parser.parse(text)[`${name}Response`]
+  } catch {
+    doc = undefined
+  }
+  // A gateway/maintenance page or any reply without eBay's own <Ack> is a failure, never an empty success.
+  if (!doc || !doc.Ack) {
+    const error = new Error(`eBay ${name} failed: unexpected response (HTTP ${response.status})`)
+    error.status = response.status >= 400 ? response.status : 502
+    throw error
+  }
   const errors = (doc.Errors || []).filter((item) => item.SeverityCode === 'Error')
   if (doc.Ack === 'Failure' || errors.length) {
     const message = errors.map((item) => item.LongMessage || item.ShortMessage).join(' ') || `eBay ${name} failed`
@@ -95,6 +107,38 @@ async function getActiveItemIds(token, { maxPages = 10 } = {}) {
     if (page >= Number(list.PaginationResult?.TotalNumberOfPages || 1)) break
   }
   return ids
+}
+
+/**
+ * One line per active listing, from the GetMyeBaySelling pages alone (about one call per 200
+ * listings): id, SKU, title, price, stock available and URL. Throws if any page fails, and
+ * `complete` is true only when every page was read, so a partial read never looks like a full one.
+ */
+async function getActiveSummaries(token, { maxPages = 50 } = {}) {
+  const items = []
+  let totalPages = 1
+  let page = 1
+  for (; page <= Math.min(totalPages, maxPages); page += 1) {
+    const doc = await call(token, 'GetMyeBaySelling', `<ActiveList><Include>true</Include><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList>`)
+    const list = doc.ActiveList || {}
+    totalPages = Number(list.PaginationResult?.TotalNumberOfPages || 1)
+    for (const item of list.ItemArray?.Item || []) {
+      const available = item.QuantityAvailable != null && item.QuantityAvailable !== ''
+        ? Number(item.QuantityAvailable)
+        : item.Quantity != null ? Number(item.Quantity) - Number(item.SellingStatus?.QuantitySold || 0) : NaN
+      const price = Number(text(item.SellingStatus?.CurrentPrice) || text(item.BuyItNowPrice) || NaN)
+      items.push({
+        itemId: String(item.ItemID),
+        sku: item.SKU && !/^none$/i.test(String(item.SKU).trim()) ? String(item.SKU).trim() : '',
+        title: item.Title || '',
+        price: Number.isFinite(price) && price > 0 ? price : NaN,
+        stock: Number.isFinite(available) ? Math.max(0, available) : NaN,
+        url: item.ListingDetails?.ViewItemURL || '',
+        listingStatus: item.SellingStatus?.ListingStatus || 'Active',
+      })
+    }
+  }
+  return { items, complete: totalPages <= maxPages }
 }
 
 /** Full details of active listings (GetItem per listing), capped to keep a sync short. */
@@ -291,4 +335,4 @@ async function relistListing(token, itemId, { quantity, price, title, descriptio
   return { status: 'live', externalListingId: doc.ItemID ? String(doc.ItemID) : itemId }
 }
 
-module.exports = { getItem, getActiveItemIds, getActiveListings, addListing, reviseListing, endListing, relistListing }
+module.exports = { getItem, getActiveItemIds, getActiveSummaries, getActiveListings, addListing, reviseListing, endListing, relistListing }

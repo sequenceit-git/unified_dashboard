@@ -325,6 +325,16 @@ class EbayService {
     return response.json()
   }
 
+  /** Every active listing's id, SKU, title, price and stock in a few calls; `complete` false means pages were skipped. */
+  async getListingSummaries(accessToken) {
+    return trading.getActiveSummaries(accessToken)
+  }
+
+  /** Full details (description, images, category, item specifics) of one listing; null if eBay cannot return it. */
+  async getListingDetail(accessToken, itemId) {
+    return trading.getItem(accessToken, itemId)
+  }
+
   /** Live listings with full details, from the Trading API (includes Seller Hub listings). */
   async getListings(accessToken) {
     return trading.getActiveListings(accessToken)

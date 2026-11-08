@@ -17,6 +17,8 @@ const shopSchema = new mongoose.Schema(
       default: 'disconnected',
     },
     lastSyncAt: { type: Date },
+    // Newest order change already imported; the next order sync only asks for changes after it.
+    ordersSyncedAt: { type: Date },
     aiReplyEnabled: { type: Boolean, default: false },
     // Seller's own marketplace username; eBay messages only carry usernames, not roles.
     accountUsername: { type: String },
