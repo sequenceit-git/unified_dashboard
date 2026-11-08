@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { ErrorState, Spinner } from '../../components/ui/Feedback'
 import { useApi } from '../../hooks/useApi'
+import { useLiveEvents } from '../../hooks/useLiveEvents'
 import { api } from '../../lib/api'
 import { SHOP_SECTIONS } from '../../lib/shops'
 import { marketplaceLabel } from '../../lib/marketplaces'
@@ -14,12 +15,14 @@ const CONNECTABLE = SHOP_SECTIONS.map((section) => ({ id: section.marketplace, l
 
 function statusLabel(shop, configured) {
   if (shop?.status === 'connected') return 'Connected'
+  if (shop?.status === 'error') return 'Needs reconnecting'
   if (configured) return 'Ready to connect'
   return 'Credentials needed'
 }
 
 function statusClass(shop, configured) {
   if (shop?.status === 'connected') return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+  if (shop?.status === 'error') return 'bg-red-50 text-red-700 ring-red-600/20'
   if (configured) return 'bg-blue-50 text-blue-700 ring-blue-600/20'
   return 'bg-amber-50 text-amber-700 ring-amber-600/20'
 }
@@ -34,6 +37,11 @@ export default function SettingsPage() {
   const [syncingId, setSyncingId] = useState('')
   const [message, setMessage] = useState('')
   const [messageError, setMessageError] = useState(false)
+
+  // A sync finished on the worker (or the first sync after a connect): show the new "Last sync".
+  useLiveEvents((event) => {
+    if (event.type === 'sync' && ['full', 'listings', 'orders'].includes(event.kind)) shopsRes.refetch()
+  })
 
   const connectedMarketplace = searchParams.get('connected')
   const oauthError = searchParams.get('error')
@@ -70,9 +78,18 @@ export default function SettingsPage() {
     setSyncingId(shop._id)
     setMessage('')
     try {
-      await api.post(`/api/shops/${shop._id}/sync`, {}, token)
-      setMessage(`${shop.name} synchronized.`)
-      setMessageError(false)
+      const res = await api.post(`/api/shops/${shop._id}/sync`, {}, token)
+      const result = res?.result || {}
+      const error = result.error || result.orders?.error || result.listings?.error
+      if (error) {
+        setMessage(`${shop.name}: ${error}`)
+        setMessageError(true)
+      } else {
+        setMessage(result.queued
+          ? `${shop.name} is still syncing in the background. Pages update when it finishes.`
+          : `${shop.name} synchronized.`)
+        setMessageError(false)
+      }
       shopsRes.refetch()
     } catch (err) {
       setMessage(err.message)
@@ -134,6 +151,12 @@ export default function SettingsPage() {
                 </p>
               )}
 
+              {shop?.status === 'error' && (
+                <p className="mt-3 text-xs text-red-700">
+                  {shop.authError || 'The shop login stopped working.'} Reconnect the shop to resume syncing.
+                </p>
+              )}
+
               {!configured && isAdmin && (
                 <p className="mt-3 text-xs text-amber-700">
                   Add the {market.label} client id and secret before connecting this shop.
@@ -148,7 +171,7 @@ export default function SettingsPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   {configured && !connected && (
                     <Button onClick={() => handleConnect(market.id)} disabled={connectingId === market.id}>
-                      {connectingId === market.id ? 'Connecting…' : `Connect ${market.label}`}
+                      {connectingId === market.id ? 'Connecting…' : shop?.status === 'error' ? `Reconnect ${market.label}` : `Connect ${market.label}`}
                     </Button>
                   )}
                   {connected && (

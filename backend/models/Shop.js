@@ -16,12 +16,17 @@ const shopSchema = new mongoose.Schema(
       enum: ['connected', 'error', 'disconnected'],
       default: 'disconnected',
     },
+    // Why the shop's login stopped working (status 'error'); cleared by the next connect.
+    authError: { type: String },
     lastSyncAt: { type: Date },
     // Newest order change already imported; the next order sync only asks for changes after it.
     ordersSyncedAt: { type: Date },
     aiReplyEnabled: { type: Boolean, default: false },
     // Seller's own marketplace username; eBay messages only carry usernames, not roles.
     accountUsername: { type: String },
+    // Seller account the stored login belongs to, read from the marketplace when connecting.
+    // A reconnect as a different account is refused.
+    accountId: { type: String },
     // Which dashboard sections this shop's token can reach: { sectionId: { ok, reason } }.
     apiAccess: { type: mongoose.Schema.Types.Mixed, default: undefined },
     apiAccessCheckedAt: { type: Date },

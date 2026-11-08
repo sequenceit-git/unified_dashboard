@@ -141,7 +141,7 @@ function getQueueEvents() {
 /**
  * Asks for a sync of one shop. A job already waiting or running for the same shop and kind is
  * reused, so repeated clicks don't pile up. With `wait`, resolves with the job's result, or
- * `{ queued: true }` when it takes longer than `timeoutMs` (the job keeps running).
+ * `{ queued: true }` when it takes longer than `timeoutMs` (the job keeps running on the worker).
  */
 async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000 } = {}) {
   if (!KINDS[kind]) throw new Error(`Unknown sync job ${kind}`)
@@ -161,7 +161,14 @@ async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000 } = {}) {
     try {
       return await job.waitUntilFinished(getQueueEvents(), timeoutMs)
     } catch (err) {
-      console.warn(`[syncQueue] Job ${kind}-${id} timed out or worker not running (${err.message}). Executing inline...`)
+      // A worker is on it: leave the job running there (its `sync` event refreshes the page).
+      // Running it here too would load the same shop twice at once.
+      const workers = await getQueue().getWorkersCount().catch(() => 1)
+      if (workers > 0) return { queued: true, jobId: job.id }
+      // No worker at all: take the job off the queue so it doesn't run again later, then run it here.
+      console.warn(`[syncQueue] No sync worker for ${kind}-${id} (${err.message}). Running it in the API process.`)
+      const removed = await job.remove().then(() => true, () => false)
+      if (!removed) return { queued: true, jobId: job.id }
       return await runInline(kind, id)
     }
   } catch (err) {

@@ -54,7 +54,10 @@ export default function OrdersPage() {
     try {
       const res = await api.post('/api/orders/sync', { marketplace }, token)
       const totalSynced = res.results?.reduce((acc, r) => acc + (r.synced || 0), 0) || 0
-      setSyncMessage(`Sync completed: ${totalSynced} orders updated from marketplaces`)
+      const stillRunning = res.results?.some((r) => r.queued)
+      setSyncMessage(stillRunning
+        ? 'Sync is still running in the background. Orders refresh when it finishes.'
+        : `Sync completed: ${totalSynced} orders updated from marketplaces`)
       setRefreshKey((k) => k + 1)
       setTimeout(() => setSyncMessage(''), 4000)
     } catch (err) {

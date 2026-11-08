@@ -97,6 +97,12 @@ async function getItem(token, itemId) {
   return doc.Item ? { ...parseItem(doc.Item), raw: doc.Item } : null
 }
 
+/** The eBay account (user ID) a token belongs to. GetUser needs no extra OAuth scope. */
+async function getUser(token) {
+  const doc = await call(token, 'GetUser', '')
+  return { userId: String(text(doc.User?.UserID) || '').trim() }
+}
+
 /** Item IDs of every active fixed-price listing, newest pages first. */
 async function getActiveItemIds(token, { maxPages = 10 } = {}) {
   const ids = []
@@ -328,4 +334,4 @@ async function relistListing(token, itemId, { quantity, price, title, descriptio
   return { status: 'live', externalListingId: doc.ItemID ? String(doc.ItemID) : itemId }
 }
 
-module.exports = { getItem, getActiveItemIds, getActiveSummaries, getActiveListings, addListing, reviseListing, endListing, relistListing }
+module.exports = { getUser, getItem, getActiveItemIds, getActiveSummaries, getActiveListings, addListing, reviseListing, endListing, relistListing }
