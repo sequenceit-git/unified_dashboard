@@ -1,6 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
-const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection, canAccessShop } = require('../../middleware/auth')
 const Order = require('../../models/Order')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
@@ -41,7 +41,9 @@ function money(value) {
 async function tiktokShop(req) {
   if (canonicalMarketplace(req.query.marketplace) !== 'tiktok_shop') return null
   const shop = await Shop.findOne({ marketplace: 'tiktok_shop', status: 'connected' }).select('+auth.accessTokenEnc')
-  return shop?.auth?.accessTokenEnc ? shop : null
+  // Sub-admins only get TikTok's own figures when the shop is one of theirs (for analytics).
+  if (!shop || !canAccessShop(req, shop._id)) return null
+  return shop.auth?.accessTokenEnc ? shop : null
 }
 
 async function tiktokIntervals(shop, req) {

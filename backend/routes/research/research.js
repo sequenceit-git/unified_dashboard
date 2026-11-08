@@ -89,6 +89,12 @@ async function syncReportOpportunities(report) {
   return changed
 }
 
+/** Sub-admins may list on a marketplace when one of their shops (by marketplace or by direct grant) is on it. */
+function canListOn(req, marketplace) {
+  if (req.user.role !== 'sub_admin') return true
+  return [...(req.shopMarkets?.values() || [])].includes(marketplace)
+}
+
 const ACTIVE_LISTING = ['live', 'pending', 'out_of_stock']
 const RELISTABLE = ['ended', 'paused']
 
@@ -471,7 +477,7 @@ router.post('/relist', async (req, res) => {
     const { reportId, rank } = req.body
     const marketplace = canonicalMarketplace(req.body.marketplace)
     if (!reportId || rank == null || !marketplace) return res.status(400).json({ error: 'reportId, rank and marketplace are required' })
-    if (req.user.role === 'sub_admin' && !req.authUser?.marketplaces?.includes(marketplace)) {
+    if (!canListOn(req, marketplace)) {
       return res.status(403).json({ error: `You do not have permission to list on ${SHOP_LABELS[marketplace] || marketplace}` })
     }
     const report = await ResearchReport.findById(reportId)
@@ -523,7 +529,7 @@ router.post('/add-to-catalog', async (req, res) => {
       return res.status(400).json({ error: 'Select eBay, TikTok Shop, or Temu Shop' })
     }
 
-    if (req.user.role === 'sub_admin' && !req.authUser?.marketplaces?.includes(marketplace)) {
+    if (!canListOn(req, marketplace)) {
       return res.status(403).json({ error: `You do not have permission to list on ${SHOP_LABELS[marketplace] || marketplace}` })
     }
 

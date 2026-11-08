@@ -49,7 +49,14 @@ app.use(express.json({
   },
 }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+// Uploads are images only. These headers also stop any older non-image file there from being
+// run as a page on our domain (it could read a signed-in admin's token).
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res) => {
+    res.set('X-Content-Type-Options', 'nosniff')
+    res.set('Content-Security-Policy', "default-src 'none'; img-src 'self'; sandbox")
+  },
+}))
 
 // Root probe — so GET / doesn't 404 (load balancers, browser checks).
 app.get('/', (req, res) => {

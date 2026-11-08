@@ -47,6 +47,8 @@ async function loadAccess(req, res, next) {
     const cached = accessCache.get(req.user.id)
     if (cached && Date.now() - cached.timestamp < ACCESS_CACHE_TTL) {
       req.authUser = cached.user
+      // The role in the database wins over the one in the token (a demoted admin keeps an old token).
+      req.user.role = cached.user.role
       req.allowedShopIds = cached.allowedShopIds
       req.shopMarkets = cached.shopMarkets
       return next()
@@ -62,6 +64,7 @@ async function loadAccess(req, res, next) {
       return res.status(401).json({ error: 'User is inactive or no longer exists' })
     }
     req.authUser = user
+    req.user.role = user.role
     let allowedShopIds = null
     if (user.role === 'super_admin') {
       allowedShopIds = null

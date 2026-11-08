@@ -11,6 +11,16 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true })
 }
 
+/** File extension from the image's first bytes, or '' when it isn't a PNG, JPEG, WebP or GIF. */
+function imageExtension(buffer) {
+  if (buffer.length < 12) return ''
+  if (buffer[0] === 0x89 && buffer.toString('ascii', 1, 4) === 'PNG') return 'png'
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg'
+  if (buffer.toString('ascii', 0, 4) === 'GIF8') return 'gif'
+  if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'webp'
+  return ''
+}
+
 // POST /api/upload — accepts base64 data URL or raw image payloads
 router.post('/', requireAuth, loadAccess, async (req, res) => {
   try {
@@ -24,20 +34,12 @@ router.post('/', requireAuth, loadAccess, async (req, res) => {
         return dataUri
       }
 
-      // Check if it's a data URI
-      const matches = dataUri.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
-      let buffer
-      let extension = 'png'
-
-      if (matches) {
-        const mime = matches[1]
-        extension = mime.split('/')[1] || 'png'
-        if (extension === 'jpeg') extension = 'jpg'
-        buffer = Buffer.from(matches[2], 'base64')
-      } else {
-        // Plain base64 fallback
-        buffer = Buffer.from(dataUri, 'base64')
-      }
+      // Data URI or plain base64. The declared type is ignored: the bytes decide, and only images
+      // are kept. Anything else (HTML, SVG, scripts) would be served from our own domain.
+      const matches = dataUri.match(/^data:[^;,]*;base64,(.+)$/)
+      const buffer = Buffer.from(matches ? matches[1] : dataUri, 'base64')
+      const extension = imageExtension(buffer)
+      if (!extension) throw Object.assign(new Error('Only PNG, JPEG, WebP or GIF images can be uploaded.'), { status: 400 })
 
       const hash = crypto.randomBytes(8).toString('hex')
       const sanitizedName = (origName || 'file').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20)
@@ -60,7 +62,7 @@ router.post('/', requireAuth, loadAccess, async (req, res) => {
 
     return res.status(400).json({ error: 'No image data provided' })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(err.status || 500).json({ error: err.message })
   }
 })
 
