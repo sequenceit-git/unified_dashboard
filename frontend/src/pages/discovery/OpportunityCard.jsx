@@ -4,7 +4,7 @@ import { allowedShopSections } from '../../hooks/useShopSection'
 import Badge from '../../components/ui/Badge'
 import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
 import { productFacts } from './ProductDetailModal'
-import { FiExternalLink, FiAlertTriangle } from 'react-icons/fi'
+import { FiExternalLink, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi'
 
 export default function OpportunityCard({ opportunity, reportId, onListShop, onOpen, isAdmin }) {
   const { user, isAdmin: authIsAdmin } = useAuth()
@@ -12,6 +12,9 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
   const allowedSections = allowedShopSections(user, isSuperAdmin)
   const [adding, setAdding] = useState(false)
   const listedShops = opportunity.listedShops || []
+  // Shops this user can list on: the ones it's already on show as "Listed", the rest in the dropdown.
+  const listedSections = allowedSections.filter((section) => listedShops.includes(section.marketplace))
+  const openSections = allowedSections.filter((section) => !listedShops.includes(section.marketplace))
 
   const score = opportunity.opportunityScore
   const scoreBadgeColor =
@@ -130,19 +133,31 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
             </a>
           ))}
           {allowedSections.length > 0 && (
-            <select
-              value=""
-              onChange={handleList}
-              disabled={adding || allowedSections.every((section) => listedShops.includes(section.marketplace))}
-              className="ml-auto max-w-[8.5rem] rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-800 outline-none focus:border-indigo-500"
-            >
-              <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
-              {allowedSections.map((section) => (
-                <option key={section.id} value={section.marketplace} disabled={listedShops.includes(section.marketplace)}>
-                  {listedShops.includes(section.marketplace) ? `${section.label} · listed` : section.label}
-                </option>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+              {listedSections.map((section) => (
+                <span
+                  key={section.id}
+                  className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-600/20"
+                  title={`Already listed on ${section.label}`}
+                >
+                  <FiCheckCircle size={11} />
+                  {openSections.length ? `Listed on ${section.label}` : `Already listed on ${section.label}`}
+                </span>
               ))}
-            </select>
+              {openSections.length > 0 && (
+                <select
+                  value=""
+                  onChange={handleList}
+                  disabled={adding}
+                  className="max-w-[8.5rem] rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-800 outline-none focus:border-indigo-500"
+                >
+                  <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
+                  {openSections.map((section) => (
+                    <option key={section.id} value={section.marketplace}>{section.label}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           )}
         </div>
       </div>
