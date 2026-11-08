@@ -104,7 +104,8 @@ class EbayService {
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
-      scope: config.scopes.join(' '),
+      // No `scope`: eBay then keeps the scopes the seller originally granted. Sending the full
+      // config list fails with invalid_scope for shops connected before a scope was added.
     })
 
     const response = await fetch(`${config.apiBaseUrl}${config.tokenEndpoint}`, {
