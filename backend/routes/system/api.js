@@ -3,6 +3,7 @@ const express = require('express')
 const router = express.Router()
 
 const crypto = require('crypto')
+const ebayDeletion = require('../../services/ebayAccountDeletion')
 
 router.get('/health', (req, res) => {
   res.json({ message: 'OK — backend is running' })
@@ -15,7 +16,10 @@ router.get('/ebay/deletion', (req, res) => {
     return res.status(400).json({ error: 'challenge_code required' })
   }
 
-  const verificationToken = (process.env.EBAY_VERIFICATION_TOKEN || 'UnifiedDashboardVerificationToken2026').trim()
+  const verificationToken = (process.env.EBAY_VERIFICATION_TOKEN || '').trim()
+  if (!verificationToken) {
+    return res.status(503).json({ error: 'EBAY_VERIFICATION_TOKEN is not configured' })
+  }
   const configuredEndpoint = (process.env.EBAY_DELETION_ENDPOINT || '').trim()
   const endpointUrl = configuredEndpoint || `${req.protocol}://${req.get('host')}/api/ebay/deletion`
 
@@ -29,11 +33,19 @@ router.get('/ebay/deletion', (req, res) => {
   return res.status(200).json({ challengeResponse })
 })
 
-// POST /api/ebay/deletion — eBay notification payload acknowledgment
-router.post('/ebay/deletion', (req, res) => {
-  console.log('eBay Account Deletion Notification received:', req.body)
-  return res.status(200).json({ success: true })
+// POST /api/ebay/deletion — verified eBay account-deletion notice; anonymises that buyer's data
+router.post('/ebay/deletion', async (req, res) => {
+  const valid = await ebayDeletion.verifySignature(req.get('x-ebay-signature'), req.rawBody)
+  if (!valid) return res.status(412).json({ error: 'Invalid signature' })
+  try {
+    const data = req.body?.notification?.data || {}
+    const result = await ebayDeletion.purgeUser({ username: data.username, userId: data.userId })
+    console.log(`[ebay-deletion] notification ${req.body?.notification?.notificationId || ''} handled`, result)
+    return res.status(200).json({ success: true })
+  } catch (err) {
+    console.error('[ebay-deletion] purge failed:', err.message)
+    return res.status(500).json({ error: 'Could not process notification' })
+  }
 })
 
 module.exports = router
-

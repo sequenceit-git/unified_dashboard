@@ -130,6 +130,7 @@ router.patch('/:id/shipping', async (req, res) => {
       marketplacePush = await marketplaceManager.pushShipping(doc, { carrier, trackingNumber })
     } catch (apiErr) {
       console.warn(`Shipping push to [${doc.marketplace}] failed:`, apiErr.message)
+      marketplacePush = { pushed: false, error: apiErr.message }
     }
 
     res.json({ order: doc, marketplacePush })
@@ -199,7 +200,9 @@ router.post('/:id/cancel', async (req, res) => {
     try {
       marketplaceResult = await marketplaceManager.cancelOrder(order, { reason, comment })
     } catch (apiErr) {
+      // Don't mark the order cancelled here while it is still live on the marketplace.
       console.warn(`Marketplace order cancellation push failed for [${order.marketplace}]:`, apiErr.message)
+      return res.status(502).json({ error: `${order.marketplace} could not cancel this order: ${apiErr.message}` })
     }
 
     order.status = 'cancelled'
@@ -230,6 +233,7 @@ router.post('/:id/refund', async (req, res) => {
       marketplaceResult = await marketplaceManager.processRefund(order, { reason, comment, amount: refundAmount })
     } catch (apiErr) {
       console.warn(`Marketplace refund push failed for [${order.marketplace}]:`, apiErr.message)
+      return res.status(502).json({ error: `${order.marketplace} could not refund this order: ${apiErr.message}` })
     }
 
     order.status = 'refunded'

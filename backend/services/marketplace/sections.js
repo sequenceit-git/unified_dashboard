@@ -4,24 +4,13 @@
  * so one page can render any shop's section. Column types: text, money, date, number, status, link.
  */
 
-const ebayConfig = require('../../config/marketplaces').ebay
+const { ebayFetch } = require('./ebayHttp')
 const tiktok = require('./tiktok')
 const temu = require('./temu')
 const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
 
-async function ebayGet(token, url, { iaf = false } = {}) {
-  const res = await fetch(url.startsWith('http') ? url : `${ebayConfig.apiBaseUrl}${url}`, {
-    headers: {
-      Authorization: iaf ? `IAF ${token}` : `Bearer ${token}`,
-      Accept: 'application/json',
-      'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-    },
-  })
-  const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.errors?.[0]?.message || body.error?.[0]?.message || `eBay returned ${res.status}`)
-  return body
-}
+const ebayGet = ebayFetch
 
 const money = (amount) => (amount && amount.value != null
   ? { value: Number(amount.value), currency: amount.currency || 'USD' }

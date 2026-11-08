@@ -125,6 +125,45 @@ class EbayService {
   }
 
   /**
+   * Post-Order API call. This API takes the seller token as `IAF <token>`, not `Bearer`.
+   * Returns the parsed body ({} for 204).
+   */
+  async postOrder(accessToken, path, { method = 'GET', body, label = 'eBay Post-Order Error' } = {}) {
+    const response = await fetch(`${config.apiBaseUrl}${path}`, {
+      method,
+      headers: {
+        Authorization: `IAF ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const detail = payload.errors?.[0]?.message || payload.errors?.[0]?.longMessage || payload.message || response.statusText
+      const error = new Error(`${label}: ${detail}`)
+      error.status = response.status
+      throw error
+    }
+    return payload
+  }
+
+  /** One order from the Sell Fulfillment API (line items carry the `lineItemId` eBay needs). */
+  async getOrder(accessToken, orderId) {
+    const response = await fetch(`${config.apiBaseUrl}/sell/fulfillment/v1/order/${encodeURIComponent(orderId)}`, {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    })
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      const error = new Error(`eBay Order API Error: ${err.errors?.[0]?.message || err.message || response.statusText}`)
+      error.status = response.status
+      throw error
+    }
+    return response.json()
+  }
+
+  /**
    * Fetch orders from eBay Sell Fulfillment API
    */
   async getOrders(accessToken, { limit = 50, offset = 0, filter = '' } = {}) {
@@ -432,28 +471,27 @@ class EbayService {
   }
 
   /**
-   * Cancels an order via eBay Sell Fulfillment API
+   * Seller-initiated cancellation. The Sell Fulfillment API has no cancel call, so this uses the
+   * Post-Order API (POST /post-order/v2/cancellation), which needs the legacy order ID.
    */
-  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = 'Order cancelled by merchant' } = {}) {
-    const payload = {
-      cancelReason: reason,
-      comment: comment || 'Order cancelled by merchant',
+  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = '' } = {}) {
+    const CANCEL_REASONS = {
+      OUT_OF_STOCK: 'OUT_OF_STOCK_OR_CANNOT_FULFILL',
+      BUYER_CANCEL: 'BUYER_ASKED_CANCEL',
+      ADDRESS_ISSUES: 'ADDRESS_ISSUES',
     }
-    const response = await fetch(`${config.apiBaseUrl}/sell/fulfillment/v1/order/${encodeURIComponent(orderId)}/cancel`, {
+    const order = await this.getOrder(accessToken, orderId)
+    const legacyOrderId = order.legacyOrderId || orderId
+    const payload = await this.postOrder(accessToken, '/post-order/v2/cancellation', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+      label: 'eBay Order Cancellation Error',
+      body: {
+        legacyOrderId: String(legacyOrderId),
+        cancelReason: CANCEL_REASONS[reason] || reason,
+        ...(comment ? { comments: { content: String(comment).slice(0, 1000) } } : {}),
       },
-      body: JSON.stringify(payload),
     })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Order Cancellation Error: ${err.errors?.[0]?.message || err.message || response.statusText}`)
-    }
-
-    return response.status === 204 ? { success: true } : response.json().catch(() => ({ success: true }))
+    return { success: true, cancelId: payload.cancelId || null }
   }
 
   /**
@@ -499,22 +537,12 @@ class EbayService {
     const body = !isApprove && trackingNumber
       ? { trackingNumber, ...(shipmentDate ? { shipmentDate: { value: shipmentDate } } : {}) }
       : {}
-    const response = await fetch(`${config.apiBaseUrl}${endpoint}`, {
+    const result = await this.postOrder(accessToken, endpoint, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-      },
-      body: JSON.stringify(body),
+      body,
+      label: 'eBay Cancellation Decision Error',
     })
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}))
-      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
-      throw new Error(`eBay Cancellation Decision Error: ${detail}`)
-    }
-    return response.status === 204 ? { success: true } : (await response.json().catch(() => ({ success: true })))
+    return Object.keys(result).length ? result : { success: true }
   }
 
   /**
@@ -525,22 +553,12 @@ class EbayService {
       decision: decision || 'APPROVE',
       ...(comments ? { comments: { content: String(comments) } } : {}),
     }
-    const response = await fetch(`${config.apiBaseUrl}/post-order/v2/return/${encodeURIComponent(returnId)}/decide`, {
+    const result = await this.postOrder(accessToken, `/post-order/v2/return/${encodeURIComponent(returnId)}/decide`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-      },
-      body: JSON.stringify(payload),
+      body: payload,
+      label: 'eBay Return Decision Error',
     })
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}))
-      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
-      throw new Error(`eBay Return Decision Error: ${detail}`)
-    }
-    return response.status === 204 ? { success: true } : (await response.json().catch(() => ({ success: true })))
+    return Object.keys(result).length ? result : { success: true }
   }
 
   /**
@@ -631,18 +649,21 @@ class EbayService {
    * Retrieves financial transactions and fee data from eBay Sell Finances API
    */
   async getFinances(accessToken, { limit = 20 } = {}) {
-    const response = await fetch(`${config.apiBaseUrl}/sell/finances/v1/transaction?limit=${limit}`, {
+    // Finances is served from apiz.ebay.com (apiz.sandbox.ebay.com in the sandbox).
+    const host = config.environment === 'SANDBOX' ? 'https://apiz.sandbox.ebay.com' : 'https://apiz.ebay.com'
+    const response = await fetch(`${host}/sell/finances/v1/transaction?limit=${limit}&sort=-transactionDate`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/json',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
       },
     })
-
+    const data = await response.json().catch(() => ({}))
     if (!response.ok) {
-      return { totalRevenue: 0, totalFees: 0, transactions: [] }
+      const error = new Error(`eBay Finances Error: ${data.errors?.[0]?.message || response.statusText}`)
+      error.status = response.status
+      throw error
     }
-
-    const data = await response.json()
     return {
       transactions: data.transactions || [],
       total: data.total || 0,

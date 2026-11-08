@@ -132,22 +132,26 @@ class UnifiedMarketplaceManager {
    * Pushes shipping fulfillment & tracking number to eBay
    */
   async pushShipping(order, { carrier, trackingNumber }) {
-    const shop = await Shop.findById(order.shopId).select('+auth.accessTokenEnc')
-    if (!shop || !shop.auth?.accessTokenEnc) {
+    const shop = await Shop.findById(order.shopId)
+    if (!shop || shop.status !== 'connected') {
       return { pushed: false, note: 'Shop not connected or credentials not present' }
     }
 
-    const token = shop.auth.accessTokenEnc
     const service = this.getService(shop.marketplace)
     if (typeof service.createShippingFulfillment !== 'function') {
       return { pushed: false, note: `${shop.marketplace} shipping push is not available` }
     }
 
-    await service.createShippingFulfillment(token, order.externalOrderId, {
-      carrier,
-      trackingNumber,
-      lineItems: (order.items || []).map((i) => ({ lineItemId: i.sku, quantity: i.quantity })),
-      shop,
+    await this.withShopToken(shop, async (token) => {
+      let lineItems = (order.items || [])
+        .filter((item) => item.lineItemId)
+        .map((item) => ({ lineItemId: item.lineItemId, quantity: item.quantity }))
+      // Orders imported before line-item IDs were stored: read them from eBay.
+      if (shop.marketplace === 'ebay' && lineItems.length !== (order.items || []).length) {
+        const remote = await service.getOrder(token, order.externalOrderId)
+        lineItems = (remote.lineItems || []).map((li) => ({ lineItemId: li.lineItemId, quantity: li.quantity }))
+      }
+      return service.createShippingFulfillment(token, order.externalOrderId, { carrier, trackingNumber, lineItems, shop })
     })
     return { pushed: true }
   }
@@ -356,6 +360,7 @@ class UnifiedMarketplaceManager {
                 sku: cleanSku,
                 rawSku,
                 externalListingId: extId,
+                lineItemId: li.lineItemId ? String(li.lineItemId) : undefined,
                 title: li.title,
                 quantity: li.quantity,
                 unitPrice: parseFloat(li.lineItemCost?.value || 0),
@@ -549,6 +554,12 @@ class UnifiedMarketplaceManager {
           }
           if (ord.buyer?.email && (!existing.buyer?.email || !existing.buyer?.email.includes('@'))) {
             existing.buyer = { ...existing.buyer, email: ord.buyer.email }
+          }
+          // Orders imported before line-item IDs were stored get them now.
+          if ((ord.items || []).length === existing.items.length) {
+            existing.items.forEach((item, i) => {
+              if (!item.lineItemId && ord.items[i]?.lineItemId) item.lineItemId = ord.items[i].lineItemId
+            })
           }
           if (ord.shippingAddress && !existing.shippingAddress) {
             existing.shippingAddress = ord.shippingAddress
@@ -776,32 +787,37 @@ class UnifiedMarketplaceManager {
    * Processes refunds/returns across marketplaces
    */
   async processRefund(order, { reason, comment, amount }) {
-    const shop = await Shop.findById(order.shopId).select('+auth.accessTokenEnc')
-    if (!shop || !shop.auth?.accessTokenEnc) {
+    const shop = await Shop.findById(order.shopId)
+    if (!shop || shop.status !== 'connected') {
       return { success: false, note: 'Shop not connected or credentials missing' }
     }
-    const token = shop.auth.accessTokenEnc
     const service = this.getService(shop.marketplace)
     if (typeof service.issueRefund !== 'function') {
       return { success: false, note: `${shop.marketplace} refunds are not available from this connector` }
     }
-    return service.issueRefund(token, order.externalOrderId, { reason, comment, amount })
+    return this.withShopToken(shop, (token) => service.issueRefund(token, order.externalOrderId, { reason, comment, amount, shop }))
   }
 
   /**
    * Cancels unfulfilled order across marketplaces
    */
   async cancelOrder(order, { reason = 'OUT_OF_STOCK', comment = '' } = {}) {
-    const shop = await Shop.findById(order.shopId).select('+auth.accessTokenEnc')
-    if (!shop || !shop.auth?.accessTokenEnc) {
+    const shop = await Shop.findById(order.shopId)
+    if (!shop || shop.status !== 'connected') {
       return { success: false, note: 'Shop not connected or credentials missing' }
     }
-    const token = await this.freshToken(shop)
     const service = this.getService(shop.marketplace)
     if (typeof service.cancelOrder !== 'function') {
       return { success: false, note: `${shop.marketplace} order cancellation is not supported via API` }
     }
-    return service.cancelOrder(token, order.externalOrderId, { reason, comment })
+    return this.withShopToken(shop, (token) => service.cancelOrder(token, order.externalOrderId, { reason, comment, shop }))
+  }
+
+  /** Recent transactions and fees from the marketplace's finance API. */
+  async getFinances(shop) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getFinances !== 'function') return { transactions: [], total: 0 }
+    return this.withShopToken(shop, (token) => service.getFinances(token, { shop }))
   }
 
   /**

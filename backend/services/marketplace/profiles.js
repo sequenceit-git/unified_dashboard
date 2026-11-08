@@ -5,22 +5,14 @@
  */
 
 const ebayConfig = require('../../config/marketplaces').ebay
+const { ebayFetch } = require('./ebayHttp')
 const tiktok = require('./tiktok')
 const temu = require('./temu')
 
-async function ebayRest(token, url, { iaf = false, headers = {} } = {}) {
-  const res = await fetch(url.startsWith('http') ? url : `${ebayConfig.apiBaseUrl}${url}`, {
-    headers: {
-      Authorization: iaf ? `IAF ${token}` : `Bearer ${token}`,
-      Accept: 'application/json',
-      'Accept-Language': 'en-US',
-      'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-      ...headers,
-    },
-  })
-  if (res.ok) return true
-  const body = await res.json().catch(() => ({}))
-  throw new Error(body.errors?.[0]?.message || `eBay returned ${res.status}`)
+/** Probe call: resolves true when eBay answers 2xx, throws eBay's message otherwise. */
+async function ebayRest(token, url, options) {
+  await ebayFetch(token, url, options)
+  return true
 }
 
 async function ebayTrading(token, call, inner = '') {

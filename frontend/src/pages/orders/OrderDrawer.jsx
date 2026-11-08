@@ -96,7 +96,14 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
   const setStatus = (status) => mutate(() => api.patch(`/api/orders/${order._id}/status`, { status }, token))
 
   const saveTracking = () =>
-    mutate(() => api.patch(`/api/orders/${order._id}/shipping`, { carrier, trackingNumber: tracking }, token))
+    mutate(async () => {
+      const res = await api.patch(`/api/orders/${order._id}/shipping`, { carrier, trackingNumber: tracking }, token)
+      // Tracking is saved here either way; tell the user when the marketplace did not accept it.
+      const push = res?.marketplacePush
+      if (push?.error) {
+        setError(`Saved here, but ${marketplaceLabel(order.marketplace)} did not accept the tracking: ${push.error}`)
+      }
+    })
 
   const cancelOrder = (reason = 'OUT_OF_STOCK') => {
     if (!window.confirm(`Cancel order ${order.externalOrderId} on ${marketplaceLabel(order.marketplace)}? This cannot be undone.`)) return
