@@ -47,7 +47,11 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
       return resources.products.countDocuments(filter)
     })()
     const [connectedShops, revenueRows, readyToShip, liveListings, orders30, buyers, openInbox, lowStock] = await Promise.all([
-      resources.shops.find({ status: 'connected' }).select('marketplace').lean(),
+      // Sub-admins count only the shops they can open.
+      resources.shops.find({
+        status: 'connected',
+        ...(req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds || [] } } : {}),
+      }).select('marketplace').lean(),
       resources.orders.aggregate([
         {
           $match: {

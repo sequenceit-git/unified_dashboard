@@ -222,6 +222,12 @@ export default function ProductDiscoveryPage() {
         setTimeout(() => setNotification(''), 6000)
       }
     } catch (err) {
+      // Listed meanwhile (another user, or the same item in another research run): show it as listed.
+      if (/already listed/i.test(err.message || '')) {
+        setRecommendations((prev) =>
+          prev.map((opp) => (opp.rank === rank ? { ...opp, listedShops: [...new Set([...(opp.listedShops || []), marketplace])] } : opp)),
+        )
+      }
       alert(err.message)
     }
   }

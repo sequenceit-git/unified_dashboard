@@ -22,6 +22,24 @@ const SHOP_LABELS = {
 async function syncReportOpportunities(report) {
   if (!report || !Array.isArray(report.opportunities) || report.opportunities.length === 0) return false
   let changed = false
+  // The same item often turns up again in a later research run. Link it to the product already
+  // made from it (same source listing URL), so it shows as listed instead of being listed twice.
+  const unlinkedUrls = [...new Set(report.opportunities.filter((opp) => !opp.addedProductId && opp.listingUrl).map((opp) => opp.listingUrl))]
+  if (unlinkedUrls.length) {
+    const existing = await Product.find({ source: 'research_bot', 'attributes.listingUrl': { $in: unlinkedUrls } })
+      .select('_id attributes.listingUrl').sort({ createdAt: 1 }).lean()
+    const productByUrl = new Map()
+    for (const prod of existing) {
+      const url = prod.attributes?.listingUrl
+      if (url && !productByUrl.has(url)) productByUrl.set(url, prod._id)
+    }
+    for (const opp of report.opportunities) {
+      if (!opp.addedProductId && productByUrl.has(opp.listingUrl)) {
+        opp.addedProductId = productByUrl.get(opp.listingUrl)
+        changed = true
+      }
+    }
+  }
   for (const opp of report.opportunities) {
     if (opp.addedProductId) {
       const prod = await Product.findById(opp.addedProductId).select('_id')
@@ -431,9 +449,14 @@ router.post('/add-to-catalog', async (req, res) => {
       return res.status(404).json({ error: 'Research report not found' })
     }
 
+    // Fresh listed state (and any product made from this item in another run) before listing.
+    await syncReportOpportunities(report)
     const opp = report.opportunities.find((o) => o.rank === Number(rank))
     if (!opp) {
       return res.status(404).json({ error: `Opportunity with rank ${rank} not found in report` })
+    }
+    if ((opp.listedShops || []).includes(marketplace)) {
+      return res.status(409).json({ error: `This product is already listed on ${SHOP_LABELS[marketplace] || marketplace}.`, listedShops: opp.listedShops })
     }
 
     let product = opp.addedProductId ? await Product.findById(opp.addedProductId) : null
