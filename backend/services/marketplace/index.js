@@ -791,7 +791,7 @@ class UnifiedMarketplaceManager {
    * Pause, publish, end, relist or delete a listing using that shop's API.
    * Returns the fields to save on the listing document.
    */
-  async applyListingAction(shop, listing, action) {
+  async applyListingAction(shop, listing, action, options = {}) {
     const allowed = (profiles.PROFILES[shop.marketplace]?.listingActions || []).some((item) => {
       if (item.id !== action) return false
       if (listing.marketplaceStatus && item.raw?.includes(listing.marketplaceStatus)) return true
@@ -800,7 +800,7 @@ class UnifiedMarketplaceManager {
     if (!allowed) throw new Error(`This ${shop.marketplace === 'ebay' ? 'eBay' : 'shop'} listing cannot ${action} in its current state.`)
     const service = this.getService(shop.marketplace)
     if (typeof service.applyListingAction !== 'function') throw new Error(`Listing actions are not available for ${shop.name}.`)
-    return this.withShopToken(shop, (token) => service.applyListingAction(token, action, listing, { shop }))
+    return this.withShopToken(shop, (token) => service.applyListingAction(token, action, listing, { ...options, shop }))
   }
 
   /**

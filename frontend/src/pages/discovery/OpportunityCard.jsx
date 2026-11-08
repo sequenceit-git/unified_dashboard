@@ -15,6 +15,8 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
   // Shops this user can list on: the ones it's already on show as "Listed", the rest in the dropdown.
   const listedSections = allowedSections.filter((section) => listedShops.includes(section.marketplace))
   const openSections = allowedSections.filter((section) => !listedShops.includes(section.marketplace))
+  // Shops where this product's listing ended: choosing them relists that listing.
+  const relistShops = opportunity.relistShops || []
 
   const score = opportunity.opportunityScore
   const scoreBadgeColor =
@@ -60,6 +62,7 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
         title,
         price: sellPriceNum != null ? sellPriceNum : 24.99,
         marketplace,
+        relist: relistShops.includes(marketplace),
       })
     } finally {
       setAdding(false)
@@ -153,7 +156,9 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
                 >
                   <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
                   {openSections.map((section) => (
-                    <option key={section.id} value={section.marketplace}>{section.label}</option>
+                    <option key={section.id} value={section.marketplace}>
+                      {relistShops.includes(section.marketplace) ? `${section.label} · relist` : section.label}
+                    </option>
                   ))}
                 </select>
               )}

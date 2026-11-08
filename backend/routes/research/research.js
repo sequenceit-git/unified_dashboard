@@ -40,6 +40,21 @@ async function syncReportOpportunities(report) {
       }
     }
   }
+  // Runs can find the same item on a different store page; fall back to the exact title.
+  const unlinkedTitles = [...new Set(report.opportunities.filter((opp) => !opp.addedProductId && opp.title).map((opp) => opp.title.trim()))]
+  if (unlinkedTitles.length) {
+    const existing = await Product.find({ source: 'research_bot', title: { $in: unlinkedTitles } })
+      .select('_id title').sort({ createdAt: 1 }).lean()
+    const productByTitle = new Map()
+    for (const prod of existing) if (!productByTitle.has(prod.title)) productByTitle.set(prod.title, prod._id)
+    for (const opp of report.opportunities) {
+      const title = opp.title?.trim()
+      if (!opp.addedProductId && title && productByTitle.has(title)) {
+        opp.addedProductId = productByTitle.get(title)
+        changed = true
+      }
+    }
+  }
   for (const opp of report.opportunities) {
     if (opp.addedProductId) {
       const prod = await Product.findById(opp.addedProductId).select('_id')
@@ -52,7 +67,7 @@ async function syncReportOpportunities(report) {
       } else {
         const activeListings = await Listing.find({
           productId: prod._id,
-          status: { $in: ['live', 'pending', 'out_of_stock'] },
+          status: { $in: ACTIVE_LISTING },
         }).select('marketplace')
         const activeMarkets = [...new Set(activeListings.map((l) => l.marketplace))]
         const currentMarkets = opp.listedShops || []
@@ -72,6 +87,28 @@ async function syncReportOpportunities(report) {
     await report.save().catch((err) => console.warn('[research] Failed to save synced opportunities:', err.message))
   }
   return changed
+}
+
+const ACTIVE_LISTING = ['live', 'pending', 'out_of_stock']
+const RELISTABLE = ['ended', 'paused']
+
+/**
+ * Opportunities as sent to the browser, each with `relistShops`: shops where its product has an
+ * ended listing (and no active one), so listing there again relists that listing.
+ */
+async function withShopState(opportunities) {
+  const productIds = opportunities.map((opp) => opp.addedProductId).filter(Boolean)
+  const ended = productIds.length
+    ? await Listing.find({ productId: { $in: productIds }, status: { $in: RELISTABLE } }).select('productId marketplace').lean()
+    : []
+  return opportunities.map((opp) => {
+    const plain = typeof opp.toObject === 'function' ? opp.toObject() : opp
+    const listed = plain.listedShops || []
+    const relistShops = [...new Set(ended
+      .filter((row) => String(row.productId) === String(plain.addedProductId) && !listed.includes(row.marketplace))
+      .map((row) => row.marketplace))]
+    return { ...plain, relistShops }
+  })
 }
 
 const router = express.Router()
@@ -119,7 +156,7 @@ router.get('/recommendations/:reportId', async (req, res) => {
       imagesAdded = true
     }))
     if (imagesAdded) await report.save()
-    res.json(docs)
+    res.json(await withShopState(docs))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -140,7 +177,7 @@ router.get('/report/:reportId', async (req, res) => {
 
     res.json({
       report,
-      recommendations: report.opportunities || [],
+      recommendations: await withShopState(report.opportunities || []),
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -428,6 +465,52 @@ router.post('/generate', async (req, res) => {
   }
 })
 
+// ─── POST /api/research/relist — put the product's ended listing back on sale ──
+router.post('/relist', async (req, res) => {
+  try {
+    const { reportId, rank } = req.body
+    const marketplace = canonicalMarketplace(req.body.marketplace)
+    if (!reportId || rank == null || !marketplace) return res.status(400).json({ error: 'reportId, rank and marketplace are required' })
+    if (req.user.role === 'sub_admin' && !req.authUser?.marketplaces?.includes(marketplace)) {
+      return res.status(403).json({ error: `You do not have permission to list on ${SHOP_LABELS[marketplace] || marketplace}` })
+    }
+    const report = await ResearchReport.findById(reportId)
+    if (!report) return res.status(404).json({ error: 'Research report not found' })
+    await syncReportOpportunities(report)
+    const opp = report.opportunities.find((o) => o.rank === Number(rank))
+    if (!opp?.addedProductId) return res.status(404).json({ error: 'This product has not been listed before.' })
+
+    const shopFilter = { marketplace, status: 'connected' }
+    if (req.user.role === 'sub_admin') shopFilter._id = { $in: req.allowedShopIds }
+    const shop = await Shop.findOne(shopFilter)
+    if (!shop) return res.status(404).json({ error: `No connected ${SHOP_LABELS[marketplace] || marketplace} shop` })
+    const listing = await Listing.findOne({ productId: opp.addedProductId, shopId: shop._id, status: { $in: RELISTABLE } })
+    if (!listing) return res.status(404).json({ error: `No ended ${SHOP_LABELS[marketplace] || marketplace} listing to relist.` })
+    const product = await Product.findById(opp.addedProductId).select('sku stock title')
+    const quantity = Math.floor(Number(product?.stock) || 0)
+    if (quantity < 1) {
+      return res.status(400).json({ error: `"${product?.title || 'This product'}" has no stock. Add stock in Inventory, then relist it.` })
+    }
+
+    const result = await marketplaceManager.applyListingAction(shop, listing, 'relist', { quantity })
+    const { listingUrl } = require('../../utils/listingUrl')
+    listing.status = result.status || 'live'
+    if (result.marketplaceStatus) listing.marketplaceStatus = result.marketplaceStatus
+    if (result.externalListingId) listing.externalListingId = result.externalListingId
+    listing.listingUrl = listingUrl(shop.marketplace, listing.externalListingId, listing.listingUrl, { status: listing.status })
+    listing.stock = quantity
+    listing.syncError = null
+    listing.lastSyncedAt = new Date()
+    await listing.save()
+    await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
+    await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
+    await syncReportOpportunities(report)
+    res.json({ success: true, listedShops: opp.listedShops || [], listingUrl: listing.listingUrl })
+  } catch (err) {
+    res.status(422).json({ error: err.message })
+  }
+})
+
 // ─── POST /api/research/add-to-catalog — convert opportunity to catalog product
 router.post('/add-to-catalog', async (req, res) => {
   try {
@@ -457,6 +540,10 @@ router.post('/add-to-catalog', async (req, res) => {
     }
     if ((opp.listedShops || []).includes(marketplace)) {
       return res.status(409).json({ error: `This product is already listed on ${SHOP_LABELS[marketplace] || marketplace}.`, listedShops: opp.listedShops })
+    }
+    // An ended listing is put back on sale with Relist, never listed a second time.
+    if (opp.addedProductId && await Listing.exists({ productId: opp.addedProductId, marketplace, status: { $in: RELISTABLE } })) {
+      return res.status(409).json({ error: `This product has an ended ${SHOP_LABELS[marketplace] || marketplace} listing. Relist it instead of listing it again.`, relist: true })
     }
 
     let product = opp.addedProductId ? await Product.findById(opp.addedProductId) : null

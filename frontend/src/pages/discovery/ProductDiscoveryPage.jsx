@@ -8,6 +8,7 @@ import {
 import { TbBrandOpenai } from 'react-icons/tb'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
+import { marketplaceLabel } from '../../lib/marketplaces'
 import Button from '../../components/ui/Button'
 import { Spinner, EmptyState } from '../../components/ui/Feedback'
 import DiscoveryOverview from './DiscoveryOverview'
@@ -208,7 +209,32 @@ export default function ProductDiscoveryPage() {
   }
 
   // Saves the product, then opens that shop's own List form (its categories and required fields).
-  const handleListShop = async ({ reportId, rank, title, price, marketplace }) => {
+  const markListed = (rank, marketplace) => setRecommendations((prev) =>
+    prev.map((opp) => (opp.rank === rank
+      ? {
+          ...opp,
+          listedShops: [...new Set([...(opp.listedShops || []), marketplace])],
+          relistShops: (opp.relistShops || []).filter((item) => item !== marketplace),
+        }
+      : opp)),
+  )
+
+  // The product's listing on this shop ended: put that same listing back on sale.
+  const relistOnShop = async ({ reportId, rank, title, marketplace }) => {
+    const shop = marketplaceLabel(marketplace)
+    if (!window.confirm(`"${title}" already has an ended ${shop} listing. Relist it on ${shop} with your current stock?`)) return
+    try {
+      await api.post('/api/research/relist', { reportId, rank, marketplace }, token)
+      markListed(rank, marketplace)
+      setNotification(`"${title}" is back on sale on ${shop}.`)
+      setTimeout(() => setNotification(''), 5000)
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  const handleListShop = async ({ reportId, rank, title, price, marketplace, relist }) => {
+    if (relist) return relistOnShop({ reportId, rank, title, marketplace })
     try {
       const res = await api.post('/api/research/add-to-catalog', { reportId, rank, title, price, marketplace }, token)
       if (!res.product?._id) return
@@ -223,10 +249,13 @@ export default function ProductDiscoveryPage() {
       }
     } catch (err) {
       // Listed meanwhile (another user, or the same item in another research run): show it as listed.
-      if (/already listed/i.test(err.message || '')) {
-        setRecommendations((prev) =>
-          prev.map((opp) => (opp.rank === rank ? { ...opp, listedShops: [...new Set([...(opp.listedShops || []), marketplace])] } : opp)),
-        )
+      if (/already listed/i.test(err.message || '')) markListed(rank, marketplace)
+      // The server found an ended listing for it: offer to relist instead.
+      if (/relist it instead/i.test(err.message || '')) {
+        setRecommendations((prev) => prev.map((opp) => (opp.rank === rank
+          ? { ...opp, relistShops: [...new Set([...(opp.relistShops || []), marketplace])] }
+          : opp)))
+        return relistOnShop({ reportId, rank, title, marketplace })
       }
       alert(err.message)
     }
@@ -234,9 +263,7 @@ export default function ProductDiscoveryPage() {
 
   const listed = () => {
     const { rank, marketplace, product } = listing
-    setRecommendations((prev) =>
-      prev.map((opp) => (opp.rank === rank ? { ...opp, listedShops: [...new Set([...(opp.listedShops || []), marketplace])] } : opp)),
-    )
+    markListed(rank, marketplace)
     setListing(null)
     setNotification(`"${product.title}" listed.`)
     setTimeout(() => setNotification(''), 5000)

@@ -390,7 +390,7 @@ class EbayService {
     return trading.relistListing(accessToken, ebayItemId(externalListingId), changes)
   }
 
-  async applyListingAction(accessToken, action, listing) {
+  async applyListingAction(accessToken, action, listing, options = {}) {
     let itemId
     try {
       itemId = ebayItemId(listing.externalListingId)
@@ -413,7 +413,8 @@ class EbayService {
       return { status: 'ended', marketplaceStatus: 'Ended' }
     }
     if (action === 'relist') {
-      const res = await trading.relistListing(accessToken, itemId)
+      // `quantity` (the shared stock) replaces eBay's old quantity when given.
+      const res = await trading.relistListing(accessToken, itemId, options.quantity > 0 ? { quantity: options.quantity } : {})
       return { status: 'live', marketplaceStatus: 'Active', externalListingId: res.externalListingId || itemId }
     }
     throw new Error(`eBay cannot ${action} a listing.`)
