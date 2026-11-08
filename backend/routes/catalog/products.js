@@ -210,6 +210,10 @@ router.delete('/:id', async (req, res) => {
     }
     await Product.findByIdAndDelete(doc._id)
     await Listing.deleteMany({ productId: doc._id })
+    await ResearchReport.updateMany(
+      { 'opportunities.addedProductId': doc._id },
+      { $set: { 'opportunities.$.addedProductId': null, 'opportunities.$.listedShops': [] } },
+    ).catch(() => {})
     res.json({ deleted: true })
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -224,6 +228,14 @@ router.post('/:id/list', async (req, res) => {
 
     const shop = await Shop.findById(req.body.shopId).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
+
+    if (req.user.role === 'sub_admin') {
+      const isAllowedShop = req.allowedShopIds?.some((id) => String(id) === String(shop._id))
+      const isAllowedMarket = req.user.marketplaces?.includes(shop.marketplace)
+      if (!isAllowedShop || !isAllowedMarket) {
+        return res.status(403).json({ error: 'You do not have permission to list on this shop' })
+      }
+    }
 
     const price = req.body.price !== undefined && req.body.price !== '' ? Number(req.body.price) : product.basePrice
 
@@ -350,8 +362,22 @@ router.post('/:id/listing-action', async (req, res) => {
     listing.lastSyncedAt = new Date()
     await listing.save()
     if (action === 'delete' || action === 'end') {
-      const product = await Product.findById(listing.productId).select('sku')
+      const product = await Product.findById(listing.productId).select('sku sourceReportId')
       await marketplaceManager.forgetListing(listing, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
+      if (product?.sourceReportId) {
+        const remainingOnMarket = await Listing.countDocuments({
+          productId: product._id,
+          marketplace: shop.marketplace,
+          status: { $in: ['live', 'pending', 'out_of_stock'] },
+          _id: { $ne: listing._id },
+        })
+        if (remainingOnMarket === 0) {
+          await ResearchReport.updateOne(
+            { _id: product.sourceReportId, 'opportunities.addedProductId': product._id },
+            { $pull: { 'opportunities.$.listedShops': shop.marketplace } },
+          ).catch(() => {})
+        }
+      }
     }
     if (action === 'publish' || action === 'relist' || action === 'recover') {
       const product = await Product.findById(listing.productId).select('sku')

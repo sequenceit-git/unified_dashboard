@@ -19,6 +19,43 @@ const SHOP_LABELS = {
   temu: 'Temu Shop',
 }
 
+async function syncReportOpportunities(report) {
+  if (!report || !Array.isArray(report.opportunities) || report.opportunities.length === 0) return false
+  let changed = false
+  for (const opp of report.opportunities) {
+    if (opp.addedProductId) {
+      const prod = await Product.findById(opp.addedProductId).select('_id')
+      if (!prod) {
+        opp.addedProductId = null
+        if (opp.listedShops && opp.listedShops.length > 0) {
+          opp.listedShops = []
+        }
+        changed = true
+      } else {
+        const activeListings = await Listing.find({
+          productId: prod._id,
+          status: { $in: ['live', 'pending', 'out_of_stock'] },
+        }).select('marketplace')
+        const activeMarkets = [...new Set(activeListings.map((l) => l.marketplace))]
+        const currentMarkets = opp.listedShops || []
+        const isSame = currentMarkets.length === activeMarkets.length && currentMarkets.every((m) => activeMarkets.includes(m))
+        if (!isSame) {
+          opp.listedShops = activeMarkets
+          changed = true
+        }
+      }
+    } else if (opp.listedShops && opp.listedShops.length > 0) {
+      opp.listedShops = []
+      changed = true
+    }
+  }
+  if (changed) {
+    report.markModified('opportunities')
+    await report.save().catch((err) => console.warn('[research] Failed to save synced opportunities:', err.message))
+  }
+  return changed
+}
+
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('market-research'))
 
@@ -45,6 +82,7 @@ router.get('/recommendations/:reportId', async (req, res) => {
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
+    await syncReportOpportunities(report)
     const docs = report.opportunities || []
     let imagesAdded = false
     await Promise.all(docs.map(async (opp) => {
@@ -74,6 +112,7 @@ router.get('/report/:reportId', async (req, res) => {
     if (!report) {
       return res.status(404).json({ error: 'Report not found' })
     }
+    await syncReportOpportunities(report)
 
     res.json({
       report,
@@ -372,6 +411,10 @@ router.post('/add-to-catalog', async (req, res) => {
     }
     if (!marketplace) {
       return res.status(400).json({ error: 'Select eBay, TikTok Shop, or Temu Shop' })
+    }
+
+    if (req.user.role === 'sub_admin' && !req.user.marketplaces?.includes(marketplace)) {
+      return res.status(403).json({ error: `You do not have permission to list on ${SHOP_LABELS[marketplace] || marketplace}` })
     }
 
     const report = await ResearchReport.findById(reportId)

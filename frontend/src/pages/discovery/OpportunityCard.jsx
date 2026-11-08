@@ -1,11 +1,15 @@
 import { useState } from 'react'
+import { useAuth } from '../../auth/AuthContext'
+import { allowedShopSections } from '../../hooks/useShopSection'
 import Badge from '../../components/ui/Badge'
 import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
 import { productFacts } from './ProductDetailModal'
-import { SHOP_SECTIONS } from '../../lib/shops'
 import { FiExternalLink, FiAlertTriangle } from 'react-icons/fi'
 
 export default function OpportunityCard({ opportunity, reportId, onListShop, onOpen, isAdmin }) {
+  const { user, isAdmin: authIsAdmin } = useAuth()
+  const isSuperAdmin = isAdmin ?? authIsAdmin
+  const allowedSections = allowedShopSections(user, isSuperAdmin)
   const [adding, setAdding] = useState(false)
   const listedShops = opportunity.listedShops || []
 
@@ -125,19 +129,21 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
               {source.label}
             </a>
           ))}
-          <select
-            value=""
-            onChange={handleList}
-            disabled={adding || listedShops.length === SHOP_SECTIONS.length}
-            className="ml-auto max-w-[8.5rem] rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-800 outline-none focus:border-indigo-500"
-          >
-            <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
-            {SHOP_SECTIONS.map((section) => (
-              <option key={section.id} value={section.marketplace} disabled={listedShops.includes(section.marketplace)}>
-                {listedShops.includes(section.marketplace) ? `${section.label} · listed` : section.label}
-              </option>
-            ))}
-          </select>
+          {allowedSections.length > 0 && (
+            <select
+              value=""
+              onChange={handleList}
+              disabled={adding || allowedSections.every((section) => listedShops.includes(section.marketplace))}
+              className="ml-auto max-w-[8.5rem] rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-800 outline-none focus:border-indigo-500"
+            >
+              <option value="">{adding ? 'Listing…' : 'List on shop'}</option>
+              {allowedSections.map((section) => (
+                <option key={section.id} value={section.marketplace} disabled={listedShops.includes(section.marketplace)}>
+                  {listedShops.includes(section.marketplace) ? `${section.label} · listed` : section.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
     </div>
