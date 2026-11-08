@@ -279,20 +279,13 @@ async function addListing(token, product, opts) {
   return { itemId: doc.ItemID ? String(doc.ItemID) : null }
 }
 
-/** Units already sold on this listing. eBay's Quantity counts them, so available = Quantity - sold. */
-async function quantitySold(token, itemId) {
-  try {
-    const doc = await call(token, 'GetItem', `<ItemID>${escapeXml(itemId)}</ItemID><OutputSelector>Item.SellingStatus.QuantitySold</OutputSelector>`)
-    return Number(doc.Item?.SellingStatus?.QuantitySold || 0)
-  } catch (err) {
-    console.warn(`[ebayTrading] Failed to fetch quantity sold for item ${itemId}:`, err.message)
-    return 0
-  }
-}
-
-/** Revises a live listing. Only the fields given are changed. `quantity` is the stock available to buy. */
+/**
+ * Revises a live listing. Only the fields given are changed. `quantity` is the stock available
+ * to buy: eBay treats Quantity in a revise request as the available quantity and adds the units
+ * already sold itself (GetItem then returns available + sold). Adding the sold count here too
+ * inflated eBay's stock by every past sale.
+ */
 async function reviseListing(token, itemId, { title, description, price, quantity, images } = {}) {
-  const sold = quantity != null ? await quantitySold(token, itemId) : 0
   let compliantImages = []
   if (images && images.length) {
     compliantImages = await filterEbayCompliantImages(images)
@@ -302,7 +295,7 @@ async function reviseListing(token, itemId, { title, description, price, quantit
     title ? `<Title>${escapeXml(String(title).slice(0, 80))}</Title>` : '',
     description ? `<Description>${cdata(description)}</Description>` : '',
     price != null ? `<StartPrice currencyID="USD">${Number(price).toFixed(2)}</StartPrice>` : '',
-    quantity != null ? `<Quantity>${Math.max(0, Math.floor(Number(quantity))) + sold}</Quantity>` : '',
+    quantity != null ? `<Quantity>${Math.max(0, Math.floor(Number(quantity)))}</Quantity>` : '',
     compliantImages.length ? `<PictureDetails>${compliantImages.map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('')}</PictureDetails>` : '',
   ]
   await call(token, 'ReviseFixedPriceItem', `<Item>${parts.join('')}</Item>`)
