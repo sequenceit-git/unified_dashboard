@@ -272,6 +272,10 @@ class EbayService {
    * Updates shipping tracking information for an eBay order
    */
   async createShippingFulfillment(accessToken, orderId, { carrier, trackingNumber, lineItems = [] }) {
+    if (!carrier || /^other$/i.test(String(carrier).trim())) {
+      throw new Error('eBay needs the shipping carrier (for example USPS, UPS, FedEx or DHL) together with the tracking number.')
+    }
+    if (!String(trackingNumber || '').trim()) throw new Error('eBay needs a tracking number.')
     const payload = {
       shippingCarrierCode: carrier || 'USPS',
       trackingNumber: String(trackingNumber || '').trim(),
@@ -458,9 +462,22 @@ class EbayService {
    * Issues refund or processes return for an order via Sell Fulfillment API
    */
   async issueRefund(accessToken, orderId, { reason = 'BUYER_CANCEL', comment = 'Order refunded', amount = null } = {}) {
+    // eBay's ReasonForRefundEnum; the dashboard's own reason names are mapped onto it.
+    const REFUND_REASONS = {
+      BUYER_CANCEL: 'BUYER_CANCEL',
+      OUT_OF_STOCK: 'SELLER_CANCEL',
+      SELLER_CANCEL: 'SELLER_CANCEL',
+      BUYER_RETURN: 'BUYER_RETURN',
+      ITEM_NOT_RECEIVED: 'ITEM_NOT_RECEIVED',
+      ITEM_NOT_AS_DESCRIBED: 'ITEM_NOT_AS_DESCRIBED',
+      CUSTOMER_SERVICE: 'OTHER_ADJUSTMENT',
+      OTHER: 'OTHER_ADJUSTMENT',
+      OTHER_ADJUSTMENT: 'OTHER_ADJUSTMENT',
+      SHIPPING_DISCOUNT: 'SHIPPING_DISCOUNT',
+    }
     const payload = {
-      reason,
-      comment,
+      reasonForRefund: REFUND_REASONS[reason] || 'OTHER_ADJUSTMENT',
+      comment: String(comment || '').slice(0, 1000),
       ...(amount ? { orderLevelRefundAmount: { value: String(amount), currency: 'USD' } } : {}),
     }
 
@@ -485,24 +502,51 @@ class EbayService {
    * Seller-initiated cancellation. The Sell Fulfillment API has no cancel call, so this uses the
    * Post-Order API (POST /post-order/v2/cancellation), which needs the legacy order ID.
    */
-  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = '' } = {}) {
+  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK' } = {}) {
+    // CancelReasonEnum, seller-side values. OUT_OF_STOCK_OR_CANNOT_FULFILL gives the seller a
+    // transaction defect on eBay; BUYER_ASKED_CANCEL and ADDRESS_ISSUES do not.
     const CANCEL_REASONS = {
       OUT_OF_STOCK: 'OUT_OF_STOCK_OR_CANNOT_FULFILL',
       BUYER_CANCEL: 'BUYER_ASKED_CANCEL',
+      BUYER_ASKED_CANCEL: 'BUYER_ASKED_CANCEL',
       ADDRESS_ISSUES: 'ADDRESS_ISSUES',
+      ORDER_UNPAID: 'ORDER_UNPAID',
     }
     const order = await this.getOrder(accessToken, orderId)
-    const legacyOrderId = order.legacyOrderId || orderId
-    const payload = await this.postOrder(accessToken, '/post-order/v2/cancellation', {
-      method: 'POST',
-      label: 'eBay Order Cancellation Error',
-      body: {
-        legacyOrderId: String(legacyOrderId),
-        cancelReason: CANCEL_REASONS[reason] || reason,
-        ...(comment ? { comments: { content: String(comment).slice(0, 1000) } } : {}),
-      },
-    })
-    return { success: true, cancelId: payload.cancelId || null }
+    const paid = ['PAID', 'PARTIALLY_REFUNDED'].includes(String(order.orderPaymentStatus || '').toUpperCase())
+    const paidAt = order.paymentSummary?.payments?.[0]?.paymentDate || order.creationDate
+    // Post-Order wants the Trading-style order id. eBay now returns the same value in both
+    // fields for most orders; try the legacy one first, then the REST one.
+    const ids = [...new Set([order.legacyOrderId, order.orderId, orderId].filter(Boolean).map(String))]
+    let lastError
+    for (const legacyOrderId of ids) {
+      try {
+        const check = await this.postOrder(accessToken, '/post-order/v2/cancellation/check_eligibility', {
+          method: 'POST',
+          label: 'eBay Cancellation Eligibility Error',
+          body: { legacyOrderId },
+        })
+        if (check.eligible === false) {
+          const why = (check.failureReason || []).map((row) => String(row).replace(/_/g, ' ').toLowerCase()).join(', ')
+          throw Object.assign(new Error(`eBay will not let this order be cancelled${why ? `: ${why}` : ''}.`), { final: true })
+        }
+        const payload = await this.postOrder(accessToken, '/post-order/v2/cancellation', {
+          method: 'POST',
+          label: 'eBay Order Cancellation Error',
+          body: {
+            legacyOrderId,
+            cancelReason: CANCEL_REASONS[reason] || 'BUYER_ASKED_CANCEL',
+            buyerPaid: paid,
+            ...(paid && paidAt ? { buyerPaidDate: { value: new Date(paidAt).toISOString() } } : {}),
+          },
+        })
+        return { success: true, cancelId: payload.cancelId || null }
+      } catch (err) {
+        if (err.final) throw err
+        lastError = err
+      }
+    }
+    throw lastError
   }
 
   /**
@@ -575,29 +619,33 @@ class EbayService {
   /**
    * Creates an item discount promotion via eBay Sell Marketing API
    */
-  async createPromotion(accessToken, { name, description, percentageOff = 5, listingIds = [], startDate, endDate } = {}) {
-    const start = startDate || new Date(Date.now() + 60000).toISOString()
-    const end = endDate || new Date(Date.now() + 30 * 86400000).toISOString()
+  async createPromotion(accessToken, { name, description, percentageOff = 10, listingIds = [], startDate, endDate, imageUrl } = {}) {
+    // A plain "% off these listings" sale is a markdown discount (createItemPriceMarkdownPromotion).
+    // createItemPromotion is for threshold discounts and needs a buy-X threshold, which this form has not.
+    const ids = [...new Set((listingIds || []).map((id) => String(id).trim()).filter(Boolean))]
+    if (!ids.length) throw new Error('Add at least one eBay item ID to put on sale.')
+    if (ids.length > 500) throw new Error('eBay allows at most 500 items in one sale.')
+    const percent = Math.round(Number(percentageOff))
+    if (!(percent >= 5 && percent <= 80)) throw new Error('eBay sale discounts must be between 5% and 80%.')
+    const start = new Date(startDate || Date.now() + 5 * 60000)
+    const end = new Date(endDate || start.getTime() + 14 * 86400000)
+    if (end - start < 24 * 3600000) throw new Error('An eBay sale must run for at least 24 hours.')
+    if (!imageUrl) throw new Error('eBay needs a picture for the sale. The first item must have a product image.')
     const payload = {
+      name: String(name || `Sale ${new Date().toLocaleDateString('en-US')}`).slice(0, 90),
+      description: String(description || `${percent}% off selected items`).slice(0, 50),
       marketplaceId: 'EBAY_US',
-      name: name || `Promotion ${new Date().toLocaleDateString()}`,
-      description: description || 'Store Special Discount',
-      startDate: start,
-      endDate: end,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
       promotionStatus: 'SCHEDULED',
-      inventoryCriterion: {
-        inventoryCriterionType: 'INVENTORY_BY_VALUE',
-        listingIds: (listingIds || []).map(String),
-      },
-      discountRules: [
-        {
-          discountBenefit: {
-            percentageOffItem: String(percentageOff || 5),
-          },
-        },
-      ],
+      promotionImageUrl: imageUrl,
+      selectedInventoryDiscounts: [{
+        inventoryCriterion: { inventoryCriterionType: 'INVENTORY_BY_VALUE', listingIds: ids },
+        discountBenefit: { percentageOffItem: String(percent) },
+        ruleOrder: 1,
+      }],
     }
-    const response = await fetch(`${config.apiBaseUrl}/sell/marketing/v1/item_promotion`, {
+    const response = await fetch(`${config.apiBaseUrl}/sell/marketing/v1/item_price_markdown`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -607,13 +655,12 @@ class EbayService {
       body: JSON.stringify(payload),
     })
     if (!response.ok) {
-      const payload = await response.json().catch(() => ({}))
-      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
-      throw new Error(`eBay Create Promotion Error: ${detail}`)
+      const body = await response.json().catch(() => ({}))
+      const detail = body.errors?.[0]?.longMessage || body.errors?.[0]?.message || body.message || response.statusText
+      throw new Error(`eBay Create Sale Error: ${detail}`)
     }
     const location = response.headers.get('Location') || ''
-    const promotionId = location.split('/').pop() || null
-    return { success: true, promotionId, location }
+    return { success: true, promotionId: location.split('/').pop() || null, location }
   }
 
   /**
@@ -631,7 +678,7 @@ class EbayService {
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}))
       const detail = payload.errors?.[0]?.message || payload.message || response.statusText
-      throw new Error(`eBay Pause Promotion Error: ${detail}`)
+      throw new Error(`eBay Pause Promotion Error: ${detail}. eBay can only pause and resume threshold discounts, not markdown sales.`)
     }
     return { success: true }
   }
@@ -651,7 +698,7 @@ class EbayService {
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}))
       const detail = payload.errors?.[0]?.message || payload.message || response.statusText
-      throw new Error(`eBay Resume Promotion Error: ${detail}`)
+      throw new Error(`eBay Resume Promotion Error: ${detail}. eBay can only pause and resume threshold discounts, not markdown sales.`)
     }
     return { success: true }
   }
@@ -662,7 +709,7 @@ class EbayService {
   async getFinances(accessToken, { limit = 20 } = {}) {
     // Finances is served from apiz.ebay.com (apiz.sandbox.ebay.com in the sandbox).
     const host = config.environment === 'SANDBOX' ? 'https://apiz.sandbox.ebay.com' : 'https://apiz.ebay.com'
-    const response = await fetch(`${host}/sell/finances/v1/transaction?limit=${limit}&sort=-transactionDate`, {
+    const response = await fetch(`${host}/sell/finances/v1/transaction?limit=${limit}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/json',

@@ -239,8 +239,18 @@ router.post('/sections/promotions/create', sectionGuard('promotions'), async (re
       return res.status(400).json({ error: `${marketplace} does not support creating promotions via API` })
     }
 
+    // eBay sales need a picture; use the first listed item's product image.
+    let imageUrl
+    if (marketplace === 'ebay' && Array.isArray(listingIds) && listingIds.length) {
+      const Listing = require('../../models/Listing')
+      const first = String(listingIds[0]).trim()
+      const listing = await Listing.findOne({ shopId: shop._id, externalListingId: { $in: [first, `item-${first}`] } })
+        .populate('productId', 'images').lean()
+      imageUrl = marketplaceManager.publicImageUrls(listing?.productId?.images || [])[0]
+    }
+
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.createPromotion(token, { name, description, percentageOff, listingIds, startDate, endDate, shop })
+      service.createPromotion(token, { name, description, percentageOff, listingIds, startDate, endDate, imageUrl, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:promotions`)

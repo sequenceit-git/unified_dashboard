@@ -189,7 +189,7 @@ function PromotionModal({ onClose, onSuccess, token, marketplace }) {
             </label>
             <input
               type="number"
-              min="1"
+              min={marketplace === 'ebay' ? '5' : '1'}
               max="80"
               value={discount}
               onChange={(e) => setDiscount(e.target.value)}
@@ -215,15 +215,19 @@ function PromotionModal({ onClose, onSuccess, token, marketplace }) {
 
         <div>
           <label className="block text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5">
-            Eligible Listing IDs (optional)
+            {marketplace === 'ebay' ? 'eBay item IDs' : 'Eligible Listing IDs (optional)'}
           </label>
           <input
             value={listingIds}
             onChange={(e) => setListingIds(e.target.value)}
-            placeholder="Leave blank for entire inventory, or comma-separated item IDs"
+            placeholder={marketplace === 'ebay' ? 'Comma-separated eBay item IDs (up to 500)' : 'Leave blank for entire inventory, or comma-separated item IDs'}
             className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
           />
-          <p className="text-xs text-gray-500 mt-1">Specify item IDs to limit the sale to specific products.</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {marketplace === 'ebay'
+              ? 'eBay sale (markdown): 5–80% off, at least 24 hours. The first item’s product image is used as the sale picture.'
+              : 'Specify item IDs to limit the sale to specific products.'}
+          </p>
         </div>
 
         {err && <p className="text-sm text-red-600 dark:text-red-400 font-medium">{err}</p>}
@@ -315,6 +319,8 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
           label: 'Action',
           render: (row) => {
             if (!row.promotionId) return null
+            // eBay can only pause/resume threshold discounts; markdown sales have no pause.
+            if (marketplace === 'ebay' && /markdown/i.test(String(row.type || ''))) return null
             const isPaused = /pause|deactivate/i.test(String(row.status || ''))
             return (
               <Button

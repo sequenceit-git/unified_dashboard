@@ -105,7 +105,7 @@ const EBAY = {
           id: 'payouts',
           title: 'Payouts',
           columns: [col('payoutId', 'Payout'), col('date', 'Date', 'date'), col('status', 'Status', 'status'), col('amount', 'Amount', 'money'), col('fee', 'Fee', 'money'), col('transactions', 'Transactions', 'number'), col('account', 'Paid to')],
-          load: async () => (await ebayGet(token, 'https://apiz.ebay.com/sell/finances/v1/payout?limit=50&sort=-payoutDate')).payouts?.map((row) => ({
+          load: async () => (await ebayGet(token, 'https://apiz.ebay.com/sell/finances/v1/payout?limit=50')).payouts?.map((row) => ({
             payoutId: row.payoutId,
             date: row.payoutDate,
             status: row.payoutStatusDescription || words(row.payoutStatus),
@@ -119,7 +119,7 @@ const EBAY = {
           id: 'transactions',
           title: 'Recent transactions',
           columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('memo', 'Details'), col('orderId', 'Order'), col('buyer', 'Buyer'), col('amount', 'Amount', 'money'), col('status', 'Status', 'status')],
-          load: async () => (await ebayGet(token, 'https://apiz.ebay.com/sell/finances/v1/transaction?limit=50&sort=-transactionDate')).transactions?.map((row) => {
+          load: async () => (await ebayGet(token, 'https://apiz.ebay.com/sell/finances/v1/transaction?limit=50')).transactions?.map((row) => {
             const amount = money(row.amount)
             if (amount && row.bookingEntry === 'DEBIT') amount.value = -amount.value
             return {

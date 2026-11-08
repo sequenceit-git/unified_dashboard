@@ -28,8 +28,9 @@ const MARKETPLACE_CONFIG = {
       'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
       'https://api.ebay.com/oauth/api_scope/sell.account',
       'https://api.ebay.com/oauth/api_scope/sell.finances',
+      // Promotions. Best offers (Negotiation API) use sell.inventory, which is already above;
+      // eBay has no sell.negotiation scope, and asking for one makes the consent page fail.
       'https://api.ebay.com/oauth/api_scope/sell.marketing',
-      'https://api.ebay.com/oauth/api_scope/sell.negotiation',
       'https://api.ebay.com/oauth/api_scope/commerce.message',
     ],
   },
