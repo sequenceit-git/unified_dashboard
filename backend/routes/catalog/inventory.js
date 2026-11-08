@@ -34,22 +34,36 @@ router.get('/low-stock', async (req, res) => {
 // GET /api/inventory/logs?productId=&shopId=&reason=&direction=&q=&from=&to=&page=&limit=
 router.get('/logs', async (req, res) => {
   try {
-    const filter = {}
+    const conditions = []
+
     if (req.query.marketplace) {
       const marketplace = canonicalMarketplace(req.query.marketplace)
       if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
-      filter.shopId = { $in: await Listing.find({ marketplace }).distinct('shopId') }
+      const [listingProductIds, shopIds] = await Promise.all([
+        Listing.find({ marketplace }).distinct('productId'),
+        Listing.find({ marketplace }).distinct('shopId'),
+      ])
+      conditions.push({
+        $or: [
+          { shopId: { $in: shopIds } },
+          { productId: { $in: listingProductIds } },
+        ],
+      })
     }
-    if (req.query.productId) filter.productId = req.query.productId
-    if (req.query.shopId) filter.shopId = req.query.shopId
-    if (req.query.reason) filter.reason = req.query.reason
-    if (req.query.direction === 'increase') filter.change = { $gt: 0 }
-    if (req.query.direction === 'decrease') filter.change = { $lt: 0 }
+
+    if (req.query.productId) conditions.push({ productId: req.query.productId })
+    if (req.query.shopId) conditions.push({ shopId: req.query.shopId })
+    if (req.query.reason && req.query.reason !== 'all') conditions.push({ reason: req.query.reason })
+    if (req.query.direction === 'increase') conditions.push({ change: { $gt: 0 } })
+    if (req.query.direction === 'decrease') conditions.push({ change: { $lt: 0 } })
+
     if (req.query.from || req.query.to) {
-      filter.createdAt = {}
-      if (req.query.from) filter.createdAt.$gte = new Date(req.query.from)
-      if (req.query.to) filter.createdAt.$lte = new Date(req.query.to)
+      const dateCond = {}
+      if (req.query.from) dateCond.$gte = new Date(req.query.from)
+      if (req.query.to) dateCond.$lte = new Date(req.query.to)
+      conditions.push({ createdAt: dateCond })
     }
+
     if (req.query.q) {
       const q = req.query.q.trim()
       const productIds = await Product.find({
@@ -58,12 +72,20 @@ router.get('/logs', async (req, res) => {
           { title: { $regex: q, $options: 'i' } },
         ],
       }).distinct('_id')
-      filter.$or = [
-        { productId: { $in: productIds } },
-        { variantSku: { $regex: q, $options: 'i' } },
-      ]
+      conditions.push({
+        $or: [
+          { productId: { $in: productIds } },
+          { variantSku: { $regex: q, $options: 'i' } },
+        ],
+      })
     }
-    Object.assign(filter, shopFilter(req, InventoryLog))
+
+    const authShopFilter = shopFilter(req, InventoryLog)
+    if (Object.keys(authShopFilter).length > 0) {
+      conditions.push(authShopFilter)
+    }
+
+    const filter = conditions.length > 0 ? { $and: conditions } : {}
     const pg = paging(req)
     const out = await paged(InventoryLog, filter, pg, { createdAt: -1 })
     out.data = await InventoryLog.populate(out.data, [
@@ -130,9 +152,15 @@ router.post('/adjust', async (req, res) => {
       await Product.findByIdAndUpdate(productId, { $inc: { stock: change } })
     }
 
+    let logShopId = shopId || null
+    if (!logShopId) {
+      const relatedListing = await Listing.findOne({ productId }).sort({ updatedAt: -1 })
+      if (relatedListing?.shopId) logShopId = relatedListing.shopId
+    }
+
     const log = await InventoryLog.create({
       productId, variantSku: variantSku || undefined,
-      shopId: shopId || null, change, stockBefore, stockAfter,
+      shopId: logShopId, change, stockBefore, stockAfter,
       reason, createdBy: req.user.id,
     })
 
