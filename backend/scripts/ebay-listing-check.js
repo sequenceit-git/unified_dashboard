@@ -46,6 +46,13 @@ async function main() {
       const issues = []
       if (!['live', 'out_of_stock'].includes(listing.status)) issues.push(`dashboard says ${listing.status}, eBay says active`)
       if (Number.isFinite(onEbay.stock) && onEbay.stock !== listing.stock) issues.push(`stock here ${listing.stock}, on eBay ${onEbay.stock}`)
+      // The shared product stock is what gets pushed to other shops; it should match eBay
+      // unless the product is also sold elsewhere.
+      const shared = listing.productId?.stock
+      if (Number.isFinite(onEbay.stock) && Number.isFinite(shared) && shared !== onEbay.stock) {
+        const elsewhere = await Listing.countDocuments({ productId: listing.productId._id, shopId: { $ne: shop._id }, status: { $in: ['live', 'out_of_stock'] } })
+        issues.push(`shared stock ${shared}, eBay ${onEbay.stock}${elsewhere ? ` (also listed on ${elsewhere} other shop(s))` : ''}`)
+      }
       if (issues.length) problems.push({ id, sku, title, issues })
       continue
     }
@@ -66,6 +73,11 @@ async function main() {
       ebay = `eBay lookup failed: ${err.message}`
     }
     const expected = ['ended', 'error'].includes(listing.status)
+    // eBay refuses GetItem for listings it removed (e.g. policy violations); "ended" is right for those.
+    if (expected && /removed/i.test(ebay)) {
+      console.log(`Note: ${id} ${title}: ${ebay.replace('eBay lookup failed: eBay: ', '')} (dashboard: ended, correct)`)
+      continue
+    }
     if (!expected || !/Completed|Ended/i.test(ebay)) problems.push({ id, sku, title, issues: [`dashboard says ${listing.status}; ${ebay}`] })
   }
 
