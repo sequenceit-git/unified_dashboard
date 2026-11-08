@@ -27,6 +27,8 @@ const shopSchema = new mongoose.Schema(
     // Seller account the stored login belongs to, read from the marketplace when connecting.
     // A reconnect as a different account is refused.
     accountId: { type: String },
+    // eBay push notifications: { enabled, url, events, enabledAt, checkedAt, error }.
+    liveUpdates: { type: mongoose.Schema.Types.Mixed, default: undefined },
     // Which dashboard sections this shop's token can reach: { sectionId: { ok, reason } }.
     apiAccess: { type: mongoose.Schema.Types.Mixed, default: undefined },
     apiAccessCheckedAt: { type: Date },

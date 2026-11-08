@@ -72,8 +72,8 @@ async function connectShop(marketplace, code, { shopName, externalShopId: reques
     { upsert: true, returnDocument: 'after' },
   )
 
-  // First load of orders and listings, and which sections the new login can reach.
-  for (const kind of ['full', 'access']) {
+  // First load of orders and listings, which sections the new login can reach, and (eBay) live updates.
+  for (const kind of ['full', 'access', 'live']) {
     syncQueue.enqueue(kind, shop._id).catch((err) => console.warn(`Initial ${kind} sync failed for ${shop.name}:`, err.message))
   }
   return shop
@@ -128,8 +128,12 @@ function sectionGuard(sectionId, defaultMarketplace = 'ebay') {
 router.get('/', async (req, res) => {
   try {
     const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
-    const shops = await Shop.find(filter).select('name marketplace status authError externalShopId lastSyncAt aiReplyEnabled').sort({ marketplace: 1 }).lean()
-    res.json(shops.map((shop) => ({ ...shop, listing: marketplaceManager.listingCapabilities(shop.marketplace) })))
+    const shops = await Shop.find(filter).select('name marketplace status authError externalShopId lastSyncAt aiReplyEnabled liveUpdates').sort({ marketplace: 1 }).lean()
+    res.json(shops.map(({ liveUpdates, ...shop }) => ({
+      ...shop,
+      liveUpdates: liveUpdates ? { enabled: Boolean(liveUpdates.enabled), error: liveUpdates.error, enabledAt: liveUpdates.enabledAt } : undefined,
+      listing: marketplaceManager.listingCapabilities(shop.marketplace),
+    })))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -516,6 +520,19 @@ router.post('/sync-all', async (req, res) => {
     const shops = await Shop.find(filter).select('_id')
     const results = await Promise.all(shops.map((shop) => syncQueue.enqueue('full', shop._id, { wait: true })))
     res.json({ success: true, results })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/:id/live-updates — (re)subscribe an eBay shop to push notifications
+router.post('/:id/live-updates', requireRole('super_admin'), async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).select('_id marketplace')
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (shop.marketplace !== 'ebay') return res.status(400).json({ error: 'Live updates are only available for eBay shops' })
+    const result = await syncQueue.enqueue('live', shop._id, { wait: true, timeoutMs: 20000 })
+    res.json({ success: true, result })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

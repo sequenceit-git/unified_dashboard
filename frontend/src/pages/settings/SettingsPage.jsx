@@ -35,12 +35,13 @@ export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [connectingId, setConnectingId] = useState('')
   const [syncingId, setSyncingId] = useState('')
+  const [liveId, setLiveId] = useState('')
   const [message, setMessage] = useState('')
   const [messageError, setMessageError] = useState(false)
 
   // A sync finished on the worker (or the first sync after a connect): show the new "Last sync".
   useLiveEvents((event) => {
-    if (event.type === 'sync' && ['full', 'listings', 'orders'].includes(event.kind)) shopsRes.refetch()
+    if (event.type === 'sync' && ['full', 'listings', 'orders', 'live'].includes(event.kind)) shopsRes.refetch()
   })
 
   const connectedMarketplace = searchParams.get('connected')
@@ -99,6 +100,31 @@ export default function SettingsPage() {
     }
   }
 
+  const handleLiveUpdates = async (shop) => {
+    setLiveId(shop._id)
+    setMessage('')
+    try {
+      const res = await api.post(`/api/shops/${shop._id}/live-updates`, {}, token)
+      const result = res?.result || {}
+      if (result.liveUpdates === 'on') {
+        setMessage(`Live updates are on for ${shop.name}. New sales and messages now arrive within seconds.`)
+        setMessageError(false)
+      } else if (result.queued) {
+        setMessage(`Turning on live updates for ${shop.name}…`)
+        setMessageError(false)
+      } else {
+        setMessage(result.reason || result.error || result.skipped || 'Live updates could not be turned on.')
+        setMessageError(true)
+      }
+      shopsRes.refetch()
+    } catch (err) {
+      setMessage(err.message)
+      setMessageError(true)
+    } finally {
+      setLiveId('')
+    }
+  }
+
   if (shopsRes.loading || (isAdmin && configsRes.loading)) return <Spinner />
   if (shopsRes.error) return <ErrorState message={shopsRes.error} onRetry={shopsRes.refetch} />
 
@@ -151,6 +177,16 @@ export default function SettingsPage() {
                 </p>
               )}
 
+              {connected && shop.marketplace === 'ebay' && (
+                shop.liveUpdates?.enabled ? (
+                  <p className="mt-2 text-xs font-medium text-emerald-700">Live updates on: sales and messages arrive within seconds.</p>
+                ) : (
+                  <p className="mt-2 text-xs text-amber-700">
+                    Live updates off{shop.liveUpdates?.error ? `: ${shop.liveUpdates.error}` : '.'} New sales and messages arrive with the regular sync.
+                  </p>
+                )
+              )}
+
               {shop?.status === 'error' && (
                 <p className="mt-3 text-xs text-red-700">
                   {shop.authError || 'The shop login stopped working.'} Reconnect the shop to resume syncing.
@@ -182,6 +218,11 @@ export default function SettingsPage() {
                       <Button variant="secondary" onClick={() => handleSync(shop)} disabled={syncingId === shop._id}>
                         {syncingId === shop._id ? 'Syncing…' : 'Sync shop'}
                       </Button>
+                      {shop.marketplace === 'ebay' && !shop.liveUpdates?.enabled && (
+                        <Button variant="secondary" onClick={() => handleLiveUpdates(shop)} disabled={liveId === shop._id}>
+                          {liveId === shop._id ? 'Turning on…' : 'Turn on live updates'}
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
