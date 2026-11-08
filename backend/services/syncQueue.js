@@ -52,6 +52,13 @@ const KINDS = {
     run: (shop) => manager().checkShopAccess(shop),
     clears: () => [],
   },
+  // Re-subscribes eBay shops to push notifications once a day (and on connect).
+  live: {
+    every: () => (autoSync('ACCESS_AUTO_CHECK') ? 24 * 60 : 0),
+    applies: (shop) => shop.marketplace === 'ebay',
+    run: (shop) => require('./ebayNotifications').enable(shop),
+    clears: () => [],
+  },
   full: {
     every: () => 0,
     applies: () => true,
@@ -97,21 +104,49 @@ async function runJob(kind, shopId) {
   return JSON.parse(JSON.stringify(result ?? {}))
 }
 
+/**
+ * Shops with eBay live updates get new sales and messages pushed, so their scheduled syncs only
+ * run every so often as a backup, in case eBay misses a notification.
+ */
+const BACKUP_MINUTES = {
+  orders: () => Number(process.env.ORDER_BACKUP_MINUTES || 30),
+  inbox: () => Number(process.env.INBOX_BACKUP_MINUTES || 15),
+  listings: () => Number(process.env.LISTING_BACKUP_MINUTES || 60),
+}
+
+async function dueForSchedule(kind, shop) {
+  if (!BACKUP_MINUTES[kind] || !shop.liveUpdates?.enabled) return true
+  return cache.claim(`backup-sync:${kind}:${shop._id}`, BACKUP_MINUTES[kind]() * 60)
+}
+
+/** Shops a scheduled `kind` run should cover now. */
 async function connectedShopIds(kind) {
-  const shops = await Shop.find({ status: 'connected' }).select('marketplace apiAccess name')
-  return shops.filter((shop) => KINDS[kind].applies(shop)).map((shop) => String(shop._id))
+  const shops = await Shop.find({ status: 'connected' }).select('marketplace apiAccess name liveUpdates')
+  const ids = []
+  for (const shop of shops) {
+    if (KINDS[kind].applies(shop) && await dueForSchedule(kind, shop)) ids.push(String(shop._id))
+  }
+  return ids
 }
 
 // ---- Without Redis: run in this process, one job per shop and kind at a time. ----
 
 const running = new Map()
+const rerun = new Set()
 
-function runInline(kind, shopId) {
+/** With `after`, a run already in progress is followed by one more, so news since it began isn't missed. */
+function runInline(kind, shopId, { after = false } = {}) {
   const key = `${kind}:${shopId}`
-  if (!running.has(key)) {
-    running.set(key, runJob(kind, shopId).finally(() => running.delete(key)))
+  if (running.has(key)) {
+    if (after) rerun.add(key)
+    return running.get(key)
   }
-  return running.get(key)
+  const promise = runJob(kind, shopId).finally(() => {
+    running.delete(key)
+    if (rerun.delete(key)) runInline(kind, shopId).catch(() => {})
+  })
+  running.set(key, promise)
+  return promise
 }
 
 // ---- With Redis: BullMQ. ----
@@ -141,11 +176,12 @@ function getQueueEvents() {
 /**
  * Asks for a sync of one shop. A job already waiting or running for the same shop and kind is
  * reused, so repeated clicks don't pile up. With `wait`, resolves with the job's result, or
- * `{ queued: true }` when it takes longer than `timeoutMs` (the job keeps running).
+ * `{ queued: true }` when it takes longer than `timeoutMs` (the job keeps running on the worker).
  */
-async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000 } = {}) {
+async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000, push = false } = {}) {
   if (!KINDS[kind]) throw new Error(`Unknown sync job ${kind}`)
   const id = String(shopId)
+  if (push) return enqueuePush(kind, id)
   if (!redis.enabled()) {
     const promise = runInline(kind, id)
     if (!wait) {
@@ -161,7 +197,14 @@ async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000 } = {}) {
     try {
       return await job.waitUntilFinished(getQueueEvents(), timeoutMs)
     } catch (err) {
-      console.warn(`[syncQueue] Job ${kind}-${id} timed out or worker not running (${err.message}). Executing inline...`)
+      // A worker is on it: leave the job running there (its `sync` event refreshes the page).
+      // Running it here too would load the same shop twice at once.
+      const workers = await getQueue().getWorkersCount().catch(() => 1)
+      if (workers > 0) return { queued: true, jobId: job.id }
+      // No worker at all: take the job off the queue so it doesn't run again later, then run it here.
+      console.warn(`[syncQueue] No sync worker for ${kind}-${id} (${err.message}). Running it in the API process.`)
+      const removed = await job.remove().then(() => true, () => false)
+      if (!removed) return { queued: true, jobId: job.id }
       return await runInline(kind, id)
     }
   } catch (err) {
@@ -174,6 +217,29 @@ async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000 } = {}) {
     }
     return promise
   }
+}
+
+const PUSH_DELAY_MS = 5000
+
+/**
+ * A marketplace told us something changed (e.g. an eBay sale). The sync must start after now:
+ * a run already in progress may have fetched before the change. Bursts within a few seconds
+ * share one job. Never waits.
+ */
+async function enqueuePush(kind, id) {
+  if (redis.enabled()) {
+    try {
+      const job = await getQueue().add(kind, { shopId: id }, {
+        delay: PUSH_DELAY_MS,
+        deduplication: { id: `${kind}-${id}-push`, ttl: PUSH_DELAY_MS },
+      })
+      return { queued: true, jobId: job.id }
+    } catch (err) {
+      console.warn(`[syncQueue] Redis enqueue error (${err.message}). Running the push sync inline...`)
+    }
+  }
+  runInline(kind, id, { after: true }).catch(() => {})
+  return { queued: true }
 }
 
 /** Queues `kind` for every connected shop it applies to. */

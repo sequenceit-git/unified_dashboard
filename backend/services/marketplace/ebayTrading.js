@@ -97,6 +97,30 @@ async function getItem(token, itemId) {
   return doc.Item ? { ...parseItem(doc.Item), raw: doc.Item } : null
 }
 
+/** The eBay account (user ID) a token belongs to. GetUser needs no extra OAuth scope. */
+async function getUser(token) {
+  const doc = await call(token, 'GetUser', '')
+  return { userId: String(text(doc.User?.UserID) || '').trim() }
+}
+
+/**
+ * Points eBay's Platform Notifications for this seller at `url` and turns on `events`.
+ * The delivery URL is app-wide; the event list is per seller.
+ */
+async function setNotificationPreferences(token, { url, events = [] }) {
+  const enable = events
+    .map((event) => `<NotificationEnable><EventType>${escapeXml(event)}</EventType><EventEnable>Enable</EventEnable></NotificationEnable>`)
+    .join('')
+  await call(token, 'SetNotificationPreferences', [
+    '<ApplicationDeliveryPreferences>',
+    '<ApplicationEnable>Enable</ApplicationEnable>',
+    `<ApplicationURL>${escapeXml(url)}</ApplicationURL>`,
+    '<DeviceType>Platform</DeviceType>',
+    '</ApplicationDeliveryPreferences>',
+    `<UserDeliveryPreferenceArray>${enable}</UserDeliveryPreferenceArray>`,
+  ].join(''))
+}
+
 /** Item IDs of every active fixed-price listing, newest pages first. */
 async function getActiveItemIds(token, { maxPages = 10 } = {}) {
   const ids = []
@@ -328,4 +352,4 @@ async function relistListing(token, itemId, { quantity, price, title, descriptio
   return { status: 'live', externalListingId: doc.ItemID ? String(doc.ItemID) : itemId }
 }
 
-module.exports = { getItem, getActiveItemIds, getActiveSummaries, getActiveListings, addListing, reviseListing, endListing, relistListing }
+module.exports = { getUser, setNotificationPreferences, getItem, getActiveItemIds, getActiveSummaries, getActiveListings, addListing, reviseListing, endListing, relistListing }

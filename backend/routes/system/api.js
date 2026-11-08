@@ -4,6 +4,7 @@ const router = express.Router()
 
 const crypto = require('crypto')
 const ebayDeletion = require('../../services/ebayAccountDeletion')
+const ebayNotifications = require('../../services/ebayNotifications')
 
 router.get('/health', (req, res) => {
   res.json({ message: 'OK — backend is running' })
@@ -47,5 +48,22 @@ router.post('/ebay/deletion', async (req, res) => {
     return res.status(500).json({ error: 'Could not process notification' })
   }
 })
+
+// POST /api/ebay/notifications — eBay Platform Notifications (SOAP XML). Checks eBay's signature,
+// queues a sync for the seller's shop and answers at once; the worker does the work.
+router.post(
+  '/ebay/notifications',
+  express.text({ type: () => true, limit: '2mb' }),
+  async (req, res) => {
+    try {
+      const result = await ebayNotifications.handle(req.body, req.get('soapaction'))
+      if (result.status !== 200) console.warn(`[ebay-notify] ${result.message}`)
+      res.status(result.status).send(result.message)
+    } catch (err) {
+      console.error('[ebay-notify] failed:', err.message)
+      res.status(500).send('Could not process notification')
+    }
+  },
+)
 
 module.exports = router

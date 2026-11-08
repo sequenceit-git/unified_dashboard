@@ -5,6 +5,10 @@ import { api } from '../../lib/api'
 import { canonicalShopMarketplace } from '../../lib/shops'
 import { Spinner } from '../../components/ui/Feedback'
 
+// Codes already sent to the API. Marketplaces accept each code once, and React's StrictMode runs
+// effects twice in development, which would otherwise send it again and show a false failure.
+const exchangedCodes = new Set()
+
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -22,6 +26,8 @@ export default function OAuthCallback() {
         setError('No authorization code was returned by the marketplace.')
         return
       }
+      if (exchangedCodes.has(code)) return
+      exchangedCodes.add(code)
 
       try {
         await api.post(`/api/shops/oauth/callback/${marketplace}`, { code, state }, token)

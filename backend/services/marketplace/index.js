@@ -1372,6 +1372,11 @@ class UnifiedMarketplaceManager {
         await doc.save()
       } catch (err) {
         require('../notify').tokenFailed(doc, err.message).catch(() => {})
+        if (err.deadLogin) {
+          // The login can't be refreshed any more: show the shop as needing a reconnect and stop syncing it.
+          await Shop.updateOne({ _id: doc._id }, { status: 'error', authError: err.message }).catch(() => {})
+          throw Object.assign(new Error(`${doc.name} needs reconnecting: ${err.message}`), { notConnected: true })
+        }
         if (force) throw err
         console.warn(`[tokens] ${doc.name}: refresh failed: ${err.message}`)
       }

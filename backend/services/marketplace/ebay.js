@@ -119,7 +119,10 @@ class EbayService {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Refresh Error: ${err.error_description || response.statusText}`)
+      const error = new Error(`eBay Refresh Error: ${err.error_description || response.statusText}`)
+      // invalid_grant: the refresh token was revoked or has run out. Only a new login fixes it.
+      error.deadLogin = err.error === 'invalid_grant'
+      throw error
     }
 
     return response.json()
@@ -332,6 +335,12 @@ class EbayService {
   /** Every active listing's id, SKU, title, price and stock in a few calls; `complete` false means pages were skipped. */
   async getListingSummaries(accessToken) {
     return trading.getActiveSummaries(accessToken)
+  }
+
+  /** The seller account a login belongs to, e.g. { username: 'my-store' }. */
+  async getAccount(accessToken) {
+    const { userId } = await trading.getUser(accessToken)
+    return { username: userId }
   }
 
   /** Full details (description, images, category, item specifics) of one listing; null if eBay cannot return it. */

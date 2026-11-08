@@ -11,6 +11,74 @@ const cache = require('../../services/cache')
 
 const router = express.Router()
 
+/**
+ * Exchanges an OAuth code and saves the shop as connected. A reconnect updates the existing
+ * shop in place (keeping its name), then queues a full sync and an API access check so the new
+ * login's orders, listings and sections show up straight away.
+ */
+async function connectShop(marketplace, code, { shopName, externalShopId: requestedId } = {}) {
+  const tokenData = await marketplaceManager.exchangeCode(marketplace, code)
+  const existingMarketShop = tokenData.externalShopId
+    ? null
+    : await Shop.findOne({ marketplace }).select('externalShopId')
+  const externalShopId = tokenData.externalShopId || requestedId || existingMarketShop?.externalShopId || `${marketplace}-us`
+  const filter = { marketplace, externalShopId }
+  const existingShop = await Shop.findOne(filter).select('name accountId')
+  const accessToken = tokenData.access_token || tokenData.accessToken
+
+  // eBay's token reply doesn't say which seller signed in, so ask. A login for a different
+  // account than the connected shop's would otherwise overwrite that shop's tokens and mix two
+  // sellers' orders and listings.
+  let accountId = existingShop?.accountId
+  const service = marketplaceManager.getService(marketplace)
+  if (typeof service.getAccount === 'function') {
+    try {
+      const account = await service.getAccount(accessToken)
+      if (account?.username) {
+        const known = existingShop?.accountId
+        if (known && known.toLowerCase() !== account.username.toLowerCase()) {
+          throw Object.assign(new Error(
+            `You signed in to ${config[marketplace]?.name || marketplace} as "${account.username}", but this shop is connected to "${known}". `
+            + `Sign out of ${config[marketplace]?.name || marketplace}, then reconnect as "${known}".`,
+          ), { wrongAccount: true })
+        }
+        accountId = account.username
+      }
+    } catch (err) {
+      if (err.wrongAccount) throw err
+      console.warn(`Could not check which ${marketplace} account connected: ${err.message}`)
+    }
+  }
+
+  const shop = await Shop.findOneAndUpdate(
+    existingShop ? { _id: existingShop._id } : filter,
+    {
+      $set: {
+        name: shopName || tokenData.shopName || existingShop?.name || `${config[marketplace]?.name || marketplace} Store`,
+        marketplace,
+        externalShopId,
+        shopCipher: tokenData.shopCipher,
+        status: 'connected',
+        // The seller's real username also replaces the inbox's best guess at it.
+        ...(accountId ? { accountId, accountUsername: accountId } : {}),
+        auth: {
+          accessTokenEnc: accessToken,
+          refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
+          expiresAt: marketplaceManager.tokenExpiry(tokenData.expires_in),
+        },
+      },
+      $unset: { authError: 1 },
+    },
+    { upsert: true, returnDocument: 'after' },
+  )
+
+  // First load of orders and listings, which sections the new login can reach, and (eBay) live updates.
+  for (const kind of ['full', 'access', 'live']) {
+    syncQueue.enqueue(kind, shop._id).catch((err) => console.warn(`Initial ${kind} sync failed for ${shop.name}:`, err.message))
+  }
+  return shop
+}
+
 // GET /api/shops/oauth/callback/:marketplace — Browser redirect callback from eBay OAuth
 router.get('/oauth/callback/:marketplace', async (req, res) => {
   try {
@@ -28,29 +96,7 @@ router.get('/oauth/callback/:marketplace', async (req, res) => {
     if (!verifyOAuthState(req.query.state, market)) {
       return res.redirect(`${clientUrl}/settings?error=${encodeURIComponent('Invalid or expired connect request. Start the connection again from Settings.')}`)
     }
-    const tokenData = await marketplaceManager.exchangeCode(market, code)
-    const existing = tokenData.externalShopId
-      ? null
-      : await Shop.findOne({ marketplace: market }).select('externalShopId')
-    const externalShopId = tokenData.externalShopId || existing?.externalShopId || `${market}-us`
-
-    await Shop.findOneAndUpdate(
-      { marketplace: market, externalShopId },
-      {
-        name: tokenData.shopName || `${config[market]?.name || market} Store`,
-        marketplace: market,
-        externalShopId,
-        shopCipher: tokenData.shopCipher,
-        status: 'connected',
-        auth: {
-          accessTokenEnc: tokenData.access_token || tokenData.accessToken,
-          refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
-          expiresAt: marketplaceManager.tokenExpiry(tokenData.expires_in),
-        },
-        lastSyncAt: new Date(),
-      },
-      { upsert: true, new: true },
-    )
+    await connectShop(market, code)
 
     res.redirect(`${clientUrl}/settings?connected=${market}`)
   } catch (err) {
@@ -82,8 +128,12 @@ function sectionGuard(sectionId, defaultMarketplace = 'ebay') {
 router.get('/', async (req, res) => {
   try {
     const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
-    const shops = await Shop.find(filter).select('name marketplace status externalShopId lastSyncAt aiReplyEnabled').sort({ marketplace: 1 }).lean()
-    res.json(shops.map((shop) => ({ ...shop, listing: marketplaceManager.listingCapabilities(shop.marketplace) })))
+    const shops = await Shop.find(filter).select('name marketplace status authError externalShopId lastSyncAt aiReplyEnabled liveUpdates').sort({ marketplace: 1 }).lean()
+    res.json(shops.map(({ liveUpdates, ...shop }) => ({
+      ...shop,
+      liveUpdates: liveUpdates ? { enabled: Boolean(liveUpdates.enabled), error: liveUpdates.error, enabledAt: liveUpdates.enabledAt } : undefined,
+      listing: marketplaceManager.listingCapabilities(shop.marketplace),
+    })))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -394,37 +444,7 @@ router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (r
       return res.status(400).json({ error: 'Invalid or expired connect request. Start the connection again from Settings.' })
     }
 
-    const tokenData = await marketplaceManager.exchangeCode(marketplace, code)
-    const existingMarketShop = tokenData.externalShopId
-      ? null
-      : await Shop.findOne({ marketplace }).select('externalShopId')
-    const externalShopId = tokenData.externalShopId || req.body.externalShopId || existingMarketShop?.externalShopId || `${marketplace}-us`
-    const filter = { marketplace, externalShopId }
-    const existingShop = await Shop.findOne(filter)
-
-    const shop = await Shop.findOneAndUpdate(
-      existingShop ? { _id: existingShop._id } : filter,
-      {
-        name: shopName || tokenData.shopName || existingShop?.name || `${config[marketplace]?.name || marketplace} Store`,
-        marketplace,
-        externalShopId,
-        shopCipher: tokenData.shopCipher,
-        status: 'connected',
-        auth: {
-          accessTokenEnc: tokenData.access_token || tokenData.accessToken,
-          refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
-          expiresAt: marketplaceManager.tokenExpiry(tokenData.expires_in),
-        },
-        lastSyncAt: new Date(),
-      },
-      { upsert: true, returnDocument: 'after' },
-    )
-
-    // First load of orders and listings, and which sections the new login can reach.
-    for (const kind of ['full', 'access']) {
-      syncQueue.enqueue(kind, shop._id).catch((err) => console.warn(`Initial ${kind} sync failed for ${shop.name}:`, err.message))
-    }
-
+    const shop = await connectShop(marketplace, code, { shopName, externalShopId: req.body.externalShopId })
     res.json({ success: true, shop })
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -500,6 +520,19 @@ router.post('/sync-all', async (req, res) => {
     const shops = await Shop.find(filter).select('_id')
     const results = await Promise.all(shops.map((shop) => syncQueue.enqueue('full', shop._id, { wait: true })))
     res.json({ success: true, results })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/:id/live-updates — (re)subscribe an eBay shop to push notifications
+router.post('/:id/live-updates', requireRole('super_admin'), async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).select('_id marketplace')
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (shop.marketplace !== 'ebay') return res.status(400).json({ error: 'Live updates are only available for eBay shops' })
+    const result = await syncQueue.enqueue('live', shop._id, { wait: true, timeoutMs: 20000 })
+    res.json({ success: true, result })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
