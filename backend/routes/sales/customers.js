@@ -21,19 +21,17 @@ router.get('/', async (req, res) => {
     const filter = { ...scope(req) }
     const marketplace = canonicalMarketplace(req.query.marketplace)
     if (marketplace) filter['identities.marketplace'] = marketplace
-    if (req.query.q) {
-      const q = req.query.q.trim()
-      filter.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } },
-      ]
-    }
+    const q = req.query.q?.trim().toLowerCase()
     const pg = paging(req)
     const sort = sortOf(req, ['lastOrderAt', 'totalSpent', 'orderCount', 'createdAt'], '-lastOrderAt')
     const sortKey = Object.keys(sort)[0]
     const direction = sort[sortKey]
-    const customers = await withOrderStats(await Customer.find(filter), marketplace)
+    let customers = await withOrderStats(await Customer.find(filter), marketplace)
+    if (q) {
+      customers = customers.filter((row) =>
+        [row.name, row.email, row.phone]
+          .some((value) => String(value || '').toLowerCase().includes(q)))
+    }
     const sortValue = (row) => {
       const raw = row[sortKey]
       if (raw == null || raw === '') return null

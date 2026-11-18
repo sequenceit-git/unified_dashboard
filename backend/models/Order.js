@@ -1,4 +1,16 @@
 const mongoose = require('mongoose')
+const { encrypt, decrypt } = require('../utils/recipientPii')
+
+const shippingAddressSchema = new mongoose.Schema(
+  {
+    street: { type: String, set: encrypt, get: decrypt },
+    city: { type: String, set: encrypt, get: decrypt },
+    state: { type: String, set: encrypt, get: decrypt },
+    zip: { type: String, set: encrypt, get: decrypt },
+    country: { type: String, set: encrypt, get: decrypt },
+  },
+  { _id: false, toJSON: { getters: true }, toObject: { getters: true } },
+)
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -36,12 +48,12 @@ const orderSchema = new mongoose.Schema(
     },
     items: [orderItemSchema],
     buyer: {
-      name: { type: String },
-      username: { type: String },
-      email: { type: String },
-      phone: { type: String },
+      name: { type: String, set: encrypt, get: decrypt },
+      username: { type: String, set: encrypt, get: decrypt },
+      email: { type: String, set: encrypt, get: decrypt },
+      phone: { type: String, set: encrypt, get: decrypt },
     },
-    shippingAddress: { type: mongoose.Schema.Types.Mixed },
+    shippingAddress: shippingAddressSchema,
     totals: {
       subtotal: { type: Number },
       shipping: { type: Number },
@@ -61,7 +73,7 @@ const orderSchema = new mongoose.Schema(
     returns: [returnSchema],
     placedAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } },
 )
 
 orderSchema.index({ shopId: 1, externalOrderId: 1 }, { unique: true })

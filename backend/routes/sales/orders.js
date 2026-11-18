@@ -34,15 +34,26 @@ router.get('/', async (req, res) => {
       if (req.query.from) filter.placedAt.$gte = new Date(req.query.from)
       if (req.query.to) filter.placedAt.$lte = new Date(req.query.to)
     }
-    if (req.query.q) {
-      const q = req.query.q.trim()
-      filter.$or = [
-        { externalOrderId: { $regex: q, $options: 'i' } },
-        { 'shipping.trackingNumber': { $regex: q, $options: 'i' } },
-        { 'buyer.name': { $regex: q, $options: 'i' } },
-        { 'buyer.email': { $regex: q, $options: 'i' } },
-        { 'items.sku': { $regex: q, $options: 'i' } },
-      ]
+    const q = req.query.q?.trim().toLowerCase()
+    if (q) {
+      const candidates = await Order.find(filter)
+        .sort(sortOf(req, SORTABLE, '-placedAt'))
+      const filtered = candidates.filter((row) => [
+        row.externalOrderId,
+        row.shipping?.trackingNumber,
+        row.buyer?.name,
+        row.buyer?.email,
+        ...(row.items || []).map((item) => item.sku),
+      ].some((value) => String(value || '').toLowerCase().includes(q)))
+      const pg = paging(req)
+      const total = filtered.length
+      return res.json({
+        data: filtered.slice(pg.skip, pg.skip + pg.limit),
+        page: pg.page,
+        limit: pg.limit,
+        total,
+        pages: Math.max(1, Math.ceil(total / pg.limit)),
+      })
     }
     const pg = paging(req)
     const out = await paged(Order, filter, pg, sortOf(req, SORTABLE, '-placedAt'))

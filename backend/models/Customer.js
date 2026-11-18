@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { encrypt, decrypt } = require('../utils/recipientPii')
 
 const identitySchema = new mongoose.Schema(
   {
@@ -12,20 +13,20 @@ const identitySchema = new mongoose.Schema(
 
 const addressSchema = new mongoose.Schema(
   {
-    street: { type: String },
-    city: { type: String },
-    state: { type: String },
-    zip: { type: String },
-    country: { type: String },
+    street: { type: String, set: encrypt, get: decrypt },
+    city: { type: String, set: encrypt, get: decrypt },
+    state: { type: String, set: encrypt, get: decrypt },
+    zip: { type: String, set: encrypt, get: decrypt },
+    country: { type: String, set: encrypt, get: decrypt },
   },
-  { _id: false },
+  { _id: false, toJSON: { getters: true }, toObject: { getters: true } },
 )
 
 const customerSchema = new mongoose.Schema(
   {
-    name: { type: String },
-    email: { type: String },
-    phone: { type: String },
+    name: { type: String, set: encrypt, get: decrypt },
+    email: { type: String, set: encrypt, get: decrypt },
+    phone: { type: String, set: encrypt, get: decrypt },
     address: addressSchema,
     addresses: [addressSchema],
     identities: [identitySchema],
@@ -33,7 +34,7 @@ const customerSchema = new mongoose.Schema(
     totalSpent: { type: Number, default: 0 },
     lastOrderAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } },
 )
 
 customerSchema.index(

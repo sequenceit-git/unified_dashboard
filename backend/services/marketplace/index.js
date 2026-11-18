@@ -434,8 +434,6 @@ class UnifiedMarketplaceManager {
             $or: [
               { 'identities.externalBuyerId': buyerUsername },
               { 'identities.username': buyerUsername },
-              { name: buyerUsername },
-              ...(ord.buyer.name ? [{ name: ord.buyer.name }] : []),
             ],
           })
           if (!customer) {
