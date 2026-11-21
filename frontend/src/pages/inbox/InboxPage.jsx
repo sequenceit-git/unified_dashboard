@@ -111,12 +111,12 @@ export default function InboxPage() {
 
   useEffect(() => { fetchConvos() }, [marketplace, status, type, page, shopsRes.loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The sync worker checks the inbox in the background; reload when it brings something new.
+  // The sync worker checks the inbox in the background; reload when it finishes.
   const [threadRefresh, setThreadRefresh] = useState(0)
   useSyncReload('inbox', marketplace, (event) => {
-    if (!event.newMessages || syncing) return
+    if (syncing) return
     fetchConvos({ quiet: true })
-    setThreadRefresh((n) => n + 1)
+    if (event.newMessages || event.updatedThreads) setThreadRefresh((n) => n + 1)
   })
 
   if (!section) return <RequireShopSection />

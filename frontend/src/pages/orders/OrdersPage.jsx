@@ -73,6 +73,14 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marketplace, status, q, sort, page, refreshKey])
 
+  useSyncReload('orders', marketplace, () => {
+    if (syncing) return
+    fetchRows({ quiet: true })
+    if (selectedId?._id) {
+      api.get(`/api/orders/${selectedId._id}`, token).then(setSelectedId).catch(() => {})
+    }
+  })
+
   const openDetail = async (row) => {
     const full = await api.get(`/api/orders/${row._id}`, token)
     setSelectedId(full)

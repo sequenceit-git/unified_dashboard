@@ -103,22 +103,47 @@ async function getUser(token) {
   return { userId: String(text(doc.User?.UserID) || '').trim() }
 }
 
+const CORE_NOTIFICATION_EVENTS = [
+  'FixedPriceTransaction',
+  'AuctionCheckoutComplete',
+  'ItemSold',
+  'ItemMarkedShipped',
+  'AskSellerQuestion',
+  'MyMessagesM2MMessage',
+  'ItemRevised',
+  'ItemClosed',
+]
+
 /**
  * Points eBay's Platform Notifications for this seller at `url` and turns on `events`.
- * The delivery URL is app-wide; the event list is per seller.
+ * The delivery URL is app-wide; the event list is per seller. Falls back to the core event
+ * set if eBay rejects an extended event name on the seller's account.
  */
 async function setNotificationPreferences(token, { url, events = [] }) {
-  const enable = events
-    .map((event) => `<NotificationEnable><EventType>${escapeXml(event)}</EventType><EventEnable>Enable</EventEnable></NotificationEnable>`)
-    .join('')
-  await call(token, 'SetNotificationPreferences', [
-    '<ApplicationDeliveryPreferences>',
-    '<ApplicationEnable>Enable</ApplicationEnable>',
-    `<ApplicationURL>${escapeXml(url)}</ApplicationURL>`,
-    '<DeviceType>Platform</DeviceType>',
-    '</ApplicationDeliveryPreferences>',
-    `<UserDeliveryPreferenceArray>${enable}</UserDeliveryPreferenceArray>`,
-  ].join(''))
+  const send = async (list) => {
+    const enable = list
+      .map((event) => `<NotificationEnable><EventType>${escapeXml(event)}</EventType><EventEnable>Enable</EventEnable></NotificationEnable>`)
+      .join('')
+    await call(token, 'SetNotificationPreferences', [
+      '<ApplicationDeliveryPreferences>',
+      '<ApplicationEnable>Enable</ApplicationEnable>',
+      `<ApplicationURL>${escapeXml(url)}</ApplicationURL>`,
+      '<DeviceType>Platform</DeviceType>',
+      '</ApplicationDeliveryPreferences>',
+      `<UserDeliveryPreferenceArray>${enable}</UserDeliveryPreferenceArray>`,
+    ].join(''))
+  }
+  try {
+    await send(events)
+    return events
+  } catch (err) {
+    const core = events.filter((event) => CORE_NOTIFICATION_EVENTS.includes(event))
+    if (core.length && core.length < events.length) {
+      await send(core)
+      return core
+    }
+    throw err
+  }
 }
 
 /** Item IDs of every active fixed-price listing, newest pages first. */

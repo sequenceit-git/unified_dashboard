@@ -35,28 +35,6 @@ services:
       timeout: 3s
       retries: 5
 
-  # Loads new marketplace data (inbox, orders, listings) in the background.
-  worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: unified-dashboard-worker
-    restart: unless-stopped
-    command: ["node", "worker.js"]
-    depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file:
-      - ./.env
-    environment:
-      - NODE_ENV=production
-      - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017/unified_dashboard}
-      - REDIS_URL=redis://redis:6379
-    networks:
-      - internal-net
-
   backend:
     build:
       context: ./backend
@@ -75,6 +53,7 @@ services:
       - PORT=5000
       - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017/unified_dashboard}
       - REDIS_URL=redis://redis:6379
+      - SYNC_WORKER_INLINE=true
     volumes:
       - backend-uploads:/app/uploads
     networks:

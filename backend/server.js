@@ -112,11 +112,19 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   })
 
   if (require.main === module) {
-    // With Redis the sync worker (worker.js) runs the schedules; SYNC_WORKER_INLINE=true runs
-    // it inside this process instead, for single-container setups.
+    // Run scheduled syncs and push-notification jobs inside the API process by default,
+    // falling back to in-memory timers when Redis is unavailable.
+    const redis = require('./services/redis')
     const syncQueue = require('./services/syncQueue')
-    if (!require('./services/redis').enabled()) syncQueue.startInlineSchedules()
-    else if (process.env.SYNC_WORKER_INLINE === 'true') syncQueue.startWorker().catch((err) => console.warn(`[sync] ${err.message}`))
+    if (!redis.enabled()) {
+      syncQueue.startInlineSchedules()
+    } else if (process.env.SYNC_WORKER_INLINE !== 'false') {
+      syncQueue.startWorker().catch((err) => {
+        console.warn(`[sync] Redis worker could not start (${err.message}); falling back to inline schedules.`)
+        redis.disable(err.message)
+        syncQueue.startInlineSchedules()
+      })
+    }
   }
 })
 

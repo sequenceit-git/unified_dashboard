@@ -844,9 +844,11 @@ class EbayService {
       const latest = row.latestMessage || {}
       const sentAt = latest.createdDate || row.createdDate || new Date().toISOString()
       const fromEbay = conversationType === 'FROM_EBAY'
-      const text = fromEbay ? row.conversationTitle || htmlToText(latest.messageBody) : latest.messageBody || ''
-      const fromSeller = Boolean(accountUsername) && latest.senderUsername === accountUsername
+      const rawBody = /<\w+[^>]*>/.test(latest.messageBody || '') ? htmlToText(latest.messageBody) : String(latest.messageBody || '')
+      const text = fromEbay ? (rawBody || row.conversationTitle || '') : (latest.messageBody || '')
+      const fromSeller = !fromEbay && Boolean(accountUsername) && latest.senderUsername === accountUsername
       const buyer = fromSeller ? latest.recipientUsername : latest.senderUsername
+      const fallbackMsgId = `${row.conversationId}-${new Date(sentAt).getTime()}`
       return {
         externalThreadId: String(row.conversationId),
         conversationType,
@@ -854,10 +856,10 @@ class EbayService {
         customerName: fromEbay ? 'eBay' : buyer || row.conversationTitle || '',
         status: String(row.conversationStatus || '').toUpperCase() === 'CLOSED' ? 'closed' : 'open',
         lastMessageAt: new Date(sentAt),
-        lastMessagePreview: String(text).slice(0, 100),
+        lastMessagePreview: String(fromEbay ? (row.conversationTitle || text) : text).slice(0, 100),
         unreadCount: Number(row.unreadCount || 0),
-        messages: text && !fromEbay ? [{
-          externalMessageId: String(latest.messageId || `${row.conversationId}-latest`),
+        messages: text ? [{
+          externalMessageId: String(latest.messageId || fallbackMsgId),
           text: String(text),
           direction: fromSeller ? 'outbound' : 'inbound',
           senderType: fromSeller ? 'agent' : 'customer',

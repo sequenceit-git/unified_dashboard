@@ -237,6 +237,7 @@ router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)
+    syncQueue.enqueue('orders', shop._id, { push: true }).catch(() => {})
     res.json({ success: true, result })
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -266,6 +267,7 @@ router.post('/sections/cancellations/decide', sectionGuard('returns'), async (re
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)
+    syncQueue.enqueue('orders', shop._id, { push: true }).catch(() => {})
     res.json({ success: true, result })
   } catch (err) {
     res.status(400).json({ error: err.message })

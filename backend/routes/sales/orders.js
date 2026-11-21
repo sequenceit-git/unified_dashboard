@@ -6,9 +6,27 @@ const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
 const syncQueue = require('../../services/syncQueue')
+const cache = require('../../services/cache')
+const events = require('../../services/events')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('orders'), limitToSection('orders'))
+
+async function notifyOrderChanged(order) {
+  if (!order) return
+  await Promise.all([
+    cache.invalidate(`shop:${order.shopId}:`),
+    cache.invalidate('resp:dashboard:'),
+    cache.invalidate('resp:analytics:'),
+  ]).catch(() => {})
+  await events.publish({
+    type: 'sync',
+    kind: 'orders',
+    shopId: String(order.shopId),
+    marketplace: order.marketplace,
+    ok: true,
+  }).catch(() => {})
+}
 
 
 const SORTABLE = ['placedAt', 'totals.total', 'createdAt', 'status']
@@ -107,12 +125,27 @@ router.post('/sync', async (req, res) => {
 // PATCH /api/orders/:id/status — { status }
 router.patch('/:id/status', async (req, res) => {
   try {
+    const existing = await Order.findOne({ _id: req.params.id, ...shopFilter(req, Order) })
+    if (!existing) return res.status(404).json({ error: 'Not found' })
+
+    if (req.body.status === 'cancelled' && existing.status !== 'cancelled') {
+      if (['shipped', 'delivered'].includes(existing.status)) {
+        return res.status(400).json({ error: 'Cannot cancel an order that has already shipped or delivered' })
+      }
+      try {
+        await marketplaceManager.cancelOrder(existing, { reason: 'BUYER_ASKED_CANCEL', comment: 'Cancelled from dashboard' })
+      } catch (apiErr) {
+        console.warn(`Marketplace order cancellation push failed for [${existing.marketplace}]:`, apiErr.message)
+        return res.status(502).json({ error: `${existing.marketplace} could not cancel this order: ${apiErr.message}` })
+      }
+    }
+
     const doc = await Order.findOneAndUpdate(
       { _id: req.params.id, ...shopFilter(req, Order) },
       { status: req.body.status },
       { new: true, runValidators: true },
     )
-    if (!doc) return res.status(404).json({ error: 'Not found' })
+    await notifyOrderChanged(doc)
     res.json(doc)
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -144,6 +177,7 @@ router.patch('/:id/shipping', async (req, res) => {
       marketplacePush = { pushed: false, error: apiErr.message }
     }
 
+    await notifyOrderChanged(doc)
     res.json({ order: doc, marketplacePush })
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -218,6 +252,7 @@ router.post('/:id/cancel', async (req, res) => {
 
     order.status = 'cancelled'
     await order.save()
+    await notifyOrderChanged(order)
 
     res.json({ success: true, order, marketplaceResult })
   } catch (err) {
@@ -256,6 +291,7 @@ router.post('/:id/refund', async (req, res) => {
       requestedAt: new Date(),
     })
     await order.save()
+    await notifyOrderChanged(order)
 
     res.json({ success: true, order, marketplaceResult })
   } catch (err) {

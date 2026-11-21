@@ -16,9 +16,9 @@ const events = require('./events')
 const QUEUE = 'marketplace-sync'
 const isProduction = () => process.env.NODE_ENV === 'production'
 
-/** Env flag `NAME=true|false`, defaulting to on in production. */
+/** Env flag `NAME=true|false`, defaulting to on unless explicitly set to `'false'`. */
 function autoSync(name) {
-  return process.env[name] ? process.env[name] === 'true' : isProduction()
+  return process.env[name] ? process.env[name] === 'true' : true
 }
 
 const manager = () => require('./marketplace')
@@ -29,19 +29,19 @@ const manager = () => require('./marketplace')
  */
 const KINDS = {
   inbox: {
-    every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 5) : 0),
+    every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 2) : 0),
     applies: (shop) => ['ebay', 'tiktok_shop'].includes(shop.marketplace) && shop.apiAccess?.inbox?.ok !== false,
     run: (shop) => require('./inboxBot').syncAndReply(shop),
     clears: () => ['resp:dashboard:'],
   },
   orders: {
-    every: () => (autoSync('ORDER_AUTO_SYNC') ? Number(process.env.ORDER_SYNC_MINUTES || 10) : 0),
+    every: () => (autoSync('ORDER_AUTO_SYNC') ? Number(process.env.ORDER_SYNC_MINUTES || 3) : 0),
     applies: () => true,
     run: (shop) => manager().syncOrdersForShop(shop),
     clears: (shop) => [`shop:${shop._id}:`, 'resp:analytics:', 'resp:dashboard:'],
   },
   listings: {
-    every: () => (autoSync('LISTING_AUTO_SYNC') ? Number(process.env.LISTING_SYNC_MINUTES || 15) : 0),
+    every: () => (autoSync('LISTING_AUTO_SYNC') ? Number(process.env.LISTING_SYNC_MINUTES || 10) : 0),
     applies: () => true,
     run: (shop) => manager().syncListingsForShop(shop),
     clears: () => ['resp:analytics:', 'resp:dashboard:'],
@@ -100,6 +100,7 @@ async function runJob(kind, shopId) {
     marketplace: shop.marketplace,
     ok: !result?.error,
     newMessages: result?.newMessages || 0,
+    updatedThreads: result?.updatedThreads || 0,
   })
   return JSON.parse(JSON.stringify(result ?? {}))
 }
@@ -109,9 +110,9 @@ async function runJob(kind, shopId) {
  * run every so often as a backup, in case eBay misses a notification.
  */
 const BACKUP_MINUTES = {
-  orders: () => Number(process.env.ORDER_BACKUP_MINUTES || 30),
-  inbox: () => Number(process.env.INBOX_BACKUP_MINUTES || 15),
-  listings: () => Number(process.env.LISTING_BACKUP_MINUTES || 60),
+  orders: () => Number(process.env.ORDER_BACKUP_MINUTES || 5),
+  inbox: () => Number(process.env.INBOX_BACKUP_MINUTES || 5),
+  listings: () => Number(process.env.LISTING_BACKUP_MINUTES || 15),
 }
 
 async function dueForSchedule(kind, shop) {
@@ -249,8 +250,12 @@ async function enqueueAll(kind) {
   return ids.length
 }
 
+let inlineSchedulesStarted = false
+
 /** Without Redis: timers in this process. With Redis the worker owns the schedules. */
 function startInlineSchedules() {
+  if (inlineSchedulesStarted) return
+  inlineSchedulesStarted = true
   for (const [kind, spec] of Object.entries(KINDS)) {
     const minutes = spec.every()
     if (!(minutes > 0)) continue

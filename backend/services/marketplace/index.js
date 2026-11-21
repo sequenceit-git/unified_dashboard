@@ -257,6 +257,28 @@ class UnifiedMarketplaceManager {
           if (r.orderId) returnedOrderMap.set(String(r.orderId), r)
         }
 
+        // Backfill older orders that have post-order cancellations or returns outside the incremental lastmodifieddate window.
+        res.orders = res.orders || []
+        if (typeof service.getOrder === 'function') {
+          const fetchedIds = new Set()
+          for (const o of res.orders) {
+            if (o.orderId) fetchedIds.add(String(o.orderId))
+            if (o.legacyOrderId) fetchedIds.add(String(o.legacyOrderId))
+          }
+          const affectedIds = [...new Set([...cancelledOrderIds, ...returnedOrderMap.keys()])].filter((id) => id && !fetchedIds.has(id))
+          if (affectedIds.length) {
+            const staleRows = await Order.find({
+              shopId: shop._id,
+              externalOrderId: { $in: affectedIds },
+              status: { $nin: ['cancelled', 'refunded'] },
+            }).select('externalOrderId').limit(20).lean()
+            for (const row of staleRows) {
+              const extraOrder = await service.getOrder(token, row.externalOrderId).catch(() => null)
+              if (extraOrder?.orderId) res.orders.push(extraOrder)
+            }
+          }
+        }
+
         const now = new Date()
 
         rawOrders = (res.orders || []).map((o) => {
@@ -584,11 +606,15 @@ class UnifiedMarketplaceManager {
 
         const existing = await Order.findOne({ shopId: shop._id, externalOrderId: ord.externalOrderId })
         if (existing) {
-          // If the order was already marked as cancelled or refunded in our system,
-          // never regress it back to 'paid', 'pending', or 'processing'
-          if (['cancelled', 'refunded', 'shipped', 'delivered'].includes(existing.status) && ['paid', 'pending', 'processing'].includes(ord.status)) {
-            // Keep the status we already have: eBay has no shipment yet (or the tracking push is
-            // still pending), and a cancelled/refunded order must not come back to life.
+          // Never resurrect cancelled/refunded orders (except cancelled -> refunded), never regress
+          // delivered back to shipped, and never regress shipped/delivered back to paid/pending/processing.
+          const keepTerminal =
+            (existing.status === 'refunded') ||
+            (existing.status === 'cancelled' && ord.status !== 'refunded')
+          const keepDelivered = existing.status === 'delivered' && ord.status === 'shipped'
+          const keepForward = ['shipped', 'delivered'].includes(existing.status) && ['paid', 'pending', 'processing'].includes(ord.status)
+          if (keepTerminal || keepDelivered || keepForward) {
+            // Keep the terminal or further-progressed status we already have.
           } else {
             existing.status = ord.status
           }
@@ -1394,7 +1420,7 @@ class UnifiedMarketplaceManager {
 
   /** Imports conversations; `newInbound` lists buyer messages seen for the first time. */
   async syncInboxForShop(shop) {
-    const summary = { shopName: shop.name, marketplace: shop.marketplace, imported: 0, newInbound: [] }
+    const summary = { shopName: shop.name, marketplace: shop.marketplace, imported: 0, updatedThreads: 0, newInbound: [] }
     const service = this.getService(shop.marketplace)
     if (typeof service.getInbox !== 'function') {
       return { ...summary, error: `${shop.name} inbox sync is not available.` }
@@ -1411,8 +1437,28 @@ class UnifiedMarketplaceManager {
       shop.accountUsername = result.accountUsername
     }
 
+    let threadFetches = 0
     for (const thread of threads) {
       if (!thread.externalThreadId) continue
+      const prev = await Conversation.findOne({ shopId: shop._id, externalThreadId: thread.externalThreadId })
+        .select('lastMessageAt unreadCount lastMessagePreview').lean()
+      const nextTime = thread.lastMessageAt ? new Date(thread.lastMessageAt).getTime() : 0
+      const prevTime = prev?.lastMessageAt ? new Date(prev.lastMessageAt).getTime() : 0
+      const changed = !prev
+        || nextTime > prevTime
+        || Number(thread.unreadCount || 0) !== Number(prev.unreadCount || 0)
+        || (thread.lastMessagePreview || '') !== (prev.lastMessagePreview || '')
+      if (changed) summary.updatedThreads += 1
+
+      let messagesToSave = thread.messages || []
+      if (changed && thread.replyable !== false && typeof service.getThreadMessages === 'function' && threadFetches < 10) {
+        threadFetches += 1
+        const fullMessages = await this.withShopToken(shop, (token) =>
+          service.getThreadMessages(token, shop, thread.externalThreadId, { conversationType: thread.conversationType || 'FROM_MEMBERS' }),
+        ).catch(() => null)
+        if (fullMessages?.length) messagesToSave = fullMessages
+      }
+
       const convo = await Conversation.findOneAndUpdate(
         { shopId: shop._id, externalThreadId: thread.externalThreadId },
         {
@@ -1428,7 +1474,7 @@ class UnifiedMarketplaceManager {
         },
         { upsert: true, returnDocument: 'after' },
       )
-      for (const message of thread.messages || []) {
+      for (const message of messagesToSave) {
         if (!message.externalMessageId) continue
         const saved = await Message.updateOne(
           { shopId: shop._id, externalMessageId: message.externalMessageId },

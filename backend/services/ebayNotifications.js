@@ -14,11 +14,34 @@ const Shop = require('../models/Shop')
 
 /** Which sync each eBay event starts. */
 const JOB_FOR_EVENT = {
+  // Orders, checkout, shipping, cancellations & returns
   FixedPriceTransaction: 'orders',
   AuctionCheckoutComplete: 'orders',
   ItemSold: 'orders',
+  ItemMarkedShipped: 'orders',
+  CheckoutBuyerRequestsTotal: 'orders',
+  BuyerCancelRequested: 'orders',
+  ReturnCreated: 'orders',
+  ReturnWaitingForSellerInfo: 'orders',
+  ReturnSellerInfoOverdue: 'orders',
+  ReturnShipped: 'orders',
+  ReturnDelivered: 'orders',
+  ReturnRefundOverdue: 'orders',
+  ReturnClosed: 'orders',
+  ReturnEscalated: 'orders',
+  // Buyer & eBay messages
   AskSellerQuestion: 'inbox',
   MyMessagesM2MMessage: 'inbox',
+  MyMessageseBayMessage: 'inbox',
+  MyMessagesHighPriorityMessage: 'inbox',
+  // Listing updates made directly on eBay
+  ItemListed: 'listings',
+  ItemRevised: 'listings',
+  ItemExtended: 'listings',
+  ItemClosed: 'listings',
+  ItemSuspended: 'listings',
+  ItemUnsold: 'listings',
+  ItemOutOfStock: 'listings',
 }
 
 // eBay sends the notification's Timestamp; one older than this is treated as a replay.
@@ -129,11 +152,12 @@ async function enable(shop) {
   } else {
     try {
       const url = notifyUrl()
+      let enabledEvents = events
       const account = await manager.withShopToken(shop, async (token) => {
-        await trading.setNotificationPreferences(token, { url, events })
+        enabledEvents = (await trading.setNotificationPreferences(token, { url, events })) || events
         return trading.getUser(token).catch(() => ({ userId: '' }))
       })
-      liveUpdates = { enabled: true, url, events, enabledAt: new Date(), checkedAt: new Date() }
+      liveUpdates = { enabled: true, url, events: enabledEvents, enabledAt: new Date(), checkedAt: new Date() }
       if (account.userId && !shop.accountId) {
         await Shop.updateOne({ _id: shop._id }, { accountId: account.userId, accountUsername: account.userId })
       }

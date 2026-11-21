@@ -93,7 +93,14 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
     }
   }
 
-  const setStatus = (status) => mutate(() => api.patch(`/api/orders/${order._id}/status`, { status }, token))
+  const setStatus = (status) => {
+    if (status === 'cancelled') return cancelOrder('BUYER_ASKED_CANCEL')
+    if (status === 'shipped' && order.marketplace === 'ebay') {
+      if (tracking.trim()) return saveTracking()
+      return setError('Enter a carrier and tracking number above and click "Push tracking" to mark an eBay order shipped.')
+    }
+    return mutate(() => api.patch(`/api/orders/${order._id}/status`, { status }, token))
+  }
 
   const saveTracking = () =>
     mutate(async () => {
