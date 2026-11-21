@@ -9,7 +9,9 @@
     "seed": "node seed/seed.js",
     "encrypt-recipient-pii": "node scripts/encrypt-recipient-pii.js",
     "smoke:ebay": "node scripts/ebay-smoke.js",
-    "cleanup:ebay": "node scripts/cleanup-ebay-placeholders.js"
+    "smoke:temu": "node scripts/temu-smoke.js",
+    "cleanup:ebay": "node scripts/cleanup-ebay-placeholders.js",
+    "cleanup:temu": "node scripts/cleanup-temu-duplicates.js"
   },
   "keywords": [],
   "author": "",
