@@ -300,6 +300,7 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
           label: 'Action',
           render: (row) => {
             const status = String(row.status || '')
+            if (marketplace === 'temu' && /platform reviewing/i.test(status)) return <span className="text-xs text-gray-400">Temu reviewing</span>
             const isActionable = /pending|requested|open|buyer shipped|package shipped/i.test(status)
             const closed = !isActionable && /closed|complete|finish|reject|declined|approved|refund|awaiting buyer|cancel|success/i.test(status)
             if (closed) return <span className="text-xs text-gray-400">Processed</span>

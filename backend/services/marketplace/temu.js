@@ -17,6 +17,20 @@ const ORDER_STATUS = {
   5: 'delivered',
 }
 
+/** Temu sends seconds or milliseconds. */
+function temuDate(value) {
+  const n = Number(value)
+  if (!n) return new Date()
+  return new Date(n > 1e12 ? n : n * 1000)
+}
+
+/** Temu money is either a number/string or `{ amount, currency }`. */
+function temuMoney(value) {
+  if (value == null || value === '') return 0
+  if (typeof value === 'object') return Number(value.amount) || 0
+  return Number(value) || 0
+}
+
 class TemuService {
   /** Publishing a new Temu goods record is still done in Seller Center. Stock can be pushed. */
   listingCapabilities = {
@@ -25,6 +39,9 @@ class TemuService {
     editAfterListing: ['quantity'],
     note: 'Create the goods in Temu Seller Center. Stock changes made here are sent with bg.local.goods.stock.edit.',
   }
+
+  /** bg.local.goods.list.query is filtered to goods on sale, so an off-sale (paused) goods missing from it is not ended. */
+  endableStatuses = ['live', 'out_of_stock']
 
   getAuthUrl(state = '') {
     if (!config.appKey) throw new Error('Temu app key (TEMU_APP_KEY) is missing')
@@ -57,72 +74,92 @@ class TemuService {
   }
 
   async getOrders(accessToken, { limit = 50 } = {}) {
-    const result = await this.call('bg.order.list.get', {
-      access_token: accessToken,
-      pageNumber: 1,
-      pageSize: Math.min(limit, 100),
-      parentOrderStatus: 0,
-      regionId: 211,
-    })
-    const rows = result.pageItems || result.orderList || result.parentOrderList || []
-    return {
-      orders: rows.map((row) => {
+    const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 100)
+    const orders = []
+    for (let pageNumber = 1; pageNumber <= 10; pageNumber += 1) {
+      const result = await this.call('bg.order.list.get', {
+        access_token: accessToken,
+        pageNumber,
+        pageSize,
+        parentOrderStatus: 0,
+        regionId: 211,
+      })
+      const rows = result.pageItems || result.orderList || result.parentOrderList || []
+      for (const row of rows) {
         const parent = row.parentOrderMap || row
         const lines = row.orderList || parent.orderList || []
-        return {
+        orders.push({
           externalOrderId: parent.parentOrderSn || parent.orderSn || parent.parentOrderId,
-          placedAt: parent.parentOrderTime ? new Date(Number(parent.parentOrderTime) * 1000) : new Date(),
+          placedAt: parent.parentOrderTime ? temuDate(parent.parentOrderTime) : new Date(),
           status: ORDER_STATUS[parent.parentOrderStatus] || 'pending',
           buyer: { name: parent.receiptName || 'Temu customer', email: '' },
           totals: {
-            total: Number(parent.amount || parent.parentOrderAmount || 0),
+            total: temuMoney(parent.amount || parent.parentOrderAmount),
             currency: 'USD',
           },
           items: lines.map((line) => {
-            const rawSku = line.extCode || line.skuId || line.goodsId
-            const cleanSku = rawSku && !String(rawSku).startsWith('TEMU-') ? `TEMU-${rawSku}` : String(rawSku || '')
+            const goodsId = line.goodsId || parent.goodsId
+            const skuId = line.skuId
+            const rawSku = String(line.extCode || line.outSkuSn || '').trim()
             return {
-              sku: cleanSku,
+              sku: rawSku || String(skuId || goodsId || ''),
               rawSku,
+              lineItemId: line.orderSn ? String(line.orderSn) : undefined,
+              externalListingId: goodsId && skuId ? `${goodsId}:${skuId}` : undefined,
               title: line.goodsName || line.spec || 'Temu item',
               quantity: Number(line.quantity || 1),
-              unitPrice: Number(line.price || 0),
+              unitPrice: temuMoney(line.price),
             }
           }),
-        }
-      }).filter((order) => order.externalOrderId),
+        })
+      }
+      if (rows.length < pageSize || orders.length >= limit) break
     }
+    return { orders: orders.filter((order) => order.externalOrderId) }
   }
 
   async getInventory(accessToken, { limit = 50 } = {}) {
-    const result = await this.call('bg.local.goods.list.query', {
-      access_token: accessToken,
-      pageNo: 1,
-      pageSize: Math.min(limit, 100),
-      goodsSearchType: 1,
-      goodsStatusFilterType: 1,
-    })
-    const goods = result.goodsList || result.pageItems || result.list || []
+    const pageSize = 100
+    const maxPages = 20
+    const goods = []
+    let complete = true
+    for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
+      const result = await this.call('bg.local.goods.list.query', {
+        access_token: accessToken,
+        pageNo,
+        pageSize,
+        goodsSearchType: 1,
+        goodsStatusFilterType: 1,
+      })
+      const page = result.goodsList || result.pageItems || result.list || []
+      goods.push(...page)
+      if (page.length < pageSize) break
+      if (pageNo === maxPages) complete = false
+    }
     const items = []
     for (const good of goods) {
       const skus = good.skuList || good.skuInfoList || [good]
       for (const sku of skus) {
+        const rawSku = String(sku.outSkuSn || sku.outGoodsSn || good.outGoodsSn || '').trim()
         items.push({
-          sku: sku.outSkuSn || sku.outGoodsSn || good.outGoodsSn || String(sku.skuId || good.goodsId),
+          sku: rawSku || String(sku.skuId || good.goodsId),
+          rawSku,
           title: good.goodsName || sku.goodsName || 'Temu goods',
           description: '',
-          price: Number(sku.retailPrice?.amount || good.retailPrice?.amount || sku.price || 0),
+          price: temuMoney(sku.retailPrice ?? good.retailPrice ?? sku.price),
           stock: Number(sku.quantity || sku.stock || good.quantity || 0),
           images: [good.thumbUrl || good.imageUrl].filter(Boolean),
           category: '',
           brand: '',
+          listingStatus: 'live',
+          marketplaceStatus: 'ONSALE',
           externalListingId: sku.skuId && (good.goodsId || sku.goodsId)
             ? `${good.goodsId || sku.goodsId}:${sku.skuId}`
             : String(good.goodsId || sku.goodsId || sku.skuId),
         })
       }
     }
-    return { inventoryItems: items, complete: goods.length < Math.min(limit, 100) }
+    return { inventoryItems: items, complete }
   }
 
   async createListing() {
@@ -147,7 +184,9 @@ class TemuService {
 
   async reviseListing(accessToken, externalListingId, changes) {
     if (changes.quantity != null) await this.updateStock(accessToken, null, changes.quantity, { externalListingId })
-    return { success: true }
+    // Temu price changes go through Seller Center price review; text and images are edited there too.
+    const skipped = ['price', 'title', 'description', 'images'].filter((key) => changes[key] != null && changes[key] !== '')
+    return { success: true, ...(skipped.length ? { skipped } : {}) }
   }
 
   async applyListingAction(accessToken, action, listing) {
@@ -161,22 +200,26 @@ class TemuService {
       onsale,
     })
     if (result?.success === false) throw new Error('Temu could not change the sale status.')
-    return { status: onsale ? 'live' : 'paused', marketplaceStatus: onsale ? 'ONSALE' : 'OFFSALE' }
+    return {
+      status: onsale ? (Number(listing.stock) > 0 ? 'live' : 'out_of_stock') : 'paused',
+      marketplaceStatus: onsale ? 'ONSALE' : 'OFFSALE',
+    }
   }
 
   /**
    * Pushes tracking number and fulfills package/order on Temu
    */
   async createShippingFulfillment(accessToken, orderId, { carrier = '', trackingNumber = '', lineItems = [] } = {}) {
-    if (!trackingNumber) throw new Error('Tracking number is required to fulfill a Temu order')
+    const cleanTracking = String(trackingNumber || '').trim().replace(/[\s-]+/g, '')
+    if (!cleanTracking) throw new Error('Tracking number is required to fulfill a Temu order')
     const items = (lineItems || []).map((line) => ({
       parentOrderSn: String(orderId),
-      orderSn: String(line.orderSn || orderId),
+      orderSn: String(line.lineItemId || line.orderSn || orderId),
       quantity: Number(line.quantity || 1),
     }))
     const packageSendInfoList = [
       {
-        trackingNumber: String(trackingNumber).trim(),
+        trackingNumber: cleanTracking,
         packageDetail: items.length ? items : [{ parentOrderSn: String(orderId), quantity: 1 }],
       },
     ]
@@ -191,17 +234,13 @@ class TemuService {
    * Cancels unfulfilled order on Temu
    */
   async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = '' } = {}) {
-    try {
-      await this.call('bg.order.cancel.apply', {
-        access_token: accessToken,
-        parentOrderSn: String(orderId),
-        reason: reason || 'OUT_OF_STOCK',
-        remark: comment || 'Cancelled by merchant',
-      })
-    } catch {
-      // Best-effort router attempt
-    }
-    return { success: true }
+    const result = await this.call('bg.order.cancel.apply', {
+      access_token: accessToken,
+      parentOrderSn: String(orderId),
+      reason: reason || 'OUT_OF_STOCK',
+      remark: comment || 'Cancelled by merchant',
+    })
+    return result || { success: true }
   }
 
   /**
@@ -286,7 +325,9 @@ class TemuService {
     })
     const body = await response.json().catch(() => ({}))
     if (!response.ok || body.success === false) {
-      throw new Error(body.errorMsg || body.error_msg || `Temu ${type} failed`)
+      const err = new Error(body.errorMsg || body.error_msg || `Temu ${type} failed`)
+      err.code = body.errorCode ?? body.error_code
+      throw err
     }
     return body.result || body
   }

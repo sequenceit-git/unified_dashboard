@@ -450,7 +450,8 @@ class UnifiedMarketplaceManager {
 
       for (const ord of rawOrders) {
         let customer = null
-        const buyerUsername = ord.buyer?.username || ord.buyer?.name
+        const rawBuyer = ord.buyer?.username || ord.buyer?.name
+        const buyerUsername = rawBuyer && !['eBay Customer', 'TikTok Shop customer', 'Temu customer'].includes(rawBuyer) ? rawBuyer : ''
         if (buyerUsername) {
           customer = await Customer.findOne({
             $or: [
@@ -618,7 +619,7 @@ class UnifiedMarketplaceManager {
             existing.status = ord.status
           }
           if (!existing.customerId && customer?._id) existing.customerId = customer._id
-          if (ord.buyer?.name && (!existing.buyer?.name || ['eBay Customer', 'TikTok Shop customer'].includes(existing.buyer.name))) {
+          if (ord.buyer?.name && (!existing.buyer?.name || ['eBay Customer', 'TikTok Shop customer', 'Temu customer'].includes(existing.buyer.name))) {
             existing.buyer = { ...existing.buyer, name: ord.buyer.name }
           }
           if (ord.buyer?.username && !existing.buyer?.username) {
@@ -1097,7 +1098,7 @@ class UnifiedMarketplaceManager {
       const cutoff = new Date(Date.now() - 10 * 60 * 1000)
       const candidates = await Listing.find({
         shopId: shop._id,
-        status: { $in: ['live', 'out_of_stock', 'pending', 'paused'] },
+        status: { $in: this.getService(shop.marketplace).endableStatuses || ['live', 'out_of_stock', 'pending', 'paused'] },
         externalListingId: { $exists: true, $nin: ['', null] },
         updatedAt: { $lt: cutoff },
       })
@@ -1318,7 +1319,7 @@ class UnifiedMarketplaceManager {
       try {
         const res = await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop }))
         listing.syncError = null
-        if (changes.price != null) listing.price = changes.price
+        if (changes.price != null && !res?.skipped?.includes('price')) listing.price = changes.price
         if (changes.quantity != null) listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
         if (res?.status === 'ended' || res?.ended) {
           listing.status = 'ended'
@@ -1326,7 +1327,7 @@ class UnifiedMarketplaceManager {
         } else if (changes.quantity != null && ['live', 'out_of_stock'].includes(listing.status)) {
           listing.status = Number(changes.quantity) > 0 ? 'live' : 'out_of_stock'
         }
-        results.push({ shopName: shop.name, ok: true })
+        results.push({ shopName: shop.name, ok: true, ...(res?.skipped?.length ? { skipped: res.skipped } : {}) })
       } catch (err) {
         listing.syncError = err.message
         results.push({ shopName: shop.name, ok: false, error: err.message })
