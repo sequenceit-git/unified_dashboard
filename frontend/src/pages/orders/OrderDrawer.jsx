@@ -95,9 +95,9 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
 
   const setStatus = (status) => {
     if (status === 'cancelled') return cancelOrder('BUYER_ASKED_CANCEL')
-    if (status === 'shipped' && order.marketplace === 'ebay') {
+    if (status === 'shipped' && ['ebay', 'tiktok_shop'].includes(order.marketplace)) {
       if (tracking.trim()) return saveTracking()
-      return setError('Enter a carrier and tracking number above and click "Push tracking" to mark an eBay order shipped.')
+      return setError(`Enter a carrier and tracking number above and click "Push tracking" to mark a ${marketplaceLabel(order.marketplace)} order shipped.`)
     }
     return mutate(() => api.patch(`/api/orders/${order._id}/status`, { status }, token))
   }

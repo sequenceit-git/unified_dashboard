@@ -218,7 +218,7 @@ router.post('/sections/offers/send', sectionGuard('offers'), async (req, res) =>
 router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
-    const { returnId, decision = 'APPROVE', comments } = req.body
+    const { returnId, decision = 'APPROVE', comments, returnType, rawStatus } = req.body
     if (!returnId) return res.status(400).json({ error: 'returnId is required' })
 
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
@@ -233,7 +233,7 @@ router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.decideReturn(token, returnId, { decision, comments, shop })
+      service.decideReturn(token, returnId, { decision, comments, returnType, rawStatus, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)
@@ -339,6 +339,16 @@ router.post('/sections/promotions/create', sectionGuard('promotions'), async (re
           imageUrl = pickHttpsImage(fallbackListings)
         }
       }
+    } else if (marketplace === 'tiktok_shop' && !finalListingIds.length) {
+      const Listing = require('../../models/Listing')
+      const liveListings = await Listing.find({
+        shopId: shop._id,
+        status: 'live',
+        externalListingId: { $exists: true, $nin: ['', null] },
+      }).select('externalListingId').limit(300).lean()
+      finalListingIds = [...new Set(
+        liveListings.map((row) => String(row.externalListingId || '').split(':')[0]).filter(Boolean),
+      )].slice(0, 300)
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>

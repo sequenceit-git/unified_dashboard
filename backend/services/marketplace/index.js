@@ -435,7 +435,7 @@ class UnifiedMarketplaceManager {
         await this.attachEbayTracking(shop, token, service, rawOrders)
         ordersComplete = res.complete
       } else {
-        const res = await service.getOrders(token, { limit: 50, shop })
+        const res = await service.getOrders(token, { limit: 200, shop })
         rawOrders = res.orders || []
       }
 
@@ -618,7 +618,7 @@ class UnifiedMarketplaceManager {
             existing.status = ord.status
           }
           if (!existing.customerId && customer?._id) existing.customerId = customer._id
-          if (ord.buyer?.name && (!existing.buyer?.name || existing.buyer?.name === 'eBay Customer')) {
+          if (ord.buyer?.name && (!existing.buyer?.name || ['eBay Customer', 'TikTok Shop customer'].includes(existing.buyer.name))) {
             existing.buyer = { ...existing.buyer, name: ord.buyer.name }
           }
           if (ord.buyer?.username && !existing.buyer?.username) {
@@ -636,8 +636,14 @@ class UnifiedMarketplaceManager {
               if (!item.lineItemId && ord.items[i]?.lineItemId) item.lineItemId = ord.items[i].lineItemId
             })
           }
-          if (ord.shippingAddress && !existing.shippingAddress) {
-            existing.shippingAddress = ord.shippingAddress
+          if (ord.shippingAddress) {
+            const prevAddr = existing.shippingAddress?.toObject?.() || existing.shippingAddress || {}
+            if (!prevAddr.street || (!prevAddr.city && ord.shippingAddress.city) || (!prevAddr.state && ord.shippingAddress.state)) {
+              existing.shippingAddress = {
+                ...prevAddr,
+                ...Object.fromEntries(Object.entries(ord.shippingAddress).filter(([, v]) => v)),
+              }
+            }
           }
           if (ord.shipping) {
             const prev = existing.shipping?.toObject?.() || existing.shipping || {}
@@ -1037,7 +1043,7 @@ class UnifiedMarketplaceManager {
       items: items.map((item) => ({
         ...item,
         aliases: listingAliases(item.externalListingId),
-        matchSkus: [item.sku].filter((sku) => sku && !/^none$/i.test(sku)),
+        matchSkus: [item.sku, item.rawSku].filter((sku) => sku && !/^none$/i.test(sku)),
         listingStatus: item.listingStatus || 'live',
       })),
     }

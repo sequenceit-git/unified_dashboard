@@ -275,7 +275,9 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
           key: '_action',
           label: 'Action',
           render: (row) => {
-            const closed = /closed|complete|finish|reject|declined|approved|cancel/i.test(String(row.status || ''))
+            const status = String(row.status || '')
+            const isOpen = /pending|requested|open|waiting/i.test(status)
+            const closed = !isOpen && /closed|complete|finish|reject|declined|approved|cancel|success|refunded/i.test(status)
             if (closed) return <span className="text-xs text-gray-400">Processed</span>
             return (
               <div className="flex items-center gap-1.5">
@@ -297,7 +299,9 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
           key: '_action',
           label: 'Action',
           render: (row) => {
-            const closed = /closed|complete|finish|reject|declined|approved|refund/i.test(String(row.status || ''))
+            const status = String(row.status || '')
+            const isActionable = /pending|requested|open|buyer shipped|package shipped/i.test(status)
+            const closed = !isActionable && /closed|complete|finish|reject|declined|approved|refund|awaiting buyer|cancel|success/i.test(status)
             if (closed) return <span className="text-xs text-gray-400">Processed</span>
             return (
               <div className="flex items-center gap-1.5">
@@ -324,6 +328,7 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
             // eBay can only pause/resume threshold discounts; markdown sales have no pause.
             if (marketplace === 'ebay' && /markdown|item price/i.test(String(row.type || ''))) return null
             const isPaused = /pause|deactivate/i.test(String(row.status || ''))
+            if (marketplace === 'tiktok_shop' && isPaused) return null
             return (
               <Button
                 size="sm"
@@ -508,7 +513,13 @@ export default function ShopSectionPage() {
       if (!window.confirm(`Approve return request for Order ${row.orderId || row.returnId}?`)) return
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/returns/decide', { marketplace: shopSection.marketplace, returnId: row.returnId, decision: 'APPROVE' }, token)
+        await api.post('/api/shops/sections/returns/decide', {
+          marketplace: shopSection.marketplace,
+          returnId: row.returnId,
+          decision: 'APPROVE',
+          ...(row.returnType ? { returnType: row.returnType } : {}),
+          ...(row.rawStatus ? { rawStatus: row.rawStatus } : {}),
+        }, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)
@@ -522,7 +533,14 @@ export default function ShopSectionPage() {
       if (reason === null) return
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/returns/decide', { marketplace: shopSection.marketplace, returnId: row.returnId, decision: 'DECLINE', comments: reason }, token)
+        await api.post('/api/shops/sections/returns/decide', {
+          marketplace: shopSection.marketplace,
+          returnId: row.returnId,
+          decision: 'DECLINE',
+          comments: reason,
+          ...(row.returnType ? { returnType: row.returnType } : {}),
+          ...(row.rawStatus ? { rawStatus: row.rawStatus } : {}),
+        }, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)

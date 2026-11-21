@@ -6,6 +6,7 @@ const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
 const Shop = require('../../models/Shop')
 const tiktok = require('../../services/marketplace/tiktok')
+const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
 const { cachedResponse } = require('../../services/cache')
 
@@ -40,15 +41,15 @@ function money(value) {
 
 async function tiktokShop(req) {
   if (canonicalMarketplace(req.query.marketplace) !== 'tiktok_shop') return null
-  const shop = await Shop.findOne({ marketplace: 'tiktok_shop', status: 'connected' }).select('+auth.accessTokenEnc')
+  const shop = await Shop.findOne({ marketplace: 'tiktok_shop', status: 'connected' })
   // Sub-admins only get TikTok's own figures when the shop is one of theirs (for analytics).
   if (!shop || !canAccessShop(req, shop._id)) return null
-  return shop.auth?.accessTokenEnc ? shop : null
+  return shop
 }
 
 async function tiktokIntervals(shop, req) {
   const { from, to } = dates(req)
-  return tiktok.shopPerformance(shop.auth.accessTokenEnc, { shop, from, to })
+  return marketplaceManager.withShopToken(shop, (token) => tiktok.shopPerformance(token, { shop, from, to }))
 }
 
 function intervalSales(interval) {
@@ -61,46 +62,15 @@ function intervalSales(interval) {
   }
 }
 
-// GET /api/analytics/summary?from=&to=
-router.get('/summary', async (req, res) => {
-  try {
-    const shop = await tiktokShop(req)
-    if (shop) {
-      try {
-        const rows = (await tiktokIntervals(shop, req)).map(intervalSales)
-        const revenue = rows.reduce((sum, row) => sum + row.revenue, 0)
-        const orders = rows.reduce((sum, row) => sum + row.orders, 0)
-        const items = rows.reduce((sum, row) => sum + row.items, 0)
-        return res.json({
-          revenue: +revenue.toFixed(2),
-          orders,
-          items,
-          avgOrder: orders ? +(revenue / orders).toFixed(2) : 0,
-          profit: 0,
-          byStatus: {},
-        })
-      } catch (error) {
-        console.warn('[analytics] TikTok summary failed:', error.message)
-      }
-    }
-    const m = match(req, marketplaceFilter(req))
-    const activeMatch = { ...m, status: { $nin: ['cancelled', 'refunded'] } }
-    const [agg] = await Order.aggregate([
-      { $match: activeMatch },
-      {
-        $group: {
-          _id: null,
-          revenue: { $sum: '$totals.total' },
-          orders: { $sum: 1 },
-          items: { $sum: { $sum: '$items.quantity' } },
-        },
-      },
-    ])
-    const byStatus = await Order.aggregate([
+async function orderProfitAndStatus(req) {
+  const m = match(req, marketplaceFilter(req))
+  const activeMatch = { ...m, status: { $nin: ['cancelled', 'refunded'] } }
+  const [byStatus, [profitAgg]] = await Promise.all([
+    Order.aggregate([
       { $match: m },
       { $group: { _id: '$status', count: { $sum: 1 } } },
-    ])
-    const [profitAgg] = await Order.aggregate([
+    ]),
+    Order.aggregate([
       { $match: activeMatch },
       { $unwind: { path: '$items', preserveNullAndEmptyArrays: false } },
       {
@@ -142,14 +112,57 @@ router.get('/summary', async (req, res) => {
           },
         },
       },
+    ]),
+  ])
+  return {
+    activeMatch,
+    profit: +((profitAgg?.profit) || 0).toFixed(2),
+    byStatus: Object.fromEntries(byStatus.map((s) => [s._id, s.count])),
+  }
+}
+
+// GET /api/analytics/summary?from=&to=
+router.get('/summary', async (req, res) => {
+  try {
+    const shop = await tiktokShop(req)
+    if (shop) {
+      try {
+        const rows = (await tiktokIntervals(shop, req)).map(intervalSales)
+        const revenue = rows.reduce((sum, row) => sum + row.revenue, 0)
+        const orders = rows.reduce((sum, row) => sum + row.orders, 0)
+        const items = rows.reduce((sum, row) => sum + row.items, 0)
+        const { profit, byStatus } = await orderProfitAndStatus(req)
+        return res.json({
+          revenue: +revenue.toFixed(2),
+          orders,
+          items,
+          avgOrder: orders ? +(revenue / orders).toFixed(2) : 0,
+          profit,
+          byStatus,
+        })
+      } catch (error) {
+        console.warn('[analytics] TikTok summary failed:', error.message)
+      }
+    }
+    const { activeMatch, profit, byStatus } = await orderProfitAndStatus(req)
+    const [agg] = await Order.aggregate([
+      { $match: activeMatch },
+      {
+        $group: {
+          _id: null,
+          revenue: { $sum: '$totals.total' },
+          orders: { $sum: 1 },
+          items: { $sum: { $sum: '$items.quantity' } },
+        },
+      },
     ])
     res.json({
       revenue: +(agg?.revenue || 0).toFixed(2),
       orders: agg?.orders || 0,
       items: agg?.items || 0,
       avgOrder: agg?.orders ? +((agg.revenue || 0) / agg.orders).toFixed(2) : 0,
-      profit: +((profitAgg?.profit) || 0).toFixed(2),
-      byStatus: Object.fromEntries(byStatus.map((s) => [s._id, s.count])),
+      profit,
+      byStatus,
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -226,12 +239,12 @@ router.get('/products', async (req, res) => {
       try {
         const { from, to } = dates(req)
         const limit = Math.min(20, Number(req.query.limit) || 10)
-        const performance = await tiktok.productPerformance(shop.auth.accessTokenEnc, { shop, from, to, limit })
+        const performance = await marketplaceManager.withShopToken(shop, (token) => tiktok.productPerformance(token, { shop, from, to, limit }))
         const listings = await Listing.find({ shopId: shop._id }).select('externalListingId productId')
         const catalog = await Product.find({ _id: { $in: listings.map((row) => row.productId) } }).select('title sku')
         const rows = performance.map((item) => {
           const id = String(item.id || item.product_id || '')
-          const listing = listings.find((row) => String(row.externalListingId || '').startsWith(`${id}:`))
+          const listing = listings.find((row) => String(row.externalListingId || '').split(':')[0] === id)
           const product = catalog.find((row) => String(row._id) === String(listing?.productId))
         const stats = item.overall_performance || item
         return {

@@ -105,7 +105,7 @@ const PROFILES = {
   tiktok_shop: {
     label: 'TikTok Shop',
     sections: [
-      { id: 'analytics', label: 'Analytics', path: '/analytics', route: 'analytics', needs: 'Data Analytics API', probe: ttCall('GET', '/analytics/202405/shop/performance', { query: ttDates() }) },
+      { id: 'analytics', label: 'Analytics', path: '/analytics', route: 'analytics', needs: 'Data Analytics API', probe: ttCall('GET', '/analytics/202509/shop/performance', { query: ttDates() }) },
       { id: 'inbox', label: 'Inbox', path: '/inbox', route: 'inbox', needs: 'Customer Service scope', probe: ttCall('GET', '/customer_service/202309/conversations', { query: { page_size: 1 } }) },
       { id: 'products', label: 'Products', path: '/products', route: 'products', needs: 'Product API', probe: ttProducts },
       { id: 'inventory', label: 'Inventory', path: '/inventory', route: 'inventory', needs: 'Product API', probe: ttProducts },
@@ -114,7 +114,7 @@ const PROFILES = {
       { id: 'returns', label: 'Returns & cancellations', path: '/shop/returns', route: 'orders', needs: 'Return and Refund API', probe: ttCall('POST', '/return_refund/202309/returns/search', { query: { page_size: 1 }, body: {} }) },
       { id: 'promotions', label: 'Promotions', path: '/shop/promotions', route: 'products', needs: 'Promotion API', probe: ttCall('POST', '/promotion/202309/activities/search', { body: { page_size: 1 } }) },
       { id: 'finances', label: 'Finance', path: '/shop/finances', route: 'analytics', needs: 'Finance API', probe: ttCall('GET', '/finance/202309/statements', { query: { page_size: 1, sort_field: 'statement_time' } }) },
-      { id: 'content', label: 'Videos & LIVE', path: '/shop/content', route: 'analytics', needs: 'Data Analytics API', probe: ttCall('GET', '/analytics/202409/shop_videos/performance', { query: { ...ttDates(), page_size: 1 } }) },
+      { id: 'content', label: 'Videos & LIVE', path: '/shop/content', route: 'analytics', needs: 'Data Analytics API', probe: ttCall('GET', '/analytics/202509/shop_videos/performance', { query: { ...ttDates(), page_size: 1 } }) },
       { id: 'creators', label: 'Creators', path: '/shop/creators', route: 'products', needs: 'Affiliate Seller scope', probe: ttCall('POST', '/affiliate_seller/202406/marketplace_creators/search', { query: { page_size: 12 }, body: {} }) },
       { id: 'customers', label: 'Customers', path: '/customers', route: 'customers', needs: 'Order API', probe: ttOrders },
     ],

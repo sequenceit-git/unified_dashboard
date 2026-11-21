@@ -169,6 +169,19 @@ function chatMessage(row) {
   }
 }
 
+function extractDistrict(districtInfo, levels = [], names = []) {
+  const rows = Array.isArray(districtInfo) ? districtInfo : []
+  for (const level of levels) {
+    const hit = rows.find((row) => String(row.address_level || '').toUpperCase() === level)
+    if (hit?.address_name) return hit.address_name
+  }
+  for (const name of names) {
+    const hit = rows.find((row) => new RegExp(name, 'i').test(String(row.address_level_name || '')))
+    if (hit?.address_name) return hit.address_name
+  }
+  return ''
+}
+
 class TikTokShopService {
   /** What the List dialog shows for TikTok Shop (Product API 202309). */
   listingCapabilities = {
@@ -181,8 +194,8 @@ class TikTokShopService {
     attributes: true,
     condition: false,
     packageDetails: true,
-    editAfterListing: ['title', 'description', 'price', 'stock'],
-    listingActions: ['unpublish', 'publish', 'delete'],
+    editAfterListing: ['title', 'description', 'price', 'stock', 'images'],
+    listingActions: ['unpublish', 'publish', 'delete', 'recover'],
     note: 'TikTok picks the category from the title. New products go to TikTok review before they appear in the shop.',
   }
 
@@ -228,37 +241,44 @@ class TikTokShopService {
     }
   }
 
-  async getOrders(accessToken, { shop, limit = 100 } = {}) {
+  async getOrders(accessToken, { shop, limit = 200 } = {}) {
     const now = Math.floor(Date.now() / 1000)
     const orders = []
     let pageToken = ''
     do {
       const data = await this.call(accessToken, 'POST', '/order/202309/orders/search', {
         shop,
-        query: { page_size: 50, ...(pageToken ? { page_token: pageToken } : {}) },
+        query: {
+          page_size: 50,
+          sort_field: 'update_time',
+          sort_order: 'DESC',
+          ...(pageToken ? { page_token: pageToken } : {}),
+        },
         body: { create_time_ge: now - 365 * 24 * 3600, create_time_lt: now },
       })
       for (const order of data.orders || []) {
+        const addr = order.recipient_address
+        const districts = addr?.district_info
         orders.push({
           externalOrderId: order.id,
           placedAt: order.create_time ? new Date(order.create_time * 1000) : new Date(),
           status: ORDER_STATUS[order.status] || 'pending',
           buyer: {
-            name: order.recipient_address?.name || order.user_id || 'TikTok Shop customer',
+            name: addr?.name || order.user_id || 'TikTok Shop customer',
             username: order.buyer_nickname || order.user_id || '',
-            email: '',
-            phone: order.recipient_address?.phone_number || '',
+            email: order.buyer_email || '',
+            phone: addr?.phone_number || '',
           },
-          shippingAddress: order.recipient_address ? {
-            street: order.recipient_address.address_line1 || order.recipient_address.full_address || '',
-            city: order.recipient_address.city || '',
-            state: order.recipient_address.state || '',
-            zip: order.recipient_address.postal_code || '',
-            country: order.recipient_address.region_code || 'US',
+          shippingAddress: addr ? {
+            street: addr.address_line1 || addr.full_address || '',
+            city: addr.city || addr.post_town || extractDistrict(districts, ['L3', 'L2'], ['city', 'town', 'county']),
+            state: addr.state || extractDistrict(districts, ['L1'], ['state', 'province']),
+            zip: addr.postal_code || '',
+            country: addr.region_code || 'US',
           } : undefined,
           shipping: {
-            carrier: order.shipping_provider_name || order.packages?.[0]?.shipping_provider_name || undefined,
-            trackingNumber: order.tracking_number || order.packages?.[0]?.tracking_number || undefined,
+            carrier: order.shipping_provider || order.shipping_provider_name || order.packages?.[0]?.shipping_provider_name || order.line_items?.[0]?.shipping_provider_name || undefined,
+            trackingNumber: order.tracking_number || order.packages?.[0]?.tracking_number || order.line_items?.[0]?.tracking_number || undefined,
             shippedAt: order.rts_time ? new Date(order.rts_time * 1000) : undefined,
             deliveredAt: order.delivery_time ? new Date(order.delivery_time * 1000) : undefined,
           },
@@ -275,6 +295,7 @@ class TikTokShopService {
             return {
               sku: cleanSku,
               rawSku,
+              lineItemId: item.id ? String(item.id) : undefined,
               title: item.product_name || item.sku_name,
               quantity: 1,
               unitPrice: Number(item.sale_price || 0),
@@ -297,15 +318,23 @@ class TikTokShopService {
         query: { page_size: 50, ...(pageToken ? { page_token: pageToken } : {}) },
         body: { status: 'ALL' },
       })
-      for (const product of data.products || []) {
-        let detail = product
-        if (product.id) {
+      const queue = [...(data.products || [])]
+      const detailById = new Map()
+      const worker = async () => {
+        while (queue.length) {
+          const prod = queue.shift()
+          if (!prod?.id) continue
           try {
-            detail = await this.call(accessToken, 'GET', `/product/202309/products/${product.id}`, { shop })
+            detailById.set(prod.id, await this.call(accessToken, 'GET', `/product/202309/products/${prod.id}`, { shop }))
           } catch {
-            detail = product
+            detailById.set(prod.id, prod)
           }
         }
+      }
+      await Promise.all([worker(), worker(), worker()])
+
+      for (const product of data.products || []) {
+        const detail = detailById.get(product.id) || product
         const images = imageUrls(detail.main_images || product.main_images)
         const tiktokStatus = detail.status || detail.product_status || product.status
         const catalogStatus = tiktokStatus === 'ACTIVATE' ? 'active' : 'draft'
@@ -321,6 +350,7 @@ class TikTokShopService {
             : `TTS-${sku?.id || product.id}`
           items.push({
             sku: cleanSku,
+            rawSku,
             title: detail.title || product.title || `TikTok Shop ${sku?.id || product.id}`,
             description: plainText(detail.description),
             price: Number(sku?.price?.sale_price || sku?.price?.tax_exclusive_price || 0),
@@ -487,11 +517,17 @@ class TikTokShopService {
   }
 
   async defaultWarehouseId(accessToken, shop) {
+    const key = String(shop?._id || shop?.shopCipher || 'default')
+    this._warehouseCache = this._warehouseCache || new Map()
+    const cached = this._warehouseCache.get(key)
+    if (cached && Date.now() - cached.at < 15 * 60 * 1000) return cached.id
     const data = await this.call(accessToken, 'GET', '/logistics/202309/warehouses', { shop })
     const warehouses = (data.warehouses || []).filter((row) => row.type !== 'RETURN_WAREHOUSE')
     const chosen = warehouses.find((row) => row.is_default) || warehouses[0]
     if (!chosen) throw new Error('TikTok Shop has no sales warehouse. Add one in Seller Center first.')
-    return String(chosen.id)
+    const id = String(chosen.id)
+    this._warehouseCache.set(key, { id, at: Date.now() })
+    return id
   }
 
   /** TikTok only accepts its own image URIs, so each public image is downloaded and uploaded. */
@@ -652,19 +688,35 @@ class TikTokShopService {
     throw new Error(`TikTok Shop cannot ${action} a listing.`)
   }
 
-  /** Changes title, description, price or stock of a synced product. */
+  /** Changes title, description, price, stock or images of a synced product. */
   async reviseListing(accessToken, externalListingId, changes, options = {}) {
     if (changes.price != null) await this.updatePrice(accessToken, null, changes.price, 'USD', { ...options, externalListingId })
     if (changes.quantity != null) await this.updateStock(accessToken, null, changes.quantity, { ...options, externalListingId })
-    if (changes.title || changes.description) {
+    if (changes.title || changes.description || changes.images?.length) {
       const [productId] = String(externalListingId || '').split(':')
-      await this.call(accessToken, 'POST', `/product/202509/products/${productId}/partial_edit`, {
-        shop: options.shop,
-        body: {
-          ...(changes.title ? { title: String(changes.title).slice(0, 255) } : {}),
-          ...(changes.description ? { description: changes.description } : {}),
-        },
-      })
+      const desc = changes.description != null && changes.description !== ''
+        ? (/<\w+/.test(changes.description)
+          ? changes.description
+          : `<p>${String(changes.description).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`)
+        : undefined
+      let mainImages
+      if (Array.isArray(changes.images) && changes.images.length) {
+        const publicImages = changes.images.filter((url) => /^https?:\/\//i.test(url)).slice(0, 9)
+        if (publicImages.length) {
+          const uris = await Promise.all(publicImages.map((url) => this.uploadImage(accessToken, url)))
+          mainImages = uris.map((uri) => ({ uri }))
+        }
+      }
+      if (changes.title || desc || mainImages?.length) {
+        await this.call(accessToken, 'POST', `/product/202509/products/${productId}/partial_edit`, {
+          shop: options.shop,
+          body: {
+            ...(changes.title ? { title: String(changes.title).slice(0, 255) } : {}),
+            ...(desc ? { description: desc } : {}),
+            ...(mainImages?.length ? { main_images: mainImages } : {}),
+          },
+        })
+      }
     }
     return { success: true }
   }
@@ -674,11 +726,25 @@ class TikTokShopService {
     if (!productId || !skuId) {
       throw new Error(`TikTok Shop stock update needs a synced product and SKU for ${sku}`)
     }
+    const qty = Math.max(0, Math.floor(Number(quantity)))
     const warehouseId = await this.defaultWarehouseId(accessToken, options.shop)
-    return this.call(accessToken, 'POST', `/product/202309/products/${productId}/inventory/update`, {
-      shop: options.shop,
-      body: { skus: [{ id: skuId, inventory: [{ warehouse_id: warehouseId, quantity: Math.max(0, Math.floor(Number(quantity))) }] }] },
-    })
+    try {
+      return await this.call(accessToken, 'POST', `/product/202309/products/${productId}/inventory/update`, {
+        shop: options.shop,
+        body: { skus: [{ id: skuId, inventory: [{ warehouse_id: warehouseId, quantity: qty }] }] },
+      })
+    } catch (err) {
+      if (!/warehouse/i.test(err.message || '')) throw err
+      const detail = await this.call(accessToken, 'GET', `/product/202309/products/${productId}`, { shop: options.shop })
+      const targetSku = (detail.skus || []).find((row) => String(row.id) === String(skuId))
+      const warehouses = (targetSku?.inventory || []).map((row) => row.warehouse_id).filter(Boolean)
+      if (!warehouses.length) throw err
+      const inventory = warehouses.map((id, idx) => ({ warehouse_id: String(id), quantity: idx === 0 ? qty : 0 }))
+      return this.call(accessToken, 'POST', `/product/202309/products/${productId}/inventory/update`, {
+        shop: options.shop,
+        body: { skus: [{ id: skuId, inventory }] },
+      })
+    }
   }
 
   async updatePrice(accessToken, sku, price, currency = 'USD', options = {}) {
@@ -688,7 +754,7 @@ class TikTokShopService {
     }
     return this.call(accessToken, 'POST', `/product/202309/products/${productId}/prices/update`, {
       shop: options.shop,
-      body: { skus: [{ id: skuId, price: { amount: String(price), currency } }] },
+      body: { skus: [{ id: skuId, price: { amount: Number(price).toFixed(2), currency } }] },
     })
   }
 
@@ -696,44 +762,86 @@ class TikTokShopService {
    * Pushes tracking number and fulfills package/order on TikTok Shop
    */
   async createShippingFulfillment(accessToken, orderId, { carrier = '', trackingNumber = '', lineItems = [], shop } = {}) {
+    const cleanTracking = String(trackingNumber || '').trim().replace(/[\s-]+/g, '')
+    if (!cleanTracking) throw new Error('TikTok Shop needs a tracking number.')
+
     let lineItemIds = (lineItems || []).map((l) => l.lineItemId || l.id).filter(Boolean)
     let providerId = ''
+    let order = null
 
-    // Query eligible shipping services to find shipping_provider_id
     try {
-      const services = await this.call(accessToken, 'POST', `/fulfillment/202309/orders/${encodeURIComponent(orderId)}/shipping_services/query`, {
+      const orderData = await this.call(accessToken, 'GET', '/order/202309/orders', {
         shop,
-        body: {},
+        query: { ids: String(orderId) },
       })
-      const list = services.shipping_services || []
-      const match = list.find((s) =>
-        new RegExp(carrier, 'i').test(s.shipping_provider_name) || new RegExp(carrier, 'i').test(s.name)
-      )
-      if (match) {
-        providerId = match.shipping_provider_id
-      } else if (list.length > 0) {
-        providerId = list[0].shipping_provider_id
-      }
-      if (!lineItemIds.length && services.order_line_id?.length) {
-        lineItemIds = services.order_line_id
-      }
+      order = orderData.orders?.[0] || null
     } catch {}
 
-    if (!lineItemIds.length) {
+    if (!lineItemIds.length && order?.line_items?.length) {
+      lineItemIds = order.line_items.map((li) => li.id).filter(Boolean)
+    }
+
+    const matchCarrier = (name) => {
+      const needle = String(carrier || '').trim().toLowerCase()
+      if (!needle || needle === 'other') return false
+      return String(name || '').toLowerCase().includes(needle)
+    }
+
+    let deliveryOptionId = order?.delivery_option_id || ''
+    if (!deliveryOptionId) {
+      const warehouseId = order?.warehouse_id || await this.defaultWarehouseId(accessToken, shop).catch(() => '')
+      if (warehouseId) {
+        try {
+          const opts = await this.call(accessToken, 'GET', `/logistics/202309/warehouses/${encodeURIComponent(warehouseId)}/delivery_options`, { shop })
+          deliveryOptionId = opts.delivery_options?.[0]?.id || ''
+        } catch {}
+      }
+    }
+
+    if (deliveryOptionId) {
       try {
-        const orderData = await this.call(accessToken, 'GET', '/order/202309/orders', {
+        const provData = await this.call(accessToken, 'GET', `/logistics/202309/delivery_options/${encodeURIComponent(deliveryOptionId)}/shipping_providers`, { shop })
+        const providers = provData.shipping_providers || []
+        const match = providers.find((p) => matchCarrier(p.name))
+        if (match) providerId = match.id
+        else if (providers.length && !order?.shipping_provider_id) providerId = providers[0].id
+      } catch {}
+    }
+
+    // Fallback to TikTok shipping services query when provider or line items are still unresolved
+    if (!providerId || !lineItemIds.length) {
+      try {
+        const services = await this.call(accessToken, 'POST', `/fulfillment/202309/orders/${encodeURIComponent(orderId)}/shipping_services/query`, {
           shop,
-          query: { order_id_list: String(orderId) },
+          body: {},
         })
-        const o = orderData.orders?.[0]
-        if (o?.line_items) {
-          lineItemIds = o.line_items.map((li) => li.id)
+        const list = services.shipping_services || []
+        if (!providerId && list.length) {
+          const match = list.find((s) => matchCarrier(s.shipping_provider_name) || matchCarrier(s.name))
+          providerId = (match || list[0]).shipping_provider_id
+        }
+        if (!lineItemIds.length && services.order_line_id?.length) {
+          lineItemIds = services.order_line_id
         }
       } catch {}
     }
 
+    if (!providerId && order?.shipping_provider_id) {
+      providerId = order.shipping_provider_id
+    }
+
+    if (order?.status === 'IN_TRANSIT' || Boolean(order?.tracking_number)) {
+      return this.call(accessToken, 'POST', `/fulfillment/202309/orders/${encodeURIComponent(orderId)}/shipping_info/update`, {
+        shop,
+        body: {
+          tracking_number: cleanTracking,
+          ...(providerId ? { shipping_provider_id: String(providerId) } : {}),
+        },
+      })
+    }
+
     const body = {
-      tracking_number: String(trackingNumber).trim(),
+      tracking_number: cleanTracking,
       ...(providerId ? { shipping_provider_id: String(providerId) } : {}),
       ...(lineItemIds.length ? { order_line_item_ids: lineItemIds } : {}),
     }
@@ -750,6 +858,7 @@ class TikTokShopService {
   async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = '', shop } = {}) {
     const reasonMap = {
       OUT_OF_STOCK: 'seller_cancel_reason_out_of_stock',
+      BUYER_CANCEL: 'seller_cancel_reason_buyer_request',
       BUYER_ASKED_CANCEL: 'seller_cancel_reason_buyer_request',
       ADDRESS_ISSUES: 'seller_cancel_reason_undeliverable_address',
     }
@@ -770,12 +879,19 @@ class TikTokShopService {
     try {
       const returns = await this.call(accessToken, 'POST', '/return_refund/202309/returns/search', {
         shop,
-        body: { order_id: String(orderId) },
+        body: { order_ids: [String(orderId)] },
       })
-      const active = (returns.return_orders || []).find((r) => !/closed|complete|finish|reject/i.test(r.return_status))
+      const actionable = new Set([
+        'RETURN_OR_REFUND_REQUEST_PENDING',
+        'REPLACEMENT_REQUEST_PENDING',
+        'BUYER_SHIPPED_ITEM',
+      ])
+      const active = (returns.return_orders || []).find((r) => actionable.has(String(r.return_status || '').toUpperCase()))
       if (active) {
         return this.decideReturn(accessToken, active.return_id, {
-          decision: 'APPROVE_REFUND',
+          decision: 'APPROVE',
+          returnType: active.return_type,
+          rawStatus: active.return_status,
           buyerKeepItem: true,
           comment,
           shop,
@@ -790,7 +906,7 @@ class TikTokShopService {
   /**
    * Approves or rejects a cancellation request on TikTok Shop
    */
-  async decideCancellation(accessToken, cancelId, { action = 'approve', comment = '', rejectReason = 'seller_reject_apply_product_has_been_packed', shop } = {}) {
+  async decideCancellation(accessToken, cancelId, { action = 'approve', comment = '', comments = '', rejectReason = 'seller_reject_apply_product_has_been_packed', shop } = {}) {
     const isApprove = String(action).toLowerCase() === 'approve'
     if (isApprove) {
       return this.call(accessToken, 'POST', `/return_refund/202309/cancellations/${encodeURIComponent(cancelId)}/approve`, {
@@ -798,11 +914,12 @@ class TikTokShopService {
         body: {},
       })
     }
+    const note = comment || comments || 'Order has already been packed and dispatched'
     return this.call(accessToken, 'POST', `/return_refund/202309/cancellations/${encodeURIComponent(cancelId)}/reject`, {
       shop,
       body: {
         reject_reason: rejectReason || 'seller_reject_apply_product_has_been_packed',
-        comment: comment || 'Order has already been packed and dispatched',
+        comment: note,
       },
     })
   }
@@ -810,23 +927,54 @@ class TikTokShopService {
   /**
    * Approves or rejects a return request on TikTok Shop
    */
-  async decideReturn(accessToken, returnId, { decision = 'APPROVE_REFUND', comment = '', rejectReason = 'seller_reject_apply_package_has_not_exceeded_estimated_delivery_time', buyerKeepItem = true, shop } = {}) {
+  async decideReturn(accessToken, returnId, { decision = 'APPROVE', comment = '', comments = '', rejectReason = 'seller_reject_apply_package_has_not_exceeded_estimated_delivery_time', buyerKeepItem = false, returnType = '', rawStatus = '', shop } = {}) {
+    const note = comment || comments || ''
     const isApprove = /approve/i.test(decision)
+    let resolvedType = returnType
+    let resolvedStatus = rawStatus
+    if (!resolvedType && !resolvedStatus) {
+      try {
+        const found = await this.call(accessToken, 'POST', '/return_refund/202309/returns/search', {
+          shop,
+          body: { return_ids: [String(returnId)] },
+        })
+        const row = found.return_orders?.[0]
+        if (row) {
+          resolvedType = row.return_type || ''
+          resolvedStatus = row.return_status || ''
+        }
+      } catch {}
+    }
+
+    const upperStatus = String(resolvedStatus || '').toUpperCase()
+    const upperType = String(resolvedType || '').toUpperCase()
+
     if (isApprove) {
+      let apiDecision = 'APPROVE_REFUND'
+      if (upperStatus === 'BUYER_SHIPPED_ITEM') apiDecision = 'APPROVE_RECEIVED_PACKAGE'
+      else if (upperType === 'REPLACEMENT') apiDecision = 'APPROVE_REPLACEMENT'
+      else if (upperType === 'RETURN_AND_REFUND') apiDecision = 'APPROVE_RETURN'
+
       return this.call(accessToken, 'POST', `/return_refund/202309/returns/${encodeURIComponent(returnId)}/approve`, {
         shop,
         body: {
-          decision: 'APPROVE_REFUND',
-          buyer_keep_item: Boolean(buyerKeepItem),
+          decision: apiDecision,
+          ...(apiDecision === 'APPROVE_RETURN' && buyerKeepItem === true ? { buyer_keep_item: true } : {}),
         },
       })
     }
+
+    let apiDecision = 'REJECT_REFUND'
+    if (upperStatus === 'BUYER_SHIPPED_ITEM') apiDecision = 'REJECT_RECEIVED_PACKAGE'
+    else if (upperType === 'REPLACEMENT') apiDecision = 'REJECT_REPLACEMENT'
+    else if (upperType === 'RETURN_AND_REFUND') apiDecision = 'REJECT_RETURN'
+
     return this.call(accessToken, 'POST', `/return_refund/202309/returns/${encodeURIComponent(returnId)}/reject`, {
       shop,
       body: {
-        decision: 'REJECT_REFUND',
+        decision: apiDecision,
         reject_reason: rejectReason || 'seller_reject_apply_package_has_not_exceeded_estimated_delivery_time',
-        comment: comment || 'Return request declined according to shop policy',
+        comment: note || 'Return request declined according to shop policy',
       },
     })
   }
@@ -834,19 +982,50 @@ class TikTokShopService {
   /**
    * Creates a discount activity on TikTok Shop
    */
-  async createPromotion(accessToken, { name, title, activityType = 'DIRECT_DISCOUNT', percentageOff = 10, productLevel = 'SHOP', startDate, endDate, beginTime, endTime, shop } = {}) {
+  async createPromotion(accessToken, { name, title, activityType = 'DIRECT_DISCOUNT', percentageOff = 10, productLevel = 'PRODUCT', listingIds = [], startDate, endDate, beginTime, endTime, shop } = {}) {
+    const percent = Math.round(Number(percentageOff || 10))
+    if (!(percent >= 1 && percent <= 90)) {
+      throw new Error('TikTok Shop discount percentage must be between 1% and 90%.')
+    }
+    const level = productLevel || 'PRODUCT'
+    const productIds = [...new Set(
+      (listingIds || []).map((id) => String(id || '').split(':')[0].trim()).filter(Boolean),
+    )].slice(0, 300)
+    if (level === 'PRODUCT' && !productIds.length) {
+      throw new Error('TikTok Shop needs at least one live product to include in a promotion. Sync listings or enter TikTok product IDs first.')
+    }
     const now = Math.floor(Date.now() / 1000)
-    const start = beginTime ? Math.floor(new Date(beginTime).getTime() / 1000) : startDate ? Math.floor(new Date(startDate).getTime() / 1000) : now + 120
-    const end = endTime ? Math.floor(new Date(endTime).getTime() / 1000) : endDate ? Math.floor(new Date(endDate).getTime() / 1000) : now + 14 * 86400
+    const rawStart = beginTime ? Math.floor(new Date(beginTime).getTime() / 1000) : startDate ? Math.floor(new Date(startDate).getTime() / 1000) : now + 120
+    const start = Math.max(now + 60, rawStart)
+    const rawEnd = endTime ? Math.floor(new Date(endTime).getTime() / 1000) : endDate ? Math.floor(new Date(endDate).getTime() / 1000) : start + 14 * 86400
+    const end = Math.max(start + 600, rawEnd)
 
     const body = {
       activity_type: activityType || 'DIRECT_DISCOUNT',
+      duration_type: 'NORMAL',
       title: String(title || name || `Sale ${new Date().toLocaleDateString()}`).slice(0, 50),
       begin_time: start,
       end_time: end,
-      product_level: productLevel || 'SHOP',
+      product_level: level,
     }
-    return this.call(accessToken, 'POST', '/promotion/202309/activities', { shop, body })
+    const created = await this.call(accessToken, 'POST', '/promotion/202309/activities', { shop, body })
+    const activityId = created.activity_id
+    if (activityId && productIds.length) {
+      await this.call(accessToken, 'PUT', `/promotion/202309/activities/${encodeURIComponent(activityId)}/products`, {
+        shop,
+        body: {
+          activity_id: String(activityId),
+          products: productIds.map((id) => ({
+            id,
+            discount: String(percent),
+            quantity_limit: -1,
+            quantity_per_user: -1,
+            skus: [],
+          })),
+        },
+      })
+    }
+    return created
   }
 
   /**
@@ -888,7 +1067,11 @@ class TikTokShopService {
     const response = await fetch(`${url}?${new URLSearchParams(params)}`)
     const payload = await response.json().catch(() => ({}))
     if (!response.ok || payload.code) {
-      throw new Error(payload.message || 'TikTok Shop token request failed')
+      const err = new Error(payload.message || 'TikTok Shop token request failed')
+      err.code = payload.code
+      err.deadLogin = [105002, 105003, 36004004, 36004005, 36004006].includes(Number(payload.code))
+        || /refresh.?token|invalid.?grant|revoked|expired/i.test(payload.message || '')
+      throw err
     }
     return payload.data || payload
   }
@@ -919,7 +1102,14 @@ class TikTokShopService {
     })
     const payload = await response.json().catch(() => ({}))
     if (!response.ok || (payload.code && payload.code !== 0)) {
-      throw new Error(payload.message || `TikTok Shop ${path} failed`)
+      const err = new Error(payload.message || `TikTok Shop ${path} failed`)
+      err.code = payload.code
+      err.status = (response.status === 401
+        || [105002, 105003, 105004, 36004004, 36004005].includes(Number(payload.code))
+        || /access.?token|token.*(expired|invalid)/i.test(payload.message || ''))
+        ? 401
+        : response.status
+      throw err
     }
     return payload.data || {}
   }
