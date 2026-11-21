@@ -20,7 +20,10 @@ function orderMatch(list, marketplace) {
     .map((identity) => identity.shopId)
     .filter(Boolean))
   const buyerMatch = [{ customerId: { $in: list.map((customer) => customer._id) } }]
-  if (names.length) buyerMatch.push({ 'buyer.name': { $in: names } })
+  if (names.length) {
+    buyerMatch.push({ 'buyer.name': { $in: names } })
+    buyerMatch.push({ 'buyer.username': { $in: names } })
+  }
   if (emails.length) buyerMatch.push({ 'buyer.email': { $in: emails } })
   const shopMatch = []
   if (marketplace) shopMatch.push({ marketplace })
@@ -52,6 +55,7 @@ async function withOrderStats(customers, marketplace) {
     const customer = (order.customerId && list.find((item) => String(order.customerId) === String(item._id)))
       || list.find((item) => (
         (order.buyer?.name && buyerKeys(item).has(order.buyer.name))
+        || (order.buyer?.username && buyerKeys(item).has(order.buyer.username))
         || (order.buyer?.email && item.email && order.buyer.email === item.email)
       ))
     if (!customer) continue

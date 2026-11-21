@@ -184,7 +184,7 @@ class EbayService {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Order API Error: ${err.message || response.statusText}`)
+      throw new Error(`eBay Order API Error: ${err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || response.statusText}`)
     }
 
     return response.json()
@@ -278,10 +278,11 @@ class EbayService {
     if (!carrier || /^other$/i.test(String(carrier).trim())) {
       throw new Error('eBay needs the shipping carrier (for example USPS, UPS, FedEx or DHL) together with the tracking number.')
     }
-    if (!String(trackingNumber || '').trim()) throw new Error('eBay needs a tracking number.')
+    const cleanTracking = String(trackingNumber || '').trim().replace(/[\s-]+/g, '')
+    if (!cleanTracking) throw new Error('eBay needs a tracking number.')
     const payload = {
       shippingCarrierCode: carrier || 'USPS',
-      trackingNumber: String(trackingNumber || '').trim(),
+      trackingNumber: cleanTracking,
       shippedDate: new Date().toISOString(),
       ...(lineItems && lineItems.length
         ? {
@@ -305,7 +306,7 @@ class EbayService {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Shipping Error: ${err.message || response.statusText}`)
+      throw new Error(`eBay Shipping Error: ${err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || response.statusText}`)
     }
 
     return response.status === 201 ? { success: true } : response.json()
@@ -326,7 +327,7 @@ class EbayService {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Inventory API Error: ${err.message || response.statusText}`)
+      throw new Error(`eBay Inventory API Error: ${err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || response.statusText}`)
     }
 
     return response.json()
@@ -415,7 +416,12 @@ class EbayService {
     if (action === 'relist') {
       // `quantity` (the shared stock) replaces eBay's old quantity when given.
       const res = await trading.relistListing(accessToken, itemId, options.quantity > 0 ? { quantity: options.quantity } : {})
-      return { status: 'live', marketplaceStatus: 'Active', externalListingId: res.externalListingId || itemId }
+      return {
+        status: 'live',
+        marketplaceStatus: 'Active',
+        externalListingId: res.externalListingId || itemId,
+        ...(options.quantity > 0 ? { stock: Math.floor(Number(options.quantity)) } : {}),
+      }
     }
     throw new Error(`eBay cannot ${action} a listing.`)
   }
@@ -502,7 +508,7 @@ class EbayService {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
-      throw new Error(`eBay Refund Error: ${err.message || response.statusText}`)
+      throw new Error(`eBay Refund Error: ${err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || response.statusText}`)
     }
 
     return response.json()
@@ -585,7 +591,7 @@ class EbayService {
     })
     const payload = await response.json().catch(() => ({}))
     if (!response.ok) {
-      const detail = payload.errors?.[0]?.message || payload.message || response.statusText
+      const detail = payload.errors?.[0]?.longMessage || payload.errors?.[0]?.message || payload.message || response.statusText
       throw new Error(`eBay Send Offer Error: ${detail}`)
     }
     return payload
@@ -838,7 +844,11 @@ class EbayService {
     }
     const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1])
     const detected = ranked.length > 1 && ranked[0][1] > ranked[1][1] ? ranked[0][0] : null
-    const accountUsername = shop.accountUsername || detected || null
+    let accountUsername = shop.accountUsername || detected || null
+    if (!accountUsername) {
+      const acct = await this.getAccount(accessToken).catch(() => null)
+      accountUsername = acct?.username || null
+    }
 
     const threads = rows.map(({ row, conversationType }) => {
       const latest = row.latestMessage || {}

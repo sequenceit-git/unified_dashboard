@@ -83,7 +83,7 @@ export function useSyncReload(kinds, marketplace, reload) {
   const list = Array.isArray(kinds) ? kinds : [kinds]
   useLiveEvents((event) => {
     if (event.type !== 'sync' || !event.ok) return
-    if (!list.includes(event.kind) && !(event.kind === 'full' && list.some((kind) => kind !== 'inbox'))) return
+    if (!list.includes(event.kind) && event.kind !== 'full') return
     if (marketplace && event.marketplace !== marketplace) return
     reload(event)
   })

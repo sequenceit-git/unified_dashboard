@@ -74,7 +74,7 @@ const PROFILES = {
       { id: 'returns', label: 'Returns & cases', path: '/shop/returns', route: 'orders', needs: 'Post-Order API', probe: (t) => ebayRest(t, '/post-order/v2/return/search?limit=1', { iaf: true }) },
       { id: 'offers', label: 'Best offers', path: '/shop/offers', route: 'products', needs: 'Negotiation API', probe: (t) => ebayRest(t, '/sell/negotiation/v1/find_eligible_items?limit=1') },
       { id: 'promotions', label: 'Promotions', path: '/shop/promotions', route: 'products', needs: 'sell.marketing scope', probe: (t) => ebayRest(t, '/sell/marketing/v1/promotion?marketplace_id=EBAY_US&limit=1') },
-      { id: 'finances', label: 'Payouts', path: '/shop/finances', route: 'analytics', needs: 'sell.finances scope', probe: (t) => ebayRest(t, 'https://apiz.ebay.com/sell/finances/v1/payout?limit=1') },
+      { id: 'finances', label: 'Payouts', path: '/shop/finances', route: 'analytics', needs: 'sell.finances scope', probe: (t) => ebayRest(t, `${ebayConfig.environment === 'SANDBOX' ? 'https://apiz.sandbox.ebay.com' : 'https://apiz.ebay.com'}/sell/finances/v1/payout?limit=1`) },
       { id: 'customers', label: 'Buyers', path: '/customers', route: 'customers', needs: 'sell.fulfillment scope', probe: ebayOrders },
     ],
     statuses: {

@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext'
 import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import { useShopProfile } from '../../hooks/useShopProfiles'
+import { useSyncReload } from '../../hooks/useLiveEvents'
 import { api, queryString } from '../../lib/api'
 import Card, { StatCard } from '../../components/ui/Card'
 import DataTable from '../../components/ui/DataTable'
@@ -220,12 +221,12 @@ function PromotionModal({ onClose, onSuccess, token, marketplace }) {
           <input
             value={listingIds}
             onChange={(e) => setListingIds(e.target.value)}
-            placeholder={marketplace === 'ebay' ? 'Comma-separated eBay item IDs (up to 500)' : 'Leave blank for entire inventory, or comma-separated item IDs'}
+            placeholder={marketplace === 'ebay' ? 'Leave blank for all live listings, or comma-separated eBay item IDs' : 'Leave blank for entire inventory, or comma-separated item IDs'}
             className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
           />
           <p className="text-xs text-gray-500 mt-1">
             {marketplace === 'ebay'
-              ? 'eBay sale (markdown): 5–80% off, at least 24 hours. The first item’s product image is used as the sale picture.'
+              ? 'eBay sale (markdown): 5–80% off, at least 24 hours. Leave blank to include all live eBay listings (up to 500).'
               : 'Specify item IDs to limit the sale to specific products.'}
           </p>
         </div>
@@ -319,8 +320,9 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
           label: 'Action',
           render: (row) => {
             if (!row.promotionId) return null
+            if (/ended|cancel|finish|expired/i.test(String(row.status || ''))) return null
             // eBay can only pause/resume threshold discounts; markdown sales have no pause.
-            if (marketplace === 'ebay' && /markdown/i.test(String(row.type || ''))) return null
+            if (marketplace === 'ebay' && /markdown|item price/i.test(String(row.type || ''))) return null
             const isPaused = /pause|deactivate/i.test(String(row.status || ''))
             return (
               <Button
@@ -474,10 +476,26 @@ export default function ShopSectionPage() {
       return
     }
     if (type === 'cancel-reject') {
-      if (!window.confirm(`Reject cancellation for Order ${row.orderId || row.cancelId}?`)) return
+      let trackingNumber
+      if (shopSection.marketplace === 'ebay') {
+        const tracking = window.prompt(
+          `Reject cancellation for Order ${row.orderId || row.cancelId}? Enter the shipment tracking number (required by eBay if already shipped):`,
+          '',
+        )
+        if (tracking === null) return
+        trackingNumber = tracking.trim() || undefined
+      } else if (!window.confirm(`Reject cancellation for Order ${row.orderId || row.cancelId}?`)) {
+        return
+      }
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/cancellations/decide', { marketplace: shopSection.marketplace, cancelId: row.cancelId, action: 'reject' }, token)
+        await api.post('/api/shops/sections/cancellations/decide', {
+          marketplace: shopSection.marketplace,
+          cancelId: row.cancelId,
+          orderId: row.orderId,
+          action: 'reject',
+          ...(trackingNumber ? { trackingNumber } : {}),
+        }, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)
@@ -520,6 +538,10 @@ export default function ShopSectionPage() {
     if (canOpen) load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId, shopSection?.marketplace, canOpen])
+
+  useSyncReload(['orders', 'listings'], shopSection?.marketplace, () => {
+    if (canOpen && !loading) load()
+  })
 
   if (!shopSection) return <RequireShopSection />
   if (profileError) return <ErrorState message={profileError} />

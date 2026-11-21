@@ -6,6 +6,7 @@ import DataTable from '../../components/ui/DataTable'
 import Pagination from '../../components/ui/Pagination'
 import RowMenu from '../../components/ui/RowMenu'
 import SearchInput from '../../components/ui/SearchInput'
+import { useSyncReload } from '../../hooks/useLiveEvents'
 import { FiExternalLink } from 'react-icons/fi'
 
 export default function StockTab({ marketplace, onAdjust, refreshKey }) {
@@ -25,9 +26,9 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
     setLoading(true)
   }, [marketplace])
 
-  const fetchRows = async () => {
+  const fetchRows = async ({ quiet = false } = {}) => {
     const id = ++requestId.current
-    setLoading(true)
+    if (!quiet) setLoading(true)
     setError('')
     try {
       const res = await api.get(`/api/products${queryString({ marketplace, q, sort, page, limit: 15 })}`, token)
@@ -47,6 +48,8 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marketplace, q, sort, page, refreshKey])
+
+  useSyncReload(['listings', 'orders'], marketplace === 'all' ? '' : marketplace, () => fetchRows({ quiet: true }))
 
   return (
     <Card>

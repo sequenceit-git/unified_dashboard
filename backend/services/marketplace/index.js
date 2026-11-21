@@ -596,7 +596,6 @@ class UnifiedMarketplaceManager {
                   externalListingId: item.externalListingId,
                   price: item.unitPrice || prod.basePrice,
                   status: 'pending',
-                  lastSyncedAt: new Date(),
                 },
               },
               { upsert: true },
@@ -683,7 +682,7 @@ class UnifiedMarketplaceManager {
             if (item.productId && item.quantity > 0) {
               try {
                 const own = await Listing.findOne({ shopId: shop._id, productId: item.productId }).select('lastSyncedAt stock').lean()
-                if (own?.lastSyncedAt && ord.placedAt && new Date(own.lastSyncedAt) > new Date(ord.placedAt)) continue
+                if (Number.isFinite(own?.stock) && own?.lastSyncedAt && ord.placedAt && new Date(own.lastSyncedAt) > new Date(ord.placedAt)) continue
                 const prod = await Product.findById(item.productId)
                 if (prod && prod.stock > 0) {
                   const stockBefore = prod.stock
@@ -691,8 +690,9 @@ class UnifiedMarketplaceManager {
                   await Product.findByIdAndUpdate(item.productId, { $set: { stock: stockAfter } })
                   // This shop's own stock fell by the sold quantity; its next listing sync then sees
                   // no change. The other shops are brought down by propagateStock below.
-                  if (own && Number.isFinite(own.stock)) {
-                    const shopStock = Math.max(0, own.stock - item.quantity)
+                  if (own) {
+                    const baseStock = Number.isFinite(own.stock) ? own.stock : stockBefore
+                    const shopStock = Math.max(0, baseStock - item.quantity)
                     await Listing.updateOne(
                       { shopId: shop._id, productId: item.productId },
                       { $set: { stock: shopStock, ...(shopStock === 0 ? { status: 'out_of_stock' } : {}) } },
@@ -1170,8 +1170,13 @@ class UnifiedMarketplaceManager {
       listing.status = quantity > 0 ? 'live' : 'out_of_stock'
       await listing.save()
       try {
-        await this.pushStock(shop, { sku: product.sku, quantity, externalListingId: listing.externalListingId, productId: product._id })
+        const res = await this.pushStock(shop, { sku: product.sku, quantity, externalListingId: listing.externalListingId, productId: product._id })
+        if (res?.status === 'ended' || res?.ended) {
+          listing.status = 'ended'
+          listing.marketplaceStatus = res.marketplaceStatus || 'Ended'
+        }
         listing.syncError = null
+        listing.lastSyncedAt = new Date()
         await listing.save()
         results.push({ shopName: shop.name, ok: true })
       } catch (err) {
@@ -1305,11 +1310,14 @@ class UnifiedMarketplaceManager {
         ...(changes.images ? { images: this.publicImageUrls(changes.images) } : {}),
       }
       try {
-        await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop }))
+        const res = await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop }))
         listing.syncError = null
         if (changes.price != null) listing.price = changes.price
         if (changes.quantity != null) listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
-        if (changes.quantity != null && ['live', 'out_of_stock'].includes(listing.status)) {
+        if (res?.status === 'ended' || res?.ended) {
+          listing.status = 'ended'
+          listing.marketplaceStatus = res.marketplaceStatus || 'Ended'
+        } else if (changes.quantity != null && ['live', 'out_of_stock'].includes(listing.status)) {
           listing.status = Number(changes.quantity) > 0 ? 'live' : 'out_of_stock'
         }
         results.push({ shopName: shop.name, ok: true })
@@ -1317,7 +1325,7 @@ class UnifiedMarketplaceManager {
         listing.syncError = err.message
         results.push({ shopName: shop.name, ok: false, error: err.message })
       }
-      listing.lastSyncedAt = new Date()
+      if (changes.quantity != null || !listing.lastSyncedAt) listing.lastSyncedAt = new Date()
       await listing.save()
     }
     // Ending an eBay listing takes it off sale. Revising stock cannot bring it back;
@@ -1340,6 +1348,7 @@ class UnifiedMarketplaceManager {
           if (result.externalListingId) listing.externalListingId = result.externalListingId
           listing.listingUrl = listingUrl(shop.marketplace, listing.externalListingId, '')
           listing.marketplaceStatus = 'Active'
+          listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
           listing.syncError = null
           if (changes.price != null) listing.price = changes.price
           results.push({ shopName: shop.name, ok: true, relisted: true })
@@ -1355,12 +1364,27 @@ class UnifiedMarketplaceManager {
   }
 
   /**
-   * Full synchronization for a single shop (both orders & listings)
+   * Full synchronization for a single shop (orders, listings, and inbox where supported)
    */
   async syncAllForShop(shop) {
     const listingsResult = await this.syncListingsForShop(shop).catch((err) => ({ error: err.message }))
     const ordersResult = await this.syncOrdersForShop(shop).catch((err) => ({ error: err.message }))
-    return { shopId: shop._id, shopName: shop.name, marketplace: shop.marketplace, orders: ordersResult, listings: listingsResult }
+    let inboxResult = null
+    let newMessages = 0
+    let updatedThreads = 0
+    if (['ebay', 'tiktok_shop'].includes(shop.marketplace) && shop.apiAccess?.inbox?.ok !== false) {
+      inboxResult = await require('../inboxBot').syncAndReply(shop).catch((err) => ({ error: err.message }))
+      newMessages = inboxResult?.newMessages || 0
+      updatedThreads = inboxResult?.updatedThreads || 0
+    }
+    return {
+      shopId: shop._id,
+      shopName: shop.name,
+      marketplace: shop.marketplace,
+      orders: ordersResult,
+      listings: listingsResult,
+      ...(inboxResult ? { inbox: inboxResult, newMessages, updatedThreads } : {}),
+    }
   }
 
   /** TikTok sends an absolute Unix time; eBay sends seconds from now. */

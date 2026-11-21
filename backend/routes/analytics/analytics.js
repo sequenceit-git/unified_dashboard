@@ -84,8 +84,9 @@ router.get('/summary', async (req, res) => {
       }
     }
     const m = match(req, marketplaceFilter(req))
+    const activeMatch = { ...m, status: { $nin: ['cancelled', 'refunded'] } }
     const [agg] = await Order.aggregate([
-      { $match: m },
+      { $match: activeMatch },
       {
         $group: {
           _id: null,
@@ -100,7 +101,7 @@ router.get('/summary', async (req, res) => {
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ])
     const [profitAgg] = await Order.aggregate([
-      { $match: m },
+      { $match: activeMatch },
       { $unwind: { path: '$items', preserveNullAndEmptyArrays: false } },
       {
         $lookup: {
@@ -166,7 +167,7 @@ router.get('/revenue', async (req, res) => {
         console.warn('[analytics] TikTok revenue failed:', error.message)
       }
     }
-    const extra = marketplaceFilter(req)
+    const extra = { ...marketplaceFilter(req), status: { $nin: ['cancelled', 'refunded'] } }
     const rows = await Order.aggregate([
       { $match: match(req, extra) },
       {
@@ -201,7 +202,7 @@ router.get('/marketplaces', async (req, res) => {
       }
     }
     const rows = await Order.aggregate([
-      { $match: match(req, marketplaceFilter(req)) },
+      { $match: match(req, { ...marketplaceFilter(req), status: { $nin: ['cancelled', 'refunded'] } }) },
       {
         $group: {
           _id: '$marketplace',
@@ -248,7 +249,7 @@ router.get('/products', async (req, res) => {
     }
     const limit = Math.min(20, Number(req.query.limit) || 10)
     const rows = await Order.aggregate([
-      { $match: match(req, marketplaceFilter(req)) },
+      { $match: match(req, { ...marketplaceFilter(req), status: { $nin: ['cancelled', 'refunded'] } }) },
       { $unwind: '$items' },
       {
         $group: {

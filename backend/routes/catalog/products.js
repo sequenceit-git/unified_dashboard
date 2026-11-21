@@ -347,6 +347,7 @@ router.post('/:id/list', async (req, res) => {
         externalListingId: publishRes.externalListingId,
         listingUrl: listingUrl(shop.marketplace, publishRes.externalListingId, null, { status: publishRes.status || 'pending' }),
         price,
+        stock: Math.max(0, Math.floor(Number(stock) || 0)),
         status: publishRes.status || 'pending',
         ...(publishRes.marketplaceStatus ? { marketplaceStatus: publishRes.marketplaceStatus } : {}),
         syncError: null,
@@ -382,16 +383,21 @@ router.post('/:id/listing-action', async (req, res) => {
     if (!listing?.externalListingId) return res.status(404).json({ error: 'This product is not listed on a shop yet.' })
     const shop = await Shop.findById(listing.shopId)
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
-    const result = await marketplaceManager.applyListingAction(shop, listing, action)
+    const product = await Product.findById(listing.productId).select('sku stock sourceReportId')
+    const result = await marketplaceManager.applyListingAction(shop, listing, action, { quantity: product?.stock })
     listing.status = result.status || listing.status
     if (result.marketplaceStatus) listing.marketplaceStatus = result.marketplaceStatus
     if (result.externalListingId) listing.externalListingId = result.externalListingId
+    if (result.stock != null) {
+      listing.stock = result.stock
+    } else if (action === 'relist' && product?.stock > 0) {
+      listing.stock = Math.floor(Number(product.stock))
+    }
     listing.listingUrl = listingUrl(shop.marketplace, listing.externalListingId, listing.listingUrl, { status: listing.status })
     listing.syncError = null
     listing.lastSyncedAt = new Date()
     await listing.save()
     if (action === 'delete' || action === 'end') {
-      const product = await Product.findById(listing.productId).select('sku sourceReportId')
       await marketplaceManager.forgetListing(listing, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
       if (product?.sourceReportId) {
         const remainingOnMarket = await Listing.countDocuments({
@@ -409,7 +415,6 @@ router.post('/:id/listing-action', async (req, res) => {
       }
     }
     if (action === 'publish' || action === 'relist' || action === 'recover') {
-      const product = await Product.findById(listing.productId).select('sku')
       await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
     }
     await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})

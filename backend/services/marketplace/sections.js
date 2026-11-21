@@ -4,6 +4,7 @@
  * so one page can render any shop's section. Column types: text, money, date, number, status, link.
  */
 
+const ebayConfig = require('../../config/marketplaces').ebay
 const { ebayFetch } = require('./ebayHttp')
 const tiktok = require('./tiktok')
 const temu = require('./temu')
@@ -11,6 +12,7 @@ const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
 
 const ebayGet = ebayFetch
+const ebayApiz = () => (ebayConfig.environment === 'SANDBOX' ? 'https://apiz.sandbox.ebay.com' : 'https://apiz.ebay.com')
 
 const money = (amount) => (amount && amount.value != null
   ? { value: Number(amount.value), currency: amount.currency || 'USD' }
@@ -32,10 +34,14 @@ async function tables(list) {
 }
 
 async function listingTitles(marketplace, ids) {
-  const listings = await Listing.find({ marketplace, externalListingId: { $in: ids } }).select('externalListingId productId').lean()
+  const aliases = ids.flatMap((id) => [String(id), `item-${id}`, `ebay-item-${id}`])
+  const listings = await Listing.find({ marketplace, externalListingId: { $in: aliases } }).select('externalListingId productId').lean()
   const products = await Product.find({ _id: { $in: listings.map((row) => row.productId) } }).select('title sku').lean()
   const productById = new Map(products.map((row) => [String(row._id), row]))
-  return new Map(listings.map((row) => [row.externalListingId, productById.get(String(row.productId))]))
+  return new Map(listings.map((row) => [
+    String(row.externalListingId || '').replace(/^(ebay-)?item-/, ''),
+    productById.get(String(row.productId)),
+  ]))
 }
 
 const EBAY = {
@@ -63,7 +69,7 @@ const EBAY = {
         columns: [col('cancelId', 'Cancellation'), col('orderId', 'Order'), col('item', 'Item'), col('reason', 'Reason'), col('status', 'Status', 'status'), col('refund', 'Refund', 'money'), col('created', 'Requested', 'date')],
         load: async () => (await ebayGet(token, '/post-order/v2/cancellation/search?limit=50', { iaf: true })).cancellations?.map((row) => ({
           cancelId: row.cancelId,
-          orderId: row.legacyOrderId,
+          orderId: row.legacyOrderId || row.orderId || '',
           item: row.lineItems?.map((line) => line.itemTitle).join(', ') || '',
           reason: words(row.cancelReason),
           status: words(row.cancelStatus),
@@ -99,13 +105,13 @@ const EBAY = {
 
   async finances(token) {
     const [summary, list] = await Promise.all([
-      ebayGet(token, 'https://apiz.ebay.com/sell/finances/v1/payout_summary').catch(() => null),
+      ebayGet(token, `${ebayApiz()}/sell/finances/v1/payout_summary`).catch(() => null),
       tables([
         {
           id: 'payouts',
           title: 'Payouts',
           columns: [col('payoutId', 'Payout'), col('date', 'Date', 'date'), col('status', 'Status', 'status'), col('amount', 'Amount', 'money'), col('fee', 'Fee', 'money'), col('transactions', 'Transactions', 'number'), col('account', 'Paid to')],
-          load: async () => (await ebayGet(token, 'https://apiz.ebay.com/sell/finances/v1/payout?limit=50')).payouts?.map((row) => ({
+          load: async () => (await ebayGet(token, `${ebayApiz()}/sell/finances/v1/payout?limit=50`)).payouts?.map((row) => ({
             payoutId: row.payoutId,
             date: row.payoutDate,
             status: row.payoutStatusDescription || words(row.payoutStatus),
@@ -119,7 +125,7 @@ const EBAY = {
           id: 'transactions',
           title: 'Recent transactions',
           columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('memo', 'Details'), col('orderId', 'Order'), col('buyer', 'Buyer'), col('amount', 'Amount', 'money'), col('status', 'Status', 'status')],
-          load: async () => (await ebayGet(token, 'https://apiz.ebay.com/sell/finances/v1/transaction?limit=50')).transactions?.map((row) => {
+          load: async () => (await ebayGet(token, `${ebayApiz()}/sell/finances/v1/transaction?limit=50`)).transactions?.map((row) => {
             const amount = money(row.amount)
             if (amount && row.bookingEntry === 'DEBIT') amount.value = -amount.value
             return {

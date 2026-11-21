@@ -291,6 +291,13 @@ async function startWorker() {
     }
   }
   console.log(`[sync] worker ready (concurrency ${concurrency})`)
+  // Run an initial pass shortly after boot so eBay push subscriptions (`live`) and recent
+  // inbox/orders/listings don't wait a full scheduler cycle after a deploy or restart.
+  setTimeout(() => {
+    for (const kind of ['live', 'inbox', 'orders', 'listings']) {
+      if (KINDS[kind]?.every() > 0) enqueueAll(kind).catch(() => {})
+    }
+  }, 15 * 1000).unref?.()
   return worker
 }
 

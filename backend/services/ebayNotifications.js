@@ -45,7 +45,7 @@ const JOB_FOR_EVENT = {
 }
 
 // eBay sends the notification's Timestamp; one older than this is treated as a replay.
-const MAX_AGE_MS = 10 * 60 * 1000
+const MAX_AGE_MS = 24 * 60 * 60 * 1000
 
 const parser = new XMLParser({ removeNSPrefix: true, ignoreAttributes: true, parseTagValue: false })
 
@@ -111,10 +111,18 @@ const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** The connected eBay shop whose seller account received the notification. */
 async function findShop(username) {
-  if (!username) return null
-  const name = new RegExp(`^${escapeRegex(username)}$`, 'i')
-  return Shop.findOne({ marketplace: 'ebay', status: 'connected', $or: [{ accountId: name }, { accountUsername: name }] })
-    .select('name marketplace')
+  if (username) {
+    const name = new RegExp(`^${escapeRegex(username)}$`, 'i')
+    const matched = await Shop.findOne({ marketplace: 'ebay', status: 'connected', $or: [{ accountId: name }, { accountUsername: name }] })
+      .select('name marketplace')
+    if (matched) return matched
+  }
+  const shops = await Shop.find({ marketplace: 'ebay', status: 'connected' }).select('name marketplace accountId').limit(2)
+  if (shops.length !== 1) return null
+  if (username && !shops[0].accountId) {
+    await Shop.updateOne({ _id: shops[0]._id }, { accountId: username, accountUsername: username }).catch(() => {})
+  }
+  return shops[0]
 }
 
 /**

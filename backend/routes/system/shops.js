@@ -238,6 +238,7 @@ router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res
 
     await cache.del(`shop:${shop._id}:section:returns`)
     syncQueue.enqueue('orders', shop._id, { push: true }).catch(() => {})
+    syncQueue.enqueue('listings', shop._id, { push: true }).catch(() => {})
     res.json({ success: true, result })
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -248,7 +249,7 @@ router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res
 router.post('/sections/cancellations/decide', sectionGuard('returns'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
-    const { cancelId, action = 'approve', trackingNumber, shipmentDate } = req.body
+    const { cancelId, action = 'approve', trackingNumber, shipmentDate, orderId } = req.body
     if (!cancelId) return res.status(400).json({ error: 'cancelId is required' })
 
     const shop = await Shop.findOne({ marketplace, status: 'connected' })
@@ -262,12 +263,26 @@ router.post('/sections/cancellations/decide', sectionGuard('returns'), async (re
       return res.status(400).json({ error: `${marketplace} does not support cancellation decisions via API` })
     }
 
+    let resolvedTracking = trackingNumber
+    let resolvedShipmentDate = shipmentDate
+    if (String(action).toLowerCase() === 'reject' && !resolvedTracking && orderId) {
+      const Order = require('../../models/Order')
+      const order = await Order.findOne({ shopId: shop._id, externalOrderId: String(orderId) }).select('shipping').lean()
+      if (order?.shipping?.trackingNumber) {
+        resolvedTracking = order.shipping.trackingNumber
+        if (!resolvedShipmentDate && order.shipping.shippedAt) {
+          resolvedShipmentDate = new Date(order.shipping.shippedAt).toISOString()
+        }
+      }
+    }
+
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.decideCancellation(token, cancelId, { action, trackingNumber, shipmentDate, shop })
+      service.decideCancellation(token, cancelId, { action, trackingNumber: resolvedTracking, shipmentDate: resolvedShipmentDate, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)
     syncQueue.enqueue('orders', shop._id, { push: true }).catch(() => {})
+    syncQueue.enqueue('listings', shop._id, { push: true }).catch(() => {})
     res.json({ success: true, result })
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -291,18 +306,43 @@ router.post('/sections/promotions/create', sectionGuard('promotions'), async (re
       return res.status(400).json({ error: `${marketplace} does not support creating promotions via API` })
     }
 
-    // eBay sales need a picture; use the first listed item's product image.
+    let finalListingIds = Array.isArray(listingIds) ? listingIds.map((id) => String(id).trim()).filter(Boolean) : []
+    // eBay sales need a picture and at least one listing ID.
     let imageUrl
-    if (marketplace === 'ebay' && Array.isArray(listingIds) && listingIds.length) {
+    if (marketplace === 'ebay') {
       const Listing = require('../../models/Listing')
-      const first = String(listingIds[0]).trim()
-      const listing = await Listing.findOne({ shopId: shop._id, externalListingId: { $in: [first, `item-${first}`] } })
-        .populate('productId', 'images').lean()
-      imageUrl = marketplaceManager.publicImageUrls(listing?.productId?.images || [])[0]
+      const pickHttpsImage = (rows) => {
+        for (const row of rows) {
+          const hit = marketplaceManager.publicImageUrls(row?.productId?.images || []).find((u) => /^https:\/\//i.test(u))
+          if (hit) return hit
+        }
+        return undefined
+      }
+      if (!finalListingIds.length) {
+        const liveListings = await Listing.find({
+          shopId: shop._id,
+          status: 'live',
+          externalListingId: { $exists: true, $nin: ['', null] },
+        }).select('externalListingId productId').populate('productId', 'images').limit(500).lean()
+        finalListingIds = liveListings
+          .map((row) => String(row.externalListingId || '').replace(/^(ebay-)?item-/, ''))
+          .filter(Boolean)
+        imageUrl = pickHttpsImage(liveListings)
+      } else {
+        const aliasIds = finalListingIds.flatMap((id) => [id, `item-${id}`, `ebay-item-${id}`])
+        const matchedListings = await Listing.find({ shopId: shop._id, externalListingId: { $in: aliasIds } })
+          .populate('productId', 'images').lean()
+        imageUrl = pickHttpsImage(matchedListings)
+        if (!imageUrl) {
+          const fallbackListings = await Listing.find({ shopId: shop._id, status: 'live' })
+            .populate('productId', 'images').limit(20).lean()
+          imageUrl = pickHttpsImage(fallbackListings)
+        }
+      }
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.createPromotion(token, { name, description, percentageOff, listingIds, startDate, endDate, imageUrl, shop })
+      service.createPromotion(token, { name, description, percentageOff, listingIds: finalListingIds, startDate, endDate, imageUrl, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:promotions`)

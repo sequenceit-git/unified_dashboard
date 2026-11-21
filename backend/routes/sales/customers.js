@@ -29,8 +29,12 @@ router.get('/', async (req, res) => {
     let customers = await withOrderStats(await Customer.find(filter), marketplace)
     if (q) {
       customers = customers.filter((row) =>
-        [row.name, row.email, row.phone]
-          .some((value) => String(value || '').toLowerCase().includes(q)))
+        [
+          row.name,
+          row.email,
+          row.phone,
+          ...(row.identities || []).flatMap((i) => [i.username, i.externalBuyerId]),
+        ].some((value) => String(value || '').toLowerCase().includes(q)))
     }
     const sortValue = (row) => {
       const raw = row[sortKey]

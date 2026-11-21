@@ -7,6 +7,7 @@ const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
 const marketplaceManager = require('../../services/marketplace')
 const { canonicalMarketplace } = require('../../utils/marketplace')
+const events = require('../../services/events')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inventory'), limitToSection('inventory'))
@@ -132,10 +133,11 @@ router.post('/adjust', async (req, res) => {
 
       stockAfter = stockBefore + change
       if (stockAfter < 0) return res.status(400).json({ error: 'Insufficient variant stock' })
+      if ((Number(product.stock) || 0) + change < 0) return res.status(400).json({ error: 'Insufficient stock' })
 
       await Product.findOneAndUpdate(
         { _id: productId, 'variants.sku': variantSku },
-        { $inc: { 'variants.$.stock': change } },
+        { $inc: { 'variants.$.stock': change, stock: change } },
       )
     } else {
       stockBefore = product.stock
@@ -167,46 +169,22 @@ router.post('/adjust', async (req, res) => {
       reason, createdBy: req.user.id,
     })
 
-    // Update MongoDB Listing documents for this product
-    await Listing.updateMany(
-      { productId },
-      {
-        $set: {
-          stock: stockAfter,
-          ...(stockAfter > 0 ? { status: 'live' } : { status: 'out_of_stock' }),
-          lastSyncedAt: new Date(),
-        },
-      },
-    )
+    const updated = await Product.findById(productId)
 
-    // Synchronize adjusted stock to active and pending marketplace listings
+    // Synchronize adjusted stock to active/out_of_stock listings and relist ended eBay listings when restocked.
     let pushedCount = 0
     const warnings = []
     try {
-      const listings = await Listing.find({ productId, status: { $in: ['live', 'out_of_stock', 'pending'] } }).populate('shopId')
-      for (const item of listings) {
-        if (item.shopId) {
-          try {
-            await marketplaceManager.pushStock(item.shopId, {
-              sku: variantSku || product.sku,
-              quantity: stockAfter,
-              externalListingId: item.externalListingId,
-              productId,
-            })
-            pushedCount++
-          } catch (apiErr) {
-            console.warn(`Stock push failed for shop ${item.shopId.name}:`, apiErr.message)
-            warnings.push(`${item.shopId.name}: ${apiErr.message}`)
-          }
-        }
-      }
+      const syncResults = await marketplaceManager.pushProductChanges(updated, { quantity: updated.stock })
+      pushedCount = syncResults.filter((r) => r.ok).length
+      warnings.push(...syncResults.filter((r) => !r.ok).map((r) => `${r.shopName}: ${r.error}`))
     } catch (err) {
-      console.warn('Listing query failed during stock adjust:', err.message)
-      warnings.push(`Listing query error: ${err.message}`)
+      console.warn('Listing sync failed during stock adjust:', err.message)
+      warnings.push(`Listing sync error: ${err.message}`)
     }
 
-    const updated = await Product.findById(productId)
-    await require('../../services/notify').stockChangedOnShops(updated, { was: stockBefore, stock: stockAfter }).catch(() => {})
+    await require('../../services/notify').stockChangedOnShops(updated, { was: stockBefore, stock: updated.stock }).catch(() => {})
+    await events.publish({ type: 'sync', kind: 'listings', ok: true }).catch(() => {})
 
     res.status(201).json({ stockBefore, stockAfter, change, log, pushedToMarketplaces: pushedCount, warnings })
   } catch (err) {
@@ -227,7 +205,7 @@ router.post('/sync', async (req, res) => {
     for (const item of listings) {
       if (item.productId && item.shopId) {
         try {
-          await marketplaceManager.pushStock(item.shopId, {
+          const pushRes = await marketplaceManager.pushStock(item.shopId, {
             sku: item.productId.sku,
             quantity: item.productId.stock,
             externalListingId: item.externalListingId,
@@ -236,14 +214,20 @@ router.post('/sync', async (req, res) => {
           item.lastSyncedAt = new Date()
           // The shop now holds this number; its next listing sync must read it as "no change".
           item.stock = Math.max(0, Math.floor(Number(item.productId.stock) || 0))
+          item.status = (pushRes?.status === 'ended' || pushRes?.ended) ? 'ended' : (item.stock > 0 ? 'live' : 'out_of_stock')
+          if (pushRes?.marketplaceStatus) item.marketplaceStatus = pushRes.marketplaceStatus
+          item.syncError = null
           await item.save()
           successCount++
-        } catch {
+        } catch (err) {
+          item.syncError = err.message
+          await item.save().catch(() => {})
           failCount++
         }
       }
     }
 
+    if (successCount > 0) await events.publish({ type: 'sync', kind: 'listings', ok: true }).catch(() => {})
     res.json({ success: true, synced: successCount, failed: failCount })
   } catch (err) {
     res.status(500).json({ error: err.message })

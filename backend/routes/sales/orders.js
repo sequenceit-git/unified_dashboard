@@ -60,8 +60,9 @@ router.get('/', async (req, res) => {
         row.externalOrderId,
         row.shipping?.trackingNumber,
         row.buyer?.name,
+        row.buyer?.username,
         row.buyer?.email,
-        ...(row.items || []).map((item) => item.sku),
+        ...(row.items || []).flatMap((item) => [item.sku, item.title]),
       ].some((value) => String(value || '').toLowerCase().includes(q)))
       const pg = paging(req)
       const total = filtered.length
@@ -146,6 +147,9 @@ router.patch('/:id/status', async (req, res) => {
       { new: true, runValidators: true },
     )
     await notifyOrderChanged(doc)
+    if (req.body.status === 'cancelled' && existing.status !== 'cancelled') {
+      syncQueue.enqueue('listings', existing.shopId, { push: true }).catch(() => {})
+    }
     res.json(doc)
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -172,6 +176,10 @@ router.patch('/:id/shipping', async (req, res) => {
     let marketplacePush = { pushed: false }
     try {
       marketplacePush = await marketplaceManager.pushShipping(doc, { carrier, trackingNumber })
+      if (marketplacePush?.pushed) {
+        doc.shipping.trackingVerified = true
+        await doc.save()
+      }
     } catch (apiErr) {
       console.warn(`Shipping push to [${doc.marketplace}] failed:`, apiErr.message)
       marketplacePush = { pushed: false, error: apiErr.message }
@@ -253,6 +261,7 @@ router.post('/:id/cancel', async (req, res) => {
     order.status = 'cancelled'
     await order.save()
     await notifyOrderChanged(order)
+    syncQueue.enqueue('listings', order.shopId, { push: true }).catch(() => {})
 
     res.json({ success: true, order, marketplaceResult })
   } catch (err) {
@@ -272,6 +281,7 @@ router.post('/:id/refund', async (req, res) => {
     }
 
     const refundAmount = amount ? Number(amount) : order.totals?.total || 0
+    const prevRefunded = (order.returns || []).reduce((sum, r) => sum + (Number(r.refundAmount) || 0), 0)
 
     // Push refund to connected marketplace API
     let marketplaceResult = { success: true }
@@ -282,7 +292,9 @@ router.post('/:id/refund', async (req, res) => {
       return res.status(502).json({ error: `${order.marketplace} could not refund this order: ${apiErr.message}` })
     }
 
-    order.status = 'refunded'
+    if (!order.totals?.total || prevRefunded + refundAmount >= order.totals.total) {
+      order.status = 'refunded'
+    }
     order.returns.push({
       reason: reason || 'Buyer requested refund',
       status: 'received',

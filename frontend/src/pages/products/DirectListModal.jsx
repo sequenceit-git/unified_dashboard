@@ -178,6 +178,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     if (!draft.title.trim()) return update({ error: 'Add a title.' })
     if (draft.title.length > titleMax) return update({ error: `${shopLabel} titles can be at most ${titleMax} characters.` })
     if (!(Number(draft.price) > 0)) return update({ error: 'Set your selling price.' })
+    if (layout.canList && !(Number(stock) >= 1)) return update({ error: 'Set stock to at least 1 before listing.' })
     if (!draft.images.length) return update({ error: 'Add at least one image.' })
     if (packageRequired && !(Number(weight) > 0)) return update({ error: `${shopLabel} needs the package weight and size.` })
     if (layout.category === 'search' && layout.canList && !categoryId) return update({ error: `Pick a ${shopLabel} category.` })
@@ -360,7 +361,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input label="Your price ($) *" type="number" step="0.01" min="0.01" value={draft.price} onChange={set('price')} />
-          <Input label="Stock *" type="number" min="0" step="1" value={stock} onChange={(e) => update({ stock: e.target.value })} />
+          <Input label="Stock *" type="number" min="1" step="1" value={stock} onChange={(e) => update({ stock: e.target.value })} />
         </div>
         {draft.sourcePrice && (
           <p className="text-xs text-gray-500">The page sells it for ${Number(draft.sourcePrice).toFixed(2)}. That is saved as the base price.</p>

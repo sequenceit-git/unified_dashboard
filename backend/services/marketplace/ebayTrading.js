@@ -339,16 +339,29 @@ async function reviseListing(token, itemId, { title, description, price, quantit
   if (images && images.length) {
     compliantImages = await filterEbayCompliantImages(images)
   }
-  const parts = [
+  const normalizedQty = quantity != null ? Math.max(0, Math.floor(Number(quantity))) : null
+  const nonQtyParts = [
     `<ItemID>${escapeXml(itemId)}</ItemID>`,
     title ? `<Title>${escapeXml(String(title).slice(0, 80))}</Title>` : '',
     description ? `<Description>${cdata(description)}</Description>` : '',
     price != null ? `<StartPrice currencyID="USD">${Number(price).toFixed(2)}</StartPrice>` : '',
-    quantity != null ? `<Quantity>${Math.max(0, Math.floor(Number(quantity)))}</Quantity>` : '',
     compliantImages.length ? `<PictureDetails>${compliantImages.map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('')}</PictureDetails>` : '',
   ]
-  await call(token, 'ReviseFixedPriceItem', `<Item>${parts.join('')}</Item>`)
-  return { success: true }
+  const qtyPart = normalizedQty != null ? `<Quantity>${normalizedQty}</Quantity>` : ''
+  try {
+    await call(token, 'ReviseFixedPriceItem', `<Item>${nonQtyParts.join('')}${qtyPart}</Item>`)
+    return { success: true }
+  } catch (err) {
+    if (normalizedQty === 0 && /quantity|greater than 0|at least 1|out.?of.?stock/i.test(err.message || '')) {
+      const hasOtherChanges = Boolean(title || description || price != null || compliantImages.length)
+      if (hasOtherChanges) {
+        await call(token, 'ReviseFixedPriceItem', `<Item>${nonQtyParts.join('')}</Item>`)
+      }
+      await endListing(token, itemId, 'NotAvailable')
+      return { success: true, ended: true, status: 'ended', marketplaceStatus: 'Ended' }
+    }
+    throw err
+  }
 }
 
 /** Ends a live listing. Buyers stop seeing it. */
