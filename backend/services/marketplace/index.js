@@ -100,9 +100,20 @@ class UnifiedMarketplaceManager {
    */
   async publishListing(shop, product, options = {}) {
     const service = this.getService(shop.marketplace)
-    const images = this.publicImageUrls(options.images?.length ? options.images : product.images)
+    const rawImages = options.images?.length ? options.images : (product.images || [])
+    const images = shop.marketplace === 'tiktok_shop'
+      ? rawImages.map((url) => String(url || '').trim()).filter((url) => /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(url))
+      : this.publicImageUrls(rawImages)
+    const nextOptions = { ...options, images, shop }
+    if (shop.marketplace === 'ebay' && Array.isArray(options.variants) && options.variants.length > 0) {
+      nextOptions.variants = options.variants.map((v) => {
+        if (!v?.image) return v
+        const resolved = this.publicImageUrls([v.image])[0]
+        return resolved ? { ...v, image: resolved } : { ...v, image: undefined }
+      })
+    }
     try {
-      return await this.withShopToken(shop, (token) => service.createListing(token, product, { ...options, images, shop }))
+      return await this.withShopToken(shop, (token) => service.createListing(token, product, nextOptions))
     } catch (err) {
       if (err.notConnected) {
         throw new Error(`Shop "${shop.name}" is not connected. Connect it again from Settings.`)
@@ -905,12 +916,12 @@ class UnifiedMarketplaceManager {
   }
 
   /**
-   * Looks up categories via eBay Taxonomy API
+   * Looks up categories via marketplace taxonomy / recommendation API
    */
-  async getCategories(shop, query = 'General') {
+  async getCategories(shop, query = 'General', opts = {}) {
     const service = this.getService(shop.marketplace)
     if (typeof service.getCategories !== 'function') return []
-    return this.withShopToken(shop, (token) => service.getCategories(token, query, { shop }))
+    return this.withShopToken(shop, (token) => service.getCategories(token, query, { shop, ...opts }))
   }
 
   /**
@@ -1028,11 +1039,25 @@ class UnifiedMarketplaceManager {
     return this.withShopToken(shop, (token) => service.getItemAspects(token, categoryId, { shop }))
   }
 
-  /** Extra category requirements, such as TikTok certifications. */
+  /** Extra category requirements, such as TikTok certifications & size chart rules. */
   async getCategoryRules(shop, categoryId) {
     const service = this.getService(shop.marketplace)
     if (typeof service.getCategoryRules !== 'function') return []
     return this.withShopToken(shop, (token) => service.getCategoryRules(token, categoryId, { shop }))
+  }
+
+  /** Available brands for a shop/category (e.g., TikTok Shop brand picker). */
+  async getBrands(shop, opts = {}) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getBrands !== 'function') return []
+    return this.withShopToken(shop, (token) => service.getBrands(token, { shop, ...opts }))
+  }
+
+  /** Saved size chart templates (e.g., TikTok Shop size charts). */
+  async getSizeCharts(shop, opts = {}) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.getSizeCharts !== 'function') return []
+    return this.withShopToken(shop, (token) => service.getSizeCharts(token, { shop, ...opts }))
   }
 
   /**
@@ -1160,12 +1185,19 @@ class UnifiedMarketplaceManager {
         matchSkus: [cleanSku, rawSku, row.itemId, `EBAY-${row.itemId}`].filter(Boolean),
         externalListingId: row.itemId,
         title: source.title || row.title,
+        subtitle: detail?.subtitle,
         description: detail?.description,
         price,
         stock,
+        variants: detail?.variants,
         images: detail?.images,
         category: detail?.category,
         brand: detail?.brand,
+        mpn: detail?.mpn,
+        conditionDescription: detail?.conditionDescription,
+        dispatchTimeMax: detail?.dispatchTimeMax,
+        identifierCode: detail?.identifierCode,
+        bestOffer: detail?.bestOffer,
         attributes: detail?.specifics,
         listingStatus: 'live',
         marketplaceStatus: source.listingStatus || 'Active',
@@ -1440,12 +1472,18 @@ class UnifiedMarketplaceManager {
 
     const fromMarketplace = {
       title: item.title,
+      subtitle: item.subtitle,
       description: item.description,
       basePrice: item.price > 0 ? item.price : undefined,
+      listPrice: item.listPrice > 0 ? item.listPrice : undefined,
       stock: Number.isFinite(item.stock) ? item.stock : undefined,
       images: item.images?.length ? item.images : undefined,
       category: item.category,
       brand: item.brand,
+      brandId: item.brandId,
+      mpn: item.mpn,
+      conditionDescription: item.conditionDescription,
+      dispatchTimeMax: item.dispatchTimeMax,
     }
     const created = !product
     if (created) {
@@ -1455,6 +1493,9 @@ class UnifiedMarketplaceManager {
         title: item.title || `Item ${item.externalListingId}`,
         weight: item.weight || 1,
         dimensions: item.dimensions || undefined,
+        ...(item.identifierCode?.code ? { identifierCode: item.identifierCode } : {}),
+        ...(item.bestOffer?.enabled ? { bestOffer: item.bestOffer } : {}),
+        ...(item.sizeChart && (item.sizeChart.templateId || item.sizeChart.image) ? { sizeChart: item.sizeChart } : {}),
         attributes: item.attributes || undefined,
         ...(Array.isArray(item.variants) ? { variants: item.variants } : {}),
         status: item.listingStatus === 'live' ? 'active' : 'draft',
@@ -1467,7 +1508,10 @@ class UnifiedMarketplaceManager {
         if (field === 'stock') continue
         if (value !== undefined && value !== '') product[field] = value
       }
-      if (Array.isArray(item.variants) && (item.variants.length > 0 || (shop.marketplace === 'tiktok_shop' && product.variants?.length))) {
+      if (item.identifierCode?.code) product.identifierCode = item.identifierCode
+      if (item.bestOffer?.enabled) product.bestOffer = item.bestOffer
+      if (item.sizeChart && (item.sizeChart.templateId || item.sizeChart.image)) product.sizeChart = item.sizeChart
+      if (Array.isArray(item.variants) && (item.variants.length > 0 || (['tiktok_shop', 'ebay'].includes(shop.marketplace) && product.variants?.length))) {
         product.variants = item.variants
       }
       if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
@@ -1635,6 +1679,7 @@ class UnifiedMarketplaceManager {
         doc.auth.accessTokenEnc = next.access_token
         if (next.refresh_token) doc.auth.refreshTokenEnc = next.refresh_token
         doc.auth.expiresAt = this.tokenExpiry(next.expires_in)
+        if (Array.isArray(next.grantedScopes)) doc.grantedScopes = next.grantedScopes
         await doc.save()
       } catch (err) {
         require('../notify').tokenFailed(doc, err.message).catch(() => {})

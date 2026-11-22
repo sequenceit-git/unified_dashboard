@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card'
 import { ErrorState, Spinner } from '../../components/ui/Feedback'
 import { useApi } from '../../hooks/useApi'
 import { useLiveEvents } from '../../hooks/useLiveEvents'
+import { useShopProfiles } from '../../hooks/useShopProfiles'
 import { api } from '../../lib/api'
 import { SHOP_SECTIONS } from '../../lib/shops'
 import { marketplaceLabel } from '../../lib/marketplaces'
@@ -32,16 +33,20 @@ export default function SettingsPage() {
   const configsRes = useApi(token && isAdmin ? '/api/shops/configs' : null)
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = shopsRes.data || []
+  const { profiles, refresh: refreshProfiles, reload: reloadProfiles } = useShopProfiles()
   const [searchParams, setSearchParams] = useSearchParams()
   const [connectingId, setConnectingId] = useState('')
   const [syncingId, setSyncingId] = useState('')
   const [liveId, setLiveId] = useState('')
+  const [checkingAccessId, setCheckingAccessId] = useState('')
   const [message, setMessage] = useState('')
   const [messageError, setMessageError] = useState(false)
 
   // A sync finished on the worker (or the first sync after a connect): show the new "Last sync".
   useLiveEvents((event) => {
-    if (event.type === 'sync' && ['full', 'listings', 'orders', 'live'].includes(event.kind)) shopsRes.refetch()
+    if (event.type !== 'sync') return
+    if (event.kind === 'access') reloadProfiles().catch(() => {})
+    if (['full', 'listings', 'orders', 'live'].includes(event.kind)) shopsRes.refetch()
   })
 
   const connectedMarketplace = searchParams.get('connected')
@@ -52,6 +57,7 @@ export default function SettingsPage() {
       setMessage(`${marketplaceLabel(connectedMarketplace)} was connected.`)
       setMessageError(false)
       shopsRes.refetch()
+      refreshProfiles().catch(() => {})
       setSearchParams({}, { replace: true })
     } else if (oauthError) {
       setMessage(oauthError)
@@ -125,6 +131,29 @@ export default function SettingsPage() {
     }
   }
 
+  const handleCheckAccess = async (shop) => {
+    setCheckingAccessId(shop._id)
+    setMessage('')
+    try {
+      const list = await refreshProfiles()
+      const profile = list?.find((item) => item.marketplace === shop.marketplace)
+      const locked = (profile?.sections || []).filter((section) => section.available === false)
+      if (locked.length) {
+        setMessage(`${shop.name}: still locked — ${locked.map((section) => `${section.label} (${section.reason})`).join(', ')}. Reconnect the shop to grant newly enabled scopes.`)
+        setMessageError(true)
+      } else {
+        setMessage(`${shop.name}: all sections unlocked.`)
+        setMessageError(false)
+      }
+      shopsRes.refetch()
+    } catch (err) {
+      setMessage(err.message)
+      setMessageError(true)
+    } finally {
+      setCheckingAccessId('')
+    }
+  }
+
   if (shopsRes.loading || (isAdmin && configsRes.loading)) return <Spinner />
   if (shopsRes.error) return <ErrorState message={shopsRes.error} onRetry={shopsRes.refetch} />
 
@@ -156,6 +185,8 @@ export default function SettingsPage() {
           const configured = Boolean(configsRes.data?.[market.id]?.configured)
           const environment = configsRes.data?.[market.id]?.environment
           const connected = shop?.status === 'connected'
+          const profile = profiles?.find((item) => item.marketplace === market.id)
+          const lockedSections = connected ? (profile?.sections || []).filter((section) => section.available === false) : []
           return (
             <Card key={market.id}>
               <div className="flex items-start justify-between gap-3">
@@ -185,6 +216,12 @@ export default function SettingsPage() {
                     Live updates off{shop.liveUpdates?.error ? `: ${shop.liveUpdates.error}` : '.'} New sales and messages arrive with the regular sync.
                   </p>
                 )
+              )}
+
+              {lockedSections.length > 0 && (
+                <p className="mt-2 text-xs text-amber-700">
+                  Locked sections: {lockedSections.map((section) => `${section.label} (${section.reason || 'scope needed'})`).join(', ')}. Enable these scopes in Partner Center, then click Reconnect.
+                </p>
               )}
 
               {shop?.status === 'error' && (
@@ -217,6 +254,9 @@ export default function SettingsPage() {
                       </Button>
                       <Button variant="secondary" onClick={() => handleSync(shop)} disabled={syncingId === shop._id}>
                         {syncingId === shop._id ? 'Syncing…' : 'Sync shop'}
+                      </Button>
+                      <Button variant="secondary" onClick={() => handleCheckAccess(shop)} disabled={checkingAccessId === shop._id}>
+                        {checkingAccessId === shop._id ? 'Checking…' : 'Check access'}
                       </Button>
                       {['ebay', 'tiktok_shop'].includes(shop.marketplace) && !shop.liveUpdates?.enabled && (
                         <Button variant="secondary" onClick={() => handleLiveUpdates(shop)} disabled={liveId === shop._id}>

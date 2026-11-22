@@ -6,7 +6,31 @@ import { Input, Select } from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import AttributeField, { matchAspects } from '../../components/listing/AttributeField'
+import BrandPicker from '../../components/listing/BrandPicker'
 import CertificationFields, { certificationNeeded, certificationPayload } from '../../components/listing/CertificationFields'
+import IdentifierCodeField from '../../components/listing/IdentifierCodeField'
+import EbayIdentifierField from '../../components/listing/EbayIdentifierField'
+import EbayBestOfferField from '../../components/listing/EbayBestOfferField'
+import SizeChartField from '../../components/listing/SizeChartField'
+import VariantEditor from '../../components/listing/VariantEditor'
+import {
+  SAVE_MODES,
+  aspectToText,
+  hasAspectValue,
+  isAttributeRequired,
+  normalizeCategoryRules,
+  validateIdentifierCode,
+  validateVariantsForTikTok,
+} from '../../lib/tiktokListing'
+import {
+  DISPATCH_TIMES,
+  isNewCondition,
+  normalizeEbayCategoryRules,
+  resolveEbayCondition,
+  validateBestOffer,
+  validateEbayIdentifierCode,
+  validateVariantsForEbay,
+} from '../../lib/ebayListing'
 import { listingFormFor, useShopProfile } from '../../hooks/useShopProfiles'
 import { clearDirectListing, startDirectFetch, useDirectListing } from '../../hooks/useDirectListing'
 import { useApi } from '../../hooks/useApi'
@@ -60,17 +84,25 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const shop = (shopsRes.data || []).find((item) => item.marketplace === marketplace && item.status === 'connected')
   const layout = listingFormFor(marketplace, profile, shop?.listing || {})
   const titleMax = layout.titleMax
+  const subtitleMax = layout.subtitleMax || 55
   const maxImages = layout.maxImages
   const packageRequired = layout.package === 'required'
+  const isTikTok = marketplace === 'tiktok_shop'
+  const isEbay = marketplace === 'ebay'
 
   const { session, update } = useDirectListing(marketplace)
   const {
-    url, useAi, fetching, draft, stock, weight, length, width, height,
-    schema, aspects, extras, categories, categoryId, categoryState, fillingAttributes,
-    certificationRules, certifications, error, saving,
+    url, useAi, fetching, draft, stock, listPrice, sellerSku, brandId,
+    subtitle, conditionDescription, mpn, dispatchTimeMax, bestOffer,
+    identifierCode, variants, sizeChart, saveMode, weight, length, width, height,
+    schema, aspects, extras, categories, categoryId, categorySearch, categoryState,
+    fillingAttributes, categoryRules, ebayRules, certifications, error, saving,
   } = session
 
-  const categoryQuery = useDebounced((draft?.title || '').trim().slice(0, 80), 600)
+  const rawCategoryQuery = ((isTikTok || isEbay) && String(categorySearch || '').trim())
+    ? String(categorySearch).trim()
+    : (draft?.title || '').trim().slice(0, 80)
+  const categoryQuery = useDebounced(rawCategoryQuery, 600)
 
   const fetchDetails = async (e) => {
     e.preventDefault()
@@ -79,51 +111,60 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   }
 
   useEffect(() => {
-    if (!draft || !shop?._id || !['search', 'auto'].includes(layout.category) || !categoryQuery) return undefined
+    if (!draft || !shop?._id || !['search', 'auto', 'auto-search'].includes(layout.category) || !categoryQuery) return undefined
     let cancelled = false
-    update({ categoryState: { loading: true, error: '' } })
-    api.get(`/api/shops/${shop._id}/categories?q=${encodeURIComponent(categoryQuery)}`, token)
+    const mode = isTikTok && String(categorySearch || '').trim() ? 'search' : 'auto'
+    const queryUrl = `/api/shops/${shop._id}/categories?q=${encodeURIComponent(categoryQuery)}${isTikTok ? `&mode=${mode}` : ''}`
+    api.get(queryUrl, token)
       .then((list) => {
         if (cancelled) return
         update((current) => ({
           categories: list || [],
           categoryId: current.categoryId && list.some((item) => item.categoryId === current.categoryId) ? current.categoryId : list[0]?.categoryId || '',
-          categoryState: { loading: false, error: list?.length ? '' : 'No category matches this title. Try a more specific title.' },
+          categoryState: { loading: false, error: list?.length ? '' : 'No category matches this title. Try a more specific title or keyword.' },
         }))
       })
       .catch((err) => !cancelled && update({ categoryState: { loading: false, error: err.message } }))
     return () => { cancelled = true }
-  }, [draft, shop?._id, layout.category, categoryQuery, token, update])
+  }, [draft, shop?._id, layout.category, categoryQuery, token, update, isTikTok, categorySearch])
+
+  const draftSourceUrl = draft?.sourceUrl
+  const draftTitle = draft?.title
+  const draftDesc = draft?.description
+  const draftBrand = draft?.brand
+  const draftAttrs = draft?.attributes
 
   useEffect(() => {
-    if (!draft || !shop?._id || !layout.specifics || !categoryId) {
-      if (draft && !categoryId) update({ schema: [] })
-      return undefined
-    }
+    if (!draftSourceUrl || !shop?._id || !layout.specifics || !categoryId) return undefined
     let cancelled = false
-    const known = { ...draft.attributes, ...(draft.brand ? { Brand: draft.brand } : {}) }
+    const known = { ...draftAttrs, ...(draftBrand ? { Brand: draftBrand } : {}) }
     api.get(`/api/shops/${shop._id}/categories/${categoryId}/attributes`, token)
       .then(async (list) => {
         if (cancelled) return
-        const matched = matchAspects(list, known)
-        const used = new Set((list || []).map((attr) => String(attr.name).toLowerCase()))
+        const all = list || []
+        const productList = all.filter((attr) => attr.type !== 'sales')
+        const matched = matchAspects(productList, known)
+        const used = new Set(productList.map((attr) => String(attr.name).toLowerCase()))
         update((current) => ({
-          schema: list || [],
-          aspects: { ...matched, ...Object.fromEntries(Object.entries(current.aspects || {}).filter(([, value]) => asText(value))) },
-          extras: Object.entries(draft.attributes)
+          schema: all,
+          aspects: {
+            ...matched,
+            ...Object.fromEntries(Object.entries(current.aspects || {}).filter(([, value]) => hasAspectValue(value))),
+          },
+          extras: Object.entries(draftAttrs || {})
             .filter(([name]) => !used.has(name.toLowerCase()))
             .map(([name, value]) => ({ name, value })),
         }))
-        const missing = (list || [])
-          .filter((attr) => (attr.required || attr.recommended || marketplace === 'tiktok_shop') && !asText(matched[attr.id]))
+        const missing = productList
+          .filter((attr) => (attr.required || attr.recommended || marketplace === 'tiktok_shop') && !hasAspectValue(matched[attr.id]))
           .slice(0, 25)
         if (!useAi || !missing.length) return
         update({ fillingAttributes: true })
         try {
           const filled = await api.post('/api/products/fill-attributes', {
-            title: draft.title,
-            description: draft.description,
-            brand: draft.brand,
+            title: draftTitle,
+            description: draftDesc,
+            brand: draftBrand,
             attributes: known,
             schema: missing.map((attr) => ({
               id: attr.id,
@@ -136,7 +177,10 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           if (cancelled) return
           update((current) => ({
             fillingAttributes: false,
-            aspects: { ...filled, ...Object.fromEntries(Object.entries(current.aspects || {}).filter(([, value]) => asText(value))) },
+            aspects: {
+              ...filled,
+              ...Object.fromEntries(Object.entries(current.aspects || {}).filter(([, value]) => hasAspectValue(value))),
+            },
           }))
         } catch {
           if (!cancelled) update({ fillingAttributes: false })
@@ -146,17 +190,31 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
         if (!cancelled) update({ schema: [], fillingAttributes: false })
       })
     return () => { cancelled = true }
-  }, [draft?.sourceUrl, shop?._id, layout.specifics, categoryId, token, update, useAi, marketplace])
+  }, [draftSourceUrl, draftTitle, draftDesc, draftBrand, draftAttrs, shop?._id, layout.specifics, categoryId, token, update, useAi, marketplace])
 
   useEffect(() => {
-    if (marketplace !== 'tiktok_shop' || !shop?._id || !categoryId) {
-      update({ certificationRules: [] })
-      return undefined
-    }
+    if (!['tiktok_shop', 'ebay'].includes(marketplace) || !shop?._id || !categoryId) return undefined
     let cancelled = false
     api.get(`/api/shops/${shop._id}/categories/${categoryId}/rules`, token)
-      .then((rules) => { if (!cancelled) update({ certificationRules: rules || [] }) })
-      .catch(() => { if (!cancelled) update({ certificationRules: [] }) })
+      .then((rules) => {
+        if (cancelled) return
+        if (marketplace === 'tiktok_shop') {
+          update({ categoryRules: normalizeCategoryRules(rules) })
+        } else {
+          const normalized = normalizeEbayCategoryRules(rules)
+          update((cur) => ({
+            ebayRules: normalized,
+            ...(normalized.conditions.length && cur.draft
+              ? { draft: { ...cur.draft, condition: resolveEbayCondition(cur.draft.condition, normalized.conditions) } }
+              : {}),
+          }))
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        if (marketplace === 'tiktok_shop') update({ categoryRules: normalizeCategoryRules([]) })
+        else update({ ebayRules: normalizeEbayCategoryRules(null) })
+      })
     return () => { cancelled = true }
   }, [marketplace, shop?._id, categoryId, token, update])
 
@@ -165,40 +223,148 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const setExtra = (index, field, value) => update((current) => ({ extras: current.extras.map((row, i) => (i === index ? { ...row, [field]: value } : row)) }))
   const setDraftImages = (images) => update((current) => ({ draft: { ...current.draft, images } }))
 
-  const required = schema.filter((attr) => attr.required)
-  const optional = schema.filter((attr) => !attr.required && (attr.recommended || marketplace === 'tiktok_shop'))
+  const rules = normalizeCategoryRules(categoryRules)
+  const parsedEbayRules = normalizeEbayCategoryRules(ebayRules)
+  const activeVariants = isTikTok
+    ? (variants || [])
+    : (isEbay && parsedEbayRules.variationsEnabled !== false ? (variants || []) : [])
+  const activeVarNames = new Set(
+    activeVariants.flatMap((v) => Object.keys(v.options || {}).map((k) => k.trim().toLowerCase())).filter(Boolean),
+  )
+
+  const baseProductSchema = schema.filter((attr) => attr.type !== 'sales')
+  const productSchema = isEbay
+    ? baseProductSchema.filter((attr) => !activeVarNames.has(String(attr.name).trim().toLowerCase()))
+    : baseProductSchema
+  const salesSchema = isTikTok
+    ? schema.filter((attr) => attr.type === 'sales')
+    : schema.filter((attr) => attr.variationEnabled)
+
+  const required = productSchema.filter((attr) => isAttributeRequired(attr, aspects, productSchema))
+  const optional = productSchema.filter((attr) => !isAttributeRequired(attr, aspects, productSchema) && (attr.recommended || isTikTok))
   const selectedCategory = categories.find((item) => item.categoryId === categoryId)
 
+  const positiveVariantPrices = activeVariants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
+  const summaryPrice = positiveVariantPrices.length ? Math.min(...positiveVariantPrices) : 0
+  const summaryStock = activeVariants.reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v.stock) || 0)), 0)
+
   const namedValues = () => ({
-    ...Object.fromEntries(schema.map((attr) => [attr.name, aspects[attr.id]]).filter(([, value]) => asText(value))),
+    ...Object.fromEntries(productSchema.map((attr) => [attr.name, aspectToText(aspects[attr.id])]).filter(([, value]) => value)),
     ...Object.fromEntries(extras.map((row) => [row.name.trim(), asText(row.value)]).filter(([name, value]) => name && value)),
   })
 
   const create = async () => {
     if (!draft.title.trim()) return update({ error: 'Add a title.' })
     if (draft.title.length > titleMax) return update({ error: `${shopLabel} titles can be at most ${titleMax} characters.` })
-    if (!(Number(draft.price) > 0)) return update({ error: 'Set your selling price.' })
-    if (layout.canList && !(Number(stock) >= 1)) return update({ error: 'Set stock to at least 1 before listing.' })
+    if (isEbay && (subtitle || '').length > subtitleMax) {
+      return update({ error: `eBay subtitles can be at most ${subtitleMax} characters.` })
+    }
+
+    if (isTikTok && activeVariants.length > 0) {
+      const varErr = validateVariantsForTikTok(activeVariants, { requireStock: true })
+      if (varErr) return update({ error: varErr })
+    } else if (isEbay && activeVariants.length > 0) {
+      const varErr = validateVariantsForEbay(activeVariants, { requireStock: true })
+      if (varErr) return update({ error: varErr })
+    } else {
+      const numPrice = Number(draft.price)
+      if (!(numPrice > 0) || (isTikTok && numPrice > 7600)) {
+        return update({ error: isTikTok ? 'Set a selling price between $0.01 and $7,600.00.' : 'Set your selling price.' })
+      }
+      if (layout.canList && (!(Number(stock) >= 1) || (isTikTok && Number(stock) > 99999))) {
+        return update({ error: isTikTok ? 'Set stock between 1 and 99,999.' : 'Set stock to at least 1 before listing.' })
+      }
+      if (isTikTok && listPrice !== '' && listPrice != null && Number(listPrice) > 0) {
+        if (Number(listPrice) < numPrice || Number(listPrice) > 7600) {
+          return update({ error: `MSRP / list price must be between $${numPrice.toFixed(2)} and $7,600.00.` })
+        }
+      }
+      if (isTikTok) {
+        const idErr = validateIdentifierCode(identifierCode)
+        if (idErr) return update({ error: idErr })
+      }
+      if (isEbay) {
+        if (parsedEbayRules.upcEnabled === 'Required' && !String(identifierCode?.code || '').trim()) {
+          return update({ error: 'This eBay category requires a product identifier (or click "Does not apply").' })
+        }
+        const idErr = validateEbayIdentifierCode(identifierCode)
+        if (idErr) return update({ error: idErr })
+      }
+    }
+
+    if (isEbay && parsedEbayRules.bestOfferEnabled !== false) {
+      const boErr = validateBestOffer(bestOffer, activeVariants.length > 0 ? summaryPrice : Number(draft.price))
+      if (boErr) return update({ error: boErr })
+    }
+
     if (!draft.images.length) return update({ error: 'Add at least one image.' })
     if (packageRequired && !(Number(weight) > 0)) return update({ error: `${shopLabel} needs the package weight and size.` })
     if (layout.category === 'search' && layout.canList && !categoryId) return update({ error: `Pick a ${shopLabel} category.` })
+
     const named = namedValues()
-    const missing = required.filter((attr) => !asText(aspects[attr.id]))
-    if (missing.length) return update({ error: `Fill in: ${missing.map((attr) => attr.name).join(', ')}.` })
-    const missingCerts = (certificationRules || []).filter((rule) => certificationNeeded(rule, aspects, schema) && !certifications?.[rule.id]?.file)
-    if (missingCerts.length) return update({ error: `Upload: ${missingCerts.map((rule) => rule.name).join(', ')}.` })
+    const isDraftMode = isTikTok && saveMode === 'AS_DRAFT'
+    if (!isDraftMode) {
+      const missing = required.filter((attr) => !hasAspectValue(aspects[attr.id]))
+      if (missing.length) return update({ error: `Fill in: ${missing.map((attr) => attr.name).join(', ')}.` })
+      const missingCerts = rules.certifications.filter((rule) => certificationNeeded(rule, aspects, productSchema) && !certifications?.[rule.id]?.file)
+      if (missingCerts.length) return update({ error: `Upload: ${missingCerts.map((rule) => rule.name).join(', ')}.` })
+      if (isTikTok && rules.sizeChart?.required && !sizeChart?.templateId && !sizeChart?.image) {
+        return update({ error: 'TikTok Shop requires a size chart for this category.' })
+      }
+    }
     if (layout.canList && !shop?._id) return update({ error: `Connect ${shopLabel} in Settings first.` })
+
     update({ saving: true, error: '' })
     try {
+      const normalizedVariants = activeVariants.length > 0
+        ? activeVariants.map((v) => ({
+            ...v,
+            price: Number(v.price),
+            ...(v.listPrice !== '' && v.listPrice != null && Number(v.listPrice) > 0 ? { listPrice: Number(v.listPrice) } : {}),
+            stock: Math.max(1, Math.floor(Number(v.stock) || 1)),
+          }))
+        : undefined
+      const cleanIdCode = !normalizedVariants && String(identifierCode?.code || '').trim()
+        ? { type: String(identifierCode.type || '').toUpperCase(), code: String(identifierCode.code).trim() }
+        : undefined
+      const cleanBestOffer = isEbay
+        ? (bestOffer?.enabled
+            ? {
+                enabled: true,
+                ...(bestOffer.autoAcceptPrice !== '' && bestOffer.autoAcceptPrice != null
+                  ? { autoAcceptPrice: Number(bestOffer.autoAcceptPrice) }
+                  : {}),
+                ...(bestOffer.minOfferPrice !== '' && bestOffer.minOfferPrice != null
+                  ? { minOfferPrice: Number(bestOffer.minOfferPrice) }
+                  : {}),
+              }
+            : { enabled: false })
+        : undefined
+      const finalPrice = normalizedVariants ? summaryPrice : Number(draft.price)
+      const finalStock = normalizedVariants ? summaryStock : Math.max(0, Math.floor(Number(stock) || 0))
+
       const product = await api.post('/api/products', {
+        ...(sellerSku?.trim() && !normalizedVariants ? { sku: sellerSku.trim() } : {}),
         title: draft.title.trim(),
+        ...(isEbay ? {
+          subtitle: String(subtitle || '').trim().slice(0, 55),
+          conditionDescription: isNewCondition(draft.condition) ? '' : String(conditionDescription || '').trim().slice(0, 1000),
+          mpn: String(mpn || '').trim(),
+          ...(dispatchTimeMax !== '' ? { dispatchTimeMax: Number(dispatchTimeMax) } : {}),
+          bestOffer: cleanBestOffer,
+        } : {}),
         description: draft.description,
         brand: draft.brand.trim() || named.Brand || 'Unbranded',
+        ...(isTikTok && brandId ? { brandId } : {}),
         category: selectedCategory?.path || draft.category,
-        basePrice: Number(draft.price),
+        basePrice: finalPrice,
+        ...(isTikTok && !normalizedVariants && listPrice !== '' && Number(listPrice) > 0 ? { listPrice: Number(listPrice) } : {}),
         costPrice: draft.sourcePrice || null,
-        stock: Math.max(0, Math.floor(Number(stock) || 0)),
+        stock: finalStock,
         images: draft.images.slice(0, maxImages),
+        ...(normalizedVariants ? { variants: normalizedVariants } : {}),
+        ...(cleanIdCode ? { identifierCode: cleanIdCode } : {}),
+        ...(isTikTok && (sizeChart?.templateId || sizeChart?.image) ? { sizeChart } : {}),
         ...(layout.condition ? { condition: draft.condition || 'NEW' } : {}),
         ...(layout.package !== 'hidden' ? {
           weight: Number(weight) || 1,
@@ -215,10 +381,28 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
       }, token)
 
       if (layout.canList && shop?._id) {
+        const aspectEntries = [
+          ...productSchema
+            .map((attr) => {
+              const val = aspects[attr.id]
+              if (Array.isArray(val)) return [attr.id, val.map((v) => String(v || '').trim()).filter(Boolean)]
+              return [attr.id, String(val || '').trim()]
+            })
+            .filter(([, val]) => (Array.isArray(val) ? val.length > 0 : Boolean(val))),
+          ...extras
+            .filter((row) => (
+              row.name.trim()
+              && asText(row.value)
+              && !productSchema.some((attr) => String(attr.name).toLowerCase() === row.name.trim().toLowerCase())
+              && (!isEbay || !activeVarNames.has(row.name.trim().toLowerCase()))
+            ))
+            .map((row) => [row.name.trim(), asText(row.value)]),
+        ]
+
         await api.post(`/api/products/${product._id}/list`, {
           shopId: shop._id,
-          price: Number(draft.price),
-          stock: Math.max(1, Math.floor(Number(stock) || 1)),
+          price: finalPrice,
+          stock: normalizedVariants ? summaryStock : Math.max(1, Math.floor(Number(stock) || 1)),
           title: draft.title.trim(),
           description: draft.description,
           images: draft.images.slice(0, maxImages),
@@ -226,15 +410,32 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
             weight: Number(weight) || 1,
             dimensions: { length: Number(length) || 10, width: Number(width) || 10, height: Number(height) || 5, unit: 'in' },
           } : {}),
-          ...(layout.condition ? { condition: draft.condition || 'NEW', brand: draft.brand.trim() || named.Brand || 'Unbranded' } : {}),
+          ...(isEbay ? {
+            subtitle: String(subtitle || '').trim().slice(0, 55),
+            condition: draft.condition || 'NEW',
+            conditionEnabled: parsedEbayRules.conditionEnabled,
+            conditionDescription: isNewCondition(draft.condition) ? '' : String(conditionDescription || '').trim().slice(0, 1000),
+            brand: draft.brand.trim() || named.Brand || 'Unbranded',
+            ...(mpn?.trim() ? { mpn: mpn.trim() } : {}),
+            ...(sellerSku?.trim() ? { sellerSku: sellerSku.trim() } : {}),
+            ...(cleanIdCode ? { identifierCode: cleanIdCode } : {}),
+            ...(normalizedVariants ? { variants: normalizedVariants } : {}),
+            ...(dispatchTimeMax !== '' ? { dispatchTimeMax: Number(dispatchTimeMax) } : {}),
+            bestOffer: cleanBestOffer,
+          } : {}),
+          ...(isTikTok ? {
+            brand: draft.brand.trim() || named.Brand || 'Unbranded',
+            ...(brandId ? { brandId } : {}),
+            ...(listPrice !== '' && Number(listPrice) > 0 && !normalizedVariants ? { listPrice: Number(listPrice) } : {}),
+            ...(sellerSku?.trim() ? { sellerSku: sellerSku.trim() } : {}),
+            ...(cleanIdCode ? { identifierCode: cleanIdCode } : {}),
+            ...(normalizedVariants ? { variants: normalizedVariants } : {}),
+            ...(sizeChart?.templateId || sizeChart?.image ? { sizeChart } : {}),
+            saveMode: saveMode || 'LISTING',
+          } : {}),
           ...(categoryId ? { categoryId } : {}),
-          certifications: certificationPayload(certificationRules, aspects, schema, certifications),
-          aspects: Object.fromEntries([
-            ...schema.map((attr) => [attr.id, aspects[attr.id]]).filter(([, value]) => asText(value)),
-            ...extras
-              .filter((row) => row.name.trim() && asText(row.value) && !schema.some((attr) => String(attr.name).toLowerCase() === row.name.trim().toLowerCase()))
-              .map((row) => [row.name.trim(), asText(row.value)]),
-          ]),
+          certifications: certificationPayload(rules.certifications, aspects, productSchema, certifications),
+          aspects: Object.fromEntries(aspectEntries),
         }, token)
         clearDirectListing(marketplace)
         onCreated(product, { listed: true })
@@ -250,16 +451,71 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const categoryField = (
     <>
       {layout.category === 'search' ? (
-        <Select
-          label={`${shopLabel} category *`}
-          value={categoryId}
-          onChange={(e) => update({ categoryId: e.target.value })}
-          options={
-            categories.length
-              ? categories.map((item) => ({ value: item.categoryId, label: item.path || item.categoryName }))
-              : [{ value: '', label: categoryState.loading ? 'Finding categories from the title…' : 'No category yet' }]
-          }
-        />
+        isEbay ? (
+          <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Input
+                label="Search eBay categories (optional)"
+                value={categorySearch || ''}
+                onChange={(e) => update({ categorySearch: e.target.value })}
+                placeholder="Auto-suggested from title; search to override…"
+              />
+              <Select
+                label={`${shopLabel} category *`}
+                value={categoryId}
+                onChange={(e) => update({ categoryId: e.target.value })}
+                options={
+                  categories.length
+                    ? categories.map((item) => ({ value: item.categoryId, label: item.path || item.categoryName }))
+                    : [{ value: '', label: categoryState.loading ? 'Finding categories…' : 'No category yet' }]
+                }
+              />
+            </div>
+            {selectedCategory && (
+              <p className="text-[11px] text-gray-600">Category #{selectedCategory.categoryId}: {selectedCategory.path}</p>
+            )}
+          </div>
+        ) : (
+          <Select
+            label={`${shopLabel} category *`}
+            value={categoryId}
+            onChange={(e) => update({ categoryId: e.target.value })}
+            options={
+              categories.length
+                ? categories.map((item) => ({ value: item.categoryId, label: item.path || item.categoryName }))
+                : [{ value: '', label: categoryState.loading ? 'Finding categories from the title…' : 'No category yet' }]
+            }
+          />
+        )
+      ) : layout.category === 'auto-search' ? (
+        <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Input
+              label="Search TikTok categories (optional)"
+              value={categorySearch || ''}
+              onChange={(e) => update({ categorySearch: e.target.value })}
+              placeholder="Auto-picked from title; search to override…"
+            />
+            <Select
+              label={`${shopLabel} category *`}
+              value={categoryId}
+              onChange={(e) => update({ categoryId: e.target.value })}
+              options={
+                categories.length
+                  ? categories.map((item) => ({
+                      value: item.categoryId,
+                      label: `${item.recommended ? 'Recommended: ' : ''}${item.path || item.categoryName}`,
+                    }))
+                  : [{ value: '', label: categoryState.loading ? 'Finding categories…' : 'No category yet' }]
+              }
+            />
+          </div>
+          {selectedCategory && (
+            <p className="text-[11px] text-gray-600">
+              Leaf ID {selectedCategory.categoryId}: {selectedCategory.path}
+            </p>
+          )}
+        </div>
       ) : layout.category === 'auto' ? (
         <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
           <span className="font-semibold">Category: </span>
@@ -296,17 +552,23 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
       {required.length > 0 && (
         <div className="grid grid-cols-1 gap-2">
           {required.map((attr) => (
-            <AttributeField key={attr.id} attr={attr} value={aspects[attr.id] || ''} onChange={(value) => setAspect(attr.id, value)} />
+            <AttributeField
+              key={attr.id}
+              attr={attr}
+              requiredOverride
+              value={aspects[attr.id] || ''}
+              onChange={(value) => setAspect(attr.id, value)}
+            />
           ))}
         </div>
       )}
       {optional.length > 0 && (
         <>
           {fillingAttributes && <p className="text-xs text-gray-500">Filling {layout.specifics.label.toLowerCase()} with GPT-5 mini…</p>}
-          <details open={optional.some((attr) => asText(aspects[attr.id])) || fillingAttributes}>
-            <summary className="cursor-pointer text-xs font-semibold text-gray-700">More {layout.specifics.label.toLowerCase()} buyers filter by</summary>
+          <details open={optional.some((attr) => hasAspectValue(aspects[attr.id])) || fillingAttributes}>
+            <summary className="cursor-pointer text-xs font-semibold text-gray-700">More {layout.specifics.label.toLowerCase()} buyers filter by ({optional.length})</summary>
             <div className="mt-2 grid grid-cols-1 gap-2">
-              {optional.slice(0, 20).map((attr) => (
+              {optional.slice(0, 30).map((attr) => (
                 <AttributeField key={attr.id} attr={attr} value={aspects[attr.id] || ''} onChange={(value) => setAspect(attr.id, value)} />
               ))}
             </div>
@@ -314,9 +576,9 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
         </>
       )}
       <CertificationFields
-        rules={certificationRules}
+        rules={rules.certifications}
         aspects={aspects}
-        schema={schema}
+        schema={productSchema}
         files={certifications}
         onChange={(id, value) => update((current) => ({ certifications: { ...current.certifications, [id]: value } }))}
       />
@@ -334,7 +596,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           </div>
         </div>
       )}
-      {!schema.length && extras.length === 0 && (
+      {!productSchema.length && extras.length === 0 && (
         <p className="text-xs text-gray-500">
           {categoryState.loading ? `Loading ${layout.specifics.label.toLowerCase()} for this ${shopLabel} category…` : `None found yet. ${shopLabel} will ask for any it still needs when you list.`}
         </p>
@@ -351,22 +613,106 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     />
   ) : null
 
+  const ebayConditionOptions = parsedEbayRules.conditions.length
+    ? parsedEbayRules.conditions.map((c) => ({ value: c.id, label: c.name }))
+    : CONDITIONS
+
   const ebayFields = draft && (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
       <div className="space-y-3">
         {titleField}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Select label="Condition *" value={draft.condition || 'NEW'} onChange={set('condition')} options={CONDITIONS} />
+        <Input
+          label={`Subtitle (optional, ${(subtitle || '').length}/${subtitleMax} — extra eBay fee may apply)`}
+          maxLength={subtitleMax}
+          value={subtitle || ''}
+          onChange={(e) => update({ subtitle: e.target.value })}
+          placeholder="Supplemental keywords displayed under title"
+        />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {parsedEbayRules.conditionEnabled !== 'Disabled' && (
+            <Select
+              label={`Condition${parsedEbayRules.conditionEnabled === 'Required' ? ' *' : ''}`}
+              value={draft.condition || 'NEW'}
+              onChange={set('condition')}
+              options={ebayConditionOptions}
+            />
+          )}
           <Input label="Brand *" value={draft.brand} onChange={set('brand')} />
+          <Input label="MPN (optional)" value={mpn || ''} onChange={(e) => update({ mpn: e.target.value })} placeholder="Manufacturer Part Number" />
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Input label="Your price ($) *" type="number" step="0.01" min="0.01" value={draft.price} onChange={set('price')} />
-          <Input label="Stock *" type="number" min="1" step="1" value={stock} onChange={(e) => update({ stock: e.target.value })} />
-        </div>
+        {parsedEbayRules.conditionEnabled !== 'Disabled' && !isNewCondition(draft.condition) && (
+          <div>
+            <span className="mb-1 block text-xs font-semibold text-gray-600">
+              Condition description ({(conditionDescription || '').length}/1000)
+            </span>
+            <textarea
+              rows={2}
+              maxLength={1000}
+              className={textareaClass}
+              value={conditionDescription || ''}
+              onChange={(e) => update({ conditionDescription: e.target.value })}
+              placeholder="Describe wear, scratches, or missing accessories…"
+            />
+          </div>
+        )}
+        {activeVariants.length === 0 ? (
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Input label="Your price ($) *" type="number" step="0.01" min="0.01" value={draft.price} onChange={set('price')} />
+              <Input label="Stock *" type="number" min="1" step="1" value={stock} onChange={(e) => update({ stock: e.target.value })} />
+              <Input label="Seller SKU (optional)" maxLength={50} value={sellerSku || ''} onChange={(e) => update({ sellerSku: e.target.value })} placeholder="Auto-generated" />
+            </div>
+            <EbayIdentifierField
+              required={parsedEbayRules.upcEnabled === 'Required'}
+              value={identifierCode}
+              onChange={(val) => update({ identifierCode: val })}
+            />
+          </>
+        ) : (
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 px-3 py-2 text-xs text-indigo-900 flex items-center justify-between">
+            <span><strong>{activeVariants.length} variations</strong> configured below</span>
+            <span>From <strong>${summaryPrice.toFixed(2)}</strong> · <strong>{summaryStock}</strong> units</span>
+          </div>
+        )}
         {draft.sourcePrice && (
           <p className="text-xs text-gray-500">The page sells it for ${Number(draft.sourcePrice).toFixed(2)}. That is saved as the base price.</p>
         )}
         {categoryField}
+        {parsedEbayRules.variationsEnabled !== false ? (
+          <VariantEditor
+            key={`ebay-${draft.sourceUrl || 'direct'}`}
+            marketplace="ebay"
+            variants={activeVariants}
+            onChange={(next) => update({ variants: next })}
+            salesSchema={salesSchema}
+            listingImages={draft.images}
+            defaultPrice={draft.price}
+            defaultStock={stock}
+            baseSku={sellerSku || 'EBAY'}
+            requireStock
+          />
+        ) : (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            This eBay category does not support multi-variation listings.
+          </p>
+        )}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {parsedEbayRules.bestOfferEnabled !== false && (
+            <EbayBestOfferField
+              value={bestOffer}
+              onChange={(val) => update({ bestOffer: val })}
+              minPrice={activeVariants.length > 0 ? summaryPrice : Number(draft.price)}
+            />
+          )}
+          <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+            <Select
+              label="Handling time"
+              value={dispatchTimeMax || ''}
+              onChange={(e) => update({ dispatchTimeMax: e.target.value })}
+              options={DISPATCH_TIMES}
+            />
+          </div>
+        </div>
         <div>
           <span className="mb-1.5 block text-xs font-semibold text-gray-600">Description</span>
           <textarea rows={8} className={textareaClass} value={draft.description} onChange={set('description')} />
@@ -384,24 +730,74 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
       <div className="space-y-3">
         {titleField}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Input label="Your price ($) *" type="number" step="0.01" min="0.01" value={draft.price} onChange={set('price')} />
-          <Input label="Stock *" type="number" min="1" step="1" value={stock} onChange={(e) => update({ stock: e.target.value })} />
-          <Input label="Brand" value={draft.brand} onChange={set('brand')} />
-        </div>
+        {activeVariants.length === 0 ? (
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Input label="Your price ($) *" type="number" step="0.01" min="0.01" max="7600" value={draft.price} onChange={set('price')} />
+              <Input label="MSRP / List ($)" type="number" step="0.01" min="0" max="7600" value={listPrice ?? ''} onChange={(e) => update({ listPrice: e.target.value })} placeholder="Optional" />
+              <Input label="Stock *" type="number" min="1" max="99999" step="1" value={stock} onChange={(e) => update({ stock: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input label="Seller SKU (optional)" maxLength={50} value={sellerSku || ''} onChange={(e) => update({ sellerSku: e.target.value })} placeholder="Auto-generated if blank" />
+              <div className="sm:col-span-2">
+                <IdentifierCodeField
+                  value={identifierCode}
+                  onChange={(val) => update({ identifierCode: val })}
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 px-3 py-2 text-xs text-indigo-900 flex items-center justify-between">
+            <span><strong>{activeVariants.length} variants</strong> configured below</span>
+            <span>From <strong>${summaryPrice.toFixed(2)}</strong> · <strong>{summaryStock}</strong> units</span>
+          </div>
+        )}
         {draft.sourcePrice && (
           <p className="text-xs text-gray-500">The page sells it for ${Number(draft.sourcePrice).toFixed(2)}. That is saved as the base price.</p>
         )}
         {categoryField}
+        <BrandPicker
+          shopId={shop?._id}
+          categoryId={categoryId}
+          brandId={brandId || ''}
+          brand={draft.brand}
+          onChange={({ brandId: nextId, brand: nextBrand }) => update((cur) => ({ brandId: nextId, draft: { ...cur.draft, brand: nextBrand } }))}
+        />
+        <VariantEditor
+          key={draft.sourceUrl || 'direct-tiktok'}
+          variants={activeVariants}
+          onChange={(next) => update({ variants: next })}
+          salesSchema={salesSchema}
+          defaultPrice={draft.price}
+          defaultStock={stock}
+          baseSku={sellerSku || 'TTS'}
+          requireStock
+        />
         {packageFields}
         <div>
-          <span className="mb-1.5 block text-xs font-semibold text-gray-600">Description</span>
-          <textarea rows={8} className={textareaClass} value={draft.description} onChange={set('description')} />
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-600">Description</span>
+            <span className="text-[11px] text-gray-400">{(draft.description || '').length}/10000</span>
+          </div>
+          <textarea rows={6} maxLength={10000} className={textareaClass} value={draft.description} onChange={set('description')} />
         </div>
       </div>
       <div className="space-y-3">
         <ImageDropzone images={draft.images} onChange={setDraftImages} maxImages={maxImages} label={`Images (up to ${maxImages})`} />
+        <SizeChartField
+          shopId={shop?._id}
+          rules={rules}
+          value={sizeChart}
+          onChange={(next) => update({ sizeChart: next })}
+        />
         {specificsFields}
+        <Select
+          label="TikTok save mode"
+          value={saveMode || 'LISTING'}
+          onChange={(e) => update({ saveMode: e.target.value })}
+          options={SAVE_MODES}
+        />
       </div>
     </div>
   )
@@ -491,7 +887,9 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
         <Button variant="secondary" type="button" onClick={onClose}>{fetching || draft || url ? 'Hide' : 'Cancel'}</Button>
         {draft && (
           <Button type="button" onClick={create} disabled={saving || fetching}>
-            {saving ? (layout.canList ? 'Publishing…' : 'Saving…') : (layout.canList ? layout.listAction : `Save to ${shopLabel}`)}
+            {saving
+              ? (layout.canList ? (isTikTok && saveMode === 'AS_DRAFT' ? 'Saving draft…' : 'Publishing…') : 'Saving…')
+              : (layout.canList ? (isTikTok && saveMode === 'AS_DRAFT' ? `Save draft to ${shopLabel}` : layout.listAction) : `Save to ${shopLabel}`)}
           </Button>
         )}
       </div>

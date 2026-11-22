@@ -10,8 +10,12 @@
  */
 
 const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
 const config = require('../../config/marketplaces').tiktok_shop
 const { safeFetch } = require('../../utils/safeUrl')
+
+const UPLOADS_DIR = path.resolve(__dirname, '../../uploads')
 
 const ORDER_STATUS = {
   UNPAID: 'pending',
@@ -275,14 +279,20 @@ class TikTokShopService {
     apiName: 'TikTok Shop Product API',
     titleMax: 255,
     maxImages: 9,
-    categorySearch: false,
+    categorySearch: true,
     categoryAutoPick: true,
     attributes: true,
+    variants: true,
+    brands: true,
+    sizeChart: true,
+    identifierCode: true,
+    listPrice: true,
+    saveModes: ['LISTING', 'AS_DRAFT'],
     condition: false,
     packageDetails: true,
     editAfterListing: ['title', 'description', 'price', 'stock', 'images'],
     listingActions: ['unpublish', 'publish', 'delete', 'recover'],
-    note: 'TikTok picks the category from the title. New products go to TikTok review before they appear in the shop.',
+    note: 'TikTok auto-suggests a category from the title (or search to pick another). Supports variants, category attributes, brand ID, size charts, certifications, and draft or direct listing.',
   }
 
   getAuthUrl(state = '') {
@@ -310,6 +320,7 @@ class TikTokShopService {
       externalShopId: String(shop.id),
       shopCipher: shop.cipher,
       shopName: shop.name || 'TikTok Shop',
+      grantedScopes: Array.isArray(token.granted_scopes) ? token.granted_scopes : undefined,
     }
   }
 
@@ -324,6 +335,7 @@ class TikTokShopService {
       access_token: token.access_token,
       refresh_token: token.refresh_token,
       expires_in: token.access_token_expire_in,
+      grantedScopes: Array.isArray(token.granted_scopes) ? token.granted_scopes : undefined,
     }
   }
 
@@ -440,7 +452,8 @@ class TikTokShopService {
         const catalogStatus = tiktokStatus === 'ACTIVATE' ? 'active' : 'draft'
         const skus = detail.skus?.length ? detail.skus : product.skus || []
         const attributes = attributeMap(detail.product_attributes)
-        const brand = attributes.Brand || ''
+        const brandId = detail.brand?.id ? String(detail.brand.id) : ''
+        const brand = detail.brand?.name || attributes.Brand || ''
         const rows = skus.length ? skus : [null]
         const baseTitle = detail.title || product.title || ''
         const variantList = rows.map((sku) => {
@@ -455,13 +468,22 @@ class TikTokShopService {
               .filter(([k, v]) => Boolean(k && v)),
           )
           const price = Number(sku?.price?.sale_price || sku?.price?.tax_exclusive_price || 0)
+          const listPrice = Number(sku?.list_price?.amount || 0) || undefined
+          const skuImage = sku?.sales_attributes?.find((a) => a.sku_img)?.sku_img
+          const image = skuImage?.urls?.[0] || skuImage?.thumb_urls?.[0] || undefined
+          const identifierCode = sku?.identifier_code?.code
+            ? { type: String(sku.identifier_code.type || 'GTIN').toUpperCase(), code: String(sku.identifier_code.code) }
+            : undefined
           return {
             sku: cleanSku,
             rawSku,
             externalSkuId: sku?.id ? String(sku.id) : '',
             options,
             price,
+            ...(listPrice ? { listPrice } : {}),
             stock,
+            ...(image ? { image } : {}),
+            ...(identifierCode ? { identifierCode } : {}),
           }
         })
         const isMulti = skus.length > 1
@@ -469,6 +491,12 @@ class TikTokShopService {
         const minPrice = positivePrices.length ? Math.min(...positivePrices) : (variantList[0]?.price || 0)
         const totalStock = variantList.reduce((sum, v) => sum + v.stock, 0)
         const primary = variantList[0]
+        const sizeChart = detail.size_chart
+          ? {
+              ...(detail.size_chart.template?.id ? { templateId: String(detail.size_chart.template.id) } : {}),
+              ...(detail.size_chart.image?.urls?.[0] ? { image: detail.size_chart.image.urls[0] } : {}),
+            }
+          : undefined
         items.push({
           sku: primary?.sku || `TTS-${product.id}`,
           rawSku: primary?.rawSku || '',
@@ -476,11 +504,15 @@ class TikTokShopService {
           title: baseTitle || `TikTok Shop ${product.id}`,
           description: plainText(detail.description),
           price: minPrice,
+          ...(!isMulti && primary?.listPrice ? { listPrice: primary.listPrice } : {}),
+          ...(!isMulti && primary?.identifierCode ? { identifierCode: primary.identifierCode } : {}),
+          ...(sizeChart && (sizeChart.templateId || sizeChart.image) ? { sizeChart } : {}),
           stock: totalStock,
           variants: isMulti ? variantList.map(({ rawSku, ...v }) => v) : [],
           images,
           category: categoryPath(detail.category_chains),
           brand,
+          ...(brandId ? { brandId } : {}),
           weight: toPounds(detail.package_weight),
           dimensions: toInches(detail.package_dimensions),
           attributes,
@@ -613,53 +645,187 @@ class TikTokShopService {
     return data.leaf_category_id ? String(data.leaf_category_id) : null
   }
 
-  /** The suggested category with its path, in the same shape as eBay's suggestions. */
-  async getCategories(accessToken, query, { shop } = {}) {
-    const data = await this.call(accessToken, 'POST', '/product/202309/categories/recommend', {
-      shop,
-      body: { product_title: String(query || '').slice(0, 255), category_version: 'v2' },
-    })
-    if (!data.leaf_category_id) return []
-    const path = (data.categories || []).map((row) => row.name).filter(Boolean)
-    return [{ categoryId: String(data.leaf_category_id), categoryName: path[path.length - 1] || '', path: path.join(' > ') }]
+  /**
+   * Category suggestions (`mode: 'auto'`) or leaf category search (`mode: 'search'`) using US tree v2.
+   */
+  async getCategories(accessToken, query, { shop, mode = 'auto' } = {}) {
+    const q = String(query || '').trim()
+    if (mode !== 'search') {
+      const data = await this.call(accessToken, 'POST', '/product/202309/categories/recommend', {
+        shop,
+        body: { product_title: q.slice(0, 255), category_version: 'v2' },
+      })
+      if (!data.leaf_category_id) return []
+      const pathParts = (data.categories || []).map((row) => row.name).filter(Boolean)
+      return [{
+        categoryId: String(data.leaf_category_id),
+        categoryName: pathParts[pathParts.length - 1] || '',
+        path: pathParts.join(' > '),
+        recommended: true,
+      }]
+    }
+
+    const tasks = [
+      this.call(accessToken, 'GET', '/product/202309/categories', {
+        shop,
+        query: {
+          category_version: 'v2',
+          locale: 'en-US',
+          ...(q ? { keyword: q.slice(0, 100) } : {}),
+        },
+      }),
+    ]
+    if (q.length >= 3) {
+      tasks.push(
+        this.call(accessToken, 'POST', '/product/202309/categories/recommend', {
+          shop,
+          body: { product_title: q.slice(0, 255), category_version: 'v2' },
+        }),
+      )
+    }
+    const [catResult, recResult] = await Promise.allSettled(tasks)
+    const results = []
+    const seen = new Set()
+
+    if (recResult?.status === 'fulfilled' && recResult.value?.leaf_category_id) {
+      const rec = recResult.value
+      const id = String(rec.leaf_category_id)
+      const pathParts = (rec.categories || []).map((row) => row.name).filter(Boolean)
+      seen.add(id)
+      results.push({
+        categoryId: id,
+        categoryName: pathParts[pathParts.length - 1] || '',
+        path: pathParts.join(' > '),
+        recommended: true,
+      })
+    }
+
+    if (catResult?.status === 'fulfilled') {
+      const rows = catResult.value?.categories || []
+      const byId = new Map(rows.map((row) => [String(row.id), row]))
+      const buildPath = (row) => {
+        const names = []
+        const visited = new Set()
+        let cur = row
+        while (cur && !visited.has(String(cur.id)) && names.length < 10) {
+          visited.add(String(cur.id))
+          if (cur.local_name) names.unshift(cur.local_name)
+          cur = cur.parent_id && String(cur.parent_id) !== '0' ? byId.get(String(cur.parent_id)) : null
+        }
+        return names.join(' > ')
+      }
+
+      for (const row of rows) {
+        if (!row.is_leaf) continue
+        const id = String(row.id)
+        if (seen.has(id)) continue
+        const statuses = Array.isArray(row.permission_statuses) ? row.permission_statuses : []
+        if (!statuses.includes('AVAILABLE') && (statuses.includes('PROHIBITED') || statuses.includes('NON_MAIN_CATEGORY'))) {
+          continue
+        }
+        const inviteOnly = statuses.includes('INVITE_ONLY') && !statuses.includes('AVAILABLE')
+        const fullPath = buildPath(row) || row.local_name || id
+        seen.add(id)
+        results.push({
+          categoryId: id,
+          categoryName: row.local_name || '',
+          path: inviteOnly ? `${fullPath} (Invite only)` : fullPath,
+          ...(inviteOnly ? { inviteOnly: true } : {}),
+        })
+        if (results.length >= 50) break
+      }
+    } else if (!results.length && catResult?.reason) {
+      throw catResult.reason
+    }
+
+    return results.slice(0, 50)
   }
 
-  /** Certifications and other extra requirements for a leaf category. US shops use category tree v2. */
+  /** Certifications, size chart, and package requirements for a leaf category. US shops use category tree v2. */
   async getCategoryRules(accessToken, categoryId, { shop } = {}) {
     const data = await this.call(accessToken, 'GET', `/product/202309/categories/${encodeURIComponent(categoryId)}/rules`, {
       shop,
       query: { category_version: 'v2', locale: 'en-US' },
     })
-    return (data.product_certifications || []).map((row) => ({
-      id: String(row.id),
-      name: row.name || 'Certification',
-      required: Boolean(row.is_required),
-      documentDetails: row.document_details || '',
-      sampleImageUrl: row.sample_image_url || '',
-      expirationRequired: Boolean(row.expiration_date?.is_required),
-      conditions: (row.requirement_conditions || [])
-        .filter((item) => item.attribute_id && item.attribute_value_id)
-        .map((item) => ({ attributeId: String(item.attribute_id), valueId: String(item.attribute_value_id) })),
-    }))
+    return {
+      certifications: (data.product_certifications || []).map((row) => ({
+        id: String(row.id),
+        name: row.name || 'Certification',
+        required: Boolean(row.is_required),
+        documentDetails: row.document_details || '',
+        sampleImageUrl: row.sample_image_url || '',
+        expirationRequired: Boolean(row.expiration_date?.is_required),
+        conditions: (row.requirement_conditions || [])
+          .filter((item) => item.attribute_id && item.attribute_value_id)
+          .map((item) => ({ attributeId: String(item.attribute_id), valueId: String(item.attribute_value_id) })),
+      })),
+      sizeChart: {
+        required: Boolean(data.size_chart?.is_required),
+        supported: Boolean(data.size_chart?.is_supported),
+      },
+      packageDimensionRequired: data.package_dimension?.is_required !== false,
+      allowedSpecialProductTypes: Array.isArray(data.allowed_special_product_types) ? data.allowed_special_product_types : [],
+    }
   }
 
-  /** Product attributes for a category. Sales properties are variants and are left out. */
+  /** Product and sales (variant) attributes for a category. */
   async getItemAspects(accessToken, categoryId, { shop } = {}) {
     const data = await this.call(accessToken, 'GET', `/product/202309/categories/${encodeURIComponent(categoryId)}/attributes`, {
       shop,
-      query: { category_version: 'v2' },
+      query: { category_version: 'v2', locale: 'en-US' },
     })
-    return (data.attributes || [])
-      .filter((row) => row.type !== 'SALES_PROPERTY')
-      .map((row) => ({
+    return (data.attributes || []).map((row) => {
+      const isSales = row.type === 'SALES_PROPERTY'
+      return {
         id: String(row.id),
         name: row.name,
+        type: isSales ? 'sales' : 'product',
         required: Boolean(row.is_requried ?? row.is_required),
-        recommended: !(row.requirement_conditions || []).length,
+        recommended: !isSales && !(row.requirement_conditions || []).length,
+        multiple: Boolean(row.is_multiple_selection),
+        valueDataFormat: row.value_data_format || '',
+        conditions: (row.requirement_conditions || [])
+          .filter((item) => item.attribute_id && item.attribute_value_id)
+          .map((item) => ({ attributeId: String(item.attribute_id), valueId: String(item.attribute_value_id) })),
         values: (row.values || []).map((value) => value.name),
         valueIds: Object.fromEntries((row.values || []).map((value) => [value.name, String(value.id)])),
-        freeText: row.is_customizable !== false || !(row.values || []).length,
-      }))
+        freeText: isSales ? true : (row.is_customizable !== false || !(row.values || []).length),
+      }
+    })
+  }
+
+  /** Available brands for the shop (filtered by category/name when given). */
+  async getBrands(accessToken, { shop, categoryId = '', query = '', authorizedOnly = false } = {}) {
+    const data = await this.call(accessToken, 'GET', '/product/202309/brands', {
+      shop,
+      query: {
+        page_size: 100,
+        category_version: 'v2',
+        ...(categoryId ? { category_id: String(categoryId) } : {}),
+        ...(query && String(query).trim() ? { brand_name: String(query).trim() } : {}),
+        ...(authorizedOnly ? { is_authorized: true } : {}),
+      },
+    })
+    return (data.brands || []).map((brand) => ({
+      id: String(brand.id),
+      name: brand.name || '',
+      authorized: String(brand.authorized_status || '').toUpperCase() === 'AUTHORIZED',
+      status: brand.brand_status || '',
+    }))
+  }
+
+  /** Saved size chart templates from Seller Center. */
+  async getSizeCharts(accessToken, { query = '' } = {}) {
+    const q = String(query || '').trim()
+    const data = await this.call(accessToken, 'POST', '/product/202407/sizecharts/search', {
+      query: { page_size: 50 },
+      body: q ? { keyword: q } : {},
+    })
+    return (data.size_chart || []).map((row) => ({
+      id: String(row.template_id),
+      name: row.template_name || `Template ${row.template_id}`,
+      imageUrl: row.images?.[0]?.url || '',
+    }))
   }
 
   async defaultWarehouseId(accessToken, shop) {
@@ -676,14 +842,13 @@ class TikTokShopService {
     return id
   }
 
-  /** TikTok only accepts its own image URIs, so each public image is downloaded and uploaded. */
-  async uploadImage(accessToken, imageUrl) {
-    const { response: source } = await safeFetch(imageUrl)
-    if (!source.ok) throw new Error(`Could not download image ${imageUrl} (${source.status})`)
-    const type = source.headers.get('content-type') || 'image/jpeg'
+  /** TikTok only accepts its own image URIs; uploads from public links, /uploads files, or base64 data URLs. */
+  async uploadImage(accessToken, imageSource, useCase = 'MAIN_IMAGE') {
+    const { buffer, type } = await readImageBytes(imageSource)
+    const ext = (type.split('/')[1] || 'jpg').replace(/[^a-z0-9]/gi, '') || 'jpg'
     const form = new FormData()
-    form.append('data', new Blob([await source.arrayBuffer()], { type }), `image.${type.split('/')[1] || 'jpg'}`)
-    form.append('use_case', 'MAIN_IMAGE')
+    form.append('data', new Blob([buffer], { type }), `image.${ext}`)
+    form.append('use_case', useCase)
     const data = await this.call(accessToken, 'POST', '/product/202309/images/upload', { form })
     if (!data.uri) throw new Error('TikTok Shop did not accept the image.')
     return data.uri
@@ -711,50 +876,246 @@ class TikTokShopService {
   }
 
   /**
-   * Creates the product on TikTok Shop. New products go to TikTok's review first, so the
-   * listing starts as pending. Returns `{ externalListingId: "productId:skuId", status }`.
+   * Creates the product on TikTok Shop (`POST /product/202309/products`).
+   * Supports single-SKU and multi-variant SKUs, brand_id, size_chart, identifier_code,
+   * list_price, conditional attributes, certifications, and LISTING vs AS_DRAFT save_mode.
    */
   async createListing(accessToken, product, options = {}) {
     const shop = options.shop
-    const title = String(options.title || product.title || '').slice(0, 255)
-    const images = (options.images?.length ? options.images : product.images || []).filter((url) => /^https?:\/\//i.test(url)).slice(0, 9)
-    if (!images.length) throw new Error('TikTok Shop needs at least one product image with a public link.')
-    const quantity = Math.floor(Number(options.stock ?? product.stock ?? 0))
-    if (!(quantity > 0)) throw new Error('Set stock to at least 1 before listing on TikTok Shop.')
-    const price = Number(options.price ?? product.basePrice)
-    if (!(price > 0)) throw new Error('Set a price above 0 before listing on TikTok Shop.')
+    const saveMode = options.saveMode === 'AS_DRAFT' ? 'AS_DRAFT' : 'LISTING'
+    const title = String(options.title || product.title || '').trim().slice(0, 255)
+    if (!title) throw new Error('Add a product title before listing on TikTok Shop.')
+    const images = (options.images?.length ? options.images : product.images || [])
+      .map((url) => String(url || '').trim())
+      .filter((url) => /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(url))
+      .slice(0, 9)
+    if (!images.length) throw new Error('TikTok Shop needs at least one product image.')
+
+    const rawVariants = Array.isArray(options.variants)
+      ? options.variants
+      : (Array.isArray(product.variants) ? product.variants : [])
+
+    // Validate SKUs and variants up front before uploading any media.
+    const usedIdentifierCodes = new Set()
+    const usedSellerSkus = new Set()
+    const uniqueSellerSku = (base, idx) => {
+      let candidate = normalizeSellerSku(base)
+      if (!usedSellerSkus.has(candidate)) {
+        usedSellerSkus.add(candidate)
+        return candidate
+      }
+      const suffix = `-${idx + 1}`
+      candidate = `${candidate.slice(0, 50 - suffix.length)}${suffix}`
+      let n = idx + 2
+      while (usedSellerSkus.has(candidate)) {
+        const s = `-${n++}`
+        candidate = `${candidate.slice(0, 50 - s.length)}${s}`
+      }
+      usedSellerSkus.add(candidate)
+      return candidate
+    }
+
+    let optionNames = []
+    const val0ToImage = new Map()
+    const validatedSingle = { price: 0, quantity: 0, listPrice: null, identifierCode: null }
+    const validatedVariants = []
+
+    if (rawVariants.length > 0) {
+      if (rawVariants.length > 300) {
+        throw new Error('TikTok Shop supports at most 300 variant SKUs per product.')
+      }
+      const firstKeys = Object.keys(rawVariants[0]?.options || {}).map((k) => String(k).trim()).filter(Boolean)
+      const allKeys = [...new Set(rawVariants.flatMap((v) => Object.keys(v?.options || {}).map((k) => String(k).trim()).filter(Boolean)))]
+      optionNames = firstKeys.length === allKeys.length ? firstKeys : allKeys
+
+      if (rawVariants.length > 1 && (optionNames.length < 1 || optionNames.length > 3)) {
+        throw new Error('Multi-variant TikTok Shop products must have 1 to 3 variant option types (e.g., Color, Size).')
+      }
+      if (optionNames.length > 3) {
+        throw new Error('TikTok Shop supports at most 3 variant option types per product.')
+      }
+      for (const name of optionNames) {
+        if (name.length > 20) {
+          throw new Error(`Variant option name "${name}" must be at most 20 characters for TikTok Shop.`)
+        }
+      }
+
+      const seenCombos = new Set()
+      for (let i = 0; i < rawVariants.length; i += 1) {
+        const variant = rawVariants[i] || {}
+        const skuPrice = Number(variant.price ?? options.price ?? product.basePrice)
+        if (!(skuPrice > 0 && skuPrice <= 7600)) {
+          throw new Error(`Variant ${i + 1}: set a price between $0.01 and $7,600.00 for TikTok Shop.`)
+        }
+        const skuQty = Math.floor(Number(variant.stock ?? 0))
+        if (!(skuQty >= 1 && skuQty <= 99999)) {
+          throw new Error(`Variant ${i + 1}: set stock between 1 and 99,999 before listing on TikTok Shop.`)
+        }
+        let skuListPrice = null
+        const rawListPrice = variant.listPrice ?? options.listPrice ?? product.listPrice
+        if (rawListPrice != null && rawListPrice !== '' && Number(rawListPrice) > 0) {
+          const lp = Number(rawListPrice)
+          if (!(lp >= skuPrice && lp <= 7600)) {
+            throw new Error(`Variant ${i + 1}: MSRP / list price must be between $${skuPrice.toFixed(2)} and $7,600.00.`)
+          }
+          skuListPrice = lp
+        }
+        const idCode = validateIdentifierCode(variant.identifierCode)
+        if (idCode) {
+          const codeKey = `${idCode.type}:${idCode.code}`
+          if (usedIdentifierCodes.has(codeKey) || usedIdentifierCodes.has(idCode.code)) {
+            throw new Error(`Duplicate identifier code "${idCode.code}" across variants. Each SKU needs a unique code.`)
+          }
+          usedIdentifierCodes.add(codeKey)
+          usedIdentifierCodes.add(idCode.code)
+        }
+
+        const optEntries = []
+        for (const name of optionNames) {
+          const val = String(variant.options?.[name] ?? '').trim()
+          if (!val) {
+            throw new Error(`Variant ${i + 1} is missing a value for "${name}".`)
+          }
+          if (val.length > 50) {
+            throw new Error(`Variant option value "${val}" must be at most 50 characters for TikTok Shop.`)
+          }
+          optEntries.push([name, val])
+        }
+        const comboKey = optEntries.map(([, val]) => val.toLowerCase()).join('\u0000')
+        if (optionNames.length && seenCombos.has(comboKey)) {
+          throw new Error(`Duplicate variant combination: ${optEntries.map(([, v]) => v).join(' / ')}.`)
+        }
+        seenCombos.add(comboKey)
+
+        if (optionNames.length) {
+          const val0 = optEntries[0][1]
+          const img = String(variant.image || '').trim()
+          if (!val0ToImage.has(val0)) val0ToImage.set(val0, img)
+          else if (!val0ToImage.get(val0) && img) val0ToImage.set(val0, img)
+        }
+
+        const sellerSku = uniqueSellerSku(variant.sku || `${product.sku}-${i + 1}`, i)
+        validatedVariants.push({
+          raw: variant,
+          sellerSku,
+          price: skuPrice,
+          listPrice: skuListPrice,
+          quantity: skuQty,
+          identifierCode: idCode,
+          optEntries,
+        })
+      }
+
+      if (optionNames.length) {
+        const primaryImages = [...val0ToImage.values()]
+        const withImg = primaryImages.filter(Boolean).length
+        if (withImg > 0 && withImg < primaryImages.length) {
+          throw new Error(`Upload an option image for every "${optionNames[0]}" value, or remove option images.`)
+        }
+      }
+    } else {
+      const quantity = Math.floor(Number(options.stock ?? product.stock ?? 0))
+      if (!(quantity >= 1 && quantity <= 99999)) {
+        throw new Error('Set stock between 1 and 99,999 before listing on TikTok Shop.')
+      }
+      const price = Number(options.price ?? product.basePrice)
+      if (!(price > 0 && price <= 7600)) {
+        throw new Error('Set a price between $0.01 and $7,600.00 for TikTok Shop.')
+      }
+      let listPrice = null
+      const rawListPrice = options.listPrice ?? product.listPrice
+      if (rawListPrice != null && rawListPrice !== '' && Number(rawListPrice) > 0) {
+        const lp = Number(rawListPrice)
+        if (!(lp >= price && lp <= 7600)) {
+          throw new Error(`MSRP / list price must be between $${price.toFixed(2)} and $7,600.00.`)
+        }
+        listPrice = lp
+      }
+      validatedSingle.price = price
+      validatedSingle.quantity = quantity
+      validatedSingle.listPrice = listPrice
+      validatedSingle.identifierCode = validateIdentifierCode(options.identifierCode ?? product.identifierCode)
+    }
 
     const description = options.description || product.description || title
     const categoryId = options.categoryId || await this.recommendCategory(accessToken, shop, title, description)
     if (!categoryId) throw new Error('TikTok Shop could not suggest a category for this title.')
-    const [warehouseId, mainImages, rules] = await Promise.all([
+
+    const [warehouseId, mainImages, rawRules, allSchema] = await Promise.all([
       this.defaultWarehouseId(accessToken, shop),
-      Promise.all(images.map((url) => this.uploadImage(accessToken, url))),
+      Promise.all(images.map((url) => this.uploadImage(accessToken, url, 'MAIN_IMAGE'))),
       this.getCategoryRules(accessToken, categoryId, { shop }),
+      this.getItemAspects(accessToken, categoryId, { shop }).catch(() => []),
     ])
+
+    const rules = Array.isArray(rawRules)
+      ? { certifications: rawRules, sizeChart: { required: false, supported: false }, packageDimensionRequired: true }
+      : {
+          certifications: rawRules?.certifications || [],
+          sizeChart: rawRules?.sizeChart || { required: false, supported: false },
+          packageDimensionRequired: rawRules?.packageDimensionRequired !== false,
+        }
+    const productSchema = (allSchema || []).filter((attr) => attr.type !== 'sales')
+    const salesSchema = (allSchema || []).filter((attr) => attr.type === 'sales')
+
     const dims = options.dimensions || product.dimensions || {}
-    const filled = Object.entries(options.aspects || {}).filter(([, value]) => String(value || '').trim())
-    const schema = filled.length ? await this.getItemAspects(accessToken, categoryId, { shop }).catch(() => []) : []
+    const filled = Object.entries(options.aspects || {}).filter(([, value]) => (
+      Array.isArray(value) ? value.some((v) => String(v || '').trim()) : String(value || '').trim()
+    ))
     const attributes = []
-    const seen = new Set()
-    for (const [id, value] of filled) {
-      const row = schema.find((attr) => attr.id === id || String(attr.name).toLowerCase() === String(id).toLowerCase())
-      if (!row || seen.has(row.id)) continue
-      seen.add(row.id)
-      const name = String(value).trim()
-      const matchedValueId = row.valueIds?.[name]
-        || Object.entries(row.valueIds || {}).find(([k]) => String(k).toLowerCase() === name.toLowerCase())?.[1]
-      attributes.push({ id: row.id, values: [matchedValueId ? { id: matchedValueId } : { name }] })
+    const seenAttrs = new Set()
+    const selectedValueIdsByAttr = new Map()
+    for (const [id, rawValue] of filled) {
+      const row = productSchema.find((attr) => attr.id === id || String(attr.name).toLowerCase() === String(id).toLowerCase())
+      if (!row || seenAttrs.has(row.id)) continue
+      const items = (Array.isArray(rawValue) ? rawValue : [rawValue])
+        .map((v) => String(v || '').trim())
+        .filter(Boolean)
+      const limited = row.multiple ? items : items.slice(0, 1)
+      if (!limited.length) continue
+      const seenValues = new Set()
+      const valuesPayload = []
+      for (const name of limited) {
+        const key = name.toLowerCase()
+        if (seenValues.has(key)) continue
+        seenValues.add(key)
+        const matchedValueId = row.valueIds?.[name]
+          || Object.entries(row.valueIds || {}).find(([k]) => String(k).toLowerCase() === key)?.[1]
+        if (matchedValueId) {
+          if (!selectedValueIdsByAttr.has(row.id)) selectedValueIdsByAttr.set(row.id, new Set())
+          selectedValueIdsByAttr.get(row.id).add(String(matchedValueId))
+          valuesPayload.push({ id: matchedValueId })
+        } else {
+          valuesPayload.push({ name: name.slice(0, 2000) })
+        }
+      }
+      if (valuesPayload.length) {
+        seenAttrs.add(row.id)
+        attributes.push({ id: row.id, values: valuesPayload })
+      }
     }
-    const needed = rules.filter((rule) => certificationRequired(rule, attributes))
+
+    if (saveMode === 'LISTING' && productSchema.length) {
+      const missingAttrs = productSchema.filter((attr) => (
+        isSchemaAttrRequired(attr, selectedValueIdsByAttr) && !seenAttrs.has(attr.id)
+      ))
+      if (missingAttrs.length) {
+        throw new Error(`TikTok Shop requires these category attributes: ${missingAttrs.map((a) => a.name).join(', ')}.`)
+      }
+    }
+
+    const needed = rules.certifications.filter((rule) => certificationRequired(rule, attributes))
     const provided = Array.isArray(options.certifications) ? options.certifications : []
-    const missing = needed.filter((rule) => !provided.some((item) => String(item.id) === rule.id && item.file))
-    if (missing.length) {
-      throw new Error(`TikTok Shop requires ${missing.map((rule) => rule.name).join(', ')} for this category. Upload each document, then publish again.`)
+    if (saveMode === 'LISTING') {
+      const missing = needed.filter((rule) => !provided.some((item) => String(item.id) === rule.id && item.file))
+      if (missing.length) {
+        throw new Error(`TikTok Shop requires ${missing.map((rule) => rule.name).join(', ')} for this category. Upload each document, then publish again.`)
+      }
     }
     const certifications = []
     for (const rule of needed) {
       const item = provided.find((row) => String(row.id) === rule.id)
+      if (!item?.file) continue
       if (rule.expirationRequired && !item.expirationDate) {
         throw new Error(`Add an expiration date for ${rule.name}.`)
       }
@@ -766,6 +1127,70 @@ class TikTokShopService {
       })
     }
 
+    const sc = options.sizeChart !== undefined ? options.sizeChart : product.sizeChart
+    const hasSizeChart = Boolean(sc?.templateId || sc?.image)
+    if (rules.sizeChart?.required && saveMode === 'LISTING' && !hasSizeChart) {
+      throw new Error('TikTok Shop requires a size chart for this category. Choose a size chart template or upload an image.')
+    }
+    let sizeChartPayload
+    if ((rules.sizeChart?.supported || rules.sizeChart?.required) && hasSizeChart) {
+      if (sc.templateId) {
+        sizeChartPayload = { template: { id: String(sc.templateId) } }
+      } else if (sc.image) {
+        const uri = await this.uploadImage(accessToken, sc.image, 'SIZE_CHART_IMAGE')
+        sizeChartPayload = { image: { uri } }
+      }
+    }
+
+    // Upload primary sales-attribute images once per unique image source.
+    const skuImgUriByVal0 = new Map()
+    if (validatedVariants.length && optionNames.length) {
+      const uniqueSources = [...new Set([...val0ToImage.values()].filter(Boolean))]
+      if (uniqueSources.length) {
+        const uploadedEntries = await Promise.all(
+          uniqueSources.map(async (src) => [src, await this.uploadImage(accessToken, src, 'ATTRIBUTE_IMAGE')]),
+        )
+        const uriBySrc = new Map(uploadedEntries)
+        for (const [val0, src] of val0ToImage.entries()) {
+          if (src && uriBySrc.has(src)) skuImgUriByVal0.set(val0, uriBySrc.get(src))
+        }
+      }
+    }
+
+    const buildSalesAttributes = (optEntries) => optEntries.map(([optName, optVal], optIdx) => {
+      const matchedAttr = salesSchema.find((a) => String(a.name).toLowerCase() === optName.toLowerCase())
+      const matchedValId = matchedAttr?.valueIds?.[optVal]
+        || Object.entries(matchedAttr?.valueIds || {}).find(([k]) => String(k).toLowerCase() === optVal.toLowerCase())?.[1]
+      const entry = {
+        ...(matchedAttr ? { id: matchedAttr.id } : { name: optName.slice(0, 20) }),
+        ...(matchedValId ? { value_id: matchedValId } : { value_name: optVal.slice(0, 50) }),
+      }
+      if (optIdx === 0 && skuImgUriByVal0.has(optVal)) {
+        entry.sku_img = { uri: skuImgUriByVal0.get(optVal) }
+      }
+      return entry
+    })
+
+    const skusPayload = validatedVariants.length > 0
+      ? validatedVariants.map((v) => ({
+          seller_sku: v.sellerSku,
+          price: { amount: v.price.toFixed(2), currency: 'USD' },
+          ...(v.listPrice ? { list_price: { amount: v.listPrice.toFixed(2), currency: 'USD' } } : {}),
+          inventory: [{ warehouse_id: warehouseId, quantity: v.quantity }],
+          ...(v.optEntries.length ? { sales_attributes: buildSalesAttributes(v.optEntries) } : {}),
+          ...(v.identifierCode ? { identifier_code: v.identifierCode } : {}),
+        }))
+      : [
+          {
+            seller_sku: uniqueSellerSku(options.sellerSku || product.sku, 0),
+            price: { amount: validatedSingle.price.toFixed(2), currency: 'USD' },
+            ...(validatedSingle.listPrice ? { list_price: { amount: validatedSingle.listPrice.toFixed(2), currency: 'USD' } } : {}),
+            inventory: [{ warehouse_id: warehouseId, quantity: validatedSingle.quantity }],
+            ...(validatedSingle.identifierCode ? { identifier_code: validatedSingle.identifierCode } : {}),
+          },
+        ]
+
+    const brandId = String(options.brandId || product.brandId || '').trim()
     const weightPound = Number(Number(options.weight || product.weight || 1).toFixed(2)) || 1
     const data = await this.call(accessToken, 'POST', '/product/202309/products', {
       shop,
@@ -774,34 +1199,56 @@ class TikTokShopService {
         description: /<\w+/.test(description) ? description : `<p>${description.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`,
         category_id: categoryId,
         category_version: 'v2',
+        ...(brandId ? { brand_id: brandId } : {}),
         main_images: mainImages.map((uri) => ({ uri })),
         package_weight: { value: String(weightPound), unit: 'POUND' },
         package_dimensions: {
-          length: String(Math.ceil(Number(dims.length || 10))),
-          width: String(Math.ceil(Number(dims.width || 10))),
-          height: String(Math.ceil(Number(dims.height || 5))),
+          length: String(Math.max(1, Math.ceil(Number(dims.length || 10)))),
+          width: String(Math.max(1, Math.ceil(Number(dims.width || 10)))),
+          height: String(Math.max(1, Math.ceil(Number(dims.height || 5)))),
           unit: 'INCH',
         },
         ...(attributes.length ? { product_attributes: attributes } : {}),
         ...(certifications.length ? { certifications } : {}),
-        save_mode: 'LISTING',
-        skus: [
-          {
-            seller_sku: normalizeSellerSku(product.sku),
-            price: { amount: price.toFixed(2), currency: 'USD' },
-            inventory: [{ warehouse_id: warehouseId, quantity }],
-          },
-        ],
+        ...(sizeChartPayload ? { size_chart: sizeChartPayload } : {}),
+        save_mode: saveMode,
+        skus: skusPayload,
         idempotency_key: `${product._id || product.sku}-${Date.now()}`,
       },
     })
-    const skuId = data.skus?.[0]?.id
-    const marketplaceStatus = data.status || 'PENDING'
+
+    const createdSkus = Array.isArray(data.skus) ? data.skus : []
+    const isMulti = createdSkus.length > 1
+    let mappedVariants
+    if (validatedVariants.length > 0) {
+      const bySellerSku = new Map(createdSkus.map((s) => [String(s.seller_sku || ''), s]))
+      mappedVariants = validatedVariants.map((v, idx) => {
+        const created = bySellerSku.get(v.sellerSku) || createdSkus[idx]
+        return {
+          ...v.raw,
+          sku: v.sellerSku,
+          price: v.price,
+          ...(v.listPrice ? { listPrice: v.listPrice } : {}),
+          stock: v.quantity,
+          ...(v.identifierCode ? { identifierCode: v.identifierCode } : {}),
+          ...(created?.id ? { externalSkuId: String(created.id) } : {}),
+        }
+      })
+    }
+
+    const marketplaceStatus = saveMode === 'AS_DRAFT' ? 'DRAFT' : (data.status || 'PENDING')
+    const externalListingId = !isMulti && createdSkus[0]?.id
+      ? `${data.product_id}:${createdSkus[0].id}`
+      : String(data.product_id)
+    const warnings = (data.warnings || []).map((w) => w?.message).filter(Boolean)
+
     return {
-      externalListingId: skuId ? `${data.product_id}:${skuId}` : String(data.product_id),
-      status: LISTING_STATUS[marketplaceStatus] || 'pending',
+      externalListingId,
+      status: LISTING_STATUS[marketplaceStatus] || (saveMode === 'AS_DRAFT' ? 'paused' : 'pending'),
       marketplaceStatus,
       categoryId,
+      ...(mappedVariants ? { variants: mappedVariants } : {}),
+      ...(warnings.length ? { warnings } : {}),
     }
   }
 
@@ -1492,6 +1939,61 @@ class TikTokShopService {
     }
     return payload.data || {}
   }
+}
+
+const IDENTIFIER_PATTERNS = {
+  GTIN: /^\d{14}$/,
+  EAN: /^(\d{8}|\d{13}|\d{14})$/,
+  UPC: /^\d{12}$/,
+  ISBN: /^(\d{13}|\d{8}X)$/,
+  JAN: /^(\d{8}|\d{13})$/,
+}
+
+function validateIdentifierCode(idObj) {
+  const code = String(idObj?.code || '').trim()
+  if (!code) return null
+  const type = String(idObj?.type || '').trim().toUpperCase()
+  const pattern = IDENTIFIER_PATTERNS[type]
+  if (!pattern) {
+    throw new Error(`Identifier code type must be one of: ${Object.keys(IDENTIFIER_PATTERNS).join(', ')}.`)
+  }
+  if (!pattern.test(code)) {
+    throw new Error(`Invalid ${type} code "${code}". Check the digit count/format.`)
+  }
+  return { type, code }
+}
+
+function isSchemaAttrRequired(attr, selectedValueIdsByAttr) {
+  if (attr.required) return true
+  if (!attr.conditions?.length) return false
+  return attr.conditions.some((cond) => selectedValueIdsByAttr.get(String(cond.attributeId))?.has(String(cond.valueId)))
+}
+
+async function readImageBytes(imageSource) {
+  const value = String(imageSource || '').trim()
+  const data = value.match(/^data:([^;,]+);base64,(.+)$/)
+  if (data) {
+    return { buffer: Buffer.from(data[2], 'base64'), type: data[1].toLowerCase() || 'image/jpeg' }
+  }
+  if (value.startsWith('/uploads/')) {
+    const fileName = path.basename(value)
+    const fullPath = path.resolve(UPLOADS_DIR, fileName)
+    if (!fullPath.startsWith(UPLOADS_DIR + path.sep)) {
+      throw new Error('Invalid local image path.')
+    }
+    const buffer = await fs.promises.readFile(fullPath).catch(() => null)
+    if (!buffer) throw new Error(`Uploaded image file ${fileName} was not found.`)
+    const ext = path.extname(fileName).toLowerCase()
+    const mimeMap = { '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.bmp': 'image/bmp', '.heic': 'image/heic' }
+    return { buffer, type: mimeMap[ext] || 'image/jpeg' }
+  }
+  if (/^https?:\/\//i.test(value)) {
+    const { response: source } = await safeFetch(value)
+    if (!source.ok) throw new Error(`Could not download image ${value} (${source.status})`)
+    const type = (source.headers.get('content-type') || 'image/jpeg').split(';')[0].trim().toLowerCase()
+    return { buffer: Buffer.from(await source.arrayBuffer()), type }
+  }
+  throw new Error('Image must be a public link, uploaded file, or base64 data URL.')
 }
 
 function certificationRequired(rule, attributes) {

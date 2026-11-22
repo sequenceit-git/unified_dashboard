@@ -43,7 +43,7 @@ const ttCreators = async (token, shop) => {
     return await tiktok.call(token, 'POST', '/affiliate_seller/202508/marketplace_creators/search', { shop, query: { page_size: 12 }, body: {} })
   } catch (err) {
     if (!/version|not found|404/i.test(err.message || '')) throw err
-    return tiktok.call(token, 'POST', '/affiliate_seller/202406/marketplace_creators/search', { shop, query: { page_size: 12 }, body: {} })
+    return tiktok.call(token, 'POST', '/affiliate_seller/202505/marketplace_creators/search', { shop, query: { page_size: 12 }, body: {} })
   }
 }
 
@@ -96,13 +96,19 @@ const PROFILES = {
     rawStatuses: {},
     productForm: {
       titleMax: 80,
+      subtitleMax: 55,
       maxImages: 12,
       condition: true,
+      conditionDescription: true,
+      variants: true,
+      bestOffer: true,
+      dispatchTime: true,
+      mpn: true,
       specifics: { label: 'Item specifics', hint: 'eBay asks for different specifics per category. Brand is always sent.' },
       packageDetails: { required: false, note: 'Used by eBay for calculated shipping.' },
       productStatus: { draft: 'Draft', active: 'Ready to list', archived: 'Archived' },
       listAction: 'List on eBay',
-      directIntro: 'eBay listing format: 80-character title, condition, category, and item specifics.',
+      directIntro: 'eBay listing format: 80-character title, optional subtitle, condition & details, variations, category specifics, identifiers, Best Offer, and handling time.',
     },
     listingActions: [
       { id: 'end', label: 'End listing', danger: true, confirm: 'End this listing on eBay? Buyers will no longer see it.', statuses: ['live', 'out_of_stock'] },
@@ -148,11 +154,12 @@ const PROFILES = {
       titleMax: 255,
       maxImages: 9,
       condition: false,
+      variants: true,
       specifics: { label: 'Product attributes', hint: 'TikTok asks for attributes per category, matched when you list.' },
       packageDetails: { required: true, note: 'TikTok needs package weight and size to make shipping labels.' },
       productStatus: { draft: 'Draft', active: 'Ready to publish', archived: 'Archived' },
       listAction: 'Publish to TikTok Shop',
-      directIntro: 'TikTok Shop format: longer title, required package size, and category attributes. New products go to review.',
+      directIntro: 'TikTok Shop format: title, variants, brand, category attributes, size chart, certifications, required package size, and draft or direct listing.',
     },
     listingActions: [
       { id: 'unpublish', label: 'Unpublish', confirm: 'Take this product off TikTok Shop? You can publish it again later.', statuses: ['live', 'out_of_stock'], raw: ['ACTIVATE'] },
@@ -228,6 +235,7 @@ function describe(marketplace, shop) {
     label: profile.label,
     connected: shop?.status === 'connected',
     accessCheckedAt: shop?.apiAccessCheckedAt || null,
+    grantedScopes: shop?.grantedScopes || [],
     sections: profile.sections.map(({ probe, ...section }) => {
       const result = access[section.id]
       const available = !shop || shop.status !== 'connected' ? null : result ? result.ok : null

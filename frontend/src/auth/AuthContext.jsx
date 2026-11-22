@@ -22,6 +22,11 @@ export function AuthProvider({ children }) {
     setUser(null)
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    try {
+      sessionStorage.removeItem('shop-profiles:v1')
+    } catch {
+      // Ignore storage errors.
+    }
   }, [])
 
   useEffect(() => {

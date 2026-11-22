@@ -21,7 +21,11 @@ const SORTABLE = ['createdAt', 'sku', 'title', 'basePrice', 'costPrice', 'stock'
 function changedListingFields(before, after) {
   const changes = {}
   if (after.title !== before.title) changes.title = after.title
+  if ((after.subtitle || '') !== (before.subtitle || '')) changes.subtitle = after.subtitle || ''
   if ((after.description || '') !== (before.description || '')) changes.description = after.description
+  if ((after.conditionDescription || '') !== (before.conditionDescription || '')) {
+    changes.conditionDescription = after.conditionDescription || ''
+  }
   if (Number(after.basePrice) !== Number(before.basePrice)) changes.price = after.basePrice
   if (Number(after.stock) !== Number(before.stock)) changes.quantity = after.stock
   if (JSON.stringify(after.images || []) !== JSON.stringify(before.images || [])) changes.images = after.images
@@ -203,7 +207,21 @@ router.get('/:id', async (req, res) => {
 // POST /api/products
 router.post('/', async (req, res) => {
   try {
-    res.status(201).json(await Product.create({ ...req.body, createdBy: req.user.id }))
+    const body = { ...req.body, createdBy: req.user.id }
+    if (Array.isArray(body.variants) && body.variants.length > 0) {
+      body.variants = body.variants.map((v) => ({
+        ...v,
+        price: v.price === '' || v.price == null ? undefined : Number(v.price),
+        listPrice: v.listPrice === '' || v.listPrice == null ? undefined : Number(v.listPrice),
+        stock: Math.max(0, Math.floor(Number(v.stock) || 0)),
+      }))
+      body.stock = body.variants.reduce((sum, v) => sum + v.stock, 0)
+      if (body.basePrice == null || body.basePrice === '' || !Number.isFinite(Number(body.basePrice))) {
+        const positive = body.variants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
+        if (positive.length) body.basePrice = Math.min(...positive)
+      }
+    }
+    res.status(201).json(await Product.create(body))
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
@@ -293,7 +311,23 @@ router.post('/:id/list', async (req, res) => {
       }
     }
 
-    const price = req.body.price !== undefined && req.body.price !== '' ? Number(req.body.price) : product.basePrice
+    const rawVariants = Array.isArray(req.body.variants)
+      ? req.body.variants
+      : (Array.isArray(product.variants) ? product.variants.map((v) => (typeof v.toObject === 'function' ? v.toObject() : v)) : [])
+    const hasVariants = rawVariants.length > 0
+    const normalizedVariants = hasVariants
+      ? rawVariants.map((v) => ({
+          ...v,
+          price: v.price === '' || v.price == null ? undefined : Number(v.price),
+          listPrice: v.listPrice === '' || v.listPrice == null ? undefined : Number(v.listPrice),
+          stock: Math.max(0, Math.floor(Number(v.stock) || 0)),
+        }))
+      : []
+
+    const positiveVariantPrices = normalizedVariants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
+    const price = hasVariants && positiveVariantPrices.length
+      ? Math.min(...positiveVariantPrices)
+      : (req.body.price !== undefined && req.body.price !== '' ? Number(req.body.price) : product.basePrice)
 
     // Prepare marketplace-tailored listing options
     let images = req.body.images
@@ -303,20 +337,35 @@ router.post('/:id/list', async (req, res) => {
       images = product.images || []
     }
 
-    const stock = req.body.stock !== undefined && req.body.stock !== '' ? Number(req.body.stock) : product.stock
+    const stock = hasVariants
+      ? normalizedVariants.reduce((sum, v) => sum + v.stock, 0)
+      : (req.body.stock !== undefined && req.body.stock !== '' ? Number(req.body.stock) : product.stock)
     const listingOptions = {
       price,
+      listPrice: req.body.listPrice !== undefined && req.body.listPrice !== '' ? Number(req.body.listPrice) : product.listPrice,
       stock,
       title: req.body.title || product.title,
+      subtitle: req.body.subtitle !== undefined ? req.body.subtitle : product.subtitle,
       description: req.body.description || product.description,
       categoryId: req.body.categoryId,
-      condition: req.body.condition || 'NEW',
+      condition: req.body.condition || product.condition || 'NEW',
+      conditionEnabled: req.body.conditionEnabled,
+      conditionDescription: req.body.conditionDescription !== undefined ? req.body.conditionDescription : product.conditionDescription,
       weight: req.body.weight !== undefined && req.body.weight !== '' ? Number(req.body.weight) : (product.weight || 1),
       dimensions: req.body.dimensions || product.dimensions,
       images,
       aspects: req.body.aspects,
       brand: req.body.brand || product.brand,
+      brandId: req.body.brandId !== undefined ? req.body.brandId : product.brandId,
+      mpn: req.body.mpn !== undefined ? req.body.mpn : product.mpn,
+      dispatchTimeMax: req.body.dispatchTimeMax !== undefined && req.body.dispatchTimeMax !== '' ? Number(req.body.dispatchTimeMax) : product.dispatchTimeMax,
+      bestOffer: req.body.bestOffer !== undefined ? req.body.bestOffer : product.bestOffer,
       certifications: req.body.certifications,
+      variants: hasVariants ? normalizedVariants : undefined,
+      identifierCode: req.body.identifierCode !== undefined ? req.body.identifierCode : product.identifierCode,
+      sizeChart: req.body.sizeChart !== undefined ? req.body.sizeChart : product.sizeChart,
+      saveMode: req.body.saveMode,
+      sellerSku: req.body.sellerSku,
     }
 
     const capabilities = marketplaceManager.listingCapabilities(shop.marketplace)
@@ -352,13 +401,25 @@ router.post('/:id/list', async (req, res) => {
       status: 'active',
       ...(finalSku !== product.sku ? { sku: finalSku } : {}),
       ...(listingOptions.title ? { title: listingOptions.title } : {}),
+      ...(listingOptions.subtitle !== undefined ? { subtitle: listingOptions.subtitle } : {}),
       ...(price !== undefined && price !== '' ? { basePrice: price } : {}),
+      ...(listingOptions.listPrice > 0 ? { listPrice: listingOptions.listPrice } : {}),
       ...(Array.isArray(listingOptions.images) && listingOptions.images.length > 0 ? { images: listingOptions.images } : {}),
       ...(listingOptions.brand ? { brand: listingOptions.brand } : {}),
+      ...(listingOptions.brandId ? { brandId: listingOptions.brandId } : {}),
+      ...(listingOptions.mpn !== undefined ? { mpn: listingOptions.mpn } : {}),
       ...(listingOptions.description ? { description: listingOptions.description } : {}),
       ...(listingOptions.condition ? { condition: listingOptions.condition } : {}),
+      ...(listingOptions.conditionDescription !== undefined ? { conditionDescription: listingOptions.conditionDescription } : {}),
+      ...(listingOptions.dispatchTimeMax != null && Number.isFinite(Number(listingOptions.dispatchTimeMax)) ? { dispatchTimeMax: Number(listingOptions.dispatchTimeMax) } : {}),
+      ...(listingOptions.bestOffer !== undefined ? { bestOffer: listingOptions.bestOffer } : {}),
       ...(listingOptions.weight ? { weight: listingOptions.weight } : {}),
       ...(listingOptions.dimensions ? { dimensions: listingOptions.dimensions } : {}),
+      ...(Array.isArray(publishRes.variants) ? { variants: publishRes.variants } : hasVariants ? { variants: normalizedVariants } : {}),
+      ...(listingOptions.identifierCode?.code ? { identifierCode: listingOptions.identifierCode } : {}),
+      ...(listingOptions.sizeChart && (listingOptions.sizeChart.templateId || listingOptions.sizeChart.image)
+        ? { sizeChart: listingOptions.sizeChart }
+        : {}),
       ...(listingOptions.aspects && Object.keys(listingOptions.aspects).length > 0
         ? { attributes: { ...product.attributes, ...listingOptions.aspects } }
         : {}),
@@ -396,6 +457,7 @@ router.post('/:id/list', async (req, res) => {
     await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     const out = listing.toObject ? listing.toObject() : { ...listing }
     out.product = updatedProduct || product
+    if (publishRes.warnings?.length) out.warnings = publishRes.warnings
     res.status(201).json(out)
   } catch (err) {
     res.status(400).json({ error: err.message })

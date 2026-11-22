@@ -426,7 +426,7 @@ const TIKTOK = {
           data = await ttPost(token, shop, '/affiliate_seller/202508/marketplace_creators/search', {}, { page_size: 20 })
         } catch (err) {
           if (!/version|not found|404/i.test(err.message || '')) throw err
-          data = await ttPost(token, shop, '/affiliate_seller/202406/marketplace_creators/search', {}, { page_size: 20 })
+          data = await ttPost(token, shop, '/affiliate_seller/202505/marketplace_creators/search', {}, { page_size: 20 })
         }
         return data.creators?.map((row) => ({
         nickname: row.nickname || row.username || 'Creator',

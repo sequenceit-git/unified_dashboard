@@ -6,6 +6,18 @@ import { Input, Select } from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import Badge from '../../components/ui/Badge'
+import IdentifierCodeField from '../../components/listing/IdentifierCodeField'
+import EbayIdentifierField from '../../components/listing/EbayIdentifierField'
+import EbayBestOfferField from '../../components/listing/EbayBestOfferField'
+import VariantEditor from '../../components/listing/VariantEditor'
+import { validateIdentifierCode, validateVariantsForTikTok } from '../../lib/tiktokListing'
+import {
+  DISPATCH_TIMES,
+  isNewCondition,
+  validateBestOffer,
+  validateEbayIdentifierCode,
+  validateVariantsForEbay,
+} from '../../lib/ebayListing'
 import { listingActionsFor, listingBadge, useShopProfile } from '../../hooks/useShopProfiles'
 import { CONDITIONS } from '../../lib/listingConditions'
 
@@ -21,10 +33,18 @@ function specificRows(attributes) {
 const EMPTY = {
   sku: '',
   title: '',
+  subtitle: '',
   description: '',
   category: '',
   brand: '',
+  brandId: '',
+  mpn: '',
+  condition: 'NEW',
+  conditionDescription: '',
+  dispatchTimeMax: '',
+  bestOffer: { enabled: false, autoAcceptPrice: '', minOfferPrice: '' },
   basePrice: '',
+  listPrice: '',
   costPrice: '',
   stock: 0,
   lowStockThreshold: 5,
@@ -35,13 +55,17 @@ const EMPTY = {
   width: 10,
   height: 5,
   images: [],
+  identifierCode: { type: '', code: '' },
 }
 
 export default function ProductModal({ product, marketplace, onClose, onSaved, onListingChanged }) {
   const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const shopForm = profile?.productForm || {}
+  const isTikTok = marketplace === 'tiktok_shop'
+  const isEbay = marketplace === 'ebay'
   const titleMax = shopForm.titleMax || 0
+  const subtitleMax = shopForm.subtitleMax || (isEbay ? 55 : 0)
   const packageRequired = Boolean(shopForm.packageDetails?.required)
   const [specifics, setSpecifics] = useState(() => specificRows(product?.attributes))
   const [variants, setVariants] = useState(() => (Array.isArray(product?.variants) ? product.variants.map((v) => ({ ...v })) : []))
@@ -50,6 +74,19 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
     return {
       ...EMPTY,
       ...product,
+      subtitle: product.subtitle || '',
+      mpn: product.mpn || '',
+      condition: product.condition || 'NEW',
+      conditionDescription: product.conditionDescription || '',
+      dispatchTimeMax: product.dispatchTimeMax != null ? String(product.dispatchTimeMax) : '',
+      bestOffer: {
+        enabled: Boolean(product.bestOffer?.enabled),
+        autoAcceptPrice: product.bestOffer?.autoAcceptPrice ?? '',
+        minOfferPrice: product.bestOffer?.minOfferPrice ?? '',
+      },
+      brandId: product.brandId || '',
+      listPrice: product.listPrice ?? '',
+      identifierCode: product.identifierCode?.code ? product.identifierCode : { type: '', code: '' },
       weight: product.weight ?? 1,
       length: product.dimensions?.length ?? 10,
       width: product.dimensions?.width ?? 10,
@@ -62,27 +99,57 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
   const [busy, setBusy] = useState(false)
   const listingStatus = listingBadge(profile, shopListing)
   const listingActions = listingActionsFor(profile, shopListing)
+  const variantsLocked = Boolean(product && shopListing?.externalListingId)
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
   const setImages = (imgs) => setForm((prev) => ({ ...prev, images: imgs }))
 
   const setSpecific = (index, field) => (e) => setSpecifics((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: e.target.value } : row)))
 
-  const setVariantField = (index, field) => (e) => {
-    const val = e.target.value
-    setVariants((rows) => {
-      const next = rows.map((row, i) => (i === index ? { ...row, [field]: val } : row))
-      if (field === 'stock') {
-        const totalStock = next.reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v.stock) || 0)), 0)
-        setForm((prev) => ({ ...prev, stock: totalStock }))
-      }
-      return next
-    })
+  const handleVariantsChange = (next) => {
+    setVariants(next)
+    if (next.length > 0) {
+      const totalStock = next.reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v.stock) || 0)), 0)
+      const positivePrices = next.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
+      setForm((prev) => ({
+        ...prev,
+        stock: totalStock,
+        ...(positivePrices.length ? { basePrice: Math.min(...positivePrices) } : {}),
+      }))
+    }
   }
 
   const save = async (e) => {
     e.preventDefault()
     if (titleMax && form.title.length > titleMax) return setError(`${profile.label} titles can be at most ${titleMax} characters.`)
+    if (isEbay && subtitleMax && form.subtitle.length > subtitleMax) {
+      return setError(`eBay subtitles can be at most ${subtitleMax} characters.`)
+    }
+    if (isTikTok && variants.length > 0) {
+      const variantErr = validateVariantsForTikTok(variants, { requireStock: false })
+      if (variantErr) return setError(variantErr)
+    } else if (isTikTok) {
+      const idErr = validateIdentifierCode(form.identifierCode)
+      if (idErr) return setError(idErr)
+      if (form.listPrice !== '' && form.listPrice != null && Number(form.listPrice) > 0 && Number(form.basePrice) > 0) {
+        if (Number(form.listPrice) < Number(form.basePrice) || Number(form.listPrice) > 7600) {
+          return setError(`MSRP / list price must be between $${Number(form.basePrice).toFixed(2)} and $7,600.00.`)
+        }
+      }
+    } else if (isEbay) {
+      if (variants.length > 0) {
+        const varErr = validateVariantsForEbay(variants, { requireStock: false })
+        if (varErr) return setError(varErr)
+      } else {
+        const idErr = validateEbayIdentifierCode(form.identifierCode)
+        if (idErr) return setError(idErr)
+      }
+      const positiveVarPrices = variants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
+      const floorPrice = variants.length > 0 && positiveVarPrices.length ? Math.min(...positiveVarPrices) : Number(form.basePrice)
+      const boErr = validateBestOffer(form.bestOffer, floorPrice)
+      if (boErr) return setError(boErr)
+    }
+
     setBusy(true)
     setError('')
     try {
@@ -94,18 +161,47 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
         ? variants.map((v) => ({
             ...v,
             price: v.price === '' || v.price == null ? undefined : Number(v.price),
+            listPrice: v.listPrice === '' || v.listPrice == null ? undefined : Number(v.listPrice),
             stock: Math.max(0, Math.floor(Number(v.stock) || 0)),
           }))
-        : undefined
-      const computedStock = normalizedVariants
+        : (product?.variants?.length ? [] : undefined)
+      const computedStock = normalizedVariants?.length
         ? normalizedVariants.reduce((sum, v) => sum + v.stock, 0)
         : Number(form.stock)
+      const positivePrices = (normalizedVariants || []).map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
+      const computedBasePrice = normalizedVariants?.length && positivePrices.length
+        ? Math.min(...positivePrices)
+        : Number(form.basePrice)
+      const cleanIdCode = String(form.identifierCode?.code || '').trim()
+        ? { type: String(form.identifierCode.type || '').toUpperCase(), code: String(form.identifierCode.code).trim() }
+        : undefined
+      const cleanBestOffer = isEbay
+        ? (form.bestOffer?.enabled
+            ? {
+                enabled: true,
+                ...(form.bestOffer.autoAcceptPrice !== '' && form.bestOffer.autoAcceptPrice != null
+                  ? { autoAcceptPrice: Number(form.bestOffer.autoAcceptPrice) }
+                  : {}),
+                ...(form.bestOffer.minOfferPrice !== '' && form.bestOffer.minOfferPrice != null
+                  ? { minOfferPrice: Number(form.bestOffer.minOfferPrice) }
+                  : {}),
+              }
+            : { enabled: false })
+        : undefined
       const body = {
         ...form,
+        ...(isEbay ? {
+          subtitle: String(form.subtitle || '').trim().slice(0, 55),
+          conditionDescription: isNewCondition(form.condition) ? '' : String(form.conditionDescription || '').trim().slice(0, 1000),
+          mpn: String(form.mpn || '').trim(),
+          dispatchTimeMax: form.dispatchTimeMax === '' || form.dispatchTimeMax == null ? undefined : Number(form.dispatchTimeMax),
+          bestOffer: cleanBestOffer,
+        } : {}),
         ...(attributes ? { attributes } : {}),
-        ...(normalizedVariants ? { variants: normalizedVariants } : {}),
+        ...(normalizedVariants !== undefined ? { variants: normalizedVariants } : {}),
         ...(shopForm.condition ? { condition: form.condition || 'NEW' } : {}),
-        basePrice: Number(form.basePrice),
+        basePrice: computedBasePrice,
+        listPrice: form.listPrice === '' || form.listPrice == null ? undefined : Number(form.listPrice),
         costPrice: form.costPrice === '' || form.costPrice == null ? null : Number(form.costPrice),
         stock: computedStock,
         lowStockThreshold: Number(form.lowStockThreshold),
@@ -117,6 +213,15 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
           unit: 'in',
         },
         images: form.images || [],
+        ...(cleanIdCode ? { identifierCode: cleanIdCode } : { identifierCode: undefined }),
+      }
+      if (!body.brandId) delete body.brandId
+      if (!isEbay) {
+        delete body.subtitle
+        delete body.conditionDescription
+        delete body.mpn
+        delete body.dispatchTimeMax
+        delete body.bestOffer
       }
       delete body.length
       delete body.width
@@ -130,8 +235,8 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
         }
         onSaved(saved)
       } else {
-        const attributes = marketplace ? { ...(body.attributes || {}), targetMarketplace: marketplace } : body.attributes
-        onSaved(await api.post('/api/products', { ...body, ...(attributes ? { attributes } : {}) }, token))
+        const nextAttrs = marketplace ? { ...(body.attributes || {}), targetMarketplace: marketplace } : body.attributes
+        onSaved(await api.post('/api/products', { ...body, ...(nextAttrs ? { attributes: nextAttrs } : {}) }, token))
       }
     } catch (err) {
       setError(err.message)
@@ -157,12 +262,40 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                   required
                   placeholder="e.g. Wireless Headphones"
                 />
+                {isEbay && (
+                  <Input
+                    className="sm:col-span-2"
+                    label={`Subtitle (optional, ${form.subtitle.length}/${subtitleMax} — extra eBay fee may apply)`}
+                    maxLength={subtitleMax}
+                    value={form.subtitle}
+                    onChange={set('subtitle')}
+                    placeholder="Supplemental keywords shown beneath title"
+                  />
+                )}
                 <Input label="Category" value={form.category} onChange={set('category')} placeholder="e.g. Electronics" />
                 <Input label="Brand" value={form.brand} onChange={set('brand')} placeholder="e.g. DevBrand" />
+                {isEbay && (
+                  <Input label="MPN (optional)" value={form.mpn} onChange={set('mpn')} placeholder="Manufacturer Part Number" />
+                )}
                 {shopForm.condition && (
                   <Select label="Condition" value={form.condition || 'NEW'} onChange={set('condition')} options={CONDITIONS} />
                 )}
               </div>
+              {isEbay && !isNewCondition(form.condition) && (
+                <div>
+                  <label className="block mb-1 text-xs font-semibold text-gray-600">
+                    Condition description ({form.conditionDescription.length}/1000)
+                  </label>
+                  <textarea
+                    rows={2}
+                    maxLength={1000}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-2xs outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                    placeholder="Describe cosmetic wear, included accessories, or defects…"
+                    value={form.conditionDescription}
+                    onChange={set('conditionDescription')}
+                  />
+                </div>
+              )}
               <div>
                 <label className="block mb-1 text-xs font-semibold text-gray-600">Description</label>
                 <textarea
@@ -178,32 +311,75 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
             <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600">Pricing & Inventory</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Input label="Price ($) *" type="number" step="0.01" value={form.basePrice} onChange={set('basePrice')} required />
+                <Input
+                  label={variants.length > 0 ? 'Starting Price (from variants)' : 'Price ($) *'}
+                  type="number"
+                  step="0.01"
+                  value={form.basePrice}
+                  onChange={set('basePrice')}
+                  disabled={variants.length > 0}
+                  required={variants.length === 0}
+                />
+                {isTikTok && variants.length === 0 && (
+                  <Input
+                    label="MSRP / List price ($)"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="7600"
+                    value={form.listPrice ?? ''}
+                    onChange={set('listPrice')}
+                    placeholder="Optional strikethrough price"
+                  />
+                )}
                 <Input label="Base price ($)" type="number" step="0.01" value={form.costPrice ?? ''} onChange={set('costPrice')} placeholder="Cost before selling" />
-                <Input label={variants.length > 0 ? 'Total Stock (from variants)' : 'Stock Quantity *'} type="number" value={form.stock} onChange={set('stock')} disabled={variants.length > 0} required />
+                <Input label={variants.length > 0 ? 'Total Stock (from variants)' : 'Stock Quantity *'} type="number" value={form.stock} onChange={set('stock')} disabled={variants.length > 0} required={variants.length === 0} />
                 <Input label="Low-stock Alert" type="number" value={form.lowStockThreshold} onChange={set('lowStockThreshold')} />
+                {(isTikTok || isEbay) && !product && variants.length === 0 && (
+                  <Input label="Seller SKU (optional)" maxLength={50} value={form.sku} onChange={set('sku')} placeholder="Auto-generated if blank" />
+                )}
               </div>
-              {variants.length > 0 && (
-                <div className="border-t border-gray-100 pt-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-700">Variants ({variants.length})</p>
-                    <span className="text-[11px] text-gray-500">Edit each variant&apos;s price &amp; stock</span>
-                  </div>
-                  <div className="max-h-60 space-y-1.5 overflow-y-auto pr-1">
-                    {variants.map((v, idx) => {
-                      const label = Object.values(v.options || {}).filter(Boolean).join(' / ') || v.sku
-                      return (
-                        <div key={v.sku || idx} className="grid grid-cols-[minmax(0,1fr)_88px_76px] items-center gap-2 rounded-lg border border-gray-100 bg-gray-50/70 px-2.5 py-1.5">
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-medium text-gray-800">{label}</p>
-                            <p className="truncate font-mono text-[10px] text-gray-400">{v.sku}</p>
-                          </div>
-                          <Input type="number" step="0.01" min="0" value={v.price ?? ''} onChange={setVariantField(idx, 'price')} aria-label={`Price for ${label}`} />
-                          <Input type="number" min="0" step="1" value={v.stock ?? 0} onChange={setVariantField(idx, 'stock')} aria-label={`Stock for ${label}`} />
-                        </div>
-                      )
-                    })}
-                  </div>
+              {isTikTok && variants.length === 0 && (
+                <IdentifierCodeField
+                  value={form.identifierCode}
+                  onChange={(val) => setForm((prev) => ({ ...prev, identifierCode: val }))}
+                />
+              )}
+              {isEbay && variants.length === 0 && (
+                <EbayIdentifierField
+                  value={form.identifierCode}
+                  onChange={(val) => setForm((prev) => ({ ...prev, identifierCode: val }))}
+                />
+              )}
+              {(isTikTok || isEbay || variants.length > 0) && (
+                <VariantEditor
+                  key={`${product?._id || 'new'}-${marketplace || 'all'}`}
+                  marketplace={isEbay ? 'ebay' : 'tiktok_shop'}
+                  variants={variants}
+                  onChange={handleVariantsChange}
+                  listingImages={form.images}
+                  defaultPrice={form.basePrice}
+                  defaultStock={form.stock || 1}
+                  baseSku={form.sku || (isEbay ? 'EBAY' : 'TTS')}
+                  lockedOptions={variantsLocked}
+                  requireStock={false}
+                />
+              )}
+              {isEbay && (
+                <div className="space-y-3 border-t border-gray-100 pt-3">
+                  <EbayBestOfferField
+                    value={form.bestOffer}
+                    onChange={(val) => setForm((prev) => ({ ...prev, bestOffer: val }))}
+                    minPrice={variants.length > 0
+                      ? Math.min(...(variants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)))
+                      : Number(form.basePrice)}
+                  />
+                  <Select
+                    label="Handling time"
+                    value={form.dispatchTimeMax}
+                    onChange={set('dispatchTimeMax')}
+                    options={DISPATCH_TIMES}
+                  />
                 </div>
               )}
               {product && (

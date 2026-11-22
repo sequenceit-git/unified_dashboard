@@ -41,15 +41,22 @@ class EbayService {
     canList: true,
     apiName: 'eBay Trading API',
     titleMax: 80,
+    subtitleMax: 55,
     maxImages: 12,
     categorySearch: true,
     categoryAutoPick: false,
     attributes: true,
+    variants: true,
     condition: true,
+    conditionDescription: true,
+    identifierCode: true,
+    mpn: true,
+    bestOffer: true,
+    dispatchTime: true,
     packageDetails: true,
     editAfterListing: ['title', 'description', 'price', 'stock', 'images'],
     listingActions: ['end', 'relist'],
-    note: 'Shipping, returns and item location are copied from your existing eBay listings.',
+    note: 'Shipping, returns and item location are copied from your existing eBay listings. Supports variations, category conditions, item specifics, identifiers, Best Offer, and handling time.',
   }
 
   /**
@@ -355,8 +362,9 @@ class EbayService {
   }
 
   /**
-   * Publishes a live fixed-price listing. Location, shipping and returns are copied from one of
-   * the seller's live listings. Returns `{ externalListingId: ItemID, status }`.
+   * Publishes a live fixed-price listing (single-SKU or multi-variation). Location, shipping and
+   * returns are copied from one of the seller's live listings.
+   * Returns `{ externalListingId: ItemID, status, variants? }`.
    */
   async createListing(accessToken, product, options = {}) {
     const opts = typeof options === 'number' ? { price: options } : { ...options }
@@ -364,25 +372,44 @@ class EbayService {
       const [suggestion] = await this.getCategories(accessToken, opts.title || product.title).catch(() => [])
       opts.categoryId = suggestion?.categoryId
     }
-    const { itemId } = await trading.addListing(accessToken, product, {
+    const { itemId, variants } = await trading.addListing(accessToken, product, {
       ...opts,
       images: opts.images?.length ? opts.images : product.images,
       cacheKey: String(opts.shop?._id || 'default'),
     })
-    return { externalListingId: itemId, status: opts.verifyOnly ? 'pending' : 'live', categoryId: opts.categoryId }
+    return {
+      externalListingId: itemId,
+      status: opts.verifyOnly ? 'pending' : 'live',
+      categoryId: opts.categoryId,
+      ...(variants ? { variants } : {}),
+    }
   }
 
-  /** Changes title, description, images, price or quantity of a live listing. */
-  async reviseListing(accessToken, externalListingId, changes) {
-    return trading.reviseListing(accessToken, ebayItemId(externalListingId), changes)
+  /** Changes title, subtitle, description, conditionDescription, images, price or quantity of a live listing. */
+  async reviseListing(accessToken, externalListingId, changes, options = {}) {
+    const variants = changes?.variants || options?.product?.variants
+    return trading.reviseListing(accessToken, ebayItemId(externalListingId), {
+      ...changes,
+      ...(variants?.length ? { variants } : {}),
+    })
   }
 
   async updateStock(accessToken, sku, quantity, options = {}) {
-    return trading.reviseListing(accessToken, ebayItemId(options.externalListingId), { quantity })
+    return trading.reviseListing(accessToken, ebayItemId(options.externalListingId), {
+      quantity,
+      variants: options.variants,
+      variantSku: options.variantSku,
+      variantStock: options.variantStock,
+      syncAllVariants: options.syncAllVariants,
+    })
   }
 
   async updatePrice(accessToken, sku, price, currency = 'USD', options = {}) {
-    await trading.reviseListing(accessToken, ebayItemId(options.externalListingId), { price })
+    await trading.reviseListing(accessToken, ebayItemId(options.externalListingId), {
+      price,
+      variants: options.variants,
+      useVariantPrices: options.useVariantPrices,
+    })
     return { success: true, price }
   }
 
@@ -467,11 +494,31 @@ class EbayService {
       .map((a) => ({
         id: a.localizedAspectName,
         name: a.localizedAspectName,
+        type: 'product',
         required: Boolean(a.aspectConstraint?.aspectRequired),
         recommended: a.aspectConstraint?.aspectUsage === 'RECOMMENDED',
+        multiple: a.aspectConstraint?.itemToAspectCardinality === 'MULTI',
+        variationEnabled: Boolean(a.aspectConstraint?.aspectEnabledForVariations),
         values: (a.aspectValues || []).map((v) => v.localizedValue).slice(0, 200),
         freeText: a.aspectConstraint?.aspectMode !== 'SELECTION_ONLY',
       }))
+  }
+
+  /** Category features from GetCategoryFeatures (variations, conditions, Best Offer, identifiers). */
+  async getCategoryRules(accessToken, categoryId) {
+    try {
+      return await trading.getCategoryFeatures(accessToken, categoryId)
+    } catch {
+      return {
+        variationsEnabled: true,
+        conditionEnabled: 'Enabled',
+        conditions: [],
+        bestOfferEnabled: true,
+        upcEnabled: 'Enabled',
+        eanEnabled: 'Enabled',
+        isbnEnabled: 'Enabled',
+      }
+    }
   }
 
   /**

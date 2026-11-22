@@ -61,19 +61,21 @@ async function connectShop(marketplace, code, { shopName, externalShopId: reques
         status: 'connected',
         // The seller's real username also replaces the inbox's best guess at it.
         ...(accountId ? { accountId, accountUsername: accountId } : {}),
+        ...(Array.isArray(tokenData.grantedScopes) ? { grantedScopes: tokenData.grantedScopes } : {}),
         auth: {
           accessTokenEnc: accessToken,
           refreshTokenEnc: tokenData.refresh_token || tokenData.refreshToken,
           expiresAt: marketplaceManager.tokenExpiry(tokenData.expires_in),
         },
       },
-      $unset: { authError: 1 },
+      $unset: { authError: 1, apiAccess: 1, apiAccessCheckedAt: 1 },
     },
     { upsert: true, returnDocument: 'after' },
   )
 
-  // First load of orders and listings, which sections the new login can reach, and (eBay) live updates.
-  for (const kind of ['full', 'access', 'live']) {
+  // Re-probe section access immediately on reconnect so newly granted scopes unlock without stale flags.
+  await syncQueue.enqueue('access', shop._id, { wait: true, timeoutMs: 15000 }).catch((err) => console.warn(`Initial access sync failed for ${shop.name}:`, err.message))
+  for (const kind of ['full', 'live']) {
     syncQueue.enqueue(kind, shop._id).catch((err) => console.warn(`Initial ${kind} sync failed for ${shop.name}:`, err.message))
   }
   return shop
@@ -158,7 +160,7 @@ router.get('/profiles', async (req, res) => {
   try {
     const filter = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds } } : {}
     const refresh = req.query.refresh === '1' && req.user.role === 'super_admin'
-    const shops = await Shop.find(filter).select('name marketplace status apiAccess apiAccessCheckedAt shopCipher')
+    const shops = await Shop.find(filter).select('name marketplace status apiAccess apiAccessCheckedAt shopCipher grantedScopes')
     let list = await marketplaceManager.shopProfiles(shops, { refresh })
     if (req.user.role === 'sub_admin') list = list.filter((profile) => shops.some((shop) => shop.marketplace === profile.marketplace))
     res.json(list)
@@ -528,7 +530,12 @@ router.get('/:id/categories', async (req, res) => {
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
     if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
     const query = String(req.query.q || '').trim().toLowerCase()
-    const categories = await cache.wrap(`taxonomy:${shop._id}:categories:${query}`, 6 * 3600, async () => (await marketplaceManager.getCategories(shop, req.query.q)) || [])
+    const mode = req.query.mode === 'search' ? 'search' : 'auto'
+    const categories = await cache.wrap(
+      `taxonomy:v2:${shop._id}:categories:${mode}:${query}`,
+      6 * 3600,
+      async () => (await marketplaceManager.getCategories(shop, req.query.q, { mode })) || [],
+    )
     res.json(categories)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -541,25 +548,67 @@ router.get('/:id/categories/:categoryId/attributes', async (req, res) => {
     const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
     if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
-    const attributes = await cache.wrap(`taxonomy:${shop._id}:attributes:${req.params.categoryId}`, 24 * 3600, async () => (await marketplaceManager.getCategoryAttributes(shop, req.params.categoryId)) || [])
+    const attributes = await cache.wrap(
+      `taxonomy:v3:${shop._id}:attributes:${req.params.categoryId}`,
+      24 * 3600,
+      async () => (await marketplaceManager.getCategoryAttributes(shop, req.params.categoryId)) || [],
+    )
     res.json(attributes)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// GET /api/shops/:id/categories/:categoryId/rules — certifications required for this category
+// GET /api/shops/:id/categories/:categoryId/rules — certifications & category rules
 router.get('/:id/categories/:categoryId/rules', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
     if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
     const rules = await cache.wrap(
-      `taxonomy:${shop._id}:rules:${req.params.categoryId}`,
+      `taxonomy:v3:${shop._id}:rules:${req.params.categoryId}`,
       24 * 3600,
       async () => (await marketplaceManager.getCategoryRules(shop, req.params.categoryId)) || [],
     )
     res.json(rules)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/shops/:id/brands — Search available brands for a shop / category
+router.get('/:id/brands', async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
+    const categoryId = String(req.query.categoryId || '').trim()
+    const query = String(req.query.q || '').trim()
+    const authorizedOnly = req.query.authorizedOnly === '1' || req.query.authorizedOnly === 'true'
+    const brands = await cache.wrap(
+      `taxonomy:v2:${shop._id}:brands:${categoryId}:${query.toLowerCase()}:${authorizedOnly ? 1 : 0}`,
+      3600,
+      async () => (await marketplaceManager.getBrands(shop, { categoryId, query, authorizedOnly })) || [],
+    )
+    res.json(brands)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/shops/:id/size-charts — Search TikTok Shop size chart templates
+router.get('/:id/size-charts', async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).select('+auth.accessTokenEnc')
+    if (!shop) return res.status(404).json({ error: 'Shop not found' })
+    if (!canAccessShop(req, shop._id)) return res.status(403).json({ error: 'You do not have permission for this shop' })
+    const query = String(req.query.q || '').trim()
+    const charts = await cache.wrap(
+      `taxonomy:v2:${shop._id}:sizecharts:${query.toLowerCase()}`,
+      10 * 60,
+      async () => (await marketplaceManager.getSizeCharts(shop, { query })) || [],
+    )
+    res.json(charts)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

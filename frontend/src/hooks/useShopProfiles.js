@@ -2,14 +2,50 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { api } from '../lib/api'
 
+export const PROFILES_STORAGE_KEY = 'shop-profiles:v1'
+
 let cache = null
 let cacheToken = ''
 let inflight = null
 let inflightToken = ''
+let loadSeq = 0
 const listeners = new Set()
 
-function load(token, refresh = false) {
+function readStored(userKey) {
+  if (!userKey) return null
+  try {
+    const raw = sessionStorage.getItem(PROFILES_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || parsed.userKey !== userKey || !Array.isArray(parsed.list)) return null
+    return parsed.list
+  } catch {
+    return null
+  }
+}
+
+function writeStored(userKey, list) {
+  if (!userKey || !Array.isArray(list)) return
+  try {
+    sessionStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify({ userKey, list }))
+  } catch {
+    // Ignore storage quota or privacy-mode errors.
+  }
+}
+
+function clearStored() {
+  try {
+    sessionStorage.removeItem(PROFILES_STORAGE_KEY)
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
+function load(token, opts = false) {
   if (!token) return Promise.resolve(null)
+  const refresh = typeof opts === 'boolean' ? opts : Boolean(opts?.refresh)
+  const force = typeof opts === 'boolean' ? opts : Boolean(opts?.force || opts?.refresh)
+  const userKey = typeof opts === 'object' && opts ? (opts.userKey || '') : ''
   if (token !== cacheToken) {
     cache = null
     cacheToken = token
@@ -18,21 +54,24 @@ function load(token, refresh = false) {
     inflight = null
     inflightToken = token
   }
-  if (!refresh && cache) return Promise.resolve(cache)
-  if (!refresh && inflight) return inflight
+  if (!force && cache) return Promise.resolve(cache)
+  if (!force && inflight) return inflight
   const requestedToken = token
-  inflight = api.get(`/api/shops/profiles${refresh ? '?refresh=1' : ''}`, token)
+  const seq = ++loadSeq
+  const req = api.get(`/api/shops/profiles${refresh ? '?refresh=1' : ''}`, token)
     .then((list) => {
-      if (cacheToken === requestedToken) {
+      if (cacheToken === requestedToken && seq === loadSeq) {
         cache = list
-        listeners.forEach((listener) => listener({ token: requestedToken, list }))
+        writeStored(userKey, list)
+        listeners.forEach((listener) => listener({ token: requestedToken, userKey, list }))
       }
       return list
     })
     .finally(() => {
-      if (inflightToken === requestedToken) inflight = null
+      if (inflight === req) inflight = null
     })
-  return inflight
+  inflight = req
+  return req
 }
 
 /**
@@ -40,10 +79,13 @@ function load(token, refresh = false) {
  * listing status names and product form settings. Loaded once and shared by every caller.
  */
 export function useShopProfiles() {
-  const { token } = useAuth()
-  const [state, setState] = useState(() => (
-    token && token === cacheToken ? { token, list: cache } : { token: '', list: null }
-  ))
+  const { token, user } = useAuth()
+  const userKey = user?.id || user?._id || user?.username || user?.email || ''
+  const [state, setState] = useState(() => {
+    if (!token) return { token: '', userKey: '', list: null }
+    if (token === cacheToken && cache) return { token, userKey, list: cache }
+    return { token, userKey, list: readStored(userKey) }
+  })
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -52,18 +94,27 @@ export function useShopProfiles() {
       cacheToken = ''
       inflight = null
       inflightToken = ''
+      loadSeq += 1
+      clearStored()
       return undefined
     }
     listeners.add(setState)
-    load(token)
-      .then((list) => setState({ token, list }))
+    load(token, { userKey })
+      .then((list) => setState({ token, userKey, list }))
       .catch((err) => setError(err.message))
     return () => listeners.delete(setState)
-  }, [token])
+  }, [token, userKey])
 
-  const profiles = !token ? null : state.token === token ? state.list : (token === cacheToken ? cache : null)
-  const refresh = useCallback(() => load(token, true), [token])
-  return { profiles, error, refresh }
+  const profiles = !token
+    ? null
+    : state.token === token && state.userKey === userKey && state.list
+      ? state.list
+      : token === cacheToken && cache
+        ? cache
+        : readStored(userKey)
+  const refresh = useCallback(() => load(token, { refresh: true, userKey }), [token, userKey])
+  const reload = useCallback(() => load(token, { force: true, userKey }), [token, userKey])
+  return { profiles, error, refresh, reload }
 }
 
 export function useShopProfile(marketplace) {
@@ -96,23 +147,24 @@ export function listingActionsFor(profile, listing) {
 const DIRECT_DEFAULTS = {
   ebay: {
     titleMax: 80,
+    subtitleMax: 55,
     maxImages: 12,
     condition: true,
     specifics: { label: 'Item specifics', hint: 'eBay asks for different specifics per category. Brand is always sent.' },
     package: 'optional',
     packageNote: 'Used by eBay for calculated shipping. Skip if your store already has defaults.',
     category: 'search',
-    intro: 'This form uses the eBay listing format: 80-character title, condition, category, and item specifics.',
+    intro: 'This form uses the eBay listing format: 80-character title, optional subtitle, condition & description, variations, category specifics, identifiers, Best Offer, and handling time.',
   },
   tiktok_shop: {
     titleMax: 255,
     maxImages: 9,
     condition: false,
-    specifics: { label: 'Product attributes', hint: 'TikTok asks for attributes per category. Missing required ones keep the product in draft.' },
+    specifics: { label: 'Product attributes', hint: 'TikTok asks for attributes per category. Required ones must be filled to publish.' },
     package: 'required',
     packageNote: 'TikTok needs package weight and size to make shipping labels.',
-    category: 'auto',
-    intro: 'This form uses the TikTok Shop format: longer title, required package size, and category attributes. New products go to review.',
+    category: 'auto-search',
+    intro: 'This form uses the TikTok Shop format: variants, brand, category attributes, size chart, required package size, and draft or publish mode.',
   },
   temu: {
     titleMax: 250,
@@ -140,12 +192,29 @@ export function listingFormFor(marketplace, profile, caps = {}) {
       : fallback.package
   return {
     titleMax: form.titleMax || caps.titleMax || fallback.titleMax,
+    subtitleMax: form.subtitleMax || caps.subtitleMax || fallback.subtitleMax || 0,
     maxImages: form.maxImages || caps.maxImages || fallback.maxImages,
     condition: form.condition ?? caps.condition ?? fallback.condition,
+    conditionDescription: Boolean(form.conditionDescription ?? caps.conditionDescription ?? marketplace === 'ebay'),
     specifics: form.specifics === null ? null : (form.specifics || fallback.specifics),
     package: packageMode,
     packageNote: form.packageDetails?.note || fallback.packageNote,
-    category: caps.categorySearch ? 'search' : caps.categoryAutoPick ? 'auto' : fallback.category,
+    category: (caps.categoryAutoPick && caps.categorySearch)
+      ? 'auto-search'
+      : caps.categorySearch
+        ? 'search'
+        : caps.categoryAutoPick
+          ? 'auto'
+          : fallback.category,
+    variants: Boolean(form.variants ?? caps.variants ?? ['tiktok_shop', 'ebay'].includes(marketplace)),
+    brands: Boolean(caps.brands ?? marketplace === 'tiktok_shop'),
+    sizeChart: Boolean(caps.sizeChart ?? marketplace === 'tiktok_shop'),
+    identifierCode: Boolean(caps.identifierCode ?? ['tiktok_shop', 'ebay'].includes(marketplace)),
+    listPrice: Boolean(caps.listPrice ?? marketplace === 'tiktok_shop'),
+    bestOffer: Boolean(form.bestOffer ?? caps.bestOffer ?? marketplace === 'ebay'),
+    dispatchTime: Boolean(form.dispatchTime ?? caps.dispatchTime ?? marketplace === 'ebay'),
+    mpn: Boolean(form.mpn ?? caps.mpn ?? marketplace === 'ebay'),
+    saveModes: caps.saveModes || (marketplace === 'tiktok_shop' ? ['LISTING', 'AS_DRAFT'] : []),
     canList: caps.canList !== false && marketplace !== 'temu',
     listAction: form.listAction || (marketplace === 'tiktok_shop' ? 'Publish to TikTok Shop' : `List on ${profile?.label || 'shop'}`),
     apiName: caps.apiName || '',

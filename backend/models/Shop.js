@@ -33,6 +33,7 @@ const shopSchema = new mongoose.Schema(
     // Which dashboard sections this shop's token can reach: { sectionId: { ok, reason } }.
     apiAccess: { type: mongoose.Schema.Types.Mixed, default: undefined },
     apiAccessCheckedAt: { type: Date },
+    grantedScopes: { type: [String], default: undefined },
   },
   { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } },
 )

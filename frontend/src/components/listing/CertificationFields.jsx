@@ -5,8 +5,10 @@ export function certificationNeeded(rule, aspects, schema) {
   if (rule.required) return true
   return (rule.conditions || []).some((condition) => {
     const attr = (schema || []).find((item) => item.id === condition.attributeId)
-    const chosen = aspects?.[condition.attributeId]
-    return attr && chosen && attr.valueIds?.[chosen] === condition.valueId
+    const rawChosen = aspects?.[condition.attributeId]
+    if (!attr || rawChosen == null) return false
+    const chosenList = Array.isArray(rawChosen) ? rawChosen : [rawChosen]
+    return chosenList.some((chosen) => chosen && attr.valueIds?.[chosen] === condition.valueId)
   })
 }
 

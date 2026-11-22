@@ -27,6 +27,7 @@ import {
 import { useAuth } from '../../auth/AuthContext'
 import { allowedShopSections } from '../../hooks/useShopSection'
 import { useShopProfiles } from '../../hooks/useShopProfiles'
+import { useLiveEvents } from '../../hooks/useLiveEvents'
 
 const TOP_LINKS = [
   { to: '/market-research', label: 'Product Discovery', route: 'market-research', icon: FiCompass },
@@ -73,16 +74,6 @@ const SECTION_ICONS = {
   content: FiVideo,
   creators: FiStar,
 }
-
-// Shown until the shop profiles load.
-const DEFAULT_SECTIONS = [
-  { id: 'analytics', path: '/analytics', label: 'Analytics', route: 'analytics' },
-  { id: 'inbox', path: '/inbox', label: 'Inbox', route: 'inbox' },
-  { id: 'products', path: '/products', label: 'Products', route: 'products' },
-  { id: 'inventory', path: '/inventory', label: 'Inventory', route: 'inventory' },
-  { id: 'orders', path: '/orders', label: 'Orders', route: 'orders' },
-  { id: 'customers', path: '/customers', label: 'Customers', route: 'customers' },
-]
 
 function readOpen(storageKey, defaultOpen) {
   try {
@@ -187,27 +178,35 @@ function ShopGroup({ section, links, pathname, search, onClose }) {
       </button>
       {open && (
         <div id={`${section.id}-shop-nav`}>
-          {links.map((link) => (link.unavailable ? (
-            <div
-              key={link.to}
-              title={`${link.label}: ${link.reason || 'Not available for this shop'}`}
-              className={`${itemClass(true, false)} cursor-not-allowed opacity-50 hover:bg-transparent hover:text-slate-600`}
-            >
-              <FiLock size={18} className="shrink-0" />
-              <ItemLabel>{link.label}</ItemLabel>
+          {section.loading ? (
+            <div className="space-y-2 py-2 pl-14 pr-6" aria-hidden="true">
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx} className="h-4 animate-pulse rounded bg-slate-200/70 dark:bg-slate-700/60" />
+              ))}
             </div>
           ) : (
-            <NavItem
-              key={link.to}
-              to={link.to}
-              onClose={onClose}
-              nested
-              icon={link.icon}
-              active={shopLinkActive(pathname, search, link)}
-            >
-              {link.label}
-            </NavItem>
-          )))}
+            links.map((link) => (link.unavailable ? (
+              <div
+                key={link.to}
+                title={`${link.label}: ${link.reason || 'Not available for this shop'}`}
+                className={`${itemClass(true, false)} cursor-not-allowed opacity-50 hover:bg-transparent hover:text-slate-600`}
+              >
+                <FiLock size={18} className="shrink-0" />
+                <ItemLabel>{link.label}</ItemLabel>
+              </div>
+            ) : (
+              <NavItem
+                key={link.to}
+                to={link.to}
+                onClose={onClose}
+                nested
+                icon={link.icon}
+                active={shopLinkActive(pathname, search, link)}
+              >
+                {link.label}
+              </NavItem>
+            )))
+          )}
         </div>
       )}
     </div>
@@ -218,15 +217,20 @@ export default function Sidebar({ open, onClose }) {
   const { hasRoute, isAdmin, user } = useAuth()
   const { pathname, search } = useLocation()
   const topLinks = TOP_LINKS.filter((link) => hasRoute(link.route))
-  const { profiles } = useShopProfiles()
+  const { profiles, error: profileError, reload } = useShopProfiles()
+  useLiveEvents((event) => {
+    if (event.type === 'sync' && event.kind === 'access') reload().catch(() => {})
+  })
   const allowed = allowedShopSections(user, isAdmin)
+  const isLoadingProfiles = !profiles && !profileError
   const shopSections = SHOP_SECTIONS.filter((section) => allowed.some((item) => item.id === section.id)).map((section) => {
     const marketplace = allowed.find((item) => item.id === section.id).marketplace
     const profile = profiles?.find((item) => item.marketplace === marketplace)
     return {
       ...section,
       label: profile?.label || section.label,
-      links: (profile?.sections || DEFAULT_SECTIONS)
+      loading: isLoadingProfiles,
+      links: (profile?.sections || [])
         .filter((link) => {
           if (!hasRoute(link.route)) return false
           if (!isAdmin && Array.isArray(user?.allowedSections) && user.allowedSections.length > 0) {
@@ -245,7 +249,7 @@ export default function Sidebar({ open, onClose }) {
           unavailable: link.available === false,
         })),
     }
-  }).filter((section) => section.links.length > 0)
+  }).filter((section) => section.loading || section.links.length > 0)
 
   return (
     <>
