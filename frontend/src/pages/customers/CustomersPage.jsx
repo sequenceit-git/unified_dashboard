@@ -132,7 +132,7 @@ export default function CustomersPage() {
           customer={selected}
           onClose={() => setSelected(null)}
           onSaved={async () => {
-            setSelected(await api.get(`/api/customers/${selected._id}`, token))
+            setSelected(await api.get(`/api/customers/${selected._id}${queryString({ marketplace })}`, token))
             fetchRows()
           }}
         />

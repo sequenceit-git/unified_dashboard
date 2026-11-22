@@ -95,7 +95,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
 
   const setStatus = (status) => {
     if (status === 'cancelled') return cancelOrder('BUYER_ASKED_CANCEL')
-    if (status === 'shipped' && ['ebay', 'tiktok_shop'].includes(order.marketplace)) {
+    if (status === 'shipped' && ['ebay', 'tiktok_shop', 'temu'].includes(order.marketplace)) {
       if (tracking.trim()) return saveTracking()
       return setError(`Enter a carrier and tracking number above and click "Push tracking" to mark a ${marketplaceLabel(order.marketplace)} order shipped.`)
     }

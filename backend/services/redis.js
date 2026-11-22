@@ -46,7 +46,7 @@ function createConnection(name, { failFast = false } = {}) {
   const connection = new Redis(targetUrl, {
     connectionName: `ecompilot-${name}`,
     enableOfflineQueue: !failFast,
-    maxRetriesPerRequest: failFast ? 1 : 3,
+    maxRetriesPerRequest: failFast ? 1 : null,
     connectTimeout: 3000,
     retryStrategy(times) {
       if (times > 3) {

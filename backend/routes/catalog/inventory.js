@@ -1,7 +1,7 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, canAccessShop, limitToSection } = require('../../middleware/auth')
 const { requireProductAccess } = require('../../services/productAccess')
-const { paging, paged } = require('../../utils/query')
+const { paging, paged, escapeRegex } = require('../../utils/query')
 const InventoryLog = require('../../models/InventoryLog')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
@@ -67,7 +67,7 @@ router.get('/logs', async (req, res) => {
     }
 
     if (req.query.q) {
-      const q = req.query.q.trim()
+      const q = escapeRegex(req.query.q.trim())
       const productIds = await Product.find({
         $or: [
           { sku: { $regex: q, $options: 'i' } },

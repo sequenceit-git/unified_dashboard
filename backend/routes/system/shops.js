@@ -123,6 +123,19 @@ function sectionGuard(sectionId, defaultMarketplace = 'ebay') {
   }
 }
 
+async function findConnectedShop(req, res, marketplace) {
+  const filter = { marketplace, status: 'connected' }
+  if (req.user.role === 'sub_admin') filter._id = { $in: req.allowedShopIds || [] }
+  const shop = await Shop.findOne(filter)
+  if (shop) return shop
+  if (req.user.role === 'sub_admin' && await Shop.exists({ marketplace, status: 'connected' })) {
+    res.status(403).json({ error: 'You do not have permission for this shop' })
+  } else {
+    res.status(404).json({ error: `No connected ${marketplace} shop` })
+  }
+  return null
+}
+
 // GET /api/shops — id/name/marketplace for dropdowns and tabs.
 // Sub-admins only see their own shop.
 router.get('/', async (req, res) => {
@@ -192,11 +205,8 @@ router.post('/sections/offers/send', sectionGuard('offers'), async (req, res) =>
     const { listingId, discountPercentage = 10, message, allowCounterOffer = false } = req.body
     if (!listingId) return res.status(400).json({ error: 'listingId is required' })
 
-    const shop = await Shop.findOne({ marketplace, status: 'connected' })
-    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
-    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
-      return res.status(403).json({ error: 'You do not have permission for this shop' })
-    }
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.sendBuyerOffer !== 'function') {
@@ -221,11 +231,8 @@ router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res
     const { returnId, decision = 'APPROVE', comments, returnType, rawStatus } = req.body
     if (!returnId) return res.status(400).json({ error: 'returnId is required' })
 
-    const shop = await Shop.findOne({ marketplace, status: 'connected' })
-    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
-    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
-      return res.status(403).json({ error: 'You do not have permission for this shop' })
-    }
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.decideReturn !== 'function') {
@@ -252,11 +259,8 @@ router.post('/sections/cancellations/decide', sectionGuard('returns'), async (re
     const { cancelId, action = 'approve', trackingNumber, shipmentDate, orderId } = req.body
     if (!cancelId) return res.status(400).json({ error: 'cancelId is required' })
 
-    const shop = await Shop.findOne({ marketplace, status: 'connected' })
-    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
-    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
-      return res.status(403).json({ error: 'You do not have permission for this shop' })
-    }
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.decideCancellation !== 'function') {
@@ -295,11 +299,8 @@ router.post('/sections/promotions/create', sectionGuard('promotions'), async (re
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
     const { name, description, percentageOff, listingIds, startDate, endDate } = req.body
 
-    const shop = await Shop.findOne({ marketplace, status: 'connected' })
-    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
-    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
-      return res.status(403).json({ error: 'You do not have permission for this shop' })
-    }
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.createPromotion !== 'function') {
@@ -366,11 +367,8 @@ router.post('/sections/promotions/create', sectionGuard('promotions'), async (re
 router.post('/sections/promotions/:id/pause', sectionGuard('promotions'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
-    const shop = await Shop.findOne({ marketplace, status: 'connected' })
-    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
-    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
-      return res.status(403).json({ error: 'You do not have permission for this shop' })
-    }
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.pausePromotion !== 'function') {
@@ -392,11 +390,8 @@ router.post('/sections/promotions/:id/pause', sectionGuard('promotions'), async 
 router.post('/sections/promotions/:id/resume', sectionGuard('promotions'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
-    const shop = await Shop.findOne({ marketplace, status: 'connected' })
-    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
-    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
-      return res.status(403).json({ error: 'You do not have permission for this shop' })
-    }
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.resumePromotion !== 'function') {
@@ -418,11 +413,8 @@ router.post('/sections/promotions/:id/resume', sectionGuard('promotions'), async
 router.get('/sections/fulfillment/:packageId/label', sectionGuard('fulfillment', 'tiktok_shop'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.query.marketplace || 'tiktok_shop')
-    const shop = await Shop.findOne({ marketplace, status: 'connected' })
-    if (!shop) return res.status(404).json({ error: `No connected ${marketplace} shop` })
-    if (req.user.role === 'sub_admin' && !req.allowedShopIds.some((id) => String(id) === String(shop._id))) {
-      return res.status(403).json({ error: 'You do not have permission for this shop' })
-    }
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
 
     const service = marketplaceManager.getService(marketplace)
     if (typeof service.getShippingDocument !== 'function') {
@@ -433,6 +425,30 @@ router.get('/sections/fulfillment/:packageId/label', sectionGuard('fulfillment',
       service.getShippingDocument(token, req.params.packageId, { shop })
     )
     res.json(doc)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// POST /api/shops/sections/fulfillment/:packageId/ship — ship a TikTok Shipping package (handover method)
+router.post('/sections/fulfillment/:packageId/ship', sectionGuard('fulfillment', 'tiktok_shop'), async (req, res) => {
+  try {
+    const marketplace = canonicalMarketplace(req.body?.marketplace || req.query.marketplace || 'tiktok_shop')
+    const shop = await findConnectedShop(req, res, marketplace)
+    if (!shop) return
+
+    const service = marketplaceManager.getService(marketplace)
+    if (typeof service.shipPackage !== 'function') {
+      return res.status(400).json({ error: `${marketplace} does not support package handover shipping` })
+    }
+
+    const result = await marketplaceManager.withShopToken(shop, (token) =>
+      service.shipPackage(token, req.params.packageId, { handoverMethod: req.body?.handoverMethod || 'DROP_OFF', shop })
+    )
+
+    await cache.del(`shop:${shop._id}:section:fulfillment`)
+    syncQueue.enqueue('orders', shop._id, { push: true }).catch(() => {})
+    res.json({ success: true, result })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
@@ -492,12 +508,14 @@ router.post('/oauth/callback/:marketplace', requireRole('super_admin'), async (r
     if (!marketplace) return res.status(400).json({ error: 'Unknown marketplace' })
     const { code, shopName, state } = req.body
     if (!code) return res.status(400).json({ error: 'Authorization code is required' })
-    if (state && !verifyOAuthState(state, marketplace, req.user.id)) {
+    if (!state || !verifyOAuthState(state, marketplace, req.user.id)) {
       return res.status(400).json({ error: 'Invalid or expired connect request. Start the connection again from Settings.' })
     }
 
     const shop = await connectShop(marketplace, code, { shopName, externalShopId: req.body.externalShopId })
-    res.json({ success: true, shop })
+    const safeShop = shop.toObject()
+    delete safeShop.auth
+    res.json({ success: true, shop: safeShop })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
@@ -577,12 +595,14 @@ router.post('/sync-all', async (req, res) => {
   }
 })
 
-// POST /api/shops/:id/live-updates — (re)subscribe an eBay shop to push notifications
+// POST /api/shops/:id/live-updates — (re)subscribe an eBay or TikTok Shop store to push webhooks
 router.post('/:id/live-updates', requireRole('super_admin'), async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('_id marketplace')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
-    if (shop.marketplace !== 'ebay') return res.status(400).json({ error: 'Live updates are only available for eBay shops' })
+    if (!['ebay', 'tiktok_shop'].includes(shop.marketplace)) {
+      return res.status(400).json({ error: 'Live updates are only available for eBay and TikTok Shop' })
+    }
     const result = await syncQueue.enqueue('live', shop._id, { wait: true, timeoutMs: 20000 })
     res.json({ success: true, result })
   } catch (err) {

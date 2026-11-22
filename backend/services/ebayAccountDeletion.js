@@ -52,14 +52,31 @@ async function purgeUser({ username, userId }) {
   }).select('_id')
   const customerIds = customers.map((row) => row._id)
 
-  await Customer.updateMany(
-    { _id: { $in: customerIds } },
-    { $set: { name: 'Deleted eBay user', identities: [], addresses: [] }, $unset: { email: '', phone: '', address: '' } },
-  )
-  const orders = await Order.updateMany(
-    { $or: [{ 'buyer.username': { $in: names } }, ...(customerIds.length ? [{ customerId: { $in: customerIds } }] : [])] },
-    { $set: { buyer: { name: 'Deleted eBay user' } }, $unset: { shippingAddress: '' } },
-  )
+  if (customerIds.length) {
+    await Customer.updateMany(
+      { _id: { $in: customerIds } },
+      { $set: { name: 'Deleted eBay user', identities: [], addresses: [] }, $unset: { email: '', phone: '', address: '' } },
+    )
+  }
+  // buyer.username uses randomized encryption, so match decrypted usernames in JS for unlinked orders.
+  const nameSet = new Set(names.map((n) => String(n).trim().toLowerCase()).filter(Boolean))
+  const unlinkedOrders = await Order.find({
+    marketplace: 'ebay',
+    ...(customerIds.length ? { customerId: { $nin: customerIds } } : {}),
+  }).select('_id buyer.username')
+  const matchedOrderIds = unlinkedOrders
+    .filter((order) => nameSet.has(String(order.buyer?.username || '').trim().toLowerCase()))
+    .map((order) => order._id)
+
+  const orderConditions = []
+  if (customerIds.length) orderConditions.push({ customerId: { $in: customerIds } })
+  if (matchedOrderIds.length) orderConditions.push({ _id: { $in: matchedOrderIds } })
+  const orders = orderConditions.length
+    ? await Order.updateMany(
+        { $or: orderConditions },
+        { $set: { buyer: { name: 'Deleted eBay user' } }, $unset: { shippingAddress: '' } },
+      )
+    : { modifiedCount: 0 }
   const convos = await Conversation.find({
     $or: [{ customerName: { $in: names } }, ...(customerIds.length ? [{ customerId: { $in: customerIds } }] : [])],
   }).select('_id')

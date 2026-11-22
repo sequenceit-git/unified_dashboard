@@ -177,7 +177,7 @@ export default function SettingsPage() {
                 </p>
               )}
 
-              {connected && shop.marketplace === 'ebay' && (
+              {connected && ['ebay', 'tiktok_shop'].includes(shop.marketplace) && (
                 shop.liveUpdates?.enabled ? (
                   <p className="mt-2 text-xs font-medium text-emerald-700">Live updates on: sales and messages arrive within seconds.</p>
                 ) : (
@@ -218,7 +218,7 @@ export default function SettingsPage() {
                       <Button variant="secondary" onClick={() => handleSync(shop)} disabled={syncingId === shop._id}>
                         {syncingId === shop._id ? 'Syncing…' : 'Sync shop'}
                       </Button>
-                      {shop.marketplace === 'ebay' && !shop.liveUpdates?.enabled && (
+                      {['ebay', 'tiktok_shop'].includes(shop.marketplace) && !shop.liveUpdates?.enabled && (
                         <Button variant="secondary" onClick={() => handleLiveUpdates(shop)} disabled={liveId === shop._id}>
                           {liveId === shop._id ? 'Turning on…' : 'Turn on live updates'}
                         </Button>

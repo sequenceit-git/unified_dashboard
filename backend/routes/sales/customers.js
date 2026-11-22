@@ -5,7 +5,7 @@ const Conversation = require('../../models/Conversation')
 const Customer = require('../../models/Customer')
 const Order = require('../../models/Order')
 const { canonicalMarketplace } = require('../../utils/marketplace')
-const { orderMatch, withOrderStats } = require('../../services/customerStats')
+const { findCustomerOrders, withOrderStats } = require('../../services/customerStats')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('customers'), limitToSection('customers'))
@@ -70,11 +70,8 @@ router.get('/:id', async (req, res) => {
     const customer = await Customer.findOne({ _id: req.params.id, ...scope(req) })
     if (!customer) return res.status(404).json({ error: 'Not found' })
     const marketplace = canonicalMarketplace(req.query.marketplace)
-    const orderFilter = orderMatch([customer], marketplace)
-    const access = shopFilter(req, Order)
-    if (Object.keys(access).length) orderFilter.$and.push(access)
     const [orders, conversations, [stats]] = await Promise.all([
-      Order.find(orderFilter).sort({ placedAt: -1 }).limit(50),
+      findCustomerOrders([customer], marketplace, { extraFilter: shopFilter(req, Order), limit: 50 }),
       Conversation.find({ customerId: customer._id, ...shopFilter(req, Conversation) }).sort({ lastMessageAt: -1 }).limit(20),
       withOrderStats([customer], marketplace),
     ])
@@ -88,18 +85,17 @@ router.get('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { name, email, phone, address } = req.body
-    const update = {
-      ...(name !== undefined ? { name } : {}),
-      ...(email !== undefined ? { email } : {}),
-      ...(phone !== undefined ? { phone } : {}),
-      ...(address !== undefined ? { address, addresses: [address] } : {}),
-    }
-    const doc = await Customer.findOneAndUpdate(
-      { _id: req.params.id, ...scope(req) },
-      update,
-      { new: true, runValidators: true },
-    )
+    const doc = await Customer.findOne({ _id: req.params.id, ...scope(req) })
     if (!doc) return res.status(404).json({ error: 'Not found' })
+    if (name !== undefined) doc.name = name
+    if (email !== undefined) doc.email = email
+    if (phone !== undefined) doc.phone = phone
+    if (address !== undefined) {
+      // Assign on the document and save so subdocument PII setters encrypt address fields.
+      doc.address = address
+      doc.addresses = [address]
+    }
+    await doc.save()
     res.json(doc)
   } catch (err) {
     res.status(400).json({ error: err.message })

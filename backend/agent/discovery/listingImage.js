@@ -80,10 +80,25 @@ function ebayItemId(pageUrl) {
   return match ? match[1] : ''
 }
 
-let applicationToken
+const TOKEN_TTL_MS = 90 * 60 * 1000
+let tokenCache = { value: null, at: 0, inflight: null }
 function ebayToken() {
-  if (!applicationToken) applicationToken = ebay.getApplicationToken().catch(() => null)
-  return applicationToken
+  if (tokenCache.value && Date.now() - tokenCache.at < TOKEN_TTL_MS) {
+    return Promise.resolve(tokenCache.value)
+  }
+  if (!tokenCache.inflight) {
+    tokenCache.inflight = ebay.getApplicationToken()
+      .then((tok) => {
+        if (tok) tokenCache = { value: tok, at: Date.now(), inflight: null }
+        else tokenCache.inflight = null
+        return tok || null
+      })
+      .catch(() => {
+        tokenCache.inflight = null
+        return null
+      })
+  }
+  return tokenCache.inflight
 }
 
 async function ebayImages({ pages = [], title = '' }) {

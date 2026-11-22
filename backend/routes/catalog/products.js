@@ -1,7 +1,7 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter, limitToSection } = require('../../middleware/auth')
 const { productAccess, requireProductAccess, ownDrafts } = require('../../services/productAccess')
-const { paging, sortOf, paged } = require('../../utils/query')
+const { paging, sortOf, paged, escapeRegex } = require('../../utils/query')
 const Listing = require('../../models/Listing')
 const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
@@ -15,7 +15,7 @@ const router = express.Router()
 
 router.use(requireAuth, loadAccess, requireMainRoute('products'), limitToSection('products'))
 
-const SORTABLE = ['createdAt', 'title', 'basePrice', 'costPrice', 'stock']
+const SORTABLE = ['createdAt', 'sku', 'title', 'basePrice', 'costPrice', 'stock']
 
 /** Fields a dashboard edit should send on to live marketplace listings. */
 function changedListingFields(before, after) {
@@ -25,6 +25,16 @@ function changedListingFields(before, after) {
   if (Number(after.basePrice) !== Number(before.basePrice)) changes.price = after.basePrice
   if (Number(after.stock) !== Number(before.stock)) changes.quantity = after.stock
   if (JSON.stringify(after.images || []) !== JSON.stringify(before.images || [])) changes.images = after.images
+  if (after.weight != null && Number(after.weight) !== Number(before.weight)) changes.weight = after.weight
+  const bd = before.dimensions || {}
+  const ad = after.dimensions || {}
+  if (
+    Number(ad.length || 0) !== Number(bd.length || 0)
+    || Number(ad.width || 0) !== Number(bd.width || 0)
+    || Number(ad.height || 0) !== Number(bd.height || 0)
+  ) {
+    changes.dimensions = after.dimensions
+  }
   return changes
 }
 
@@ -62,7 +72,7 @@ router.get('/', async (req, res) => {
     if (req.query.category) filter.category = req.query.category
     if (req.query.source) filter.source = req.query.source
     if (req.query.q) {
-      const q = req.query.q.trim()
+      const q = escapeRegex(req.query.q.trim())
       filter.$or = [
         { title: { $regex: q, $options: 'i' } },
         { sku: { $regex: q, $options: 'i' } },
@@ -155,7 +165,8 @@ router.post('/fill-attributes', async (req, res) => {
 // GET /api/products/categories
 router.get('/categories', async (req, res) => {
   try {
-    res.json(await Product.distinct('category'))
+    const ids = await scopedIds(req)
+    res.json(await Product.distinct('category', ids ? { _id: { $in: ids } } : {}))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -250,6 +261,7 @@ router.post('/:id/list', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ error: 'Product not found' })
+    if (!(await requireProductAccess(req, res, product._id))) return
 
     const shop = await Shop.findById(req.body.shopId).select('+auth.accessTokenEnc')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { encrypt, decrypt } = require('../utils/recipientPii')
 
 const shopSchema = new mongoose.Schema(
   {
@@ -7,8 +8,8 @@ const shopSchema = new mongoose.Schema(
     externalShopId: { type: String, required: true },
     shopCipher: { type: String },
     auth: {
-      accessTokenEnc: { type: String, select: false },
-      refreshTokenEnc: { type: String, select: false },
+      accessTokenEnc: { type: String, select: false, set: encrypt, get: decrypt },
+      refreshTokenEnc: { type: String, select: false, set: encrypt, get: decrypt },
       expiresAt: { type: Date },
     },
     status: {
@@ -33,7 +34,7 @@ const shopSchema = new mongoose.Schema(
     apiAccess: { type: mongoose.Schema.Types.Mixed, default: undefined },
     apiAccessCheckedAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } },
 )
 
 shopSchema.index({ marketplace: 1, externalShopId: 1 }, { unique: true })

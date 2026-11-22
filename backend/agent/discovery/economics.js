@@ -108,8 +108,9 @@ function computeOpportunityScore({
   }
 
   // 4. Net Profit Margin & Unit Economics (max 15 pts)
-  const margin = Number(netMarginPct)
-  if (!isNaN(margin)) {
+  const hasMargin = netMarginPct !== null && netMarginPct !== undefined && netMarginPct !== '' && Number.isFinite(Number(netMarginPct))
+  const margin = hasMargin ? Number(netMarginPct) : NaN
+  if (hasMargin) {
     if (margin >= 40) score += 15
     else if (margin >= 25) score += 11
     else if (margin >= 15) score += 6

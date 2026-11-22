@@ -13,18 +13,15 @@ function buyerKeys(customer) {
 }
 
 function orderMatch(list, marketplace) {
-  const names = [...new Set(list.flatMap((customer) => [...buyerKeys(customer)]))]
-  const emails = [...new Set(list.map((customer) => customer.email).filter(Boolean))]
   const shopIds = list.flatMap((customer) => (customer.identities || [])
     .filter((identity) => !marketplace || (canonicalMarketplace(identity.marketplace) || identity.marketplace) === marketplace)
     .map((identity) => identity.shopId)
     .filter(Boolean))
-  const buyerMatch = [{ customerId: { $in: list.map((customer) => customer._id) } }]
-  if (names.length) {
-    buyerMatch.push({ 'buyer.name': { $in: names } })
-    buyerMatch.push({ 'buyer.username': { $in: names } })
-  }
-  if (emails.length) buyerMatch.push({ 'buyer.email': { $in: emails } })
+  // Query only unencrypted, indexed fields; encrypted buyer fields are matched after decrypt getters run.
+  const buyerMatch = [
+    { customerId: { $in: list.map((customer) => customer._id) } },
+    { customerId: null },
+  ]
   const shopMatch = []
   if (marketplace) shopMatch.push({ marketplace })
   if (shopIds.length) shopMatch.push({ shopId: { $in: shopIds } })
@@ -37,6 +34,32 @@ function orderMatch(list, marketplace) {
   }
 }
 
+function customerMatchesOrder(customer, order) {
+  if (order.customerId && String(order.customerId) === String(customer._id)) return true
+  if (order.customerId != null) return false
+  const keys = buyerKeys(customer)
+  const lowerEmail = customer.email ? String(customer.email).toLowerCase() : ''
+  const orderEmail = order.buyer?.email ? String(order.buyer.email).toLowerCase() : ''
+  return Boolean(
+    (order.buyer?.name && keys.has(order.buyer.name))
+    || (order.buyer?.username && keys.has(order.buyer.username))
+    || (lowerEmail && orderEmail && lowerEmail === orderEmail),
+  )
+}
+
+async function findCustomerOrders(list, marketplace, { extraFilter = null, select = '', limit = 0 } = {}) {
+  if (!list.length) return []
+  const filter = orderMatch(list, marketplace)
+  if (extraFilter && Object.keys(extraFilter).length) {
+    filter.$and.push(extraFilter)
+  }
+  let query = Order.find(filter).sort({ placedAt: -1 })
+  if (select) query = query.select(select)
+  const candidates = await query
+  const matched = candidates.filter((order) => list.some((customer) => customerMatchesOrder(customer, order)))
+  return limit > 0 ? matched.slice(0, limit) : matched
+}
+
 function orderAmount(order) {
   const total = Number(order.totals?.total)
   if (total) return total
@@ -47,17 +70,12 @@ async function withOrderStats(customers, marketplace) {
   const list = customers.map((customer) => (customer.toObject ? customer.toObject() : customer))
   if (!list.length) return list
 
-  const orders = await Order.find(orderMatch(list, marketplace)).select(
-    'customerId buyer.name buyer.username buyer.email buyer.phone shippingAddress totals.total items placedAt'
-  )
+  const orders = await findCustomerOrders(list, marketplace, {
+    select: 'customerId buyer.name buyer.username buyer.email buyer.phone shippingAddress totals.total items placedAt',
+  })
   const stats = new Map()
   for (const order of orders) {
-    const customer = (order.customerId && list.find((item) => String(order.customerId) === String(item._id)))
-      || list.find((item) => (
-        (order.buyer?.name && buyerKeys(item).has(order.buyer.name))
-        || (order.buyer?.username && buyerKeys(item).has(order.buyer.username))
-        || (order.buyer?.email && item.email && order.buyer.email === item.email)
-      ))
+    const customer = list.find((item) => customerMatchesOrder(item, order))
     if (!customer) continue
     const key = String(customer._id)
     const row = stats.get(key) || {
@@ -118,4 +136,4 @@ async function saveCustomerStats(customerIds) {
   )))
 }
 
-module.exports = { buyerKeys, orderMatch, withOrderStats, saveCustomerStats }
+module.exports = { buyerKeys, orderMatch, findCustomerOrders, withOrderStats, saveCustomerStats }

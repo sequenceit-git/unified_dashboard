@@ -43,9 +43,11 @@ const CLIENT_URLS = [
 app.use(cors({ origin: CLIENT_URLS, credentials: true }))
 app.use(express.json({
   limit: '50mb',
-  // eBay signs the exact bytes of its deletion notices, so keep them for signature checks.
+  // eBay deletion notices and TikTok Shop webhooks sign exact raw bytes.
   verify: (req, res, buf) => {
-    if (req.originalUrl.startsWith('/api/ebay/deletion')) req.rawBody = buf
+    if (req.originalUrl.startsWith('/api/ebay/deletion') || req.originalUrl.startsWith('/api/tiktok/webhooks')) {
+      req.rawBody = buf
+    }
   },
 }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))

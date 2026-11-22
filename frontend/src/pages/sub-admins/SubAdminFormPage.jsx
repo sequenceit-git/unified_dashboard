@@ -413,7 +413,7 @@ export default function SubAdminFormPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={editing ? '••••••••' : 'Min 6 characters'}
+                placeholder={editing ? '••••••••' : 'Min 8 characters'}
                 autoComplete="new-password"
                 required={!editing}
               />

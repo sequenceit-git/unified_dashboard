@@ -34,6 +34,8 @@ function productKey(id) {
 
 function listingAliases(id) {
   const value = String(id || '')
+  if (!value) return []
+  if (value.includes(':')) return [value]
   const key = productKey(value)
   return [...new Set([value, key].filter(Boolean))]
 }
@@ -45,12 +47,6 @@ function ignoreTokens(...values) {
     if (!text) continue
     tokens.add(text)
     tokens.add(text.toLowerCase())
-    for (const part of text.split(':')) {
-      const piece = part.trim()
-      if (!piece) continue
-      tokens.add(piece)
-      tokens.add(piece.toLowerCase())
-    }
   }
   return [...tokens]
 }
@@ -245,8 +241,13 @@ class UnifiedMarketplaceManager {
 
         const cancelledOrderIds = new Set()
         for (const c of rawCancellations || []) {
-          const cStatus = String(c.cancelStatus || '').toUpperCase()
-          if (!cStatus.includes('REJECT')) {
+          const cStatus = String(c.cancelStatus || c.cancelState || '').toUpperCase()
+          const isFinalCancel =
+            !cStatus.includes('REJECT') &&
+            !cStatus.includes('REQUEST') &&
+            !cStatus.includes('PENDING') &&
+            (cStatus.includes('CLOSED') || cStatus.includes('COMPLETE') || cStatus.includes('APPROV') || cStatus === 'CANCELED' || cStatus === 'CANCELLED')
+          if (isFinalCancel) {
             if (c.orderId) cancelledOrderIds.add(String(c.orderId))
             if (c.legacyOrderId) cancelledOrderIds.add(String(c.legacyOrderId))
           }
@@ -358,7 +359,7 @@ class UnifiedMarketplaceManager {
             cancelState === 'CANCEL_CLOSED_WITH_REFUND' ||
             cancelState === 'CANCEL_COMPLETE' ||
             cancelState === 'CLOSED_WITH_REFUND' ||
-            (cancelState.startsWith('CANCEL') && !cancelState.includes('REJECTED') && !cancelState.includes('NONE'))
+            (cancelState.startsWith('CANCEL') && !/REJECT|NONE|REQUEST|PENDING|IN_PROGRESS/.test(cancelState))
 
           if (isCancelled) {
             orderStatus = 'cancelled'
@@ -434,12 +435,105 @@ class UnifiedMarketplaceManager {
         })
         await this.attachEbayTracking(shop, token, service, rawOrders)
         ordersComplete = res.complete
+      } else if (shop.marketplace === 'tiktok_shop') {
+        const OVERLAP_MS = 60 * 60 * 1000
+        const since = shop.ordersSyncedAt ? new Date(new Date(shop.ordersSyncedAt).getTime() - OVERLAP_MS) : null
+        const [res, rawReturns, rawCancellations] = await Promise.all([
+          service.getOrders(token, { limit: 1000, since, shop }),
+          typeof service.getReturns === 'function' ? service.getReturns(token, { shop }).catch(() => []) : [],
+          typeof service.getCancellations === 'function' ? service.getCancellations(token, { shop }).catch(() => []) : [],
+        ])
+
+        const cancelledOrderIds = new Set()
+        for (const c of rawCancellations || []) {
+          const cStatus = String(c.cancel_status || '').toUpperCase()
+          if (['CANCELLATION_REQUEST_COMPLETE', 'CANCELLATION_REQUEST_SUCCESS'].includes(cStatus) && c.order_id) {
+            cancelledOrderIds.add(String(c.order_id))
+          }
+        }
+
+        const returnedOrderMap = new Map()
+        for (const r of rawReturns || []) {
+          if (!r.order_id) continue
+          const id = String(r.order_id)
+          if (!returnedOrderMap.has(id)) returnedOrderMap.set(id, [])
+          returnedOrderMap.get(id).push(r)
+        }
+
+        rawOrders = res.orders || []
+        if (typeof service.getOrderDetails === 'function') {
+          const fetchedIds = new Set(rawOrders.map((o) => String(o.externalOrderId || '')).filter(Boolean))
+          const affectedIds = [...new Set([...cancelledOrderIds, ...returnedOrderMap.keys()])].filter((id) => id && !fetchedIds.has(id))
+          if (affectedIds.length) {
+            const staleRows = await Order.find({
+              shopId: shop._id,
+              externalOrderId: { $in: affectedIds },
+              status: { $nin: ['cancelled', 'refunded'] },
+            }).select('externalOrderId').limit(20).lean()
+            const missingIds = staleRows.map((row) => row.externalOrderId).filter(Boolean)
+            if (missingIds.length) {
+              const extraOrders = await service.getOrderDetails(token, missingIds, { shop }).catch(() => [])
+              if (extraOrders?.length) rawOrders.push(...extraOrders)
+            }
+          }
+        }
+
+        const COMPLETE_RETURN = new Set([
+          'RETURN_OR_REFUND_REQUEST_COMPLETE',
+          'RETURN_OR_REFUND_REQUEST_SUCCESS',
+          'REPLACEMENT_REQUEST_REFUND_SUCCESS',
+        ])
+        const REJECTED_RETURN = new Set([
+          'REFUND_OR_RETURN_REQUEST_REJECT',
+          'REJECT_RECEIVE_PACKAGE',
+          'RETURN_OR_REFUND_REQUEST_CANCEL',
+          'REPLACEMENT_REQUEST_REJECT',
+          'REPLACEMENT_REQUEST_CANCEL',
+        ])
+        const APPROVED_RETURN = new Set(['AWAITING_BUYER_SHIP', 'BUYER_SHIPPED_ITEM'])
+
+        for (const ord of rawOrders) {
+          const extId = String(ord.externalOrderId || '')
+          const rets = returnedOrderMap.get(extId) || []
+          if (rets.length) {
+            ord.returns = rets.map((r) => {
+              const st = String(r.return_status || '').toUpperCase()
+              const refundAmt = Number(r.refund_amount?.refund_total || 0)
+              const mappedStatus = (COMPLETE_RETURN.has(st) || st === 'REPLACEMENT_REQUEST_COMPLETE')
+                ? 'received'
+                : REJECTED_RETURN.has(st)
+                  ? 'rejected'
+                  : APPROVED_RETURN.has(st)
+                    ? 'approved'
+                    : 'requested'
+              return {
+                reason: r.return_reason_text || r.return_reason || 'Customer return',
+                status: mappedStatus,
+                refundAmount: refundAmt > 0 ? refundAmt : undefined,
+                requestedAt: r.create_time ? new Date(Number(r.create_time) * 1000) : undefined,
+                refundedAt: (COMPLETE_RETURN.has(st) || st === 'REPLACEMENT_REQUEST_COMPLETE')
+                  ? new Date(Number(r.update_time || r.create_time || Date.now() / 1000) * 1000)
+                  : undefined,
+              }
+            })
+            if (rets.some((r) => COMPLETE_RETURN.has(String(r.return_status || '').toUpperCase()))) {
+              ord.status = 'refunded'
+            } else if (rets.some((r) => !REJECTED_RETURN.has(String(r.return_status || '').toUpperCase()))) {
+              ord.status = 'returned'
+            }
+          }
+          if (cancelledOrderIds.has(extId) && ord.status !== 'refunded') {
+            ord.status = 'cancelled'
+          }
+        }
+        ordersComplete = res.complete !== false
       } else {
         const res = await service.getOrders(token, { limit: 200, shop })
         rawOrders = res.orders || []
       }
 
       let createdCount = 0
+      let failedCount = 0
       const touchedCustomerIds = []
       let appToken = null
       if (shop.marketplace === 'ebay' && typeof service.getApplicationToken === 'function') {
@@ -449,6 +543,7 @@ class UnifiedMarketplaceManager {
       }
 
       for (const ord of rawOrders) {
+        try {
         let customer = null
         const rawBuyer = ord.buyer?.username || ord.buyer?.name
         const buyerUsername = rawBuyer && !['eBay Customer', 'TikTok Shop customer', 'Temu customer'].includes(rawBuyer) ? rawBuyer : ''
@@ -565,11 +660,15 @@ class UnifiedMarketplaceManager {
                 } catch {}
               }
             }
+            if (!itemImages.length && item.image) {
+              itemImages.push(item.image)
+            }
           }
 
           if (!prod) {
+            const prefix = { ebay: 'EBAY', tiktok_shop: 'TTS', temu: 'TEMU' }[shop.marketplace] || 'EP'
             prod = await Product.create({
-              sku: item.sku || (item.externalListingId ? `EBAY-${item.externalListingId}` : newSku(shop.marketplace)),
+              sku: item.sku || (item.externalListingId ? `${prefix}-${item.externalListingId}` : newSku(shop.marketplace)),
               title: item.title || `Item ${item.sku || item.externalListingId}`,
               category: 'General',
               brand: shop.name || 'Store item',
@@ -585,22 +684,28 @@ class UnifiedMarketplaceManager {
           }
           item.productId = prod._id
 
-          // Links the product to its listing; match on externalListingId to prevent duplicate listings
+          // Links the product to its listing; check (productId, shopId) first to avoid E11000 on relists
           if (item.externalListingId) {
-            await Listing.updateOne(
-              { shopId: shop._id, externalListingId: item.externalListingId },
-              {
-                $setOnInsert: {
-                  productId: prod._id,
-                  shopId: shop._id,
-                  marketplace: shop.marketplace,
-                  externalListingId: item.externalListingId,
-                  price: item.unitPrice || prod.basePrice,
-                  status: 'pending',
+            const existingForProd = await Listing.findOne({ productId: prod._id, shopId: shop._id })
+            if (!existingForProd) {
+              await Listing.updateOne(
+                { shopId: shop._id, externalListingId: item.externalListingId },
+                {
+                  $setOnInsert: {
+                    productId: prod._id,
+                    shopId: shop._id,
+                    marketplace: shop.marketplace,
+                    externalListingId: item.externalListingId,
+                    price: item.unitPrice || prod.basePrice,
+                    status: 'pending',
+                  },
                 },
-              },
-              { upsert: true },
-            )
+                { upsert: true },
+              )
+            } else if (!existingForProd.externalListingId) {
+              existingForProd.externalListingId = item.externalListingId
+              await existingForProd.save()
+            }
           }
         }
 
@@ -727,20 +832,25 @@ class UnifiedMarketplaceManager {
             if (sold) await this.propagateStock(sold, { exceptShopId: shop._id })
           }
         }
+        } catch (ordErr) {
+          failedCount++
+          console.warn(`[syncOrders] ${shop.name} order ${ord.externalOrderId || '?'} failed:`, ordErr.message)
+        }
       }
 
       await saveCustomerStats(touchedCustomerIds)
 
       await Shop.updateOne({ _id: shop._id }, {
         lastSyncAt: new Date(),
-        ...(shop.marketplace === 'ebay' && ordersComplete ? { ordersSyncedAt: syncStartedAt } : {}),
+        ...(['ebay', 'tiktok_shop'].includes(shop.marketplace) && ordersComplete ? { ordersSyncedAt: syncStartedAt } : {}),
       })
 
+      syncLog.status = failedCount > 0 ? 'partial' : 'success'
       syncLog.stats = {
         fetched: rawOrders.length,
         created: createdCount,
         updated: updatedCount,
-        failed: 0,
+        failed: failedCount,
       }
       syncLog.finishedAt = new Date()
       await syncLog.save()
@@ -749,6 +859,7 @@ class UnifiedMarketplaceManager {
         synced: rawOrders.length,
         created: createdCount,
         updated: updatedCount,
+        failed: failedCount,
       }
     } catch (err) {
       syncLog.status = 'failed'
@@ -825,7 +936,7 @@ class UnifiedMarketplaceManager {
   async applyListingAction(shop, listing, action, options = {}) {
     const allowed = (profiles.PROFILES[shop.marketplace]?.listingActions || []).some((item) => {
       if (item.id !== action) return false
-      if (listing.marketplaceStatus && item.raw?.includes(listing.marketplaceStatus)) return true
+      if (listing.marketplaceStatus && Array.isArray(item.raw)) return item.raw.includes(listing.marketplaceStatus)
       return item.statuses.includes(listing.status)
     })
     if (!allowed) throw new Error(`This ${shop.marketplace === 'ebay' ? 'eBay' : 'shop'} listing cannot ${action} in its current state.`)
@@ -909,7 +1020,13 @@ class UnifiedMarketplaceManager {
     if (typeof service.issueRefund !== 'function') {
       return { success: false, note: `${shop.marketplace} refunds are not available from this connector` }
     }
-    return this.withShopToken(shop, (token) => service.issueRefund(token, order.externalOrderId, { reason, comment, amount, shop }))
+    return this.withShopToken(shop, (token) => service.issueRefund(token, order.externalOrderId, {
+      reason,
+      comment,
+      amount,
+      orderTotal: order.totals?.total,
+      shop,
+    }))
   }
 
   /**
@@ -1037,10 +1154,11 @@ class UnifiedMarketplaceManager {
     const service = this.getService(shop.marketplace)
     if (shop.marketplace === 'ebay') return this.fetchEbayListings(shop, token, service)
     if (typeof service.getInventory !== 'function') return { complete: false, items: [] }
-    const res = await service.getInventory(token, { limit: 200, shop })
+    const limit = shop.marketplace === 'tiktok_shop' ? 2000 : 200
+    const res = await service.getInventory(token, { limit, shop })
     const items = res.inventoryItems || []
     return {
-      complete: res.complete ?? items.length < 200,
+      complete: res.complete ?? items.length < limit,
       items: items.map((item) => ({
         ...item,
         aliases: listingAliases(item.externalListingId),
@@ -1094,7 +1212,12 @@ class UnifiedMarketplaceManager {
     }
     if (complete) {
       const seen = new Set()
-      for (const id of seenListingIds) listingAliases(id).forEach((key) => seen.add(key))
+      const seenProductKeys = new Set()
+      for (const id of seenListingIds) {
+        listingAliases(id).forEach((key) => seen.add(key))
+        const pKey = productKey(id)
+        if (pKey) seenProductKeys.add(pKey)
+      }
       const cutoff = new Date(Date.now() - 10 * 60 * 1000)
       const candidates = await Listing.find({
         shopId: shop._id,
@@ -1103,8 +1226,11 @@ class UnifiedMarketplaceManager {
         updatedAt: { $lt: cutoff },
       })
       for (const listing of candidates) {
-        const keys = listingAliases(listing.externalListingId)
-        if (keys.some((key) => seen.has(key))) continue
+        const ext = String(listing.externalListingId || '')
+        const isMatched = ext.includes(':')
+          ? seen.has(ext)
+          : (listingAliases(ext).some((key) => seen.has(key)) || seenProductKeys.has(ext))
+        if (isMatched) continue
         listing.status = 'ended'
         listing.syncError = `No longer returned by ${config[shop.marketplace]?.name || shop.marketplace}.`
         listing.lastSyncedAt = new Date()
@@ -1202,11 +1328,14 @@ class UnifiedMarketplaceManager {
     const ids = [...new Set([...(item.aliases || []), ...listingAliases(item.externalListingId)])]
     let listing = await Listing.findOne({
       shopId: shop._id,
-      $or: [
-        { externalListingId: { $in: ids } },
-        ...(key && shop.marketplace === 'tiktok_shop' ? [{ externalListingId: new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(:|$)`) }] : []),
-      ],
+      externalListingId: { $in: ids },
     })
+    if (!listing && key && shop.marketplace === 'tiktok_shop' && String(item.externalListingId || '').includes(':')) {
+      listing = await Listing.findOne({
+        shopId: shop._id,
+        externalListingId: key,
+      })
+    }
     let product = listing ? await Product.findById(listing.productId) : null
     if (!product && item.matchSkus?.length) product = await Product.findOne({ sku: { $in: item.matchSkus } })
     if (await this.isForgotten(shop._id, item, product)) {
@@ -1317,7 +1446,7 @@ class UnifiedMarketplaceManager {
         ...(changes.images ? { images: this.publicImageUrls(changes.images) } : {}),
       }
       try {
-        const res = await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop }))
+        const res = await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop, listing }))
         listing.syncError = null
         if (changes.price != null && !res?.skipped?.includes('price')) listing.price = changes.price
         if (changes.quantity != null) listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
@@ -1533,11 +1662,17 @@ class UnifiedMarketplaceManager {
   }
 
   /** Recent messages of a conversation straight from the marketplace, oldest first. */
-  async getThreadHistory(shop, convo) {
+  async getThreadHistory(shop, convo, { markRead = false } = {}) {
     const service = this.getService(shop.marketplace)
     if (typeof service.getThreadMessages !== 'function') return []
     const conversationType = convo.replyable === false ? 'FROM_EBAY' : 'FROM_MEMBERS'
-    return this.withShopToken(shop, (token) => service.getThreadMessages(token, shop, convo.externalThreadId, { conversationType }))
+    return this.withShopToken(shop, (token) => service.getThreadMessages(token, shop, convo.externalThreadId, { conversationType, markRead }))
+  }
+
+  async markThreadRead(shop, convo) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.markConversationAsRead !== 'function' || !convo?.externalThreadId) return
+    return this.withShopToken(shop, (token) => service.markConversationAsRead(token, shop, convo.externalThreadId))
   }
 
   /** Sends text to the buyer on the marketplace; returns `{ externalMessageId }`. */

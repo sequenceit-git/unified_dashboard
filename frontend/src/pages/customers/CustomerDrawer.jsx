@@ -9,16 +9,9 @@ import Modal from '../../components/ui/Modal'
 export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const { token } = useAuth()
   const ebayIdentity = (customer.identities || []).find((i) => i.marketplace === 'ebay')
-  const buyerUsername =
-    ebayIdentity?.username ||
-    customer.identities?.[0]?.username ||
-    customer.identities?.[0]?.externalBuyerId ||
-    (!customer.name?.includes(' ') ? customer.name : '')
-  const defaultEmail =
-    customer.email || (buyerUsername ? `${buyerUsername.toLowerCase()}@members.ebay.com` : '')
-
   const [name, setName] = useState(customer.name || '')
-  const [email, setEmail] = useState(defaultEmail)
+  const [email, setEmail] = useState(customer.email || '')
+  const displayEmail = email || (ebayIdentity?.username ? `${ebayIdentity.username.toLowerCase()}@members.ebay.com` : '')
   const [phone, setPhone] = useState(customer.phone || '')
   const [street, setStreet] = useState(customer.address?.street || '')
   const [city, setCity] = useState(customer.address?.city || '')
@@ -56,12 +49,12 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
       <div className="space-y-4 text-sm">
         {/* Quick Contact & Action Chips */}
         <div className="flex flex-wrap items-center gap-2">
-          {email ? (
+          {displayEmail ? (
             <a
-              href={`mailto:${email}`}
+              href={`mailto:${displayEmail}`}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 transition-colors"
             >
-              ✉️ {email}
+              ✉️ {displayEmail}
             </a>
           ) : null}
           {phone ? (

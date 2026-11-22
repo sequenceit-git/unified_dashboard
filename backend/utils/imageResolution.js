@@ -1,3 +1,5 @@
+const { safeFetch } = require('./safeUrl')
+
 /**
  * Utilities for upgrading e-commerce CDN image URLs to high-resolution master images
  * and validating dimensions against marketplace requirements (e.g. eBay 500px policy).
@@ -66,7 +68,7 @@ async function probeImageDimensions(url, timeoutMs = 4000) {
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const res = await fetch(url, {
+    const { response: res } = await safeFetch(url, {
       signal: controller.signal,
       headers: {
         Range: 'bytes=0-32768',

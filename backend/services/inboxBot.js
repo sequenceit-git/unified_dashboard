@@ -86,9 +86,9 @@ async function storeHistory(shop, convo, history) {
 }
 
 /** Pulls recent marketplace messages into the thread; failures leave the stored thread as is. */
-async function refreshThread(shop, convo) {
+async function refreshThread(shop, convo, { markRead = false } = {}) {
   try {
-    await storeHistory(shop, convo, await marketplaceManager.getThreadHistory(shop, convo))
+    await storeHistory(shop, convo, await marketplaceManager.getThreadHistory(shop, convo, { markRead }))
   } catch (err) {
     console.warn(`[inbox] ${shop.name}: could not load thread ${convo.externalThreadId}: ${err.message}`)
   }
@@ -132,6 +132,7 @@ async function replyToMessage(shop, conversationId, messageId) {
     }
 
     const sent = await marketplaceManager.sendReply(shop, convo, text)
+    marketplaceManager.markThreadRead(shop, convo).catch(() => {})
     await Message.create({
       conversationId: convo._id,
       shopId: shop._id,

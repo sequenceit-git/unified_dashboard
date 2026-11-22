@@ -20,4 +20,8 @@ async function paged(model, filter, { page, limit, skip }, sort) {
   return { data, page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) }
 }
 
-module.exports = { paging, sortOf, paged }
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+module.exports = { paging, sortOf, paged, escapeRegex }

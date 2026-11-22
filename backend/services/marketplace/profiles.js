@@ -38,10 +38,18 @@ const ttDates = () => {
   const from = new Date(to - 7 * 86400000)
   return { start_date_ge: from.toISOString().slice(0, 10), end_date_lt: to.toISOString().slice(0, 10) }
 }
+const ttCreators = async (token, shop) => {
+  try {
+    return await tiktok.call(token, 'POST', '/affiliate_seller/202508/marketplace_creators/search', { shop, query: { page_size: 12 }, body: {} })
+  } catch (err) {
+    if (!/version|not found|404/i.test(err.message || '')) throw err
+    return tiktok.call(token, 'POST', '/affiliate_seller/202406/marketplace_creators/search', { shop, query: { page_size: 12 }, body: {} })
+  }
+}
 
 const ebayListings = (token) => ebayTrading(token, 'GetMyeBaySelling', '<ActiveList><Include>true</Include><Pagination><EntriesPerPage>1</EntriesPerPage></Pagination></ActiveList>')
 const ebayOrders = (token) => ebayRest(token, '/sell/fulfillment/v1/order?limit=1')
-const ttProducts = ttCall('POST', '/product/202309/products/search', { query: { page_size: 1 }, body: {} })
+const ttProducts = ttCall('POST', '/product/202502/products/search', { query: { page_size: 1 }, body: {} })
 const ttOrders = ttCall('POST', '/order/202309/orders/search', { query: { page_size: 1 }, body: {} })
 const temuGoods = (token) => temu.call('bg.local.goods.list.query', { access_token: token, pageNo: 1, pageSize: 1, goodsSearchType: 1 })
 const temuOrders = (token) => temu.call('bg.order.list.get', { access_token: token, pageNumber: 1, pageSize: 1, parentOrderStatus: 0, regionId: 211 })
@@ -111,11 +119,11 @@ const PROFILES = {
       { id: 'inventory', label: 'Inventory', path: '/inventory', route: 'inventory', needs: 'Product API', probe: ttProducts },
       { id: 'orders', label: 'Orders', path: '/orders', route: 'orders', needs: 'Order API', probe: ttOrders },
       { id: 'fulfillment', label: 'Packages', path: '/shop/fulfillment', route: 'orders', needs: 'Fulfillment API', probe: ttCall('POST', '/fulfillment/202309/packages/search', { query: { page_size: 1 }, body: {} }) },
-      { id: 'returns', label: 'Returns & cancellations', path: '/shop/returns', route: 'orders', needs: 'Return and Refund API', probe: ttCall('POST', '/return_refund/202309/returns/search', { query: { page_size: 1 }, body: {} }) },
+      { id: 'returns', label: 'Returns & cancellations', path: '/shop/returns', route: 'orders', needs: 'Return and Refund API', probe: ttCall('POST', '/return_refund/202309/returns/search', { query: { page_size: 10 }, body: {} }) },
       { id: 'promotions', label: 'Promotions', path: '/shop/promotions', route: 'products', needs: 'Promotion API', probe: ttCall('POST', '/promotion/202309/activities/search', { body: { page_size: 1 } }) },
       { id: 'finances', label: 'Finance', path: '/shop/finances', route: 'analytics', needs: 'Finance API', probe: ttCall('GET', '/finance/202309/statements', { query: { page_size: 1, sort_field: 'statement_time' } }) },
       { id: 'content', label: 'Videos & LIVE', path: '/shop/content', route: 'analytics', needs: 'Data Analytics API', probe: ttCall('GET', '/analytics/202509/shop_videos/performance', { query: { ...ttDates(), page_size: 1 } }) },
-      { id: 'creators', label: 'Creators', path: '/shop/creators', route: 'products', needs: 'Affiliate Seller scope', probe: ttCall('POST', '/affiliate_seller/202406/marketplace_creators/search', { query: { page_size: 12 }, body: {} }) },
+      { id: 'creators', label: 'Creators', path: '/shop/creators', route: 'products', needs: 'Affiliate Seller scope', probe: ttCreators },
       { id: 'customers', label: 'Customers', path: '/customers', route: 'customers', needs: 'Order API', probe: ttOrders },
     ],
     statuses: {
@@ -148,9 +156,9 @@ const PROFILES = {
     },
     listingActions: [
       { id: 'unpublish', label: 'Unpublish', confirm: 'Take this product off TikTok Shop? You can publish it again later.', statuses: ['live', 'out_of_stock'], raw: ['ACTIVATE'] },
-      { id: 'publish', label: 'Publish', confirm: 'Publish this product on TikTok Shop? A draft goes to review first.', statuses: ['paused', 'error'], raw: ['SELLER_DEACTIVATED', 'PLATFORM_DEACTIVATED', 'DRAFT', 'FAILED'] },
+      { id: 'publish', label: 'Publish', confirm: 'Publish this product on TikTok Shop? A draft goes to review first.', statuses: ['paused', 'error'], raw: ['SELLER_DEACTIVATED', 'DRAFT', 'FAILED'] },
       { id: 'delete', label: 'Cancel review', danger: true, confirm: 'Cancel this TikTok Shop review and delete the listing?', statuses: ['pending'], raw: ['PENDING'] },
-      { id: 'delete', label: 'Delete listing', danger: true, confirm: 'Delete this product from TikTok Shop? This cannot be undone.', statuses: ['paused', 'error'], raw: ['DRAFT', 'FAILED'] },
+      { id: 'delete', label: 'Delete listing', danger: true, confirm: 'Delete this product from TikTok Shop? This cannot be undone.', statuses: ['paused', 'error'], raw: ['DRAFT', 'FAILED', 'SELLER_DEACTIVATED'] },
       { id: 'recover', label: 'Recover listing', confirm: 'Restore this deleted product on TikTok Shop?', statuses: ['ended'], raw: ['DELETED'] },
     ],
   },

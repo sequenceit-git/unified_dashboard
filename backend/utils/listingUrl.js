@@ -22,7 +22,8 @@ function listingUrl(marketplace, externalListingId, saved, { status } = {}) {
       : `https://seller-us.tiktok.com/product/edit?product_id=${productId}`
   }
   if (marketplace === 'temu') {
-    return /^\d+$/.test(id) ? `https://www.temu.com/goods.html?goods_id=${id}` : ''
+    const goodsId = id.split(':')[0]
+    return /^\d+$/.test(goodsId) ? `https://www.temu.com/goods.html?goods_id=${goodsId}` : ''
   }
   return ''
 }

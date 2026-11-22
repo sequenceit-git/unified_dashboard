@@ -52,11 +52,11 @@ const KINDS = {
     run: (shop) => manager().checkShopAccess(shop),
     clears: () => [],
   },
-  // Re-subscribes eBay shops to push notifications once a day (and on connect).
+  // Re-subscribes eBay and TikTok Shop stores to push notifications/webhooks once a day (and on connect).
   live: {
     every: () => (autoSync('ACCESS_AUTO_CHECK') ? 24 * 60 : 0),
-    applies: (shop) => shop.marketplace === 'ebay',
-    run: (shop) => require('./ebayNotifications').enable(shop),
+    applies: (shop) => ['ebay', 'tiktok_shop'].includes(shop.marketplace),
+    run: (shop) => (shop.marketplace === 'tiktok_shop' ? require('./tiktokNotifications') : require('./ebayNotifications')).enable(shop),
     clears: () => [],
   },
   full: {

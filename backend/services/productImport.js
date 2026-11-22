@@ -4,42 +4,16 @@
  * details up, or looks the product up by web search when the site blocks the download.
  */
 
-const dns = require('dns').promises
-const net = require('net')
 const OpenAI = require('openai')
 const ebay = require('./marketplace/ebay')
 const { getAiConfig } = require('./aiSettings')
+const { checkUrl, safeFetch } = require('../utils/safeUrl')
 
 const MAX_HTML_BYTES = 3 * 1024 * 1024
 const BROWSER_HEADERS = {
   Accept: 'text/html,application/xhtml+xml',
   'Accept-Language': 'en-US,en;q=0.9',
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-}
-
-function privateAddress(ip) {
-  if (net.isIPv4(ip)) {
-    const [a, b] = ip.split('.').map(Number)
-    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127)
-  }
-  const lower = ip.toLowerCase()
-  return lower === '::1' || lower === '::' || lower.startsWith('fc') || lower.startsWith('fd') || lower.startsWith('fe80') || lower.startsWith('::ffff:')
-}
-
-/** Only public http(s) pages; the server must not be pointed at its own network. */
-async function checkUrl(raw) {
-  let url
-  try {
-    url = new URL(String(raw || '').trim())
-  } catch {
-    throw new Error('Enter a full product link, starting with https://')
-  }
-  if (!/^https?:$/.test(url.protocol)) throw new Error('Only http and https links are supported.')
-  if (/^(localhost|.*\.local|.*\.internal)$/i.test(url.hostname)) throw new Error('That link points to a private address.')
-  const addresses = await dns.lookup(url.hostname, { all: true }).catch(() => [])
-  if (!addresses.length) throw new Error(`Could not find the website ${url.hostname}.`)
-  if (addresses.some(({ address }) => privateAddress(address))) throw new Error('That link points to a private address.')
-  return url
 }
 
 const decode = (value) => String(value ?? '')
@@ -238,16 +212,11 @@ async function download(url) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 12000)
   try {
-    let current = url
-    let res
-    for (let hop = 0; hop < 5; hop += 1) {
-      res = await fetch(current.href, { headers: BROWSER_HEADERS, redirect: 'manual', signal: controller.signal })
-      const location = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null
-      if (!location) break
-      current = await checkUrl(new URL(location, current).href)
-    }
+    const { response: res, url: finalUrl } = await safeFetch(url.href, {
+      headers: BROWSER_HEADERS,
+      signal: controller.signal,
+    })
     if (!res.ok) return { blocked: true, status: res.status }
-    const finalUrl = current
     const reader = res.body.getReader()
     const chunks = []
     let size = 0

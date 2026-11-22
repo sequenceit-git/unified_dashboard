@@ -44,10 +44,21 @@ router.get('/conversations/:id', async (req, res) => {
     if (!convo) return res.status(404).json({ error: 'Not found' })
     const needsBody = convo.replyable === false && !(await Message.exists({ conversationId: convo._id }))
     // Opening a thread fetches its latest messages, at most once a minute per thread.
+    const shop = await Shop.findById(convo.shopId)
+    let fetchedHistory = false
     if (convo.externalThreadId && (convo.replyable !== false || needsBody)
       && (needsBody || await cache.claim(`thread:${convo._id}`, 60))) {
-      const shop = await Shop.findById(convo.shopId)
-      if (shop?.status === 'connected') await refreshThread(shop, convo)
+      if (shop?.status === 'connected') {
+        await refreshThread(shop, convo, { markRead: convo.replyable !== false })
+        fetchedHistory = convo.replyable !== false
+      }
+    }
+    if (convo.unreadCount > 0 && convo.replyable !== false) {
+      if (!fetchedHistory && shop?.status === 'connected' && convo.externalThreadId) {
+        marketplaceManager.markThreadRead(shop, convo).catch(() => {})
+      }
+      convo.unreadCount = 0
+      await convo.save().catch(() => {})
     }
     const messages = await Message.find({ conversationId: convo._id }).sort({ sentAt: 1 }).limit(200)
     res.json({ ...convo.toObject(), messages })
@@ -89,6 +100,7 @@ router.post('/conversations/:id/messages', async (req, res) => {
     convo.lastMessagePreview = req.body.text.slice(0, 100)
     convo.unreadCount = 0
     await convo.save()
+    marketplaceManager.markThreadRead(shop, convo).catch(() => {})
 
     res.status(201).json(msg)
   } catch (err) {

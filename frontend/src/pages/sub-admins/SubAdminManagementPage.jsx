@@ -44,6 +44,17 @@ function formatDateTimeSafe(val) {
   return isNaN(d.getTime()) ? 'Never' : d.toLocaleString()
 }
 
+function marketsOf(user) {
+  const explicit = Array.isArray(user?.marketplaces) && user.marketplaces.length > 0
+    ? user.marketplaces
+    : (user?.marketplace ? [user.marketplace] : ['ebay'])
+  const rawAllowed = Array.isArray(user?.allowedSections) ? user.allowedSections : []
+  const scoped = rawAllowed
+    .filter((x) => typeof x === 'string' && x.includes(':'))
+    .map((x) => x.split(':')[0])
+  return [...new Set([...explicit, ...scoped])].filter((m) => ['ebay', 'tiktok_shop', 'temu'].includes(m))
+}
+
 function AccessPill({ children, variant = 'indigo' }) {
   const styles = {
     indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200/60 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/50',
@@ -517,9 +528,8 @@ export default function SubAdminManagementPage() {
     return users.filter((u) => {
       if (!u) return false
 
-      // 1. Shop filter (dedicated per-shop segregation)
-      const userMarket = u.marketplace || u.marketplaces?.[0] || 'ebay'
-      if (shopFilter !== 'all' && userMarket !== shopFilter) {
+      // 1. Shop filter (supports multi-shop sub-admins)
+      if (shopFilter !== 'all' && !marketsOf(u).includes(shopFilter)) {
         return false
       }
 
@@ -554,10 +564,11 @@ export default function SubAdminManagementPage() {
       if (isAct) active += 1
       else suspended += 1
 
-      const market = u?.marketplace || u?.marketplaces?.[0] || 'ebay'
-      if (market === 'ebay') ebay += 1
-      else if (market === 'tiktok_shop') tiktok += 1
-      else if (market === 'temu') temu += 1
+      for (const market of marketsOf(u)) {
+        if (market === 'ebay') ebay += 1
+        else if (market === 'tiktok_shop') tiktok += 1
+        else if (market === 'temu') temu += 1
+      }
     })
 
     return { total: users.length, active, suspended, ebay, tiktok, temu }

@@ -152,7 +152,7 @@ function PromotionModal({ onClose, onSuccess, token, marketplace }) {
       const ids = listingIds ? listingIds.split(',').map((s) => s.trim()).filter(Boolean) : []
       await api.post('/api/shops/sections/promotions/create', {
         marketplace,
-        name: name || `Sale ${new Date().toLocaleDateString()}`,
+        name: name || `Sale ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
         description: description || 'Special Store Discount',
         percentageOff: Number(discount) || 10,
         listingIds: ids,
@@ -348,11 +348,21 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
         {
           key: '_action',
           label: 'Action',
-          render: (row) => (
-            <Button size="sm" variant="secondary" onClick={() => onAction('fulfillment-label', row)}>
-              Get label
-            </Button>
-          ),
+          render: (row) => {
+            const canShip = /awaiting_shipment|processing|packed/i.test(String(row.rawStatus || row.status || ''))
+            return (
+              <div className="flex items-center gap-1.5">
+                {canShip && (
+                  <Button size="sm" onClick={() => onAction('fulfillment-ship', row)}>
+                    Ship package
+                  </Button>
+                )}
+                <Button size="sm" variant="secondary" onClick={() => onAction('fulfillment-label', row)}>
+                  Get label
+                </Button>
+              </div>
+            )
+          },
         },
       ]
     }
@@ -443,6 +453,19 @@ export default function ShopSectionPage() {
       setLoading(true)
       try {
         await api.post(`/api/shops/sections/promotions/${row.promotionId}/resume`, { marketplace: shopSection.marketplace }, token)
+        load({ refresh: true })
+      } catch (e) {
+        setError(e.message)
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+    if (type === 'fulfillment-ship') {
+      if (!window.confirm(`Mark package ${row.packageId} as ready to ship (Drop-off) on TikTok Shop?`)) return
+      setLoading(true)
+      try {
+        await api.post(`/api/shops/sections/fulfillment/${row.packageId}/ship`, { marketplace: shopSection.marketplace, handoverMethod: 'DROP_OFF' }, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)

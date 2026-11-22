@@ -216,6 +216,7 @@ const TIKTOK = {
         packageId: row.id,
         orders: (row.orders || []).map((order) => order.id).join(', '),
         status: words(row.package_status || row.status),
+        rawStatus: row.package_status || row.status || '',
         carrier: row.shipping_provider_name || '',
         tracking: row.tracking_number || '',
         created: seconds(row.create_time),
@@ -230,7 +231,7 @@ const TIKTOK = {
         id: 'returns',
         title: 'Returns and refunds',
         columns: [col('id', 'Return'), col('orderId', 'Order'), col('type', 'Type'), col('reason', 'Reason'), col('status', 'Status', 'status'), col('refund', 'Refund', 'money'), col('created', 'Opened', 'date')],
-        load: async () => (await ttPost(token, shop, '/return_refund/202309/returns/search')).return_orders?.map((row) => ({
+        load: async () => (await ttPost(token, shop, '/return_refund/202309/returns/search', {}, { page_size: 50, sort_field: 'create_time', sort_order: 'DESC' })).return_orders?.map((row) => ({
           id: row.return_id,
           returnId: row.return_id,
           orderId: row.order_id,
@@ -247,7 +248,7 @@ const TIKTOK = {
         id: 'cancellations',
         title: 'Cancellations',
         columns: [col('id', 'Cancellation'), col('orderId', 'Order'), col('reason', 'Reason'), col('status', 'Status', 'status'), col('refund', 'Refund', 'money'), col('created', 'Requested', 'date')],
-        load: async () => (await ttPost(token, shop, '/return_refund/202309/cancellations/search')).cancellations?.map((row) => ({
+        load: async () => (await ttPost(token, shop, '/return_refund/202309/cancellations/search', {}, { page_size: 50, sort_field: 'create_time', sort_order: 'DESC' })).cancellations?.map((row) => ({
           id: row.cancel_id,
           cancelId: row.cancel_id,
           orderId: row.order_id,
@@ -292,8 +293,8 @@ const TIKTOK = {
           title: row.title || row.name || row.id,
           type: words(row.display_type || row.coupon_type),
           status: words(row.status),
-          start: seconds(row.redemption_period?.start_time || row.start_time),
-          end: seconds(row.redemption_period?.end_time || row.end_time),
+          start: seconds(row.redemption_duration?.start_time || row.claim_duration?.start_time || row.start_time),
+          end: seconds(row.redemption_duration?.end_time || row.claim_duration?.end_time || row.end_time),
         })) || [],
       },
     ])
@@ -312,7 +313,7 @@ const TIKTOK = {
         id: 'statements',
         title: 'Statements',
         columns: [col('id', 'Statement'), col('date', 'Date', 'date'), col('revenue', 'Revenue', 'money'), col('fees', 'Fees', 'money'), col('settlement', 'Settlement', 'money'), col('status', 'Status', 'status')],
-        load: async () => (await ttGet(token, shop, '/finance/202309/statements', { page_size: 50, sort_field: 'statement_time' })).statements?.map((row) => ({
+        load: async () => (await ttGet(token, shop, '/finance/202309/statements', { page_size: 50, sort_field: 'statement_time', sort_order: 'DESC' })).statements?.map((row) => ({
           id: row.id,
           date: seconds(row.statement_time),
           revenue: ttMoney(row.revenue_amount, row.currency),
@@ -325,7 +326,7 @@ const TIKTOK = {
         id: 'payments',
         title: 'Payments',
         columns: [col('id', 'Payment'), col('date', 'Created', 'date'), col('paid', 'Paid', 'date'), col('amount', 'Amount', 'money'), col('status', 'Status', 'status')],
-        load: async () => (await ttGet(token, shop, '/finance/202309/payments', { page_size: 50, sort_field: 'create_time' })).payments?.map((row) => ({
+        load: async () => (await ttGet(token, shop, '/finance/202309/payments', { page_size: 50, sort_field: 'create_time', sort_order: 'DESC' })).payments?.map((row) => ({
           id: row.id,
           date: seconds(row.create_time),
           paid: seconds(row.paid_time),
@@ -419,7 +420,15 @@ const TIKTOK = {
         col('avgVideoViews', 'Avg video views', 'number'),
         col('avgLiveViewers', 'Avg LIVE viewers', 'number'),
       ],
-      load: async () => (await ttPost(token, shop, '/affiliate_seller/202406/marketplace_creators/search', {}, { page_size: 20 })).creators?.map((row) => ({
+      load: async () => {
+        let data
+        try {
+          data = await ttPost(token, shop, '/affiliate_seller/202508/marketplace_creators/search', {}, { page_size: 20 })
+        } catch (err) {
+          if (!/version|not found|404/i.test(err.message || '')) throw err
+          data = await ttPost(token, shop, '/affiliate_seller/202406/marketplace_creators/search', {}, { page_size: 20 })
+        }
+        return data.creators?.map((row) => ({
         nickname: row.nickname || row.username || 'Creator',
         username: row.username ? `@${String(row.username).replace(/^@/, '')}` : '',
         followers: Number(row.follower_count ?? 0),
@@ -428,7 +437,8 @@ const TIKTOK = {
           : (row.gmv_range?.minimum_amount != null ? ttMoney(row.gmv_range.minimum_amount, row.gmv_range.currency) : null),
         avgVideoViews: Number(row.avg_ec_video_view_count ?? 0),
         avgLiveViewers: Number(row.avg_ec_live_uv ?? 0),
-      })) || [],
+      })) || []
+      },
     }])
     return {
       summary: [{ label: 'Creators', value: list[0].rows.length, type: 'number' }],

@@ -98,10 +98,14 @@ router.get('/:id', async (req, res) => {
 // POST /api/orders/sync — pull orders from connected marketplace shops
 router.post('/sync', async (req, res) => {
   try {
-    const filter = {}
+    const filter = { status: 'connected' }
     if (req.user.role === 'sub_admin') {
-      filter._id = { $in: req.allowedShopIds }
-    } else if (req.body.shopId) {
+      filter._id = { $in: req.allowedShopIds || [] }
+    }
+    if (req.body.shopId) {
+      if (req.user.role === 'sub_admin' && !req.allowedShopIds?.some((id) => String(id) === String(req.body.shopId))) {
+        return res.status(403).json({ error: 'You do not have access to this shop' })
+      }
       filter._id = req.body.shopId
     } else if (req.body.marketplace) {
       const marketplace = canonicalMarketplace(req.body.marketplace)
@@ -160,33 +164,31 @@ router.patch('/:id/status', async (req, res) => {
 router.patch('/:id/shipping', async (req, res) => {
   try {
     const { carrier, trackingNumber } = req.body
-    const doc = await Order.findOneAndUpdate(
-      { _id: req.params.id, ...shopFilter(req, Order) },
-      {
-        ...(carrier ? { 'shipping.carrier': carrier } : {}),
-        ...(trackingNumber ? { 'shipping.trackingNumber': trackingNumber } : {}),
-        'shipping.shippedAt': new Date(),
-        status: 'shipped',
-      },
-      { new: true },
-    )
-    if (!doc) return res.status(404).json({ error: 'Not found' })
+    const existing = await Order.findOne({ _id: req.params.id, ...shopFilter(req, Order) })
+    if (!existing) return res.status(404).json({ error: 'Not found' })
 
-    // Push tracking to eBay
+    // Push tracking to marketplace before marking shipped locally so a rejected push does not lock the order.
     let marketplacePush = { pushed: false }
     try {
-      marketplacePush = await marketplaceManager.pushShipping(doc, { carrier, trackingNumber })
-      if (marketplacePush?.pushed) {
-        doc.shipping.trackingVerified = true
-        await doc.save()
-      }
+      marketplacePush = await marketplaceManager.pushShipping(existing, { carrier, trackingNumber })
     } catch (apiErr) {
-      console.warn(`Shipping push to [${doc.marketplace}] failed:`, apiErr.message)
-      marketplacePush = { pushed: false, error: apiErr.message }
+      console.warn(`Shipping push to [${existing.marketplace}] failed:`, apiErr.message)
+      return res.status(502).json({
+        error: `${existing.marketplace} did not accept the tracking: ${apiErr.message}`,
+        marketplacePush: { pushed: false, error: apiErr.message },
+      })
     }
 
-    await notifyOrderChanged(doc)
-    res.json({ order: doc, marketplacePush })
+    existing.shipping = existing.shipping || {}
+    if (carrier) existing.shipping.carrier = carrier
+    if (trackingNumber) existing.shipping.trackingNumber = trackingNumber
+    existing.shipping.shippedAt = new Date()
+    if (marketplacePush?.pushed) existing.shipping.trackingVerified = true
+    existing.status = 'shipped'
+    await existing.save()
+
+    await notifyOrderChanged(existing)
+    res.json({ order: existing, marketplacePush })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

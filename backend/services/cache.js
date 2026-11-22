@@ -45,6 +45,19 @@ async function set(key, value, ttlSeconds) {
   }
 }
 
+async function del(key) {
+  const client = redis.getClient()
+  if (!client) {
+    memory.delete(key)
+    return
+  }
+  try {
+    await client.del(PREFIX + key)
+  } catch {
+    // A failed cache delete only leaves a stale entry until its TTL expires.
+  }
+}
+
 /** Removes every key starting with `prefix`. */
 async function invalidate(prefix) {
   const client = redis.getClient()
@@ -121,4 +134,4 @@ function cachedResponse(group, ttlSeconds) {
   }
 }
 
-module.exports = { get, set, invalidate, wrap, claim, cachedResponse }
+module.exports = { get, set, del, invalidate, wrap, claim, cachedResponse }

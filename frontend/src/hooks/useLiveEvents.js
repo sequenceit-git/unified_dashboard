@@ -57,7 +57,10 @@ function connect(token) {
 export function useLiveEvents(handler) {
   const { token } = useAuth()
   const ref = useRef(handler)
-  ref.current = handler
+
+  useEffect(() => {
+    ref.current = handler
+  })
 
   useEffect(() => {
     if (!token) return undefined

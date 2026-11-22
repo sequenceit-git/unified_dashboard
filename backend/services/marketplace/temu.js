@@ -88,11 +88,38 @@ class TemuService {
       for (const row of rows) {
         const parent = row.parentOrderMap || row
         const lines = row.orderList || parent.orderList || []
+        const addr = parent.shippingAddress || parent.address || parent.receiptAddress || parent
+        const shippingAddress = (addr.addressLine1 || addr.address1 || addr.street || addr.city || addr.state || addr.postalCode || addr.zip || addr.country)
+          ? {
+              street: addr.addressLine1 || addr.address1 || addr.street || '',
+              city: addr.city || addr.regionName3 || '',
+              state: addr.state || addr.province || addr.regionName2 || '',
+              zip: addr.postalCode || addr.zip || addr.postCode || '',
+              country: addr.country || addr.regionShortName || 'US',
+            }
+          : undefined
+        const firstLine = lines[0] || {}
+        const trackingNumber = parent.trackingNumber || firstLine.trackingNumber || parent.waybillSn || ''
+        const carrier = parent.shippingCompanyName || parent.carrierName || firstLine.shippingCompanyName || ''
+        const shipping = (trackingNumber || carrier || parent.shippingTime || parent.deliveryTime)
+          ? {
+              ...(carrier ? { carrier } : {}),
+              ...(trackingNumber ? { trackingNumber: String(trackingNumber) } : {}),
+              ...(parent.shippingTime ? { shippedAt: temuDate(parent.shippingTime) } : {}),
+              ...(parent.deliveryTime ? { deliveredAt: temuDate(parent.deliveryTime) } : {}),
+            }
+          : undefined
         orders.push({
           externalOrderId: parent.parentOrderSn || parent.orderSn || parent.parentOrderId,
           placedAt: parent.parentOrderTime ? temuDate(parent.parentOrderTime) : new Date(),
           status: ORDER_STATUS[parent.parentOrderStatus] || 'pending',
-          buyer: { name: parent.receiptName || 'Temu customer', email: '' },
+          buyer: {
+            name: parent.receiptName || 'Temu customer',
+            email: '',
+            phone: parent.receiptPhone || parent.mobile || parent.shippingAddress?.phone || '',
+          },
+          ...(shippingAddress ? { shippingAddress } : {}),
+          ...(shipping ? { shipping } : {}),
           totals: {
             total: temuMoney(parent.amount || parent.parentOrderAmount),
             currency: 'USD',
@@ -206,6 +233,24 @@ class TemuService {
     }
   }
 
+  async resolveCarrierId(accessToken, carrier) {
+    const needle = String(carrier || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (!needle || needle === 'other') return null
+    this._carrierCache = this._carrierCache || { at: 0, list: [] }
+    if (!this._carrierCache.list.length || Date.now() - this._carrierCache.at > 15 * 60 * 1000) {
+      const res = await this.call('bg.logistics.companies.get', { access_token: accessToken, regionId: 211 })
+      const list = res.shippingCompanyList || res.logisticsServiceProviderList || Object.values(res).find(Array.isArray) || []
+      this._carrierCache = { at: Date.now(), list }
+    }
+    const match = this._carrierCache.list.find((row) => {
+      const name = String(row.shippingCompanyName || row.logisticsServiceProviderName || row.carrierName || row.name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+      return name && (name === needle || name.includes(needle) || needle.includes(name))
+    })
+    return match?.shippingCompanyId ?? match?.logisticsServiceProviderId ?? match?.carrierId ?? match?.id ?? null
+  }
+
   /**
    * Pushes tracking number and fulfills package/order on Temu
    */
@@ -217,9 +262,11 @@ class TemuService {
       orderSn: String(line.lineItemId || line.orderSn || orderId),
       quantity: Number(line.quantity || 1),
     }))
+    const carrierId = carrier ? await this.resolveCarrierId(accessToken, carrier).catch(() => null) : null
     const packageSendInfoList = [
       {
         trackingNumber: cleanTracking,
+        ...(carrierId ? { carrierId: Number(carrierId) || carrierId } : {}),
         packageDetail: items.length ? items : [{ parentOrderSn: String(orderId), quantity: 1 }],
       },
     ]

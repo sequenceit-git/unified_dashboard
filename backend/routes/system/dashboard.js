@@ -1,5 +1,5 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, shopFilter } = require('../../middleware/auth')
+const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
 const { cachedResponse } = require('../../services/cache')
 
 const resources = {
@@ -100,19 +100,10 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
   }
 })
 
-// Account records (names, emails, roles) are for super admins only.
-router.use('/users', (req, res, next) => {
-  if ((req.authUser || req.user).role !== 'super_admin') return res.status(403).json({ error: 'Forbidden' })
-  next()
-})
-
 for (const [name, model] of Object.entries(resources)) {
-  // GET /api/dashboard/<collection>?limit=50
-  router.get(`/${name}`, async (req, res) => {
+  // GET /api/dashboard/<collection>?limit=50 (super_admin only; sub-admins use typed routes)
+  router.get(`/${name}`, requireRole('super_admin'), async (req, res) => {
     try {
-      if (req.user.role === 'sub_admin' && !model.schema.path('shopId')) {
-        return res.json([])
-      }
       const limit = Math.min(Number(req.query.limit) || 50, 200)
       const docs = await model
         .find(shopFilter(req, model))
@@ -127,8 +118,8 @@ for (const [name, model] of Object.entries(resources)) {
   // No POST here: the dashboard only reads. A generic create let any user with the dashboard
   // permission write into any collection, including `users` (privilege escalation).
 
-  // GET /api/dashboard/<collection>/:id
-  router.get(`/${name}/:id`, async (req, res) => {
+  // GET /api/dashboard/<collection>/:id (super_admin only)
+  router.get(`/${name}/:id`, requireRole('super_admin'), async (req, res) => {
     try {
       const doc = await model.findOne({ _id: req.params.id, ...shopFilter(req, model) })
       if (!doc) return res.status(404).json({ error: 'Not found' })

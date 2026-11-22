@@ -3,19 +3,35 @@ import { useAuth } from '../auth/AuthContext'
 import { api } from '../lib/api'
 
 let cache = null
+let cacheToken = ''
 let inflight = null
+let inflightToken = ''
 const listeners = new Set()
 
 function load(token, refresh = false) {
+  if (!token) return Promise.resolve(null)
+  if (token !== cacheToken) {
+    cache = null
+    cacheToken = token
+  }
+  if (token !== inflightToken) {
+    inflight = null
+    inflightToken = token
+  }
   if (!refresh && cache) return Promise.resolve(cache)
   if (!refresh && inflight) return inflight
+  const requestedToken = token
   inflight = api.get(`/api/shops/profiles${refresh ? '?refresh=1' : ''}`, token)
     .then((list) => {
-      cache = list
-      listeners.forEach((listener) => listener(list))
+      if (cacheToken === requestedToken) {
+        cache = list
+        listeners.forEach((listener) => listener({ token: requestedToken, list }))
+      }
       return list
     })
-    .finally(() => { inflight = null })
+    .finally(() => {
+      if (inflightToken === requestedToken) inflight = null
+    })
   return inflight
 }
 
@@ -25,16 +41,27 @@ function load(token, refresh = false) {
  */
 export function useShopProfiles() {
   const { token } = useAuth()
-  const [profiles, setProfiles] = useState(cache)
+  const [state, setState] = useState(() => (
+    token && token === cacheToken ? { token, list: cache } : { token: '', list: null }
+  ))
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!token) return undefined
-    listeners.add(setProfiles)
-    load(token).then(setProfiles).catch((err) => setError(err.message))
-    return () => listeners.delete(setProfiles)
+    if (!token) {
+      cache = null
+      cacheToken = ''
+      inflight = null
+      inflightToken = ''
+      return undefined
+    }
+    listeners.add(setState)
+    load(token)
+      .then((list) => setState({ token, list }))
+      .catch((err) => setError(err.message))
+    return () => listeners.delete(setState)
   }, [token])
 
+  const profiles = !token ? null : state.token === token ? state.list : (token === cacheToken ? cache : null)
   const refresh = useCallback(() => load(token, true), [token])
   return { profiles, error, refresh }
 }
@@ -61,7 +88,7 @@ export function listingBadge(profile, listing) {
 export function listingActionsFor(profile, listing) {
   if (!listing) return []
   return (profile?.listingActions || []).filter((action) => {
-    if (listing.marketplaceStatus && action.raw?.includes(listing.marketplaceStatus)) return true
+    if (listing.marketplaceStatus && Array.isArray(action.raw)) return action.raw.includes(listing.marketplaceStatus)
     return action.statuses.includes(listing.status)
   })
 }
