@@ -14,13 +14,18 @@ const cache = require('./cache')
 
 const EVENTS = {
   ORDER_STATUS_CHANGE: 'orders',
+  RECIPIENT_ADDRESS_UPDATE: 'orders',
   CANCELLATION_STATUS_CHANGE: 'orders',
   RETURN_STATUS_CHANGE: 'orders',
+  REVERSE_STATUS_UPDATE: 'orders',
   PACKAGE_UPDATE: 'orders',
   PRODUCT_STATUS_CHANGE: 'listings',
   PRODUCT_INFORMATION_CHANGE: 'listings',
   PRODUCT_CREATION: 'listings',
+  PRODUCT_CATEGORY_CHANGE: 'listings',
+  PRODUCT_AUDIT_STATUS_CHANGE: 'listings',
   NEW_MESSAGE: 'inbox',
+  NEW_CONVERSATION: 'inbox',
   SELLER_DEAUTHORIZATION: 'deauth',
 }
 
@@ -61,18 +66,29 @@ function resolveKind(topic, payload) {
   const normalized = String(topic || '').trim().toUpperCase()
   if (normalized && EVENTS[normalized]) return EVENTS[normalized]
   const data = payload?.data || {}
-  if (data.conversation_id || data.message_id) return 'inbox'
+  const type = Number(payload?.type)
+  if (data.conversation_id || data.message_id || type === 14) return 'inbox'
   if (data.product_id) return 'listings'
-  if (data.order_id || data.package_id || data.return_id || data.cancel_id || Number(payload?.type) === 1) return 'orders'
+  if (
+    data.order_id
+    || data.package_id
+    || data.return_id
+    || data.cancel_id
+    || data.reverse_order_id
+    || type === 1
+    || type === 2
+  ) return 'orders'
+  if (type === 6) return 'deauth'
   return ''
 }
 
-async function findShop(shopId) {
-  if (shopId) {
-    const matched = await Shop.findOne({ marketplace: 'tiktok_shop', externalShopId: String(shopId) })
+async function findShop(shopId, { allowFallback = true } = {}) {
+  const id = String(shopId || '').trim()
+  if (id) {
+    return Shop.findOne({ marketplace: 'tiktok_shop', externalShopId: id })
       .select('name marketplace status')
-    if (matched) return matched
   }
+  if (!allowFallback) return null
   const shops = await Shop.find({ marketplace: 'tiktok_shop', status: 'connected' })
     .select('name marketplace status')
     .limit(2)
@@ -109,7 +125,7 @@ async function handle(rawBody, body, authHeader, topicQuery = '') {
     return { status: 200, message: `Ignored TikTok event ${topic || payload.type || 'unknown'}` }
   }
 
-  const shop = await findShop(payload.shop_id)
+  const shop = await findShop(payload.shop_id, { allowFallback: kind !== 'deauth' })
   if (!shop) {
     return { status: 200, message: `No TikTok Shop found for ${payload.shop_id || 'unknown shop'}` }
   }
@@ -142,18 +158,38 @@ async function enable(shop) {
     try {
       const baseUrl = notifyUrl()
       const subscribed = []
+      const skipped = []
       await manager.withShopToken(shop, async (token) => {
+        subscribed.length = 0
+        skipped.length = 0
         for (const eventType of events) {
           const sep = baseUrl.includes('?') ? '&' : '?'
           const address = `${baseUrl}${sep}topic=${eventType}`
           if (address.length > 255) {
             throw new Error(`Webhook URL exceeds TikTok's 255-character limit (${address.length}).`)
           }
-          await tiktok.updateWebhook(token, { address, eventType, shop })
-          subscribed.push(eventType)
+          try {
+            await tiktok.updateWebhook(token, { address, eventType, shop })
+            subscribed.push(eventType)
+          } catch (err) {
+            if (err.deadLogin || err.status === 401 || /expired|invalid access.?token/i.test(err.message || '')) {
+              throw err
+            }
+            skipped.push({ eventType, error: err.message })
+          }
         }
       })
-      liveUpdates = { enabled: true, url: baseUrl, events: subscribed, enabledAt: new Date(), checkedAt: new Date() }
+      if (!subscribed.length) {
+        throw new Error(skipped[0]?.error || 'No TikTok Shop webhooks could be subscribed.')
+      }
+      liveUpdates = {
+        enabled: true,
+        url: baseUrl,
+        events: subscribed,
+        ...(skipped.length ? { skipped } : {}),
+        enabledAt: new Date(),
+        checkedAt: new Date(),
+      }
     } catch (err) {
       liveUpdates = { enabled: false, error: err.message, checkedAt: new Date() }
     }
