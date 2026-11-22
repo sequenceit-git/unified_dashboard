@@ -178,7 +178,21 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
             },
           },
           { key: 'sku', label: 'SKU', sortable: true },
-          { key: 'title', label: 'Title', sortable: true },
+          {
+            key: 'title',
+            label: 'Title',
+            sortable: true,
+            render: (r) => (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span>{r.title}</span>
+                {Array.isArray(r.variants) && r.variants.length > 1 && (
+                  <span className="inline-flex items-center rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                    {r.variants.length} variants
+                  </span>
+                )}
+              </div>
+            ),
+          },
           { key: 'basePrice', label: 'Price', sortable: true, render: (r) => (r.basePrice != null ? `$${Number(r.basePrice).toFixed(2)}` : '—') },
           { key: 'costPrice', label: 'Base price', sortable: true, render: (r) => (r.costPrice != null && r.costPrice !== '' ? `$${Number(r.costPrice).toFixed(2)}` : '—') },
           {

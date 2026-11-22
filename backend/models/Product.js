@@ -4,6 +4,7 @@ const { newSku } = require('../utils/sku')
 const variantSchema = new mongoose.Schema(
   {
     sku: { type: String, required: true },
+    externalSkuId: { type: String },
     options: { type: mongoose.Schema.Types.Mixed, default: {} },
     price: { type: Number },
     stock: { type: Number, default: 0 },

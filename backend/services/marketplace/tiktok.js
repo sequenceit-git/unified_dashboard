@@ -443,38 +443,54 @@ class TikTokShopService {
         const brand = attributes.Brand || ''
         const rows = skus.length ? skus : [null]
         const baseTitle = detail.title || product.title || ''
-        for (const sku of rows) {
+        const variantList = rows.map((sku) => {
           const stock = sku ? (sku.inventory || []).reduce((sum, row) => sum + Number(row.quantity || 0), 0) : 0
           const rawSku = sku?.seller_sku && !/^none$/i.test(String(sku.seller_sku).trim()) ? String(sku.seller_sku).trim() : ''
           const cleanSku = rawSku
             ? (/^\d+$/.test(rawSku) ? `TTS-${rawSku}` : rawSku.startsWith('TT-') ? rawSku.replace(/^TT-/, 'TTS-') : rawSku)
             : `TTS-${sku?.id || product.id}`
-          const variantLabel = rows.length > 1
-            ? (sku?.sales_attributes || []).map((a) => a.value_name).filter(Boolean).join(' / ')
-            : ''
-          const title = baseTitle
-            ? (variantLabel ? `${baseTitle} (${variantLabel})` : baseTitle)
-            : `TikTok Shop ${sku?.id || product.id}`
-          items.push({
+          const options = Object.fromEntries(
+            (sku?.sales_attributes || [])
+              .map((a) => [String(a.name || 'Variant').trim(), String(a.value_name || '').trim()])
+              .filter(([k, v]) => Boolean(k && v)),
+          )
+          const price = Number(sku?.price?.sale_price || sku?.price?.tax_exclusive_price || 0)
+          return {
             sku: cleanSku,
             rawSku,
-            title,
-            description: plainText(detail.description),
-            price: Number(sku?.price?.sale_price || sku?.price?.tax_exclusive_price || 0),
+            externalSkuId: sku?.id ? String(sku.id) : '',
+            options,
+            price,
             stock,
-            images,
-            category: categoryPath(detail.category_chains),
-            brand,
-            weight: toPounds(detail.package_weight),
-            dimensions: toInches(detail.package_dimensions),
-            attributes,
-            status: catalogStatus,
-            listingStatus: LISTING_STATUS[tiktokStatus] || 'pending',
-            marketplaceStatus: tiktokStatus,
-            listingError: auditReason(detail, tiktokStatus),
-            externalListingId: sku?.id ? `${product.id}:${sku.id}` : String(product.id),
-          })
-        }
+          }
+        })
+        const isMulti = skus.length > 1
+        const positivePrices = variantList.map((v) => v.price).filter((p) => p > 0)
+        const minPrice = positivePrices.length ? Math.min(...positivePrices) : (variantList[0]?.price || 0)
+        const totalStock = variantList.reduce((sum, v) => sum + v.stock, 0)
+        const primary = variantList[0]
+        items.push({
+          sku: primary?.sku || `TTS-${product.id}`,
+          rawSku: primary?.rawSku || '',
+          matchSkus: [...new Set(variantList.flatMap((v) => [v.sku, v.rawSku]).filter(Boolean))],
+          title: baseTitle || `TikTok Shop ${product.id}`,
+          description: plainText(detail.description),
+          price: minPrice,
+          stock: totalStock,
+          variants: isMulti ? variantList.map(({ rawSku, ...v }) => v) : [],
+          images,
+          category: categoryPath(detail.category_chains),
+          brand,
+          weight: toPounds(detail.package_weight),
+          dimensions: toInches(detail.package_dimensions),
+          attributes,
+          status: catalogStatus,
+          listingStatus: LISTING_STATUS[tiktokStatus] || 'pending',
+          marketplaceStatus: tiktokStatus,
+          listingError: auditReason(detail, tiktokStatus),
+          externalListingId: !isMulti && skus[0]?.id ? `${product.id}:${skus[0].id}` : String(product.id),
+        })
+        if (items.length >= limit) break
       }
       pageToken = data.next_page_token || ''
     } while (pageToken && items.length < limit)
@@ -827,8 +843,14 @@ class TikTokShopService {
 
   /** Changes title, description, price, stock, images, or package specs of a synced product. */
   async reviseListing(accessToken, externalListingId, changes, options = {}) {
+    const variants = changes.variants || options.product?.variants
+    const commonOpts = {
+      ...options,
+      externalListingId,
+      ...(variants?.length ? { variants } : {}),
+    }
     const skipped = []
-    if (changes.price != null) {
+    if (changes.price != null || changes.variantPrices) {
       const rawStatus = options.listing?.marketplaceStatus
       const isActivate = rawStatus
         ? rawStatus === 'ACTIVATE'
@@ -836,10 +858,19 @@ class TikTokShopService {
       if (!isActivate) {
         skipped.push('price')
       } else {
-        await this.updatePrice(accessToken, null, changes.price, 'USD', { ...options, externalListingId })
+        await this.updatePrice(accessToken, null, changes.price, 'USD', {
+          ...commonOpts,
+          useVariantPrices: Boolean(changes.variantPrices),
+        })
       }
     }
-    if (changes.quantity != null) await this.updateStock(accessToken, null, changes.quantity, { ...options, externalListingId })
+    if (changes.quantity != null || changes.variantStocks || changes.variantSku) {
+      await this.updateStock(accessToken, null, changes.quantity, {
+        ...commonOpts,
+        ...(changes.variantSku ? { variantSku: changes.variantSku, variantStock: changes.variantStock } : {}),
+        syncAllVariants: Boolean(changes.variantStocks),
+      })
+    }
     if (changes.title || changes.description != null || changes.images?.length || changes.weight != null || changes.dimensions) {
       const [productId] = String(externalListingId || '').split(':')
       const desc = changes.description != null && changes.description !== ''
@@ -884,42 +915,90 @@ class TikTokShopService {
   }
 
   async updateStock(accessToken, sku, quantity, options = {}) {
-    const [productId, skuId] = String(options.externalListingId || '').split(':')
-    if (!productId || !skuId) {
+    const [productId, listingSkuId] = String(options.externalListingId || '').split(':')
+    if (!productId) {
       throw new Error(`TikTok Shop stock update needs a synced product and SKU for ${sku}`)
     }
-    const qty = Math.max(0, Math.floor(Number(quantity)))
+    const qty = Math.max(0, Math.floor(Number(quantity) || 0))
+    const variants = Array.isArray(options.variants) ? options.variants : []
+    let skuUpdates = []
+    if (options.variantSku && variants.length) {
+      const target = variants.find((v) => v.sku === options.variantSku)
+      if (!target?.externalSkuId) {
+        throw new Error(`Variant "${options.variantSku}" has no synced TikTok Shop SKU ID. Sync listings first.`)
+      }
+      skuUpdates = [{ id: String(target.externalSkuId), quantity: Math.max(0, Math.floor(Number(options.variantStock ?? qty))) }]
+    } else if (listingSkuId) {
+      skuUpdates = [{ id: String(listingSkuId), quantity: qty }]
+    } else if (variants.length) {
+      const withId = variants.filter((v) => v.externalSkuId)
+      if (!withId.length) throw new Error(`TikTok Shop stock update needs synced variant SKU IDs for ${sku || productId}`)
+      if (options.syncAllVariants || qty === 0) {
+        skuUpdates = withId.map((v) => ({
+          id: String(v.externalSkuId),
+          quantity: qty === 0 ? 0 : Math.max(0, Math.floor(Number(v.stock) || 0)),
+        }))
+      } else if (withId.length === 1) {
+        skuUpdates = [{ id: String(withId[0].externalSkuId), quantity: qty }]
+      } else {
+        throw new Error('Select a specific variant to adjust stock on this multi-variant TikTok Shop product.')
+      }
+    } else {
+      throw new Error(`TikTok Shop stock update needs a synced product and SKU for ${sku}`)
+    }
+
     const warehouseId = await this.defaultWarehouseId(accessToken, options.shop)
     const path = `/product/202309/products/${encodeURIComponent(productId)}/inventory/update`
     try {
       const res = await this.call(accessToken, 'POST', path, {
         shop: options.shop,
-        body: { skus: [{ id: skuId, inventory: [{ warehouse_id: warehouseId, quantity: qty }] }] },
+        body: { skus: skuUpdates.map((u) => ({ id: u.id, inventory: [{ warehouse_id: warehouseId, quantity: u.quantity }] })) },
       })
       return assertNoBatchErrors(res, 'TikTok Shop inventory update failed')
     } catch (err) {
       if (!/warehouse|inventory|12052097/i.test(`${err.message || ''} ${err.code || ''}`)) throw err
       const detail = await this.call(accessToken, 'GET', `/product/202309/products/${encodeURIComponent(productId)}`, { shop: options.shop })
-      const targetSku = (detail.skus || []).find((row) => String(row.id) === String(skuId))
-      const warehouses = (targetSku?.inventory || []).map((row) => row.warehouse_id).filter(Boolean)
-      if (!warehouses.length) throw err
-      const inventory = warehouses.map((id, idx) => ({ warehouse_id: String(id), quantity: idx === 0 ? qty : 0 }))
+      const skusPayload = []
+      for (const upd of skuUpdates) {
+        const targetSku = (detail.skus || []).find((row) => String(row.id) === String(upd.id))
+        const warehouses = (targetSku?.inventory || []).map((row) => row.warehouse_id).filter(Boolean)
+        if (!warehouses.length) throw err
+        skusPayload.push({
+          id: upd.id,
+          inventory: warehouses.map((id, idx) => ({ warehouse_id: String(id), quantity: idx === 0 ? upd.quantity : 0 })),
+        })
+      }
       const retryRes = await this.call(accessToken, 'POST', path, {
         shop: options.shop,
-        body: { skus: [{ id: skuId, inventory }] },
+        body: { skus: skusPayload },
       })
       return assertNoBatchErrors(retryRes, 'TikTok Shop inventory update failed')
     }
   }
 
   async updatePrice(accessToken, sku, price, currency = 'USD', options = {}) {
-    const [productId, skuId] = String(options.externalListingId || '').split(':')
-    if (!productId || !skuId) {
+    const [productId, listingSkuId] = String(options.externalListingId || '').split(':')
+    if (!productId) {
+      throw new Error(`TikTok Shop price update needs a synced product and SKU for ${sku}`)
+    }
+    const variants = Array.isArray(options.variants) ? options.variants.filter((v) => v.externalSkuId) : []
+    let skuPrices = []
+    if (variants.length) {
+      skuPrices = variants.map((v) => {
+        const amountVal = options.useVariantPrices ? (v.price ?? price) : (price ?? v.price)
+        return {
+          id: String(v.externalSkuId),
+          price: { amount: Number(amountVal).toFixed(2), currency },
+        }
+      })
+    } else if (listingSkuId) {
+      skuPrices = [{ id: String(listingSkuId), price: { amount: Number(price).toFixed(2), currency } }]
+    } else {
       throw new Error(`TikTok Shop price update needs a synced product and SKU for ${sku}`)
     }
     return this.call(accessToken, 'POST', `/product/202309/products/${encodeURIComponent(productId)}/prices/update`, {
       shop: options.shop,
-      body: { skus: [{ id: skuId, price: { amount: Number(price).toFixed(2), currency } }] },
+      body: { skus: skuPrices },
     })
   }
 

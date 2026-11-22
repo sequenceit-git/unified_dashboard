@@ -15,15 +15,24 @@ const REASONS = [
 
 export default function AdjustModal({ product, onClose, onSaved }) {
   const { token } = useAuth()
+  const variants = Array.isArray(product.variants) && product.variants.length > 1 ? product.variants : []
+  const [variantSku, setVariantSku] = useState(variants[0]?.sku || '')
+  const activeVariant = variants.find((v) => v.sku === variantSku) || null
+  const currentStock = Number(activeVariant ? activeVariant.stock : (product.stock ?? 0))
+
   const [mode, setMode] = useState('set') // 'set' | 'delta'
-  const [newStock, setNewStock] = useState(String(product.stock ?? 0))
+  const [newStock, setNewStock] = useState(String(currentStock))
   const [change, setChange] = useState('')
   const [reason, setReason] = useState('manual')
   const [error, setError] = useState('')
   const [warning, setWarning] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const currentStock = Number(product.stock ?? 0)
+  const handleVariantChange = (nextSku) => {
+    setVariantSku(nextSku)
+    const found = variants.find((v) => v.sku === nextSku)
+    setNewStock(String(Number(found?.stock ?? 0)))
+  }
 
   // Calculate projected new stock
   let projectedStock = currentStock
@@ -56,6 +65,7 @@ export default function AdjustModal({ product, onClose, onSaved }) {
     try {
       const payload = {
         productId: product._id,
+        ...(activeVariant ? { variantSku: activeVariant.sku } : {}),
         reason,
       }
       if (mode === 'set') {
@@ -114,6 +124,19 @@ export default function AdjustModal({ product, onClose, onSaved }) {
             <p className="font-mono text-xs text-gray-500 dark:text-slate-400">SKU: {product.sku}</p>
           </div>
         </div>
+
+        {/* Variant Selector (for multi-variant products) */}
+        {variants.length > 0 && (
+          <Select
+            label="Variant *"
+            value={variantSku}
+            onChange={(e) => handleVariantChange(e.target.value)}
+            options={variants.map((v) => {
+              const label = Object.values(v.options || {}).filter(Boolean).join(' / ') || v.sku
+              return { value: v.sku, label: `${label} (${v.stock ?? 0} in stock)` }
+            })}
+          />
+        )}
 
         {/* Mode Selector */}
         <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-slate-800">

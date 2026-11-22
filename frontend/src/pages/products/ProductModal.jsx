@@ -44,6 +44,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
   const titleMax = shopForm.titleMax || 0
   const packageRequired = Boolean(shopForm.packageDetails?.required)
   const [specifics, setSpecifics] = useState(() => specificRows(product?.attributes))
+  const [variants, setVariants] = useState(() => (Array.isArray(product?.variants) ? product.variants.map((v) => ({ ...v })) : []))
   const [form, setForm] = useState(() => {
     if (!product) return EMPTY
     return {
@@ -67,6 +68,18 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
 
   const setSpecific = (index, field) => (e) => setSpecifics((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: e.target.value } : row)))
 
+  const setVariantField = (index, field) => (e) => {
+    const val = e.target.value
+    setVariants((rows) => {
+      const next = rows.map((row, i) => (i === index ? { ...row, [field]: val } : row))
+      if (field === 'stock') {
+        const totalStock = next.reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v.stock) || 0)), 0)
+        setForm((prev) => ({ ...prev, stock: totalStock }))
+      }
+      return next
+    })
+  }
+
   const save = async (e) => {
     e.preventDefault()
     if (titleMax && form.title.length > titleMax) return setError(`${profile.label} titles can be at most ${titleMax} characters.`)
@@ -77,13 +90,24 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
       const attributes = shopForm.specifics
         ? { ...kept, ...Object.fromEntries(specifics.filter((row) => row.name.trim() && row.value.trim()).map((row) => [row.name.trim(), row.value.trim()])) }
         : product?.attributes
+      const normalizedVariants = variants.length > 0
+        ? variants.map((v) => ({
+            ...v,
+            price: v.price === '' || v.price == null ? undefined : Number(v.price),
+            stock: Math.max(0, Math.floor(Number(v.stock) || 0)),
+          }))
+        : undefined
+      const computedStock = normalizedVariants
+        ? normalizedVariants.reduce((sum, v) => sum + v.stock, 0)
+        : Number(form.stock)
       const body = {
         ...form,
         ...(attributes ? { attributes } : {}),
+        ...(normalizedVariants ? { variants: normalizedVariants } : {}),
         ...(shopForm.condition ? { condition: form.condition || 'NEW' } : {}),
         basePrice: Number(form.basePrice),
         costPrice: form.costPrice === '' || form.costPrice == null ? null : Number(form.costPrice),
-        stock: Number(form.stock),
+        stock: computedStock,
         lowStockThreshold: Number(form.lowStockThreshold),
         weight: Number(form.weight) || 1,
         dimensions: {
@@ -156,9 +180,32 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input label="Price ($) *" type="number" step="0.01" value={form.basePrice} onChange={set('basePrice')} required />
                 <Input label="Base price ($)" type="number" step="0.01" value={form.costPrice ?? ''} onChange={set('costPrice')} placeholder="Cost before selling" />
-                <Input label="Stock Quantity *" type="number" value={form.stock} onChange={set('stock')} required />
+                <Input label={variants.length > 0 ? 'Total Stock (from variants)' : 'Stock Quantity *'} type="number" value={form.stock} onChange={set('stock')} disabled={variants.length > 0} required />
                 <Input label="Low-stock Alert" type="number" value={form.lowStockThreshold} onChange={set('lowStockThreshold')} />
               </div>
+              {variants.length > 0 && (
+                <div className="border-t border-gray-100 pt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-gray-700">Variants ({variants.length})</p>
+                    <span className="text-[11px] text-gray-500">Edit each variant&apos;s price &amp; stock</span>
+                  </div>
+                  <div className="max-h-60 space-y-1.5 overflow-y-auto pr-1">
+                    {variants.map((v, idx) => {
+                      const label = Object.values(v.options || {}).filter(Boolean).join(' / ') || v.sku
+                      return (
+                        <div key={v.sku || idx} className="grid grid-cols-[minmax(0,1fr)_88px_76px] items-center gap-2 rounded-lg border border-gray-100 bg-gray-50/70 px-2.5 py-1.5">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium text-gray-800">{label}</p>
+                            <p className="truncate font-mono text-[10px] text-gray-400">{v.sku}</p>
+                          </div>
+                          <Input type="number" step="0.01" min="0" value={v.price ?? ''} onChange={setVariantField(idx, 'price')} aria-label={`Price for ${label}`} />
+                          <Input type="number" min="0" step="1" value={v.stock ?? 0} onChange={setVariantField(idx, 'stock')} aria-label={`Stock for ${label}`} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
               {product && (
               <div className="border-t border-gray-100 pt-3">
                 <p className="mb-1.5 text-xs font-semibold text-gray-600">{profile?.label || 'Shop'} listing</p>

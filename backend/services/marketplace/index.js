@@ -32,6 +32,10 @@ function productKey(id) {
   return String(id || '').split(':')[0]
 }
 
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function listingAliases(id) {
   const value = String(id || '')
   if (!value) return []
@@ -120,9 +124,16 @@ class UnifiedMarketplaceManager {
   /**
    * Pushes stock updates to a connected marketplace
    */
-  async pushStock(shop, { sku, quantity, externalListingId }) {
+  async pushStock(shop, { sku, quantity, externalListingId, variants, variantSku, variantStock, syncAllVariants }) {
     const service = this.getService(shop.marketplace)
-    return this.withShopToken(shop, (token) => service.updateStock(token, sku, quantity, { shop, externalListingId }))
+    return this.withShopToken(shop, (token) => service.updateStock(token, sku, quantity, {
+      shop,
+      externalListingId,
+      variants,
+      variantSku,
+      variantStock,
+      syncAllVariants,
+    }))
   }
 
   /**
@@ -617,13 +628,16 @@ class UnifiedMarketplaceManager {
 
           // 1. If listing already exists on this shop, reuse its existing product
           if (item.externalListingId) {
-            const existingListing = await Listing.findOne({ shopId: shop._id, externalListingId: item.externalListingId })
+            let existingListing = await Listing.findOne({ shopId: shop._id, externalListingId: item.externalListingId })
+            if (!existingListing && shop.marketplace === 'tiktok_shop' && String(item.externalListingId).includes(':')) {
+              existingListing = await Listing.findOne({ shopId: shop._id, externalListingId: productKey(item.externalListingId) })
+            }
             if (existingListing?.productId) {
               prod = await Product.findById(existingListing.productId)
             }
           }
 
-          // 2. If still not found, check product collection by normalized SKU and all aliases
+          // 2. If still not found, check product collection by normalized SKU, variants, and aliases
           if (!prod) {
             const candidates = [
               item.sku,
@@ -632,7 +646,7 @@ class UnifiedMarketplaceManager {
               item.externalListingId ? `EBAY-${item.externalListingId}` : null,
               item.externalListingId ? `TTS-${item.externalListingId}` : null,
             ].filter(Boolean)
-            prod = await Product.findOne({ sku: { $in: candidates } })
+            prod = await Product.findOne({ $or: [{ sku: { $in: candidates } }, { 'variants.sku': { $in: candidates } }] })
           }
 
           let itemImages = []
@@ -799,7 +813,18 @@ class UnifiedMarketplaceManager {
                 if (prod && prod.stock > 0) {
                   const stockBefore = prod.stock
                   const stockAfter = Math.max(0, prod.stock - item.quantity)
-                  await Product.findByIdAndUpdate(item.productId, { $set: { stock: stockAfter } })
+                  const variants = Array.isArray(prod.variants) ? prod.variants.map((v) => (v.toObject ? v.toObject() : { ...v })) : []
+                  const variantIdx = variants.findIndex((v) => (
+                    (item.skuId && String(v.externalSkuId || '') === String(item.skuId))
+                    || (item.sku && v.sku === item.sku)
+                    || (item.rawSku && v.sku === item.rawSku)
+                  ))
+                  if (variantIdx !== -1) {
+                    variants[variantIdx].stock = Math.max(0, Number(variants[variantIdx].stock || 0) - item.quantity)
+                  }
+                  await Product.findByIdAndUpdate(item.productId, {
+                    $set: { stock: stockAfter, ...(variantIdx !== -1 ? { variants } : {}) },
+                  })
                   // This shop's own stock fell by the sold quantity; its next listing sync then sees
                   // no change. The other shops are brought down by propagateStock below.
                   if (own) {
@@ -813,6 +838,7 @@ class UnifiedMarketplaceManager {
                   soldProductIds.add(String(item.productId))
                   await InventoryLog.create({
                     productId: item.productId,
+                    ...(variantIdx !== -1 ? { variantSku: variants[variantIdx].sku } : {}),
                     shopId: shop._id,
                     stockBefore,
                     stockAfter,
@@ -873,9 +899,9 @@ class UnifiedMarketplaceManager {
   /**
    * Pushes price update to marketplace
    */
-  async pushPrice(shop, { sku, price, externalListingId }) {
+  async pushPrice(shop, { sku, price, externalListingId, variants }) {
     const service = this.getService(shop.marketplace)
-    return this.withShopToken(shop, (token) => service.updatePrice(token, sku, price, 'USD', { shop, externalListingId }))
+    return this.withShopToken(shop, (token) => service.updatePrice(token, sku, price, 'USD', { shop, externalListingId, variants }))
   }
 
   /**
@@ -965,11 +991,12 @@ class UnifiedMarketplaceManager {
     const shopId = listing?.shopId
     if (!shopId) return
     const id = listing?.externalListingId
-    const aliasList = id ? [id, `item-${id}`, `EBAY-${id}`] : []
-    for (const productKey of ignoreTokens(id, aliasList, extras)) {
+    const key = productKey(id)
+    const aliasList = id ? [id, `item-${id}`, `EBAY-${id}`, ...(listing?.marketplace === 'tiktok_shop' && key ? [key] : [])] : []
+    for (const keyToken of ignoreTokens(id, aliasList, extras)) {
       await IgnoredListing.updateOne(
-        { shopId, productKey },
-        { $setOnInsert: { shopId, productKey } },
+        { shopId, productKey: keyToken },
+        { $setOnInsert: { shopId, productKey: keyToken } },
         { upsert: true },
       )
     }
@@ -1162,7 +1189,7 @@ class UnifiedMarketplaceManager {
       items: items.map((item) => ({
         ...item,
         aliases: listingAliases(item.externalListingId),
-        matchSkus: [item.sku, item.rawSku].filter((sku) => sku && !/^none$/i.test(sku)),
+        matchSkus: [...new Set([...(item.matchSkus || []), item.sku, item.rawSku].filter((sku) => sku && !/^none$/i.test(sku)))],
         listingStatus: item.listingStatus || 'live',
       })),
     }
@@ -1227,9 +1254,11 @@ class UnifiedMarketplaceManager {
       })
       for (const listing of candidates) {
         const ext = String(listing.externalListingId || '')
-        const isMatched = ext.includes(':')
-          ? seen.has(ext)
-          : (listingAliases(ext).some((key) => seen.has(key)) || seenProductKeys.has(ext))
+        const isMatched = shop.marketplace === 'tiktok_shop'
+          ? (seen.has(ext) || seenProductKeys.has(productKey(ext)))
+          : ext.includes(':')
+            ? seen.has(ext)
+            : (listingAliases(ext).some((key) => seen.has(key)) || seenProductKeys.has(ext))
         if (isMatched) continue
         listing.status = 'ended'
         listing.syncError = `No longer returned by ${config[shop.marketplace]?.name || shop.marketplace}.`
@@ -1303,7 +1332,14 @@ class UnifiedMarketplaceManager {
       listing.status = quantity > 0 ? 'live' : 'out_of_stock'
       await listing.save()
       try {
-        const res = await this.pushStock(shop, { sku: product.sku, quantity, externalListingId: listing.externalListingId, productId: product._id })
+        const res = await this.pushStock(shop, {
+          sku: product.sku,
+          quantity,
+          externalListingId: listing.externalListingId,
+          productId: product._id,
+          variants: product.variants,
+          syncAllVariants: Boolean(product.variants?.length),
+        })
         if (res?.status === 'ended' || res?.ended) {
           listing.status = 'ended'
           listing.marketplaceStatus = res.marketplaceStatus || 'Ended'
@@ -1326,18 +1362,64 @@ class UnifiedMarketplaceManager {
   async saveSyncedListing(shop, item) {
     const key = productKey(item.externalListingId)
     const ids = [...new Set([...(item.aliases || []), ...listingAliases(item.externalListingId)])]
-    let listing = await Listing.findOne({
-      shopId: shop._id,
-      externalListingId: { $in: ids },
-    })
-    if (!listing && key && shop.marketplace === 'tiktok_shop' && String(item.externalListingId || '').includes(':')) {
+    let listing = null
+    let consolidated = false
+    if (key && shop.marketplace === 'tiktok_shop') {
+      const candidates = await Listing.find({
+        shopId: shop._id,
+        externalListingId: new RegExp(`^${escapeRegex(key)}(:|$)`),
+      }).sort({ createdAt: 1 })
+      if (candidates.length === 1) {
+        listing = candidates[0]
+      } else if (candidates.length > 1) {
+        consolidated = true
+        listing = candidates.find((c) => c.externalListingId === item.externalListingId)
+        if (!listing) {
+          for (const candidate of candidates) {
+            const [otherListings, prodDoc] = await Promise.all([
+              Listing.countDocuments({ productId: candidate.productId, _id: { $ne: candidate._id } }),
+              Product.findById(candidate.productId).select('source').lean(),
+            ])
+            if (otherListings > 0 || (prodDoc && prodDoc.source !== 'marketplace_sync')) {
+              listing = candidate
+              break
+            }
+          }
+        }
+        listing = listing || candidates[0]
+        for (const dup of candidates) {
+          if (String(dup._id) === String(listing._id)) continue
+          const sameProduct = String(dup.productId) === String(listing.productId)
+          if (!sameProduct) {
+            await Order.updateMany(
+              { 'items.productId': dup.productId },
+              { $set: { 'items.$[elem].productId': listing.productId } },
+              { arrayFilters: [{ 'elem.productId': dup.productId }] },
+            )
+            await InventoryLog.updateMany({ productId: dup.productId }, { $set: { productId: listing.productId } })
+          }
+          await Listing.deleteOne({ _id: dup._id })
+          if (!sameProduct) {
+            const [remainingListings, dupProd] = await Promise.all([
+              Listing.countDocuments({ productId: dup.productId }),
+              Product.findById(dup.productId).select('source').lean(),
+            ])
+            if (remainingListings === 0 && dupProd?.source === 'marketplace_sync') {
+              await Product.deleteOne({ _id: dup.productId })
+            }
+          }
+        }
+      }
+    } else {
       listing = await Listing.findOne({
         shopId: shop._id,
-        externalListingId: key,
+        externalListingId: { $in: ids },
       })
     }
     let product = listing ? await Product.findById(listing.productId) : null
-    if (!product && item.matchSkus?.length) product = await Product.findOne({ sku: { $in: item.matchSkus } })
+    if (!product && item.matchSkus?.length) {
+      product = await Product.findOne({ $or: [{ sku: { $in: item.matchSkus } }, { 'variants.sku': { $in: item.matchSkus } }] })
+    }
     if (await this.isForgotten(shop._id, item, product)) {
       if (product?.source === 'marketplace_sync') {
         const others = await Listing.countDocuments({ productId: product._id, ...(listing ? { _id: { $ne: listing._id } } : {}) })
@@ -1374,6 +1456,7 @@ class UnifiedMarketplaceManager {
         weight: item.weight || 1,
         dimensions: item.dimensions || undefined,
         attributes: item.attributes || undefined,
+        ...(Array.isArray(item.variants) ? { variants: item.variants } : {}),
         status: item.listingStatus === 'live' ? 'active' : 'draft',
         source: 'marketplace_sync',
       })
@@ -1383,6 +1466,9 @@ class UnifiedMarketplaceManager {
         // (see the stock block below), so shops do not overwrite each other.
         if (field === 'stock') continue
         if (value !== undefined && value !== '') product[field] = value
+      }
+      if (Array.isArray(item.variants) && (item.variants.length > 0 || (shop.marketplace === 'tiktok_shop' && product.variants?.length))) {
+        product.variants = item.variants
       }
       if (item.weight != null && (product.weight == null || product.weight === 1)) product.weight = item.weight
       if (item.listingStatus === 'live' && product.status === 'draft') product.status = 'active'
@@ -1404,6 +1490,7 @@ class UnifiedMarketplaceManager {
       return { created: false, skipped: true }
     }
     if (!listing) listing = new Listing({ productId: product._id, shopId: shop._id })
+    const wasExtId = listing.externalListingId
     const wasStatus = listing.status
     const wasRaw = listing.marketplaceStatus
     const wasStock = listing.stock
@@ -1420,7 +1507,11 @@ class UnifiedMarketplaceManager {
       ...(item.detailed ? { detailSyncedAt: new Date() } : {}),
     })
     await listing.save()
-    if (!created && Number.isFinite(item.stock)) await this.reconcileStock(product, listing, shop, wasStock, item.stock)
+    const upgradedFromSingle = shop.marketplace === 'tiktok_shop'
+      && String(wasExtId || '').includes(':')
+      && !String(item.externalListingId || '').includes(':')
+    const prevStock = (consolidated || upgradedFromSingle) ? undefined : wasStock
+    if (!created && Number.isFinite(item.stock)) await this.reconcileStock(product, listing, shop, prevStock, item.stock)
     const notify = require('../notify')
     await notify.listingStatusChanged(listing, shop, { wasStatus, wasRaw, imported: created }).catch(() => {})
     if (Number.isFinite(item.stock)) {
@@ -1443,10 +1534,11 @@ class UnifiedMarketplaceManager {
       if (typeof service.reviseListing !== 'function') continue
       const payload = {
         ...changes,
+        ...(changes.variants ? { variants: changes.variants } : product.variants?.length ? { variants: product.variants } : {}),
         ...(changes.images ? { images: this.publicImageUrls(changes.images) } : {}),
       }
       try {
-        const res = await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop, listing }))
+        const res = await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop, listing, product }))
         listing.syncError = null
         if (changes.price != null && !res?.skipped?.includes('price')) listing.price = changes.price
         if (changes.quantity != null) listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))

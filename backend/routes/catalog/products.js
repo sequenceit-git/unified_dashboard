@@ -35,6 +35,18 @@ function changedListingFields(before, after) {
   ) {
     changes.dimensions = after.dimensions
   }
+  const bv = before.variants || []
+  const av = after.variants || []
+  if (JSON.stringify(bv) !== JSON.stringify(av)) {
+    changes.variants = av
+    const bySku = new Map(bv.map((v) => [v.sku, v]))
+    if (av.some((v) => Number(v.price) !== Number(bySku.get(v.sku)?.price))) {
+      changes.variantPrices = true
+    }
+    if (av.some((v) => Number(v.stock) !== Number(bySku.get(v.sku)?.stock))) {
+      changes.variantStocks = true
+    }
+  }
   return changes
 }
 
@@ -206,6 +218,13 @@ router.patch('/:id', async (req, res) => {
     // The SKU links the product to its marketplace listings, so it never changes. The creator
     // decides who sees a draft, so it can't be edited either.
     const { sku, createdBy, ...update } = req.body
+    if (Array.isArray(update.variants) && update.variants.length > 0) {
+      update.stock = update.variants.reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v.stock) || 0)), 0)
+      if (update.basePrice == null || Number(update.basePrice) === Number(before.basePrice)) {
+        const positive = update.variants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
+        if (positive.length) update.basePrice = Math.min(...positive)
+      }
+    }
     const doc = await Product.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true })
     const changes = changedListingFields(before, doc)
     const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
@@ -446,7 +465,13 @@ router.patch('/:id/sync', async (req, res) => {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ error: 'Product not found' })
 
-    const results = await marketplaceManager.pushProductChanges(product, { price: product.basePrice, quantity: product.stock })
+    const results = await marketplaceManager.pushProductChanges(product, {
+      price: product.basePrice,
+      quantity: product.stock,
+      variants: product.variants,
+      variantStocks: Boolean(product.variants?.length),
+      variantPrices: Boolean(product.variants?.length),
+    })
     res.json({
       listingsUpdated: results.length,
       pushedToMarketplaces: results.filter((item) => item.ok).length,

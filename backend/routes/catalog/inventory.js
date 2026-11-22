@@ -175,7 +175,10 @@ router.post('/adjust', async (req, res) => {
     let pushedCount = 0
     const warnings = []
     try {
-      const syncResults = await marketplaceManager.pushProductChanges(updated, { quantity: updated.stock })
+      const pushPayload = variantSku
+        ? { quantity: updated.stock, variantSku, variantStock: stockAfter, variants: updated.variants }
+        : { quantity: updated.stock }
+      const syncResults = await marketplaceManager.pushProductChanges(updated, pushPayload)
       pushedCount = syncResults.filter((r) => r.ok).length
       warnings.push(...syncResults.filter((r) => !r.ok).map((r) => `${r.shopName}: ${r.error}`))
     } catch (err) {
@@ -210,6 +213,8 @@ router.post('/sync', async (req, res) => {
             quantity: item.productId.stock,
             externalListingId: item.externalListingId,
             productId: item.productId._id,
+            variants: item.productId.variants,
+            syncAllVariants: Boolean(item.productId.variants?.length),
           })
           item.lastSyncedAt = new Date()
           // The shop now holds this number; its next listing sync must read it as "no change".
