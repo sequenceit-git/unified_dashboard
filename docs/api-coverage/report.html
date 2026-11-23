@@ -1,0 +1,224 @@
+<title>Shop API Coverage</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap">
+<style>
+/* Layout: an audit sheet — summary strip of three shops, then one shop at a time as a dense, filterable endpoint table. */
+:root {
+  --bg: #f5f6f4; --panel: #ffffff; --fg: #1d2421; --muted: #5d6a64; --line: #dfe3e0; --chip: #eceff0;
+  --accent: #2f6b5a; --accent-ink: #ffffff;
+  --covered: #3f8f6b; --older: #8fb7a3; --missing: #c4572e; --notseller: #b8bfbb;
+  --high: #b3401c; --high-bg: #fbe6dc; --med: #8a6a12; --med-bg: #f6edcf; --low: #55605b; --low-bg: #e8ebe9;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --panel: #1a201d; --fg: #e3e8e5; --muted: #98a59f; --line: #2c3430; --chip: #242b28;
+  --accent: #6fc2a5; --accent-ink: #0d1a15;
+  --covered: #5fb58e; --older: #3f6d59; --missing: #e07a50; --notseller: #4a524e;
+  --high: #f29b78; --high-bg: #3d2219; --med: #e0c06a; --med-bg: #362e16; --low: #a9b4af; --low-bg: #262d2a;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121614; --panel: #1a201d; --fg: #e3e8e5; --muted: #98a59f; --line: #2c3430; --chip: #242b28;
+  --accent: #6fc2a5; --accent-ink: #0d1a15;
+  --covered: #5fb58e; --older: #3f6d59; --missing: #e07a50; --notseller: #4a524e;
+  --high: #f29b78; --high-bg: #3d2219; --med: #e0c06a; --med-bg: #362e16; --low: #a9b4af; --low-bg: #262d2a;
+  color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+h1, h2, h3 { font-family: var(--font-head); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h1 { font-size: 1.9rem; }
+.lede { color: var(--muted); max-width: 70ch; margin: 6px 0 0; }
+.mono { font-family: var(--font-mono); font-size: 12.5px; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.shopcard { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.shopcard[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.shopcard:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shopcard .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.shopcard .name { font-family: var(--font-head); font-size: 1.15rem; font-weight: 600; }
+.shopcard .pct { font-variant-numeric: tabular-nums; color: var(--muted); }
+.bar { display: flex; height: 10px; border-radius: 3px; overflow: hidden; background: var(--chip); }
+.bar span { display: block; height: 100%; }
+.legend, .counts { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.counts b { color: var(--fg); font-weight: 600; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: grid; min-width: 0; }
+.panelhead { padding: 16px; display: grid; gap: 12px; border-bottom: 1px solid var(--line); }
+.viewtabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.viewtabs button { font: inherit; border: 1px solid var(--line); background: transparent; color: var(--fg); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.viewtabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filters input, .filters select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+.filters input { flex: 1 1 220px; }
+.filters label { color: var(--muted); font-size: 12.5px; display: flex; gap: 6px; align-items: center; }
+.resultnote { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.sources { color: var(--muted); font-size: 12.5px; display: grid; gap: 4px; }
+.sources ul { margin: 0; padding-left: 18px; }
+.sources a { color: var(--accent); overflow-wrap: anywhere; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; }
+th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 500; padding: 8px 12px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); }
+td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr.sectionrow td { background: var(--chip); font-family: var(--font-head); font-weight: 600; font-size: 13.5px; padding: 7px 12px; }
+tr.sectionrow .n { color: var(--muted); font-family: var(--font-body); font-weight: 400; margin-left: 6px; }
+td.ep { max-width: 360px; overflow-wrap: anywhere; }
+td.ep a { color: inherit; text-decoration-color: var(--line); }
+td .name { font-weight: 500; }
+td .sub { color: var(--muted); font-size: 12.5px; }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.p-high { color: var(--high); background: var(--high-bg); }
+.p-medium { color: var(--med); background: var(--med-bg); }
+.p-low { color: var(--low); background: var(--low-bg); }
+.size { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.st { white-space: nowrap; font-size: 12.5px; }
+.st::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; background: var(--c); }
+.st-covered { --c: var(--covered); } .st-covered-older { --c: var(--older); } .st-missing { --c: var(--missing); } .st-not-for-sellers { --c: var(--notseller); }
+.files { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.unconfirmed { color: var(--med); font-size: 12px; }
+.empty { padding: 28px 16px; color: var(--muted); }
+.notes { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12.5px; }
+@media (max-width: 560px) { h1 { font-size: 1.5rem; } }
+@media (prefers-reduced-motion: no-preference) { .shopcard, .viewtabs button { transition: border-color .15s, background .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Shop API Coverage</h1>
+    <p class="lede">Every official seller API endpoint of eBay, TikTok Shop and Temu, checked against the calls the dashboard makes today. Each missing endpoint has a note: the section it belongs in, what it gives the seller, its priority and the size of the work.</p>
+  </header>
+
+  <section class="summary" id="summary" aria-label="Coverage per shop">
+    <div class="shopcard"><div class="name">Loading coverage…</div></div>
+  </section>
+  <div class="legend" aria-hidden="true">
+    <span><i class="dot" style="background:var(--covered)"></i>Covered</span>
+    <span><i class="dot" style="background:var(--older)"></i>Covered, older version</span>
+    <span><i class="dot" style="background:var(--missing)"></i>Missing</span>
+    <span><i class="dot" style="background:var(--notseller)"></i>Not for sellers</span>
+  </div>
+
+  <section class="panel" aria-live="polite">
+    <div class="panelhead">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+        <h2 id="shoptitle">eBay</h2>
+        <div class="viewtabs" role="group" aria-label="View">
+          <button type="button" id="view-gaps" aria-pressed="true">Gaps to build</button>
+          <button type="button" id="view-all" aria-pressed="false">Full catalog</button>
+        </div>
+      </div>
+      <div class="filters">
+        <input id="q" type="search" placeholder="Search endpoint, name or what it gives" aria-label="Search">
+        <label for="f-priority">Priority <select id="f-priority"><option value="">All</option><option>high</option><option>medium</option><option>low</option></select></label>
+        <label for="f-size">Size <select id="f-size"><option value="">All</option><option>small</option><option>medium</option><option>large</option></select></label>
+        <label for="f-section">Section <select id="f-section"><option value="">All</option></select></label>
+        <label for="f-status" id="statuswrap" hidden>Status <select id="f-status"><option value="">All</option><option value="covered">Covered</option><option value="covered-older">Covered, older version</option><option value="missing">Missing</option><option value="not-for-sellers">Not for sellers</option></select></label>
+      </div>
+      <div class="resultnote" id="resultnote"></div>
+    </div>
+    <div class="tablewrap"><table id="table"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    <div class="panelhead" style="border-bottom:0;border-top:1px solid var(--line)">
+      <div class="sources" id="sources"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id)
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const RANK = { high: 0, medium: 1, low: 2, small: 0, large: 2 }
+const STATUS_LABEL = { covered: 'Covered', 'covered-older': 'Covered, older version', missing: 'Missing', 'not-for-sellers': 'Not for sellers' }
+const hashOf = (key) => key.replace(/_/g, '-')
+let DATA = []
+const state = { shop: 'ebay', view: 'gaps' }
+
+function shopFromHash() {
+  const h = location.hash.slice(1)
+  const s = DATA.find((x) => hashOf(x.key) === h)
+  return s ? s.key : (DATA[0] && DATA[0].key)
+}
+
+function renderSummary() {
+  $('summary').innerHTML = DATA.map((s) => {
+    const n = (st) => s.rows.filter((r) => r.status === st).length
+    const seller = s.rows.length - n('not-for-sellers')
+    const done = n('covered') + n('covered-older')
+    const pct = seller ? Math.round((done / seller) * 100) : 0
+    const high = s.rows.filter((r) => r.gap && r.gap.priority === 'high').length
+    const seg = (st, v) => `<span style="width:${(n(st) / s.rows.length) * 100}%;background:var(${v})" title="${STATUS_LABEL[st]}: ${n(st)}"></span>`
+    return `<button type="button" class="shopcard" data-shop="${s.key}" aria-pressed="${s.key === state.shop}">
+      <div class="top"><span class="name">${esc(s.label)}</span><span class="pct">${pct}% of seller endpoints used</span></div>
+      <div class="bar">${seg('covered', '--covered')}${seg('covered-older', '--older')}${seg('missing', '--missing')}${seg('not-for-sellers', '--notseller')}</div>
+      <div class="counts"><span><b>${s.rows.length}</b> endpoints</span><span><b>${done}</b> used</span><span><b>${n('missing')}</b> missing</span><span><b>${high}</b> high priority</span></div>
+    </button>`
+  }).join('')
+  for (const b of document.querySelectorAll('.shopcard[data-shop]')) b.addEventListener('click', () => { location.hash = hashOf(b.dataset.shop) })
+}
+
+function fillSections(shop) {
+  const sel = $('f-section'), keep = sel.value
+  const sections = [...new Set(shop.rows.filter((r) => r.gap).map((r) => r.gap.section))].sort((a, b) => a.startsWith('new: ') - b.startsWith('new: ') || a.localeCompare(b))
+  sel.innerHTML = '<option value="">All</option>' + sections.map((s) => `<option${s === keep ? ' selected' : ''}>${esc(s)}</option>`).join('')
+}
+
+function endpointCell(r) {
+  const id = esc(r.id)
+  const link = r.docs ? `<a href="${esc(r.docs)}" target="_blank" rel="noopener">${id}</a>` : id
+  return `<td class="ep mono">${link}${r.confirmed ? '' : '<div class="unconfirmed">confirm in partner account</div>'}${r.retired ? '<div class="unconfirmed">retired, still called</div>' : ''}</td>`
+}
+
+function render() {
+  const shop = DATA.find((s) => s.key === state.shop)
+  if (!shop) return
+  $('shoptitle').textContent = shop.label
+  $('view-gaps').setAttribute('aria-pressed', state.view === 'gaps')
+  $('view-all').setAttribute('aria-pressed', state.view === 'all')
+  $('statuswrap').hidden = state.view === 'gaps'
+  for (const b of document.querySelectorAll('.shopcard[data-shop]')) b.setAttribute('aria-pressed', b.dataset.shop === state.shop)
+  const q = $('q').value.trim().toLowerCase()
+  const fp = $('f-priority').value, fs = $('f-size').value, fsec = $('f-section').value, fst = $('f-status').value
+  let rows = shop.rows.filter((r) => (state.view === 'gaps' ? r.status === 'missing' : !fst || r.status === fst))
+  if (fp || fs || fsec) rows = rows.filter((r) => r.gap && (!fp || r.gap.priority === fp) && (!fs || r.gap.size === fs) && (!fsec || r.gap.section === fsec))
+  if (q) rows = rows.filter((r) => [r.id, r.name, r.summary, r.group, r.gap && r.gap.value].join(' ').toLowerCase().includes(q))
+  let html = ''
+  if (state.view === 'gaps') {
+    $('thead').innerHTML = '<tr><th>Priority</th><th>Size</th><th>Endpoint</th><th>What it gives the seller</th></tr>'
+    const sections = [...new Set(rows.map((r) => r.gap.section))].sort((a, b) => a.startsWith('new: ') - b.startsWith('new: ') || a.localeCompare(b))
+    for (const sec of sections) {
+      const list = rows.filter((r) => r.gap.section === sec).sort((a, b) => RANK[a.gap.priority] - RANK[b.gap.priority] || RANK[a.gap.size] - RANK[b.gap.size] || a.id.localeCompare(b.id))
+      html += `<tr class="sectionrow"><td colspan="4">${esc(sec.startsWith('new: ') ? 'New section: ' + sec.slice(5) : sec)}<span class="n">${list.length}</span></td></tr>`
+      for (const r of list) html += `<tr><td><span class="pill p-${r.gap.priority}">${r.gap.priority}</span></td><td class="size">${r.gap.size}</td>${endpointCell(r)}<td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.gap.value)}</div></td></tr>`
+    }
+  } else {
+    $('thead').innerHTML = '<tr><th>Status</th><th>Group</th><th>Endpoint</th><th>Name and summary</th><th>Called from</th></tr>'
+    const order = ['covered', 'covered-older', 'missing', 'not-for-sellers']
+    rows = [...rows].sort((a, b) => a.group.localeCompare(b.group) || order.indexOf(a.status) - order.indexOf(b.status) || a.id.localeCompare(b.id))
+    for (const r of rows) {
+      const older = r.status === 'covered-older' ? `<div class="sub mono">called as ${esc(r.calledAs)}</div>` : ''
+      html += `<tr><td><span class="st st-${r.status}">${STATUS_LABEL[r.status]}</span></td><td class="sub">${esc(r.group)}</td>${endpointCell(r)}<td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.summary)}</div>${older}</td><td class="files mono">${r.files.map(esc).join('<br>')}</td></tr>`
+    }
+  }
+  $('tbody').innerHTML = html || `<tr><td colspan="5" class="empty">No endpoints match these filters.</td></tr>`
+  const total = state.view === 'gaps' ? shop.rows.filter((r) => r.status === 'missing').length : shop.rows.length
+  $('resultnote').textContent = `Showing ${rows.length} of ${total} ${state.view === 'gaps' ? 'missing endpoints' : 'endpoints'}. Researched ${shop.researchedAt}.`
+  $('sources').innerHTML = `<div><b>Sources</b></div><ul>${shop.sources.map((u) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>`).join('')}</ul>${shop.notes.length ? `<ul class="notes">${shop.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`
+}
+
+function selectShop() {
+  state.shop = shopFromHash()
+  fillSections(DATA.find((s) => s.key === state.shop))
+  render()
+}
+
+$('view-gaps').addEventListener('click', () => { state.view = 'gaps'; render() })
+$('view-all').addEventListener('click', () => { state.view = 'all'; render() })
+for (const id of ['q', 'f-priority', 'f-size', 'f-section', 'f-status']) $(id).addEventListener('input', render)
+addEventListener('hashchange', selectShop)
+
+fetch('report-data.json').then((r) => r.json()).then((data) => {
+  DATA = data
+  state.shop = shopFromHash()
+  renderSummary()
+  selectShop()
+}).catch(() => { $('summary').innerHTML = '<div class="shopcard"><div class="name">The coverage data could not be loaded. Reload the page to try again.</div></div>' })
+</script>

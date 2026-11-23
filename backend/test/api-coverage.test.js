@@ -114,3 +114,20 @@ for (const key of Object.keys(SECTIONS)) {
     for (const id of Object.keys(gaps)) assert.ok(missing.some((r) => r.id === id), `gap note ${id} is for a missing endpoint`)
   })
 }
+
+// ---- Task 6: report
+test('the report lists every gap', () => {
+  const { buildReport } = require('../scripts/apiCoverage/report')
+  const { shopCoverage } = require('../scripts/apiCoverage/compare')
+  const md = buildReport()
+  for (const key of ['ebay', 'tiktok_shop', 'temu']) {
+    for (const r of shopCoverage(key).filter((x) => x.status === 'missing')) assert.ok(md.includes(`\`${r.id}\``), `${key} gap ${r.id}`)
+  }
+  assert.match(md, /`GET \/sell\/analytics\/v1\/traffic_report`/)
+})
+
+test('the README in the repo is up to date', () => {
+  const { buildReport } = require('../scripts/apiCoverage/report')
+  const readme = fs.readFileSync(path.join(ROOT, '..', 'docs', 'api-coverage', 'README.md'), 'utf8')
+  assert.equal(readme, buildReport(), 'run: npm run api-coverage')
+})

@@ -14,7 +14,8 @@
     "check:ebay-listings": "node marketplaces/ebay/scripts/listing-check.js",
     "test": "node --test \"test/**/*.test.js\" \"marketplaces/**/*.test.js\"",
     "split-products": "node scripts/split-products-per-shop.js",
-    "rename-sections": "node scripts/rename-sections.js"
+    "rename-sections": "node scripts/rename-sections.js",
+    "api-coverage": "node scripts/apiCoverage/report.js"
   },
   "keywords": [],
   "author": "",
