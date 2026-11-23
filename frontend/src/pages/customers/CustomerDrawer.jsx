@@ -18,7 +18,7 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const [city, setCity] = useState(customer.address?.city || '')
   const [state, setState] = useState(customer.address?.state || '')
   const [zip, setZip] = useState(customer.address?.zip || '')
-  const [country, setCountry] = useState(customer.address?.country || 'US')
+  const [country] = useState(customer.address?.country || 'US')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 

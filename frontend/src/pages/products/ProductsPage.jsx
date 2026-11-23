@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useAuth } from '../../auth/AuthContext'
 import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
 import { useShopProfile } from '../../hooks/useShopProfiles'
@@ -11,7 +10,6 @@ import ListModal from './ListModal'
 import ProductModal from './ProductModal'
 
 export default function ProductsPage() {
-  const { isAdmin } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
   const { profile } = useShopProfile(marketplace)

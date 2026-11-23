@@ -180,7 +180,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
         else setEbayRules(normalizeEbayCategoryRules(null))
       })
     return () => { cancelled = true }
-  }, [marketplace, shopId, categoryId, token])
+  }, [marketplace, isTikTok, isEbay, shopId, categoryId, token])
 
   const activeVariants = isTikTok
     ? variants

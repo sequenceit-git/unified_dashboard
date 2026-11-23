@@ -7,10 +7,9 @@ import Pagination from '../../components/ui/Pagination'
 import RowMenu from '../../components/ui/RowMenu'
 import SearchInput from '../../components/ui/SearchInput'
 import { useSyncReload } from '../../hooks/useLiveEvents'
-import { FiExternalLink } from 'react-icons/fi'
 
 export default function StockTab({ marketplace, onAdjust, refreshKey }) {
-  const { token, isAdmin } = useAuth()
+  const { token } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
   const [loading, setLoading] = useState(true)

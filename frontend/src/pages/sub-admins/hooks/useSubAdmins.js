@@ -9,7 +9,7 @@ import { marketsOf } from '../subAdminShared'
 export function useSubAdmins() {
   const { token } = useAuth()
   const usersRes = useApi(token ? '/api/auth/users' : null)
-  const users = Array.isArray(usersRes.data) ? usersRes.data : []
+  const users = useMemo(() => (Array.isArray(usersRes.data) ? usersRes.data : []), [usersRes.data])
 
   const [search, setSearch] = useState('')
   const [shopFilter, setShopFilter] = useState('all') // 'all' | 'ebay' | 'tiktok_shop' | 'temu'

@@ -35,7 +35,7 @@ const NEXT = {
 }
 
 export default function OrderDrawer({ order, onClose, onSaved }) {
-  const { token, isAdmin } = useAuth()
+  const { token } = useAuth()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [carrier, setCarrier] = useState(order.shipping?.carrier || 'USPS')

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { SHOPS } from '../../marketplaces'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   FiChevronDown,
   FiSettings,

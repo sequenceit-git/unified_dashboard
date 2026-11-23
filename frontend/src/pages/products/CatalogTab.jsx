@@ -33,7 +33,7 @@ function categoryLabel(name) {
 }
 
 export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null, marketplace = '', listLabel = 'List on shop', disabled = false, disabledMessage = '' }) {
-  const { token, isAdmin } = useAuth()
+  const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const productStatus = profile?.productForm?.productStatus || {}
   const [rows, setRows] = useState([])

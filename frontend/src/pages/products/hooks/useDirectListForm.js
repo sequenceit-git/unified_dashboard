@@ -175,7 +175,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
         if (!cancelled) update({ schema: [], fillingAttributes: false })
       })
     return () => { cancelled = true }
-  }, [draftSourceUrl, draftTitle, draftDesc, draftBrand, draftAttrs, shop?._id, layout.specifics, categoryId, token, update, useAi, marketplace])
+  }, [draftSourceUrl, draftTitle, draftDesc, draftBrand, draftAttrs, shop?._id, layout.specifics, categoryId, token, update, useAi, marketplace, isTikTok])
 
   useEffect(() => {
     if (!(isTikTok || isEbay) || !shop?._id || !categoryId) return undefined
@@ -201,7 +201,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
         else update({ ebayRules: normalizeEbayCategoryRules(null) })
       })
     return () => { cancelled = true }
-  }, [marketplace, shop?._id, categoryId, token, update])
+  }, [marketplace, isTikTok, isEbay, shop?._id, categoryId, token, update])
 
   const set = (key) => (e) => update((current) => ({ draft: { ...current.draft, [key]: e.target.value } }))
   const setAspect = (id, value) => update((current) => ({ aspects: { ...current.aspects, [id]: value } }))

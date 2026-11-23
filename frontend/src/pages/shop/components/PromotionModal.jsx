@@ -9,7 +9,7 @@ export default function PromotionModal({ onClose, onSuccess, token, marketplace 
   // Shop-specific promotion rules and wording (src/marketplaces/<key>/index.js).
   const form = getShop(marketplace)?.promotions?.form || {}
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const [description] = useState('')
   const [discount, setDiscount] = useState('10')
   const [durationDays, setDurationDays] = useState('14')
   const [listingIds, setListingIds] = useState('')
