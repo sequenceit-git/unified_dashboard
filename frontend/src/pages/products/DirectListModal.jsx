@@ -153,7 +153,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           {categoryState.loading ? 'Asking TikTok for a suggestion…' : selectedCategory?.path || draft?.category || 'Picked when you publish'}
         </p>
       ) : (
-        <Input label="Category" value={draft.category} onChange={set('category')} />
+        <Input label="Category" value={draft?.category || ''} onChange={set('category')} />
       )}
       {categoryState.error && <p className="text-xs text-red-600">{categoryState.error}</p>}
     </>
