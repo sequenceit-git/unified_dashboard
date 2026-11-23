@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { getShop } from '../../marketplaces'
+import ListingSlot from '../../marketplaces/shared/ListingSlot'
+import { getShop, SHOPS } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import Button from '../../components/ui/Button'
@@ -7,18 +8,9 @@ import { Input, Select } from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import Badge from '../../components/ui/Badge'
-import IdentifierCodeField from '../../marketplaces/tiktok_shop/listing/IdentifierCodeField'
-import EbayIdentifierField from '../../marketplaces/ebay/listing/IdentifierField'
-import EbayBestOfferField from '../../marketplaces/ebay/listing/BestOfferField'
 import VariantEditor from '../../components/listing/VariantEditor'
 import { validateIdentifierCode, validateVariantsForTikTok } from '../../marketplaces/tiktok_shop/listing/rules'
-import {
-  DISPATCH_TIMES,
-  isNewCondition,
-  validateBestOffer,
-  validateEbayIdentifierCode,
-  validateVariantsForEbay,
-} from '../../marketplaces/ebay/listing/rules'
+import { isNewCondition, validateBestOffer, validateEbayIdentifierCode, validateVariantsForEbay } from '../../marketplaces/ebay/listing/rules'
 import { listingActionsFor, listingBadge, useShopProfile } from '../../hooks/useShopProfiles'
 import { CONDITIONS } from '../../lib/listingConditions'
 
@@ -248,6 +240,11 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
     }
   }
 
+  // State the shop-specific parts of this form read (src/marketplaces/<key>/listing/productFields/).
+  const slotCtx = { form, set, setForm, subtitleMax, variants }
+  // Variant editor style: the shop's own when it has eBay fields, otherwise the TikTok-style editor.
+  const variantShop = isEbay ? getShop(marketplace) : SHOPS.find((shop) => shop.listing?.tiktokFields)
+
   return (
     <Modal title={product ? 'Edit product' : 'New product'} onClose={onClose} size="5xl">
       <form onSubmit={save} className="space-y-5">
@@ -265,40 +262,15 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                   required
                   placeholder="e.g. Wireless Headphones"
                 />
-                {isEbay && (
-                  <Input
-                    className="sm:col-span-2"
-                    label={`Subtitle (optional, ${form.subtitle.length}/${subtitleMax} — extra eBay fee may apply)`}
-                    maxLength={subtitleMax}
-                    value={form.subtitle}
-                    onChange={set('subtitle')}
-                    placeholder="Supplemental keywords shown beneath title"
-                  />
-                )}
+                <ListingSlot marketplace={marketplace} form="productFields" name="subtitle" ctx={slotCtx} />
                 <Input label="Category" value={form.category} onChange={set('category')} placeholder="e.g. Electronics" />
                 <Input label="Brand" value={form.brand} onChange={set('brand')} placeholder="e.g. DevBrand" />
-                {isEbay && (
-                  <Input label="MPN (optional)" value={form.mpn} onChange={set('mpn')} placeholder="Manufacturer Part Number" />
-                )}
+                <ListingSlot marketplace={marketplace} form="productFields" name="mpn" ctx={slotCtx} />
                 {shopForm.condition && (
                   <Select label="Condition" value={form.condition || 'NEW'} onChange={set('condition')} options={CONDITIONS} />
                 )}
               </div>
-              {isEbay && !isNewCondition(form.condition) && (
-                <div>
-                  <label className="block mb-1 text-xs font-semibold text-gray-600">
-                    Condition description ({form.conditionDescription.length}/1000)
-                  </label>
-                  <textarea
-                    rows={2}
-                    maxLength={1000}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-2xs outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                    placeholder="Describe cosmetic wear, included accessories, or defects…"
-                    value={form.conditionDescription}
-                    onChange={set('conditionDescription')}
-                  />
-                </div>
-              )}
+              <ListingSlot marketplace={marketplace} form="productFields" name="conditionDescription" ctx={slotCtx} />
               <div>
                 <label className="block mb-1 text-xs font-semibold text-gray-600">Description</label>
                 <textarea
@@ -323,18 +295,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                   disabled={variants.length > 0}
                   required={variants.length === 0}
                 />
-                {isTikTok && variants.length === 0 && (
-                  <Input
-                    label="MSRP / List price ($)"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="7600"
-                    value={form.listPrice ?? ''}
-                    onChange={set('listPrice')}
-                    placeholder="Optional strikethrough price"
-                  />
-                )}
+                <ListingSlot marketplace={marketplace} form="productFields" name="listPrice" ctx={slotCtx} />
                 <Input label="Base price ($)" type="number" step="0.01" value={form.costPrice ?? ''} onChange={set('costPrice')} placeholder="Cost before selling" />
                 <Input label={variants.length > 0 ? 'Total Stock (from variants)' : 'Stock Quantity *'} type="number" value={form.stock} onChange={set('stock')} disabled={variants.length > 0} required={variants.length === 0} />
                 <Input label="Low-stock Alert" type="number" value={form.lowStockThreshold} onChange={set('lowStockThreshold')} />
@@ -342,49 +303,22 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                   <Input label="Seller SKU (optional)" maxLength={50} value={form.sku} onChange={set('sku')} placeholder="Auto-generated if blank" />
                 )}
               </div>
-              {isTikTok && variants.length === 0 && (
-                <IdentifierCodeField
-                  value={form.identifierCode}
-                  onChange={(val) => setForm((prev) => ({ ...prev, identifierCode: val }))}
-                />
-              )}
-              {isEbay && variants.length === 0 && (
-                <EbayIdentifierField
-                  value={form.identifierCode}
-                  onChange={(val) => setForm((prev) => ({ ...prev, identifierCode: val }))}
-                />
-              )}
+              <ListingSlot marketplace={marketplace} form="productFields" name="identifier" ctx={slotCtx} />
               {(isTikTok || isEbay || variants.length > 0) && (
                 <VariantEditor
                   key={`${product?._id || 'new'}-${marketplace || 'all'}`}
-                  marketplace={isEbay ? 'ebay' : 'tiktok_shop'}
+                  marketplace={variantShop.key}
                   variants={variants}
                   onChange={handleVariantsChange}
                   listingImages={form.images}
                   defaultPrice={form.basePrice}
                   defaultStock={form.stock || 1}
-                  baseSku={form.sku || (isEbay ? 'EBAY' : 'TTS')}
+                  baseSku={form.sku || variantShop.listing.skuPrefix}
                   lockedOptions={variantsLocked}
                   requireStock={false}
                 />
               )}
-              {isEbay && (
-                <div className="space-y-3 border-t border-gray-100 pt-3">
-                  <EbayBestOfferField
-                    value={form.bestOffer}
-                    onChange={(val) => setForm((prev) => ({ ...prev, bestOffer: val }))}
-                    minPrice={variants.length > 0
-                      ? Math.min(...(variants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)))
-                      : Number(form.basePrice)}
-                  />
-                  <Select
-                    label="Handling time"
-                    value={form.dispatchTimeMax}
-                    onChange={set('dispatchTimeMax')}
-                    options={DISPATCH_TIMES}
-                  />
-                </div>
-              )}
+              <ListingSlot marketplace={marketplace} form="productFields" name="pricingExtras" ctx={slotCtx} />
               {product && (
               <div className="border-t border-gray-100 pt-3">
                 <p className="mb-1.5 text-xs font-semibold text-gray-600">{profile?.label || 'Shop'} listing</p>

@@ -18,7 +18,7 @@ import {
  * - eBay: up to 5 option types, up to 250 SKUs, optional variation pictures (hosted URLs), UPC/EAN/ISBN/Does not apply
  */
 export default function VariantEditor({
-  marketplace = 'tiktok_shop',
+  marketplace,
   variants = [],
   onChange,
   salesSchema = [],

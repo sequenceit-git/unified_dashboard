@@ -3,6 +3,16 @@
  * choices shared pages make (promotion form, cancellation rules, listing defaults, buyer links).
  */
 import Wordmark from './Wordmark'
+import DraftFields from './listing/draftFields/Fields'
+import ProductSubtitle from './listing/productFields/Subtitle'
+import ProductMpn from './listing/productFields/Mpn'
+import ProductConditionDescription from './listing/productFields/ConditionDescription'
+import ProductIdentifier from './listing/productFields/Identifier'
+import ProductPricingExtras from './listing/productFields/PricingExtras'
+import ListSubtitle from './listing/listFields/Subtitle'
+import ListCategory from './listing/listFields/Category'
+import ListDetails from './listing/listFields/Details'
+import ListImageNote from './listing/listFields/ImageNote'
 import { validateVariantsForEbay } from './listing/rules'
 import returns from './sections/returns'
 import offers from './sections/offers'
@@ -16,6 +26,8 @@ export default {
   urlId: 'ebay',
   /** Sidebar icon. */
   icon: FiShoppingBag,
+  /** Name on the Product Discovery run form. */
+  researchLabel: 'eBay',
   badgeColor: 'blue',
   Wordmark,
   subsections: [
@@ -61,7 +73,7 @@ export default {
   liveUpdates: { pushes: 'sales and messages', arrives: 'sales and messages' },
   shipNeedsTracking: true,
   /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
-  listing: { ebayFields: true, validateVariants: validateVariantsForEbay },
+  listing: { ebayFields: true, validateVariants: validateVariantsForEbay, listFields: { subtitle: ListSubtitle, category: ListCategory, mainFields: ListDetails, imageNote: ListImageNote }, skuPrefix: 'EBAY', productFields: { subtitle: ProductSubtitle, mpn: ProductMpn, conditionDescription: ProductConditionDescription, identifier: ProductIdentifier, pricingExtras: ProductPricingExtras }, draftFields: { fields: DraftFields } },
   listingDefaults: {
     conditionDescription: true,
     variants: true,

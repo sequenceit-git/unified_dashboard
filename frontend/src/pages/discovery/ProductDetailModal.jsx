@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FiExternalLink } from 'react-icons/fi'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
-import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../marketplaces'
+import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel, KEYS } from '../../marketplaces'
 
 function money(value) {
   const amount = Number(value)
@@ -37,7 +37,7 @@ export function productFacts(opportunity) {
     price: opportunity.price ?? opportunity.metrics?.price,
   })
   const validation = opportunity.validation || {}
-  pushSource(sources, { url: validation.ebaySourceUrl, label: 'eBay', place: 'ebay' })
+  pushSource(sources, { url: validation.ebaySourceUrl, label: 'eBay', place: 'ebay' }) // shop-literal-ok: the discovery agent's eBay evidence link
   pushSource(sources, { url: validation.otherUrl, label: marketplaceLabel(validation.otherMarketplace), place: validation.otherMarketplace })
   ;(Array.isArray(validation.listingLinks) ? validation.listingLinks : []).forEach((link) => {
     pushSource(sources, { url: link?.url, label: marketplaceLabel(link?.marketplace), place: link?.marketplace, price: link?.price })
@@ -64,7 +64,7 @@ export default function ProductDetailModal({ opportunity, onClose }) {
   const facts = productFacts(opportunity)
   const [activeImage, setActiveImage] = useState(0)
   const title = opportunity.title || opportunity.productName || 'Product details'
-  const marketplace = opportunity.marketplace || 'ebay'
+  const marketplace = opportunity.marketplace || KEYS[0]
   const description = facts.description
   const highlights = Array.isArray(opportunity.highlights) ? opportunity.highlights.filter(Boolean) : []
   const specs = Array.isArray(opportunity.specs) ? opportunity.specs.filter((spec) => spec?.name && spec?.value) : []

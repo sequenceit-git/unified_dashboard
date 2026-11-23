@@ -3,6 +3,7 @@
  * choices shared pages make (approve-only returns, no listing from the dashboard).
  */
 import returns from './sections/returns'
+import DraftFields from './listing/draftFields/Fields'
 import { FiTag } from 'react-icons/fi'
 
 export default {
@@ -12,6 +13,8 @@ export default {
   urlId: 'temu',
   /** Sidebar icon. */
   icon: FiTag,
+  /** Name on the Product Discovery run form. */
+  researchLabel: 'Temu',
   badgeColor: 'yellow',
   subsections: [
     { id: 'products', route: 'products', label: 'Goods', desc: 'Goods catalog, Temu seller center sync, and listing status' },
@@ -45,6 +48,6 @@ export default {
   liveUpdates: { pushes: 'order changes', arrives: 'orders' },
   shipNeedsTracking: true,
   /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
-  listing: { temuFields: true },
+  listing: { temuFields: true, draftFields: { fields: DraftFields } },
   listingDefaults: { canList: false },
 }

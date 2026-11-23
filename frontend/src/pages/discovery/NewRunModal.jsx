@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SHOPS } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import { allowedShopSections } from '../../hooks/useShopSection'
 import { FiX, FiZap, FiAlertTriangle } from 'react-icons/fi'
@@ -24,7 +25,7 @@ export default function NewRunModal({
   const { user, isAdmin } = useAuth()
   const allowedSections = allowedShopSections(user, isAdmin)
   const allowedMarketplaceIds = new Set(allowedSections.map((s) => s.id))
-  const initialDefaultMarketplace = allowedSections[0]?.id || 'ebay'
+  const initialDefaultMarketplace = allowedSections[0]?.id || SHOPS[0].urlId
 
   const [selectedCategories, setSelectedCategories] = useState(['Home & Kitchen'])
   const [categoryInput, setCategoryInput] = useState('')
@@ -79,11 +80,9 @@ export default function NewRunModal({
     })
   }
 
-  const marketplaces = [
-    { id: 'ebay', label: 'eBay', defaultBadge: 'Default' },
-    { id: 'tiktok', label: 'TikTok Shop' },
-    { id: 'temu', label: 'Temu' },
-  ].filter((market) => allowedMarketplaceIds.has(market.id))
+  const marketplaces = SHOPS
+    .map((shop, i) => ({ id: shop.urlId, label: shop.researchLabel, ...(i === 0 ? { defaultBadge: 'Default' } : {}) }))
+    .filter((market) => allowedMarketplaceIds.has(market.id))
 
   return (
     <Modal title="Launch New Research Run" onClose={onClose} wide>

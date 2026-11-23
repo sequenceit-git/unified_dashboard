@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { allowedShopSections } from '../../hooks/useShopSection'
 import Badge from '../../components/ui/Badge'
-import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../marketplaces'
+import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel, KEYS } from '../../marketplaces'
 import { productFacts } from './ProductDetailModal'
 import { FiExternalLink, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi'
 
@@ -25,7 +25,7 @@ export default function OpportunityCard({ opportunity, reportId, onListShop, onO
     score >= 70 ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
     'bg-amber-100 text-amber-800 border-amber-200'
 
-  const marketplace = opportunity.marketplace || 'ebay'
+  const marketplace = opportunity.marketplace || KEYS[0]
   const marketColor = marketplaceBadgeColor(marketplace)
   const marketName = marketplaceLabel(marketplace)
 

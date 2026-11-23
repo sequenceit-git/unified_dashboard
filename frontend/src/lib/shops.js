@@ -11,7 +11,8 @@ export function shopSectionFromMarketplace(marketplace) {
 }
 
 export function canonicalShopMarketplace(value) {
-  if (value === 'tiktok') return 'tiktok_shop'
+  const alias = SHOPS.find((shop) => shop.urlId === value)
+  if (alias) return alias.key
   if (KEYS.includes(value)) return value
   return KEYS[0]
 }

@@ -3,6 +3,14 @@
  * shop-specific choices shared pages make (promotions, listing defaults).
  */
 import returns from './sections/returns'
+import DraftFields from './listing/draftFields/Fields'
+import ProductListPrice from './listing/productFields/ListPrice'
+import ProductIdentifier from './listing/productFields/Identifier'
+import ListCategory from './listing/listFields/Category'
+import ListDetails from './listing/listFields/Details'
+import ListSizeChart from './listing/listFields/SizeChart'
+import ListCertifications from './listing/listFields/Certifications'
+import ListSaveMode from './listing/listFields/SaveMode'
 import { validateVariantsForTikTok } from './listing/rules'
 import promotions from './sections/promotions'
 import fulfillment from './sections/fulfillment'
@@ -15,6 +23,8 @@ export default {
   urlId: 'tiktok',
   /** Sidebar icon. */
   icon: FiMusic,
+  /** Name on the Product Discovery run form. */
+  researchLabel: 'TikTok Shop',
   badgeColor: 'purple',
   subsections: [
     { id: 'products', route: 'products', label: 'Products', desc: 'Live product catalog, review status, and direct listing' },
@@ -51,7 +61,7 @@ export default {
   liveUpdates: { pushes: 'sales and messages', arrives: 'sales and messages' },
   shipNeedsTracking: true,
   /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
-  listing: { tiktokFields: true, validateVariants: validateVariantsForTikTok },
+  listing: { tiktokFields: true, validateVariants: validateVariantsForTikTok, listFields: { category: ListCategory, extraFields: ListDetails, sizeChart: ListSizeChart, certifications: ListCertifications, saveMode: ListSaveMode }, skuPrefix: 'TTS', productFields: { listPrice: ProductListPrice, identifier: ProductIdentifier }, draftFields: { fields: DraftFields } },
   listingDefaults: {
     variants: true,
     brands: true,
