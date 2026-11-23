@@ -11,7 +11,7 @@
  */
 
 const ExcelJS = require('exceljs')
-const { newSku } = require('../utils/sku')
+const { newSku } = require('../../utils/sku')
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const HEADER_BG = '4F46E5'  // indigo-600

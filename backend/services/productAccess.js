@@ -43,4 +43,13 @@ async function requireProductAccess(req, res, productId) {
   return null
 }
 
-module.exports = { productAccess, requireProductAccess, ownDrafts }
+/** Same check as requireProductAccess for domain services: throws HttpError 404/403 instead. */
+async function assertProductAccess(ctx, productId) {
+  const access = await productAccess(ctx, productId)
+  if (access.ok) return access
+  const { HttpError } = require('../utils/httpError')
+  if (!access.visible) throw new HttpError(404, { error: 'Not found' })
+  throw new HttpError(403, { error: 'This product is also listed on shops outside your access, so only a super admin can change it.' })
+}
+
+module.exports = { productAccess, requireProductAccess, assertProductAccess, ownDrafts }

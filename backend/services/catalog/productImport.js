@@ -5,9 +5,9 @@
  */
 
 const OpenAI = require('openai')
-const ebay = require('../marketplaces/ebay/service')
-const { getAiConfig } = require('./aiSettings')
-const { checkUrl, safeFetch } = require('../utils/safeUrl')
+const ebay = require('../../marketplaces/ebay/service')
+const { getAiConfig } = require('../aiSettings')
+const { checkUrl, safeFetch } = require('../../utils/safeUrl')
 
 const MAX_HTML_BYTES = 3 * 1024 * 1024
 const BROWSER_HEADERS = {

@@ -9,7 +9,7 @@ const marketplaceManager = require('../../services/marketplace')
 const { canonical: canonicalMarketplace } = require('../../marketplaces')
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 const { productImages } = require('../../agent/discovery/listingImage')
-const { generateRecommendationsExcel, verifiedLinks } = require('../../services/excelExport')
+const { generateRecommendationsExcel, verifiedLinks } = require('../../services/catalog/excelExport')
 const { getAiConfig } = require('../../services/aiSettings')
 const { newSku } = require('../../utils/sku')
 
