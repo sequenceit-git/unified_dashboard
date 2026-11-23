@@ -122,4 +122,49 @@ async function promotionTargets(manager, shop, listingIds) {
   return { listingIds: finalListingIds }
 }
 
-module.exports = { listingImages, fetchOrders, promotionTargets }
+
+/** TikTok money: a number, string or { amount } / { overall: ... } object. */
+function money(value) {
+  if (value == null) return 0
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') return Number(value) || 0
+  if (value.overall) return money(value.overall)
+  return Number(value.amount || 0)
+}
+
+/** One TikTok shop-performance interval as { date, revenue, orders, items }. */
+function intervalSales(interval) {
+  const sales = interval?.sales || {}
+  return {
+    date: interval.start_date || interval.end_date,
+    revenue: +money(sales.gmv).toFixed(2),
+    orders: Number(sales.orders_count || 0),
+    items: Number(sales.items_sold || 0),
+  }
+}
+
+/** TikTok's own figures for Analytics (Data Analytics API), used instead of the order totals. */
+const analytics = {
+  async salesIntervals(manager, shop, { from, to }) {
+    const service = require('./service')
+    const intervals = await manager.withShopToken(shop, (token) => service.shopPerformance(token, { shop, from, to }))
+    return intervals.map(intervalSales)
+  },
+  /** Best sellers as { id (product id), title, qty, revenue }. */
+  async productPerformance(manager, shop, { from, to, limit }) {
+    const service = require('./service')
+    const performance = await manager.withShopToken(shop, (token) => service.productPerformance(token, { shop, from, to, limit }))
+    return performance.map((item) => {
+      const id = String(item.id || item.product_id || '')
+      const stats = item.overall_performance || item
+      return {
+        id,
+        title: item.title || id,
+        qty: Number(stats.items_sold || stats.units_sold || stats.orders || 0),
+        revenue: +money(stats.gmv).toFixed(2),
+      }
+    })
+  },
+}
+
+module.exports = { listingImages, fetchOrders, promotionTargets, analytics }

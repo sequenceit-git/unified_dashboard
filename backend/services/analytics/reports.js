@@ -1,11 +1,15 @@
-/** Generated from routes/analytics/analytics.js: business logic behind the routes; routes only handle HTTP. */
+/**
+ * Analytics: totals from orders. A shop whose adapter has hooks.analytics (TikTok Shop) answers
+ * with its own figures when only that marketplace is asked for.
+ */
 const Order = require('../../models/Order')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
 const Shop = require('../../models/Shop')
-const tiktok = require('../../marketplaces/tiktok_shop/service')
 const marketplaceManager = require('../../services/marketplace')
-const { canonical: canonicalMarketplace } = require('../../marketplaces')
+const registry = require('../../marketplaces')
+const { canonical: canonicalMarketplace } = registry
+const { productKey } = require('../marketplace/listingKeys')
 const { shopFilter, canAccessShop } = require('../../middleware/auth')
 
 function dates(req) {
@@ -26,36 +30,23 @@ function marketplaceFilter(req) {
   return marketplace ? { marketplace } : {}
 }
 
-function money(value) {
-  if (value == null) return 0
-  if (typeof value === 'number') return value
-  if (typeof value === 'string') return Number(value) || 0
-  if (value.overall) return money(value.overall)
-  return Number(value.amount || 0)
-}
 
-async function tiktokShop(req) {
-  if (canonicalMarketplace(req.query.marketplace) !== 'tiktok_shop') return null
-  const shop = await Shop.findOne({ marketplace: 'tiktok_shop', status: 'connected' })
-  // Sub-admins only get TikTok's own figures when the shop is one of theirs (for analytics).
+/** The connected shop with its own analytics API (adapter hooks.analytics), when a single marketplace is asked for. */
+async function nativeShop(req) {
+  const key = canonicalMarketplace(req.query.marketplace)
+  if (!key || !registry.get(key).hooks?.analytics) return null
+  const shop = await Shop.findOne({ marketplace: key, status: 'connected' })
+  // Sub-admins only get the marketplace's own figures when the shop is one of theirs (for analytics).
   if (!shop || !canAccessShop(req, shop._id)) return null
   return shop
 }
 
-async function tiktokIntervals(shop, req) {
+/** Daily `{ date, revenue, orders, items }` from the shop's own analytics API. */
+async function nativeIntervals(shop, req) {
   const { from, to } = dates(req)
-  return marketplaceManager.withShopToken(shop, (token) => tiktok.shopPerformance(token, { shop, from, to }))
+  return registry.get(shop.marketplace).hooks.analytics.salesIntervals(marketplaceManager, shop, { from, to })
 }
 
-function intervalSales(interval) {
-  const sales = interval?.sales || {}
-  return {
-    date: interval.start_date || interval.end_date,
-    revenue: +money(sales.gmv).toFixed(2),
-    orders: Number(sales.orders_count || 0),
-    items: Number(sales.items_sold || 0),
-  }
-}
 
 async function orderProfitAndStatus(req) {
   const m = match(req, marketplaceFilter(req))
@@ -118,10 +109,10 @@ async function orderProfitAndStatus(req) {
 
 /** GET /summary */
 async function summary(ctx) {
-    const shop = await tiktokShop(ctx)
+    const shop = await nativeShop(ctx)
     if (shop) {
       try {
-        const rows = (await tiktokIntervals(shop, ctx)).map(intervalSales)
+        const rows = await nativeIntervals(shop, ctx)
         const revenue = rows.reduce((sum, row) => sum + row.revenue, 0)
         const orders = rows.reduce((sum, row) => sum + row.orders, 0)
         const items = rows.reduce((sum, row) => sum + row.items, 0)
@@ -135,7 +126,7 @@ async function summary(ctx) {
           byStatus,
         }
       } catch (error) {
-        console.warn('[analytics] TikTok summary failed:', error.message)
+        console.warn(`[analytics] ${shop.marketplace} summary failed:`, error.message)
       }
     }
     const { activeMatch, profit, byStatus } = await orderProfitAndStatus(ctx)
@@ -162,12 +153,12 @@ async function summary(ctx) {
 
 /** GET /revenue */
 async function revenue(ctx) {
-    const shop = await tiktokShop(ctx)
+    const shop = await nativeShop(ctx)
     if (shop) {
       try {
-        return (await tiktokIntervals(shop, ctx)).map(intervalSales)
+        return await nativeIntervals(shop, ctx)
       } catch (error) {
-        console.warn('[analytics] TikTok revenue failed:', error.message)
+        console.warn(`[analytics] ${shop.marketplace} revenue failed:`, error.message)
       }
     }
     const extra = { ...marketplaceFilter(ctx), status: { $nin: ['cancelled', 'refunded'] } }
@@ -187,17 +178,17 @@ async function revenue(ctx) {
 
 /** GET /marketplaces */
 async function marketplaces(ctx) {
-    const shop = await tiktokShop(ctx)
+    const shop = await nativeShop(ctx)
     if (shop) {
       try {
-        const rows = (await tiktokIntervals(shop, ctx)).map(intervalSales)
+        const rows = await nativeIntervals(shop, ctx)
         return [{
-          marketplace: 'tiktok_shop',
+          marketplace: shop.marketplace,
           revenue: +rows.reduce((sum, row) => sum + row.revenue, 0).toFixed(2),
           orders: rows.reduce((sum, row) => sum + row.orders, 0),
         }]
       } catch (error) {
-        console.warn('[analytics] TikTok marketplace chart failed:', error.message)
+        console.warn(`[analytics] ${shop.marketplace} marketplace chart failed:`, error.message)
       }
     }
     const rows = await Order.aggregate([
@@ -216,30 +207,28 @@ async function marketplaces(ctx) {
 
 /** GET /products */
 async function products(ctx) {
-    const shop = await tiktokShop(ctx)
+    const shop = await nativeShop(ctx)
     if (shop) {
       try {
         const { from, to } = dates(ctx)
         const limit = Math.min(20, Number(ctx.query.limit) || 10)
-        const performance = await marketplaceManager.withShopToken(shop, (token) => tiktok.productPerformance(token, { shop, from, to, limit }))
+        const performance = await registry.get(shop.marketplace).hooks.analytics.productPerformance(marketplaceManager, shop, { from, to, limit })
         const listings = await Listing.find({ shopId: shop._id }).select('externalListingId productId')
         const catalog = await Product.find({ _id: { $in: listings.map((row) => row.productId) } }).select('title sku')
         const rows = performance.map((item) => {
-          const id = String(item.id || item.product_id || '')
-          const listing = listings.find((row) => String(row.externalListingId || '').split(':')[0] === id)
+          const listing = listings.find((row) => productKey(row.externalListingId) === item.id)
           const product = catalog.find((row) => String(row._id) === String(listing?.productId))
-        const stats = item.overall_performance || item
-        return {
-          productId: product?._id || id,
-          sku: product?.sku || id,
-          title: product?.title || item.title || id,
-          qty: Number(stats.items_sold || stats.units_sold || stats.orders || 0),
-          revenue: +money(stats.gmv).toFixed(2),
-        }
+          return {
+            productId: product?._id || item.id,
+            sku: product?.sku || item.id,
+            title: product?.title || item.title,
+            qty: item.qty,
+            revenue: item.revenue,
+          }
         })
         return rows
       } catch (error) {
-        console.warn('[analytics] TikTok product performance failed:', error.message)
+        console.warn(`[analytics] ${shop.marketplace} product performance failed:`, error.message)
       }
     }
     const limit = Math.min(20, Number(ctx.query.limit) || 10)

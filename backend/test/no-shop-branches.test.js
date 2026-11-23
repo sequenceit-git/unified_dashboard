@@ -10,6 +10,7 @@ const CORE_FILES = [
   'services/marketplace/sections.js',
   'routes/system/shops.js',
   'services/system/shops.js',
+  'services/analytics/reports.js',
   'services/core/syncQueue.js',
   'services/inbox/inboxBot.js',
 ]
