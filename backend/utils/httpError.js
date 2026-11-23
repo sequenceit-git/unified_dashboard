@@ -18,6 +18,7 @@ class HttpError extends Error {
 /** The parts of a request a domain service may read. */
 function ctxOf(req) {
   return {
+    ip: req.ip,
     user: req.user,
     authUser: req.authUser,
     allowedShopIds: req.allowedShopIds,

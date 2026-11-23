@@ -1,106 +1,9 @@
-const bcrypt = require('bcryptjs')
 const express = require('express')
-const { requireAuth, loadAccess, requireRole, signToken, clearUserAccessCache } = require('../../middleware/auth')
-const UserShopAccess = require('../../models/UserShopAccess')
-const Shop = require('../../models/Shop')
-const { MAIN_ROUTES } = require('../../config/access')
-const User = require('../../models/User')
-const { canonical: canonicalMarketplace } = require('../../marketplaces')
+const { requireAuth, loadAccess, requireRole } = require('../../middleware/auth')
 
-const SHOP_MARKETS = ['ebay', 'tiktok_shop', 'temu']
-const STORED_ROUTES = new Set([...MAIN_ROUTES, 'discovery'])
 
-function storedRoutes(routes) {
-  return (routes || []).filter((route) => STORED_ROUTES.has(route))
-}
-
-function parseIdentity(value) {
-  const str = String(value || '').trim().toLowerCase()
-  if (!str) return { error: 'Username or email is required' }
-  // Allow email format
-  if (str.includes('@')) {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str)) {
-      return { error: 'Please enter a valid email address' }
-    }
-    return { email: str, username: str }
-  }
-  // Allow username format
-  if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(str)) {
-    return { error: 'Username must be 2–32 characters using letters, numbers, dots, or hyphens' }
-  }
-  return { email: str, username: str }
-}
-
-async function identityTaken(val, exceptId) {
-  const str = String(val || '').trim().toLowerCase()
-  const query = { $or: [{ username: str }, { email: str }] }
-  if (exceptId) query._id = { $ne: exceptId }
-  return Boolean(await User.findOne(query).select('_id'))
-}
-
-function parseMarkets(values) {
-  if (!Array.isArray(values)) return { error: 'marketplaces must be a list of shops' }
-  const markets = []
-  for (const value of values) {
-    const market = canonicalMarketplace(value)
-    if (!market || !SHOP_MARKETS.includes(market)) return { error: 'Unknown shop' }
-    if (!markets.includes(market)) markets.push(market)
-  }
-  return { markets }
-}
-
-async function marketsFromShopIds(shopIds) {
-  const shops = await Shop.find({ _id: { $in: shopIds } }).select('marketplace')
-  return [...new Set(shops.map((shop) => shop.marketplace).filter((market) => SHOP_MARKETS.includes(market)))]
-}
-
-async function syncShopAccess(user, markets, grantedBy) {
-  user.marketplaces = markets
-  const shops = await Shop.find({ marketplace: { $in: markets } }).select('_id')
-  await UserShopAccess.deleteMany({ userId: user._id })
-  if (shops.length) {
-    await UserShopAccess.insertMany(shops.map((shop) => ({
-      userId: user._id,
-      shopId: shop._id,
-      grantedBy,
-    })))
-  }
-  user.shopId = shops[0]?._id || null
-  return shops
-}
-
-const MIN_PASSWORD = 8
-const passwordError = (password) =>
-  String(password || '').length < MIN_PASSWORD ? `Password must be at least ${MIN_PASSWORD} characters` : null
-
-// Login throttle: 8 failed attempts per IP + account per 15 minutes (per server process).
-const LOGIN_WINDOW_MS = 15 * 60 * 1000
-const LOGIN_MAX_FAILS = 8
-const loginFails = new Map()
-
-function throttleKey(req, name) {
-  return `${req.ip}|${name}`
-}
-
-function loginBlocked(key) {
-  const row = loginFails.get(key)
-  if (!row) return false
-  if (Date.now() - row.first > LOGIN_WINDOW_MS) {
-    loginFails.delete(key)
-    return false
-  }
-  return row.count >= LOGIN_MAX_FAILS
-}
-
-function recordLoginFail(key) {
-  const row = loginFails.get(key)
-  if (!row || Date.now() - row.first > LOGIN_WINDOW_MS) {
-    if (loginFails.size > 5000) loginFails.delete(loginFails.keys().next().value)
-    loginFails.set(key, { count: 1, first: Date.now() })
-  } else {
-    row.count += 1
-  }
-}
+const service = require('../../services/auth/users')
+const { HttpError, ctxOf } = require('../../utils/httpError')
 
 const router = express.Router()
 
@@ -108,23 +11,9 @@ const router = express.Router()
 // afterwards only a super_admin can create users.
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, shopId } = req.body
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ error: 'name, email, password, role required' })
-    }
-    const count = await User.countDocuments()
-    if (count > 0) {
-      return res.status(403).json({ error: 'Registration is disabled — ask a super_admin' })
-    }
-    if (role !== 'super_admin') {
-      return res.status(400).json({ error: 'First user must be super_admin' })
-    }
-    const weak = passwordError(password)
-    if (weak) return res.status(400).json({ error: weak })
-    const passwordHash = await bcrypt.hash(password, 10)
-    const user = await User.create({ name, email, passwordHash, role, shopId: shopId || null })
-    res.status(201).json({ token: signToken(user), user: { id: user._id, role: user.role } })
+    res.status(201).json(await service.register(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(400).json({ error: err.message })
   }
 })
@@ -132,33 +21,9 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, username, password } = req.body
-    const loginName = String(username || email || '').trim().toLowerCase()
-    const key = throttleKey(req, loginName)
-    if (loginBlocked(key)) {
-      return res.status(429).json({ error: 'Too many failed sign-in attempts. Try again in 15 minutes.' })
-    }
-    const user = await User.findOne({ $or: [{ email: loginName }, { username: loginName }] }).select('+passwordHash')
-    if (user && user.isDeleted) {
-      return res.status(403).json({ error: 'This account has been deleted. Contact your administrator.' })
-    }
-    if (!user || user.status !== 'active') {
-      recordLoginFail(key)
-      return res.status(401).json({ error: 'Invalid credentials' })
-    }
-    const ok = await bcrypt.compare(String(password || ''), user.passwordHash)
-    if (!ok) {
-      recordLoginFail(key)
-      return res.status(401).json({ error: 'Invalid credentials' })
-    }
-    loginFails.delete(key)
-    user.lastLoginAt = new Date()
-    await user.save()
-    res.json({
-      token: signToken(user),
-      user: await userSummary(user),
-    })
+    res.json(await service.login(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(500).json({ error: err.message })
   }
 })
@@ -166,209 +31,25 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/users — super_admin creates sub_admins (or more admins)
 router.use(requireAuth, loadAccess)
 
-async function userSummary(user) {
-  const access = user.role === 'sub_admin'
-    ? await UserShopAccess.find({ userId: user._id }).populate('shopId', 'name marketplace status')
-    : []
-  const shops = access.length
-    ? access.map((row) => row.shopId).filter(Boolean)
-    : user.shopId
-      ? await Shop.find({ _id: user.shopId }).select('name marketplace status')
-      : []
-  const derived = [...new Set(shops.map((shop) => shop.marketplace).filter((market) => SHOP_MARKETS.includes(market)))]
-  const markets = user.marketplaces?.length ? user.marketplaces : derived
-  return {
-    id: user._id,
-    name: user.name,
-    username: user.username || user.email,
-    email: user.email || user.username,
-    role: user.role,
-    status: user.status || 'active',
-    profileImageUrl: user.profileImageUrl || '',
-    mainRoutes: user.mainRoutes,
-    allowedSections: user.allowedSections || [],
-    marketplace: markets[0] || 'ebay',
-    marketplaces: markets,
-    shopId: user.shopId,
-    shops,
-    createdAt: user.createdAt,
-    lastLoginAt: user.lastLoginAt,
-  }
-}
-
 // POST /api/auth/users — super_admin creates sub_admins and their access
 router.post('/users', requireRole('super_admin'), async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      username,
-      password,
-      role = 'sub_admin',
-      marketplace,
-      marketplaces,
-      shopIds = [],
-      shopId,
-      mainRoutes = [],
-      allowedSections = [],
-      profileImageUrl = '',
-      status = 'active',
-    } = req.body
-
-    const parsedIdentity = parseIdentity(username || email)
-    if (!name || !password || !role || !['super_admin', 'sub_admin'].includes(role)) {
-      return res.status(400).json({ error: 'name, username or email, password, and a valid role are required' })
-    }
-    if (parsedIdentity.error) return res.status(400).json({ error: parsedIdentity.error })
-    if (await identityTaken(parsedIdentity.username)) {
-      return res.status(400).json({ error: 'That username or email is already in use' })
-    }
-
-    if (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route))) {
-      return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
-    }
-
-    let markets = []
-    if (role === 'sub_admin') {
-      const requested = Array.isArray(marketplaces) && marketplaces.length > 0
-        ? marketplaces
-        : (marketplace ? [marketplace] : ['ebay'])
-      markets = requested
-        .map(canonicalMarketplace)
-        .filter((m) => m && SHOP_MARKETS.includes(m))
-      if (!markets.length) {
-        return res.status(400).json({ error: 'Please select at least one valid marketplace shop (eBay, TikTok Shop, or Temu)' })
-      }
-    }
-
-    const weak = passwordError(password)
-    if (weak) return res.status(400).json({ error: weak })
-    const passwordHash = await bcrypt.hash(password, 10)
-    const user = await User.create({
-      name,
-      username: parsedIdentity.username,
-      email: parsedIdentity.email,
-      passwordHash,
-      profileImageUrl,
-      role,
-      status: ['active', 'disabled'].includes(status) ? status : 'active',
-      mainRoutes: role === 'super_admin' ? MAIN_ROUTES : mainRoutes,
-      allowedSections: role === 'super_admin' ? [] : (Array.isArray(allowedSections) ? allowedSections : []),
-      marketplaces: markets,
-      shopId: null,
-      createdBy: req.user.id,
-    })
-    if (role === 'sub_admin' && markets.length) {
-      await syncShopAccess(user, markets, req.user.id)
-    }
-    await user.save()
-    res.status(201).json(await userSummary(user))
+    res.status(201).json(await service.createUser(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(400).json({ error: err.message })
   }
 })
 
 router.get('/users', requireRole('super_admin'), async (req, res) => {
-  const users = await User.find({ role: 'sub_admin', isDeleted: { $ne: true } }).select('-passwordHash').sort({ createdAt: -1 })
-  const access = await UserShopAccess.find({ userId: { $in: users.map((user) => user._id) } })
-  const byUser = new Map()
-  const shopIds = []
-  for (const row of access) {
-    if (!byUser.has(String(row.userId))) byUser.set(String(row.userId), [])
-    byUser.get(String(row.userId)).push(row.shopId)
-    shopIds.push(row.shopId)
-  }
-  const shopDocs = await Shop.find({ _id: { $in: shopIds } }).select('marketplace')
-  const marketByShop = new Map(shopDocs.map((shop) => [String(shop._id), shop.marketplace]))
-  res.json(users.map((user) => {
-    const assignedShopIds = byUser.get(String(user._id)) || []
-    const derived = [...new Set(assignedShopIds.map((id) => marketByShop.get(String(id))).filter((market) => SHOP_MARKETS.includes(market)))]
-    const markets = user.marketplaces?.length ? user.marketplaces : derived
-    return {
-      ...user.toObject(),
-      shopIds: assignedShopIds,
-      mainRoutes: storedRoutes(user.mainRoutes),
-      allowedSections: user.allowedSections || [],
-      marketplace: markets[0] || 'ebay',
-      marketplaces: markets,
-    }
-  }))
+  res.json(await service.listUsers(ctxOf(req)))
 })
 
 router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      username,
-      password,
-      profileImageUrl,
-      mainRoutes,
-      allowedSections,
-      marketplace,
-      marketplaces,
-      shopIds,
-      status,
-    } = req.body
-
-    if (mainRoutes && (!Array.isArray(mainRoutes) || mainRoutes.some((route) => !MAIN_ROUTES.includes(route)))) {
-      return res.status(400).json({ error: 'mainRoutes contains an unknown route' })
-    }
-
-    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin', isDeleted: { $ne: true } })
-    if (!user) return res.status(404).json({ error: 'Sub-admin not found' })
-
-    if (name !== undefined) user.name = name
-    if (username !== undefined || email !== undefined) {
-      const parsedIdentity = parseIdentity(username || email)
-      if (parsedIdentity.error) return res.status(400).json({ error: parsedIdentity.error })
-      if (await identityTaken(parsedIdentity.username, user._id)) {
-        return res.status(400).json({ error: 'That username or email is already in use' })
-      }
-      user.username = parsedIdentity.username
-      user.email = parsedIdentity.email
-    }
-
-    if (profileImageUrl !== undefined) user.profileImageUrl = profileImageUrl
-    if (password) {
-      const weak = passwordError(password)
-      if (weak) return res.status(400).json({ error: weak })
-      user.passwordHash = await bcrypt.hash(password, 10)
-    }
-    if (mainRoutes) user.mainRoutes = storedRoutes(mainRoutes)
-    if (allowedSections !== undefined) {
-      user.allowedSections = Array.isArray(allowedSections) ? allowedSections : []
-    }
-    if (status) {
-      if (!['active', 'disabled'].includes(status)) {
-        return res.status(400).json({ error: 'status must be active or disabled' })
-      }
-      user.status = status
-    }
-
-    if (marketplace !== undefined || marketplaces !== undefined || shopIds) {
-      let targetMarkets = []
-      let explicitList = false
-      if (Array.isArray(marketplaces)) {
-        explicitList = true
-        targetMarkets = marketplaces.map(canonicalMarketplace).filter((m) => m && SHOP_MARKETS.includes(m))
-      } else if (marketplace) {
-        const canonical = canonicalMarketplace(marketplace)
-        if (canonical && SHOP_MARKETS.includes(canonical)) targetMarkets = [canonical]
-      } else if (shopIds) {
-        targetMarkets = await marketsFromShopIds(shopIds)
-      }
-      // An explicit empty list revokes every shop; other forms only apply when they name one.
-      if (targetMarkets.length || explicitList) {
-        user.marketplaces = targetMarkets
-        await syncShopAccess(user, targetMarkets, req.user.id)
-      }
-    }
-
-    await user.save()
-    clearUserAccessCache(String(user._id))
-    res.json(await userSummary(user))
+    res.json(await service.updateUser(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(400).json({ error: err.message })
   }
 })
@@ -377,14 +58,9 @@ router.patch('/users/:id', requireRole('super_admin'), async (req, res) => {
 // Clears cached access, removes all shop permissions, and deletes the user document.
 router.delete('/users/:id', requireRole('super_admin'), async (req, res) => {
   try {
-    const user = await User.findOne({ _id: req.params.id, role: 'sub_admin' })
-    if (!user) return res.status(404).json({ error: 'Sub-admin not found' })
-
-    clearUserAccessCache(String(user._id))
-    await UserShopAccess.deleteMany({ userId: user._id })
-    await User.deleteOne({ _id: user._id })
-    res.json({ deleted: true, id: req.params.id })
+    res.json(await service.deleteUser(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(400).json({ error: err.message })
   }
 })
