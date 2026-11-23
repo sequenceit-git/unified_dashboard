@@ -26,6 +26,8 @@ const EVENTS = {
   bg_trade_logistics_address_changed: 'orders',
   bg_aftersales_status_change: 'orders',
   bg_cancel_order_status_change: 'orders',
+  // Status or tracking change of a fulfillment order sent to a Temu cooperative warehouse.
+  bg_cooperative_warehouse_erp_fulfill_change_push: 'orders',
 }
 
 const SIGNED_HEADERS = ['x-tm-app-key', 'x-tm-event-code', 'x-tm-timestamp', 'x-tm-ext-param']
