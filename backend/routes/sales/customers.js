@@ -1,65 +1,18 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection } = require('../../middleware/auth')
-const { paging, sortOf } = require('../../utils/query')
-const Conversation = require('../../models/Conversation')
-const Customer = require('../../models/Customer')
-const Order = require('../../models/Order')
-const { canonical: canonicalMarketplace } = require('../../marketplaces')
-const { findCustomerOrders, withOrderStats } = require('../../services/customerStats')
+const { requireAuth, loadAccess, requireMainRoute, limitToSection } = require('../../middleware/auth')
+
+const service = require('../../services/sales/customers')
+const { HttpError, ctxOf } = require('../../utils/httpError')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('customers'), limitToSection('customers'))
 
-function scope(req) {
-  if (req.user.role !== 'sub_admin') return {}
-  return { 'identities.shopId': { $in: req.allowedShopIds } }
-}
-
 // GET /api/customers?q=&sort=&page=&limit=
 router.get('/', async (req, res) => {
   try {
-    const filter = { ...scope(req) }
-    const marketplace = canonicalMarketplace(req.query.marketplace)
-    if (marketplace) filter['identities.marketplace'] = marketplace
-    const q = req.query.q?.trim().toLowerCase()
-    const pg = paging(req)
-    const sort = sortOf(req, ['lastOrderAt', 'totalSpent', 'orderCount', 'createdAt'], '-lastOrderAt')
-    const sortKey = Object.keys(sort)[0]
-    const direction = sort[sortKey]
-    let customers = await withOrderStats(await Customer.find(filter), marketplace)
-    if (q) {
-      customers = customers.filter((row) =>
-        [
-          row.name,
-          row.email,
-          row.phone,
-          ...(row.identities || []).flatMap((i) => [i.username, i.externalBuyerId]),
-        ].some((value) => String(value || '').toLowerCase().includes(q)))
-    }
-    const sortValue = (row) => {
-      const raw = row[sortKey]
-      if (raw == null || raw === '') return null
-      return sortKey === 'lastOrderAt' ? new Date(raw).getTime() : raw
-    }
-    customers.sort((a, b) => {
-      const left = sortValue(a)
-      const right = sortValue(b)
-      if (left == null && right == null) return 0
-      if (left == null) return 1
-      if (right == null) return -1
-      if (left > right) return direction
-      if (left < right) return -direction
-      return 0
-    })
-    const total = customers.length
-    res.json({
-      data: customers.slice(pg.skip, pg.skip + pg.limit),
-      page: pg.page,
-      limit: pg.limit,
-      total,
-      pages: Math.max(1, Math.ceil(total / pg.limit)),
-    })
+    res.json(await service.list(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(500).json({ error: err.message })
   }
 })
@@ -67,16 +20,9 @@ router.get('/', async (req, res) => {
 // GET /api/customers/:id — profile + order history + conversations
 router.get('/:id', async (req, res) => {
   try {
-    const customer = await Customer.findOne({ _id: req.params.id, ...scope(req) })
-    if (!customer) return res.status(404).json({ error: 'Not found' })
-    const marketplace = canonicalMarketplace(req.query.marketplace)
-    const [orders, conversations, [stats]] = await Promise.all([
-      findCustomerOrders([customer], marketplace, { extraFilter: shopFilter(req, Order), limit: 50 }),
-      Conversation.find({ customerId: customer._id, ...shopFilter(req, Conversation) }).sort({ lastMessageAt: -1 }).limit(20),
-      withOrderStats([customer], marketplace),
-    ])
-    res.json({ ...stats, orders, conversations })
+    res.json(await service.get(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(400).json({ error: err.message })
   }
 })
@@ -84,20 +30,9 @@ router.get('/:id', async (req, res) => {
 // PATCH /api/customers/:id
 router.patch('/:id', async (req, res) => {
   try {
-    const { name, email, phone, address } = req.body
-    const doc = await Customer.findOne({ _id: req.params.id, ...scope(req) })
-    if (!doc) return res.status(404).json({ error: 'Not found' })
-    if (name !== undefined) doc.name = name
-    if (email !== undefined) doc.email = email
-    if (phone !== undefined) doc.phone = phone
-    if (address !== undefined) {
-      // Assign on the document and save so subdocument PII setters encrypt address fields.
-      doc.address = address
-      doc.addresses = [address]
-    }
-    await doc.save()
-    res.json(doc)
+    res.json(await service.update(ctxOf(req)))
   } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
     res.status(400).json({ error: err.message })
   }
 })
