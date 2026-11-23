@@ -17,8 +17,8 @@ module.exports = {
   listingUrl: require('./listingUrl').listingUrl,
   hooks: require('./hooks'),
   routes: require('./routes'),
-  /** The shop's dashboard API (loaded when the server mounts it, after every adapter). */
-  get api() { return require('./api') },
+  /** The shop's app: dashboard API, sync jobs, listing pushes (loaded on first use, after every adapter). */
+  get app() { return require('./app') },
   aiHint: 'This listing is for TikTok Shop. Fill product attributes (Brand, Color, Model, Capacity, Material, Number of cups or pieces). Every value must be a string.',
   skuPrefix: 'TTS',
   configStatus: (config) => ({

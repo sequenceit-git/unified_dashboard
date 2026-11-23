@@ -25,3 +25,18 @@ test('shared files have no shop-name literals', () => {
   }
   assert.deepEqual(hits, [])
 })
+
+test("shop folders never require another shop's folder", () => {
+  const KEYS = ['ebay', 'tiktok_shop', 'temu']
+  const hits = []
+  for (const key of KEYS) {
+    for (const file of walk(path.join('marketplaces', key))) {
+      const source = fs.readFileSync(path.join(ROOT, file), 'utf8')
+      for (const [, spec] of source.matchAll(/require\(['"](\.{1,2}\/[^'"]+)['"]\)/g)) {
+        const target = path.relative(ROOT, path.resolve(path.dirname(path.join(ROOT, file)), spec)).split(path.sep).join('/')
+        if (KEYS.some((other) => other !== key && target.startsWith(`marketplaces/${other}`))) hits.push(`${file}: ${spec}`)
+      }
+    }
+  }
+  assert.deepEqual(hits, [])
+})

@@ -166,7 +166,7 @@ async function adjust(ctx) {
       const pushPayload = variantSku
         ? { quantity: updated.stock, variantSku, variantStock: stockAfter, variants: updated.variants }
         : { quantity: updated.stock }
-      const syncResults = await marketplaceManager.pushProductChanges(updated, pushPayload)
+      const syncResults = await require('./fanOut').pushProductChanges(updated, pushPayload)
       pushedCount = syncResults.filter((r) => r.ok).length
       warnings.push(...syncResults.filter((r) => !r.ok).map((r) => `${r.shopName}: ${r.error}`))
     } catch (err) {

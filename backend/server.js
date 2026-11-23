@@ -66,7 +66,7 @@ app.use('/api', (req, res, next) => {
 })
 app.use('/api', apiRoutes)
 // Each shop's own API: /api/ebay/orders, /api/tiktok/returns, … (marketplaces/<key>/api.js).
-for (const adapter of registry.all()) app.use(`/api/${registry.urlId(adapter.key)}`, adapter.api)
+for (const adapter of registry.all()) app.use(`/api/${registry.urlId(adapter.key)}`, adapter.app.api)
 app.use('/api/auth', authRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/dashboard', dashboardRoutes)

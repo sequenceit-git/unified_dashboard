@@ -20,7 +20,8 @@ function load(db = {}) {
     distinct: async () => [],
   }
   const Listing = { find: () => chain(db.listings || []), distinct: async () => [] }
-  const manager = { pushProductChanges: async (doc, changes) => { seen.pushed = changes; return [{ ok: true }] } }
+  const manager = {}
+  const fanOut = { pushProductChanges: async (doc, changes) => { seen.pushed = changes; return [{ ok: true }] } }
   const restore = stubModules({
     '/models/Product': Product,
     '/models/Listing': Listing,
@@ -28,6 +29,7 @@ function load(db = {}) {
     '/models/ResearchReport': { updateMany: () => ({ catch: () => {} }) },
     '../../services/marketplace': manager,
     '../marketplace': manager,
+    './fanOut': fanOut,
     '/catalog/productImport': {},
     '/core/notify': { stockChangedOnShops: async () => {} },
   })

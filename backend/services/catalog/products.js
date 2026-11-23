@@ -220,7 +220,7 @@ async function update(ctx) {
     }
     const doc = await Product.findByIdAndUpdate(ctx.params.id, update, { new: true, runValidators: true })
     const changes = changedListingFields(before, doc)
-    const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
+    const marketplaceSync = Object.keys(changes).length ? await require('./fanOut').pushProductChanges(doc, changes) : []
     if (changes.quantity != null) {
       await require('../core/notify').stockChangedOnShops(doc, { was: before.stock, stock: doc.stock }).catch(() => {})
     }
@@ -482,7 +482,7 @@ async function sync(ctx) {
     const product = await Product.findById(ctx.params.id)
     if (!product) throw new HttpError(404, { error: 'Product not found' })
 
-    const results = await marketplaceManager.pushProductChanges(product, {
+    const results = await require('./fanOut').pushProductChanges(product, {
       price: product.basePrice,
       quantity: product.stock,
       variants: product.variants,
@@ -508,7 +508,7 @@ async function updatePrice(ctx) {
     const product = await Product.findByIdAndUpdate(ctx.params.id, { basePrice: numPrice }, { new: true })
     if (!product) throw new HttpError(404, { error: 'Product not found' })
 
-    const results = await marketplaceManager.pushProductChanges(product, { price: numPrice })
+    const results = await require('./fanOut').pushProductChanges(product, { price: numPrice })
     return { product, pushedToMarketplaces: results.filter((item) => item.ok).length, marketplaceSync: results }
 }
 

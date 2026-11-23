@@ -16,7 +16,6 @@ const IgnoredListing = require('../../models/IgnoredListing')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 const { saveCustomerStats } = require('../sales/customerStats')
-const { listingUrl } = require('../../marketplaces')
 const { newSku, isMachineSku, skuPrefix } = require('../../utils/sku')
 const { productKey, escapeRegex, listingAliases, ignoreTokens } = require('./listingKeys')
 const registry = require('../../marketplaces')
@@ -474,7 +473,7 @@ class UnifiedMarketplaceManager {
           // A sale here lowers the shared stock; tell the other shops that sell the same product.
           for (const productId of soldProductIds) {
             const sold = await Product.findById(productId)
-            if (sold) await this.propagateStock(sold, { exceptShopId: shop._id })
+            if (sold) await require('../catalog/fanOut').propagateStock(sold, { exceptShopId: shop._id })
           }
         }
         } catch (ordErr) {
@@ -836,7 +835,7 @@ class UnifiedMarketplaceManager {
         changed = stock !== before
       } else if (now !== stock) {
         // First read of a listing on a product other shops also sell: it adopts the shared stock.
-        await this.propagateStock(product, { onlyListingId: listing._id })
+        await require('../catalog/fanOut').propagateStock(product, { onlyListingId: listing._id })
         return
       }
     } else if (now !== was) {
@@ -854,54 +853,44 @@ class UnifiedMarketplaceManager {
       change: stock - before,
       reason: 'sync',
     }).catch(() => {})
-    await this.propagateStock(product, { exceptShopId: shop._id })
+    await require('../catalog/fanOut').propagateStock(product, { exceptShopId: shop._id })
   }
 
-  /**
-   * Pushes the shared product stock to the live listings of the other shops. A listing's stored
-   * stock is set before the push (and put back if it fails) so that shop's next sync reads no
-   * change and does not count the push as a sale.
-   */
-  async propagateStock(product, { exceptShopId = null, onlyListingId = null } = {}) {
-    const quantity = Math.max(0, Math.floor(Number(product.stock) || 0))
-    const filter = { productId: product._id, status: { $in: ['live', 'out_of_stock'] } }
-    if (exceptShopId) filter.shopId = { $ne: exceptShopId }
-    if (onlyListingId) filter._id = onlyListingId
-    const listings = await Listing.find(filter)
-    const results = []
-    for (const listing of listings) {
-      if (listing.stock === quantity) continue
-      const shop = await Shop.findById(listing.shopId)
-      if (!shop || shop.status !== 'connected') continue
-      const before = { stock: listing.stock, status: listing.status }
-      listing.stock = quantity
-      listing.status = quantity > 0 ? 'live' : 'out_of_stock'
-      await listing.save()
-      try {
-        const res = await this.pushStock(shop, {
-          sku: product.sku,
-          quantity,
-          externalListingId: listing.externalListingId,
-          productId: product._id,
-          variants: product.variants,
-          syncAllVariants: Boolean(product.variants?.length),
-        })
-        if (res?.status === 'ended' || res?.ended) {
-          listing.status = 'ended'
-          listing.marketplaceStatus = res.marketplaceStatus || 'Ended'
-        }
-        listing.syncError = null
-        listing.lastSyncedAt = new Date()
-        await listing.save()
-        results.push({ shopName: shop.name, ok: true })
-      } catch (err) {
-        Object.assign(listing, before, { syncError: `Stock update failed: ${err.message}` })
-        await listing.save()
-        console.warn(`[stock] ${shop.name}: could not set ${product.sku} to ${quantity}: ${err.message}`)
-        results.push({ shopName: shop.name, ok: false, error: err.message })
-      }
+
+  /** One listing's revise call for a dashboard edit; null when the shop can't revise listings. */
+  async reviseOne(shop, listing, product, changes) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.reviseListing !== 'function') return null
+    const payload = {
+      ...changes,
+      ...(changes.variants ? { variants: changes.variants } : product.variants?.length ? { variants: product.variants } : {}),
+      ...(changes.images ? { images: this.publicImageUrls(changes.images) } : {}),
     }
-    return results
+    return this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop, listing, product }))
+  }
+
+  /** Relists one ended listing on restock; null when the shop can't relist. */
+  async relistOne(shop, listing, changes) {
+    const service = this.getService(shop.marketplace)
+    if (typeof service.relistListing !== 'function') return null
+    return this.withShopToken(shop, (token) => service.relistListing(token, listing.externalListingId, {
+      quantity: changes.quantity,
+      ...(changes.price != null ? { price: changes.price } : {}),
+      ...(changes.title ? { title: changes.title } : {}),
+      ...(changes.description ? { description: changes.description } : {}),
+    }))
+  }
+
+  /** One listing's stock push (the shared product stock). */
+  async pushStockOne(shop, listing, product, quantity) {
+    return this.pushStock(shop, {
+      sku: product.sku,
+      quantity,
+      externalListingId: listing.externalListingId,
+      productId: product._id,
+      variants: product.variants,
+      syncAllVariants: Boolean(product.variants?.length),
+    })
   }
 
   /** Saves one marketplace listing, creating or updating its product. */
@@ -1078,77 +1067,6 @@ class UnifiedMarketplaceManager {
     return { created }
   }
 
-  /**
-   * Pushes dashboard edits (title, description, images, price, stock) to every linked
-   * listing that is live on its marketplace. Returns one result per listing.
-   */
-  async pushProductChanges(product, changes) {
-    const results = []
-    const listings = await Listing.find({ productId: product._id, status: { $in: ['live', 'out_of_stock', 'pending', 'paused'] } })
-    for (const listing of listings) {
-      const shop = await Shop.findById(listing.shopId)
-      if (!shop || shop.status !== 'connected') continue
-      const service = this.getService(shop.marketplace)
-      if (typeof service.reviseListing !== 'function') continue
-      const payload = {
-        ...changes,
-        ...(changes.variants ? { variants: changes.variants } : product.variants?.length ? { variants: product.variants } : {}),
-        ...(changes.images ? { images: this.publicImageUrls(changes.images) } : {}),
-      }
-      try {
-        const res = await this.withShopToken(shop, (token) => service.reviseListing(token, listing.externalListingId, payload, { shop, listing, product }))
-        listing.syncError = null
-        if (changes.price != null && !res?.skipped?.includes('price')) listing.price = changes.price
-        if (changes.quantity != null) listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
-        if (res?.status === 'ended' || res?.ended) {
-          listing.status = 'ended'
-          listing.marketplaceStatus = res.marketplaceStatus || 'Ended'
-        } else if (changes.quantity != null && ['live', 'out_of_stock'].includes(listing.status)) {
-          listing.status = Number(changes.quantity) > 0 ? 'live' : 'out_of_stock'
-        }
-        results.push({ shopName: shop.name, ok: true, ...(res?.skipped?.length ? { skipped: res.skipped } : {}) })
-      } catch (err) {
-        listing.syncError = err.message
-        results.push({ shopName: shop.name, ok: false, error: err.message })
-      }
-      if (changes.quantity != null || !listing.lastSyncedAt) listing.lastSyncedAt = new Date()
-      await listing.save()
-    }
-    // Ending an eBay listing takes it off sale. Revising stock cannot bring it back;
-    // a restock has to relist it.
-    if (Number(changes.quantity) > 0) {
-      const relistable = registry.all().filter((a) => a.capabilities?.relistOnRestock).map((a) => a.key)
-      const ended = await Listing.find({ productId: product._id, status: 'ended', marketplace: { $in: relistable } })
-      for (const listing of ended) {
-        const shop = await Shop.findById(listing.shopId)
-        if (!shop || shop.status !== 'connected') continue
-        const service = this.getService(shop.marketplace)
-        if (typeof service.relistListing !== 'function') continue
-        try {
-          const result = await this.withShopToken(shop, (token) => service.relistListing(token, listing.externalListingId, {
-            quantity: changes.quantity,
-            ...(changes.price != null ? { price: changes.price } : {}),
-            ...(changes.title ? { title: changes.title } : {}),
-            ...(changes.description ? { description: changes.description } : {}),
-          }))
-          listing.status = result.status || 'live'
-          if (result.externalListingId) listing.externalListingId = result.externalListingId
-          listing.listingUrl = listingUrl(shop.marketplace, listing.externalListingId, '')
-          listing.marketplaceStatus = 'Active'
-          listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
-          listing.syncError = null
-          if (changes.price != null) listing.price = changes.price
-          results.push({ shopName: shop.name, ok: true, relisted: true })
-        } catch (err) {
-          listing.syncError = err.message
-          results.push({ shopName: shop.name, ok: false, error: err.message })
-        }
-        listing.lastSyncedAt = new Date()
-        await listing.save()
-      }
-    }
-    return results
-  }
 
   /**
    * Full synchronization for a single shop (orders, listings, and inbox where supported)

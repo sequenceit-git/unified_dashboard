@@ -19,7 +19,6 @@ function autoSync(name) {
   return process.env[name] ? process.env[name] === 'true' : true
 }
 
-const manager = () => require('../marketplace')
 const registry = require('../../marketplaces')
 /** The shop's marketplace adapter, or null for an unknown marketplace. */
 const shopAdapter = (shop) => (registry.KEYS.includes(shop?.marketplace) ? registry.get(shop.marketplace) : null)
@@ -32,26 +31,26 @@ const shopAdapter = (shop) => (registry.KEYS.includes(shop?.marketplace) ? regis
 const KINDS = {
   inbox: {
     every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 2) : 0),
-    applies: (shop) => Boolean(shopAdapter(shop)?.capabilities?.inbox) && shop.apiAccess?.inbox?.ok !== false,
-    run: (shop) => require('../inbox/inboxBot').syncAndReply(shop),
+    applies: (shop) => typeof shopAdapter(shop)?.app?.sync?.inbox === 'function' && shop.apiAccess?.inbox?.ok !== false,
+    run: (shop) => shopAdapter(shop).app.sync.inbox(shop),
     clears: () => ['resp:dashboard:'],
   },
   orders: {
     every: () => (autoSync('ORDER_AUTO_SYNC') ? Number(process.env.ORDER_SYNC_MINUTES || 3) : 0),
     applies: () => true,
-    run: (shop) => manager().syncOrdersForShop(shop),
+    run: (shop) => shopAdapter(shop).app.sync.orders(shop),
     clears: (shop) => [`shop:${shop._id}:`, 'resp:analytics:', 'resp:dashboard:'],
   },
   listings: {
     every: () => (autoSync('LISTING_AUTO_SYNC') ? Number(process.env.LISTING_SYNC_MINUTES || 10) : 0),
     applies: () => true,
-    run: (shop) => manager().syncListingsForShop(shop),
+    run: (shop) => shopAdapter(shop).app.sync.listings(shop),
     clears: () => ['resp:analytics:', 'resp:dashboard:'],
   },
   access: {
     every: () => (autoSync('ACCESS_AUTO_CHECK') ? 12 * 60 : 0),
     applies: () => true,
-    run: (shop) => manager().checkShopAccess(shop),
+    run: (shop) => shopAdapter(shop).app.sync.access(shop),
     clears: () => [],
   },
   // Re-subscribes eBay, TikTok Shop and Temu stores to push notifications/webhooks once a day (and on connect).
@@ -64,7 +63,7 @@ const KINDS = {
   full: {
     every: () => 0,
     applies: () => true,
-    run: (shop) => manager().syncAllForShop(shop),
+    run: (shop) => shopAdapter(shop).app.sync.full(shop),
     clears: (shop) => [`shop:${shop._id}:`, 'resp:analytics:', 'resp:dashboard:'],
   },
 }
