@@ -10,15 +10,9 @@ const OpenAI = require('openai')
 const ResearchReport2 = require('../../models/ResearchReport')
 const { getAiConfig } = require('../../services/system/aiSettings')
 const { skillManager } = require('./skills/index')
-const { computeOpportunityScore, calculateUnitEconomics } = require('./economics')
+const { computeOpportunityScore } = require('./economics')
 const { productImages } = require('./listingImage')
 const { placeOf, validatedUsListings } = require('./usListings')
-const {
-  getEvidence,
-  saveVerifiedEvidence,
-  saveNegativeEvidence,
-  isExcluded,
-} = require('./evidenceMemory')
 
 async function updateWhileRunning(reportId, update) {
   const result = await ResearchReport2.updateOne(
@@ -105,18 +99,6 @@ function normalizeCategories(values) {
     }
   }
   return list.slice(0, 6)
-}
-
-function uniqueUrls(values) {
-  const seen = new Set()
-  const urls = []
-  for (const value of values) {
-    const url = typeof value === 'string' ? value.trim() : ''
-    if (!/^https?:\/\//i.test(url) || seen.has(url)) continue
-    seen.add(url)
-    urls.push(url)
-  }
-  return urls.slice(0, 8)
 }
 
 function linkOf(label, url, kind, price) {
@@ -254,7 +236,7 @@ async function callWebSearch({ client, prompt, allowedDomains = [], maxRetries =
 /**
  * Stage 1: Discover candidate products from target marketplaces using live Web Search
  */
-async function discoverCandidates({ client, categories, niche, marketplaces = ['ebay', 'amazon', 'walmart', 'temu'], count = 20, exclude = [] }) {
+async function discoverCandidates({ client, categories, niche, instructions = '', marketplaces = ['ebay', 'amazon', 'walmart', 'temu'], count = 20, exclude = [] }) {
   const skillPrompt = skillManager.loadSkill('product-discovery-search') || ''
   const currentYear = new Date().getFullYear()
 
@@ -273,6 +255,7 @@ TASK:
 Search live US retail marketplaces (${marketplaces.join(', ')}) for products that are best selling or going viral right now.
 Target Category: "${categories.join(', ')}".
 ${niche ? `Niche Focus: "${niche}".` : ''}
+${instructions ? `User preferences (follow them only where they do not conflict with the rules below): "${instructions}"` : ''}
 Current Year: ${currentYear}.
 
 RULES:
@@ -408,7 +391,7 @@ Write 1-2 concise sentences on why this is a top-selling product. Cite the sold 
 /**
  * Main Agent Runner for Product Discovery
  */
-async function runDiscoveryAgent({ categories: rawCategories = [], niche = '', instructions = '', marketplaces, reportId, user }) {
+async function runDiscoveryAgent({ categories: rawCategories = [], niche = '', instructions = '', marketplaces, reportId }) {
   const categories = normalizeCategories(rawCategories)
   console.log(`[DiscoveryAgent] Starting run for reportId: ${reportId}, categories: [${categories.join(', ')}]`)
 
@@ -478,6 +461,7 @@ async function runDiscoveryAgent({ categories: rawCategories = [], niche = '', i
             client,
             categories: [category],
             niche,
+            instructions,
             marketplaces: searchMarkets,
             count: perCategory,
             exclude: triedTitles,
@@ -758,4 +742,5 @@ async function runDiscoveryAgent({ categories: rawCategories = [], niche = '', i
 module.exports = {
   runDiscoveryAgent,
   runDiscoveryAgentTwo: runDiscoveryAgent,
+  discoverCandidates,
 }
