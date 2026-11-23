@@ -18,3 +18,14 @@ test('every npm script file exists', () => {
     execFileSync(process.execPath, ['--check', abs])
   }
 })
+
+test('every relative require in npm script files resolves', () => {
+  const { scripts } = JSON.parse(fs.readFileSync(path.join(BACKEND, 'package.json'), 'utf8'))
+  for (const file of Object.values(scripts).map((cmd) => /^node\s+(\S+\.js)/.exec(cmd)?.[1]).filter(Boolean)) {
+    const abs = path.join(BACKEND, file)
+    const source = fs.readFileSync(abs, 'utf8')
+    for (const [, request] of source.matchAll(/require\(['"](\.{1,2}\/[^'"]+)['"]\)/g)) {
+      assert.doesNotThrow(() => require.resolve(path.resolve(path.dirname(abs), request)), `${file}: ${request}`)
+    }
+  }
+})

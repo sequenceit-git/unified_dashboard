@@ -1,14 +1,16 @@
 // @ts-check
-// Temporary adapter: points at today's files. Replaced when temu moves into this folder.
-const { PROFILES } = require('../../services/marketplace/profiles')
-const { LOADERS } = require('../../services/marketplace/sections')
+/**
+ * Temu shop adapter: everything the shared core needs from Temu. All Temu code lives in this folder:
+ * client.js (signing + router), orders.js, listings.js, webhooks.js, profile.js, sections/, scripts/.
+ */
 
 /** @type {import('../contract').Adapter} */
 module.exports = {
   key: 'temu',
-  label: PROFILES.temu.label,
-  config: require('../../config/marketplaces').temu,
-  service: require('../../services/marketplace/temu'),
-  profile: PROFILES.temu,
-  sections: LOADERS.temu,
+  label: 'Temu Shop',
+  config: require('./config'),
+  service: require('./service'),
+  profile: require('./profile'),
+  sections: require('./sections'),
+  webhooks: require('./webhooks'),
 }

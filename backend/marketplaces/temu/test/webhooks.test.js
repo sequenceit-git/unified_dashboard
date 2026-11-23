@@ -1,7 +1,7 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const crypto = require('crypto')
-const { stubModules, freshRequire } = require('./helpers/stub')
+const { stubModules, freshRequire } = require('../../../test/helpers/stub')
 
 process.env.TEMU_APP_KEY = 'demo-test-app'
 process.env.TEMU_APP_SECRET = '12345678abcdefgh'
@@ -16,10 +16,10 @@ function load() {
   const claims = new Set()
   const restore = stubModules({
     '/models/Shop': { findOne: (q) => ({ select: async () => (String(q.externalShopId) === '123456' ? { _id: 'shopA', name: 'Temu A', status: 'connected' } : null) }) },
-    './cache': { claim: async (k) => (claims.has(k) ? false : (claims.add(k), true)) },
-    './syncQueue': { enqueue: async (kind, id, opts) => { queued.push(`${kind}:${id}:${opts.push}`) } },
+    '/cache': { claim: async (k) => (claims.has(k) ? false : (claims.add(k), true)) },
+    '/syncQueue': { enqueue: async (kind, id, opts) => { queued.push(`${kind}:${id}:${opts.push}`) } },
   })
-  const t = freshRequire('services/temuNotifications.js')
+  const t = freshRequire('marketplaces/temu/webhooks.js')
   return { t, queued, restore }
 }
 
@@ -93,8 +93,8 @@ test('ignores a duplicate push, an unknown mall and an unrelated event', async (
 test('route answers {"result":{}} with 200 and 401 on a bad signature', async () => {
   const restore = stubModules({
     '/models/Shop': { findOne: () => ({ select: async () => null }) },
-    './cache': { claim: async () => true },
-    './syncQueue': { enqueue: async () => {} },
+    '/cache': { claim: async () => true },
+    '/syncQueue': { enqueue: async () => {} },
   })
   const express = require('express')
   const app = express()

@@ -5,7 +5,7 @@
 
 const ebay = require('./ebay')
 const tiktokShop = require('./tiktok')
-const temu = require('./temu')
+const temu = require('../../marketplaces/temu/service')
 const profiles = require('./profiles')
 const config = require('../../config/marketplaces')
 const Order = require('../../models/Order')

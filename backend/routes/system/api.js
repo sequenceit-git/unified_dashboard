@@ -6,7 +6,7 @@ const crypto = require('crypto')
 const ebayDeletion = require('../../services/ebayAccountDeletion')
 const ebayNotifications = require('../../services/ebayNotifications')
 const tiktokNotifications = require('../../services/tiktokNotifications')
-const temuNotifications = require('../../services/temuNotifications')
+const temuNotifications = require('../../marketplaces/temu/webhooks')
 
 router.get('/health', (req, res) => {
   res.json({ message: 'OK — backend is running' })

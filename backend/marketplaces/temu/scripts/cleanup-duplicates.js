@@ -9,17 +9,17 @@
  * `docker compose exec backend npm run cleanup:temu [-- --apply]`
  */
 const path = require('path')
-const root = path.join(__dirname, '..', '..')
+const root = path.join(__dirname, '..', '..', '..', '..')
 require('dotenv').config({ path: path.join(root, '.env.local') })
 require('dotenv').config({ path: path.join(root, '.env') })
 
 const mongoose = require('mongoose')
-const connectDB = require('../config/db')
-const Order = require('../models/Order')
-const Product = require('../models/Product')
-const Listing = require('../models/Listing')
-const InventoryLog = require('../models/InventoryLog')
-const Customer = require('../models/Customer')
+const connectDB = require('../../../config/db')
+const Order = require('../../../models/Order')
+const Product = require('../../../models/Product')
+const Listing = require('../../../models/Listing')
+const InventoryLog = require('../../../models/InventoryLog')
+const Customer = require('../../../models/Customer')
 
 const APPLY = process.argv.includes('--apply')
 

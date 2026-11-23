@@ -1,6 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const { stubModules, freshRequire } = require('./helpers/stub')
+const { stubModules, freshRequire } = require('../../../test/helpers/stub')
 
 process.env.TEMU_APP_KEY = process.env.TEMU_APP_KEY || 'k'
 process.env.TEMU_APP_SECRET = process.env.TEMU_APP_SECRET || '12345678abcdefgh'
@@ -10,14 +10,14 @@ function load() {
   const calls = []
   const responses = {}
   const restore = stubModules({ '/cache': { claim: async () => true }, '/models/Listing': {}, '/models/Product': {} })
-  const temu = freshRequire('services/marketplace/temu.js')
+  const temu = freshRequire('marketplaces/temu/service.js')
   temu.call = async (type, params) => {
     calls.push({ type, params })
     const r = responses[type]
     if (r instanceof Error) throw r
     return typeof r === 'function' ? r(params) : (r ?? {})
   }
-  const sections = require('../services/marketplace/sections.js')
+  const sections = require('../../../services/marketplace/sections.js')
   const last = (type) => [...calls].reverse().find((c) => c.type === type)?.params
   return { temu, sections, calls, responses, last, restore }
 }

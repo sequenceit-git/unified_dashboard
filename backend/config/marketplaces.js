@@ -44,18 +44,7 @@ const MARKETPLACE_CONFIG = {
     tokenUrl: 'https://auth.tiktok-shops.com/api/v2/token/get',
     refreshUrl: 'https://auth.tiktok-shops.com/api/v2/token/refresh',
   },
-  temu: {
-    name: 'Temu',
-    appKey: process.env.TEMU_APP_KEY || '',
-    appSecret: process.env.TEMU_APP_SECRET || '',
-    region: 'us',
-    apiBaseUrl: 'https://openapi-b-us.temu.com/openapi/router',
-    authUrl: 'https://seller.temu.com/open-platform/client-manage/authorization',
-    get redirectUri() {
-      const client = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim()
-      return `${client}/oauth/temu/callback`
-    },
-  },
+  temu: require('../marketplaces/temu/config'),
 }
 
 module.exports = MARKETPLACE_CONFIG

@@ -17,9 +17,9 @@
  */
 
 const crypto = require('crypto')
-const config = require('../config/marketplaces').temu
-const Shop = require('../models/Shop')
-const cache = require('./cache')
+const config = require('./config')
+const Shop = require('../../models/Shop')
+const cache = require('../../services/cache')
 
 const EVENTS = {
   bg_order_status_change_event: 'orders',
@@ -120,7 +120,7 @@ async function process(eventCode, data, signature) {
   if (!shop) return { message: `No Temu shop found for mall ${mallId}` }
   if (shop.status !== 'connected') return { message: `Shop ${shop.name} is not connected; ignored` }
 
-  await require('./syncQueue').enqueue(kind, shop._id, { push: true })
+  await require('../../services/syncQueue').enqueue(kind, shop._id, { push: true })
   return { message: `${eventCode}${data.parentOrderSn ? ` ${data.parentOrderSn}` : ''}: queued ${kind} sync for ${shop.name}`, job: kind }
 }
 
@@ -137,8 +137,8 @@ const isTokenError = (err) => Boolean(err?.deadLogin || err?.status === 401
 
 /** Turns the webhook events on for a shop (on connect and once a day). */
 async function enable(shop) {
-  const manager = require('./marketplace')
-  const temu = require('./marketplace/temu')
+  const manager = require('../../services/marketplace')
+  const temu = require('./service')
   const events = Object.keys(EVENTS)
   let liveUpdates
   try {

@@ -9,11 +9,11 @@
     "seed": "node seed/seed.js",
     "encrypt-recipient-pii": "node scripts/encrypt-recipient-pii.js",
     "smoke:ebay": "node scripts/ebay-smoke.js",
-    "smoke:temu": "node scripts/temu-smoke.js",
+    "smoke:temu": "node marketplaces/temu/scripts/smoke.js",
     "smoke:tiktok": "node scripts/tiktok-smoke.js",
     "cleanup:ebay": "node scripts/cleanup-ebay-placeholders.js",
-    "cleanup:temu": "node scripts/cleanup-temu-duplicates.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "cleanup:temu": "node marketplaces/temu/scripts/cleanup-duplicates.js",
+    "test": "node --test \"test/**/*.test.js\" \"marketplaces/**/*.test.js\""
   },
   "keywords": [],
   "author": "",

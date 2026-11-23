@@ -1,92 +1,10 @@
 /**
- * United States Temu local-seller Open API.
- * One POST router; every call is `call(type, params)`. Orders: bg.order.list.v2.get,
- * bg.order.shippinginfo.v2.get, bg.order.amount.query. Shipping: bg.logistics.shipment.v2.confirm.
- * Cancel: temu.order.cancel.outofstock.apply. After-sales: bg.aftersales.*, temu.aftersales.refund.issue.
- * Goods: bg.local.goods.*. Webhooks: see services/temuNotifications.js.
+ * Temu orders: fetch + enrich, ship (self-fulfilled), cancel, refunds, return and cancellation
+ * decisions. Methods use `this.call` from the client (see service.js).
  */
+const { ORDER_STATUS, temuDate, temuAddress, temuMoney } = require('./format')
 
-const crypto = require('crypto')
-const config = require('../../config/marketplaces').temu
-
-const ORDER_STATUS = {
-  1: 'pending',
-  2: 'paid',
-  3: 'cancelled',
-  4: 'shipped',
-  5: 'delivered',
-}
-
-/** Temu sends seconds or milliseconds. */
-function temuDate(value) {
-  const n = Number(value)
-  if (!n) return new Date()
-  return new Date(n > 1e12 ? n : n * 1000)
-}
-
-/** Buyer address from bg.order.shippinginfo.v2.get (regionName1-4 = country, state, city, district). */
-function temuAddress(info) {
-  if (!info || typeof info !== 'object') return undefined
-  const street = [info.addressLine1, info.addressLine2, info.addressLine3].filter(Boolean).join(', ') || info.addressLineAll || ''
-  const address = {
-    street,
-    city: info.regionName3 || '',
-    state: info.regionName2 || '',
-    zip: info.postCode || '',
-    country: info.regionName1 || 'US',
-  }
-  return address.street || address.city || address.zip ? address : undefined
-}
-
-/** Temu money is either a number/string or `{ amount, currency }`. */
-function temuMoney(value) {
-  if (value == null || value === '') return 0
-  if (typeof value === 'object') return Number(value.amount) || 0
-  return Number(value) || 0
-}
-
-class TemuService {
-  /** Publishing a new Temu goods record is still done in Seller Center. Stock can be pushed. */
-  listingCapabilities = {
-    canList: false,
-    apiName: 'Temu Open API',
-    editAfterListing: ['quantity'],
-    note: 'Create the goods in Temu Seller Center. Stock changes made here are sent with bg.local.goods.stock.edit.',
-  }
-
-  /** bg.local.goods.list.query is filtered to goods on sale, so an off-sale (paused) goods missing from it is not ended. */
-  endableStatuses = ['live', 'out_of_stock']
-
-  getAuthUrl(state = '') {
-    if (!config.appKey) throw new Error('Temu app key (TEMU_APP_KEY) is missing')
-    const params = new URLSearchParams({
-      appKey: config.appKey,
-      redirect_uri: config.redirectUri,
-      state,
-    })
-    return `${config.authUrl}?${params.toString()}`
-  }
-
-  async exchangeCode(code) {
-    const result = await this.call('bg.open.accesstoken.create', {
-      access_token: code,
-      code,
-    })
-    const token = result.accessToken || result.access_token
-    const mallId = result.mallId || result.mall_id
-    if (!token) throw new Error('Temu did not return an access token')
-    return {
-      access_token: token,
-      expires_in: result.expiredTime || result.expires_in,
-      externalShopId: mallId ? String(mallId) : `temu-${Date.now()}`,
-      shopName: result.mallName || 'Temu Shop',
-    }
-  }
-
-  async refreshToken() {
-    throw new Error('Temu US local tokens are reissued from Seller Center authorization')
-  }
-
+module.exports = {
   async getOrders(accessToken, { limit = 50 } = {}) {
     const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 100)
     const orders = []
@@ -159,7 +77,7 @@ class TemuService {
     const found = orders.filter((order) => order.externalOrderId)
     await this.fillOrderDetails(accessToken, found)
     return { orders: found }
-  }
+  },
 
   /**
    * The order list can leave out the buyer address and amounts. Orders still to ship get their
@@ -168,7 +86,7 @@ class TemuService {
    * most `maxCalls` of these calls.
    */
   async fillOrderDetails(accessToken, orders, { maxCalls = 20 } = {}) {
-    const cache = require('../cache')
+    const cache = require('../../services/cache')
     let calls = 0
     for (const order of orders) {
       if (calls >= maxCalls) break
@@ -206,95 +124,7 @@ class TemuService {
         }
       }
     }
-  }
-
-  async getInventory(accessToken, { limit = 50 } = {}) {
-    const pageSize = 100
-    const maxPages = 20
-    const goods = []
-    let complete = true
-    for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
-      const result = await this.call('bg.local.goods.list.query', {
-        access_token: accessToken,
-        pageNo,
-        pageSize,
-        goodsSearchType: 1,
-        goodsStatusFilterType: 1,
-      })
-      const page = result.goodsList || result.pageItems || result.list || []
-      goods.push(...page)
-      if (page.length < pageSize) break
-      if (pageNo === maxPages) complete = false
-    }
-    const items = []
-    for (const good of goods) {
-      const skus = good.skuList || good.skuInfoList || [good]
-      for (const sku of skus) {
-        const rawSku = String(sku.outSkuSn || sku.outGoodsSn || good.outGoodsSn || '').trim()
-        items.push({
-          sku: rawSku || String(sku.skuId || good.goodsId),
-          rawSku,
-          title: good.goodsName || sku.goodsName || 'Temu goods',
-          description: '',
-          price: temuMoney(sku.retailPrice ?? good.retailPrice ?? sku.price),
-          stock: Number(sku.quantity || sku.stock || good.quantity || 0),
-          images: [good.thumbUrl || good.imageUrl].filter(Boolean),
-          category: '',
-          brand: '',
-          listingStatus: 'live',
-          marketplaceStatus: 'ONSALE',
-          externalListingId: sku.skuId && (good.goodsId || sku.goodsId)
-            ? `${good.goodsId || sku.goodsId}:${sku.skuId}`
-            : String(good.goodsId || sku.goodsId || sku.skuId),
-        })
-      }
-    }
-    return { inventoryItems: items, complete }
-  }
-
-  async createListing() {
-    throw new Error('Temu listing publish uses the US Partner goods create API. Confirm the type in partner-us before sending a product.')
-  }
-
-  async updateStock(accessToken, sku, quantity, options = {}) {
-    const [goodsId, skuId] = String(options.externalListingId || '').split(':')
-    if (!goodsId || !skuId) throw new Error('Sync this Temu goods again so the SKU id is saved, then update stock.')
-    const target = Math.max(0, Math.floor(Number(quantity)))
-    const result = await this.call('bg.local.goods.stock.edit', {
-      access_token: accessToken,
-      goodsId: Number(goodsId),
-      skuStockTargetList: [{ skuId: Number(skuId), stockTarget: target }],
-    })
-    const info = (result.skuStockEditStatusInfoList || []).find((row) => String(row.skuId) === String(skuId))
-    if (result.operateResult === false || info?.stockEditStatus === false) {
-      throw new Error(info?.errorMsg || result.msg || 'Temu could not update this SKU stock.')
-    }
-    return { success: true }
-  }
-
-  async reviseListing(accessToken, externalListingId, changes) {
-    if (changes.quantity != null) await this.updateStock(accessToken, null, changes.quantity, { externalListingId })
-    // Temu price changes go through Seller Center price review; text and images are edited there too.
-    const skipped = ['price', 'title', 'description', 'images'].filter((key) => changes[key] != null && changes[key] !== '')
-    return { success: true, ...(skipped.length ? { skipped } : {}) }
-  }
-
-  async applyListingAction(accessToken, action, listing) {
-    const goodsId = String(listing.externalListingId || '').split(':')[0]
-    if (!goodsId) throw new Error('This product is not on Temu yet.')
-    const onsale = action === 'publish' ? 1 : action === 'unpublish' ? 0 : null
-    if (onsale == null) throw new Error(`Temu cannot ${action} a listing.`)
-    const result = await this.call('bg.local.goods.sale.status.set', {
-      access_token: accessToken,
-      goodsId: Number(goodsId),
-      onsale,
-    })
-    if (result?.success === false) throw new Error('Temu could not change the sale status.')
-    return {
-      status: onsale ? (Number(listing.stock) > 0 ? 'live' : 'out_of_stock') : 'paused',
-      marketplaceStatus: onsale ? 'ONSALE' : 'OFFSALE',
-    }
-  }
+  },
 
   async resolveCarrierId(accessToken, carrier) {
     const needle = String(carrier || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -312,7 +142,7 @@ class TemuService {
       return name && (name === needle || name.includes(needle) || needle.includes(name))
     })
     return match?.shippingCompanyId ?? match?.logisticsServiceProviderId ?? match?.carrierId ?? match?.id ?? null
-  }
+  },
 
   /** The shop's default self-shipping warehouse, if it has one (cached 15 minutes). */
   async defaultWarehouseId(accessToken) {
@@ -330,7 +160,7 @@ class TemuService {
     }
     this._warehouseCache.set(accessToken, { at: Date.now(), id })
     return id
-  }
+  },
 
   /**
    * Self-fulfilled shipment: confirms the seller's own carrier + tracking number on Temu with
@@ -371,7 +201,7 @@ class TemuService {
       ],
     })
     return result || { success: true }
-  }
+  },
 
   /**
    * Temu lets sellers cancel only for out of stock (temu.order.cancel.outofstock.apply).
@@ -386,7 +216,7 @@ class TemuService {
       throw new Error(`Temu did not cancel the order${reasons.length ? `: ${reasons.join('; ')}` : '.'}`)
     }
     return result || { success: true }
-  }
+  },
 
   /** Open after-sales requests for an order (bg.aftersales.parentaftersales.list.get). */
   async afterSalesForOrder(accessToken, orderId) {
@@ -397,7 +227,7 @@ class TemuService {
       parentOrderSnList: [String(orderId)],
     })
     return res?.data || []
-  }
+  },
 
   /**
    * Temu refunds only an existing after-sales request, and only in full (Return and Refund Guide:
@@ -418,7 +248,7 @@ class TemuService {
       parentAfterSalesSn: String(open.parentAfterSalesSn),
       parentOrderSn: String(orderId),
     })
-  }
+  },
 
   /** Approve = full refund. Temu's API cannot decline a return; that is done in Seller Center. */
   async decideReturn(accessToken, returnId, { decision = 'APPROVE', orderId } = {}) {
@@ -430,7 +260,7 @@ class TemuService {
       parentAfterSalesSn: String(returnId),
       ...(orderId ? { parentOrderSn: String(orderId) } : {}),
     })
-  }
+  },
 
   /** Approve a buyer's cancellation (bg.aftersales.cancel.agree). Temu has no API to reject one. */
   async decideCancellation(accessToken, cancelId, { action = 'approve', orderId } = {}) {
@@ -442,69 +272,5 @@ class TemuService {
       parentAfterSalesSn: String(cancelId),
       ...(orderId ? { parentOrderSn: String(orderId) } : {}),
     })
-  }
-
-  /**
-   * Updates SKU price on Temu
-   */
-  async updatePrice(accessToken, sku, price, currency = 'USD', options = {}) {
-    const [goodsId, skuId] = String(options.externalListingId || '').split(':')
-    if (!goodsId || !skuId) {
-      throw new Error(`Temu price update needs a synced goods and SKU for ${sku}`)
-    }
-    const result = await this.call('bg.local.goods.priceorder.change.sku.price', {
-      access_token: accessToken,
-      goodsId: Number(goodsId),
-      skuPriceList: [
-        {
-          skuId: Number(skuId),
-          price: Number(price),
-          currency: currency || 'USD',
-        },
-      ],
-    })
-    return result || { success: true }
-  }
-
-  async call(type, business) {
-    if (!config.appKey || !config.appSecret) {
-      throw new Error('Temu credentials (TEMU_APP_KEY, TEMU_APP_SECRET) are missing')
-    }
-    const payload = {
-      type,
-      app_key: config.appKey,
-      timestamp: String(Math.floor(Date.now() / 1000)),
-      data_type: 'JSON',
-      ...business,
-    }
-    payload.sign = sign(payload, config.appSecret)
-    const response = await fetch(config.apiBaseUrl, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok || body.success === false) {
-      const err = new Error(body.errorMsg || body.error_msg || `Temu ${type} failed`)
-      err.code = body.errorCode ?? body.error_code
-      throw err
-    }
-    return body.result || body
-  }
+  },
 }
-
-function sign(payload, secret) {
-  const text = Object.keys(payload)
-    .filter((key) => key !== 'sign' && payload[key] !== undefined && payload[key] !== null)
-    .sort()
-    .map((key) => `${key}${stringify(payload[key])}`)
-    .join('')
-  return crypto.createHash('md5').update(`${secret}${text}${secret}`).digest('hex').toUpperCase()
-}
-
-function stringify(value) {
-  if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
-}
-
-module.exports = new TemuService()

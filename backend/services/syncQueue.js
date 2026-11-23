@@ -26,7 +26,7 @@ const manager = () => require('./marketplace')
 const LIVE_UPDATES = {
   ebay: './ebayNotifications',
   tiktok_shop: './tiktokNotifications',
-  temu: './temuNotifications',
+  temu: '../marketplaces/temu/webhooks',
 }
 
 /**
