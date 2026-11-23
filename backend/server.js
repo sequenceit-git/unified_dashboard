@@ -116,8 +116,8 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   if (require.main === module) {
     // Run scheduled syncs and push-notification jobs inside the API process by default,
     // falling back to in-memory timers when Redis is unavailable.
-    const redis = require('./services/redis')
-    const syncQueue = require('./services/syncQueue')
+    const redis = require('./services/core/redis')
+    const syncQueue = require('./services/core/syncQueue')
     if (!redis.enabled()) {
       syncQueue.startInlineSchedules()
     } else if (process.env.SYNC_WORKER_INLINE !== 'false') {

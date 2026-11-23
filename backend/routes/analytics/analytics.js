@@ -8,7 +8,7 @@ const Shop = require('../../models/Shop')
 const tiktok = require('../../marketplaces/tiktok_shop/service')
 const marketplaceManager = require('../../services/marketplace')
 const { canonical: canonicalMarketplace } = require('../../marketplaces')
-const { cachedResponse } = require('../../services/cache')
+const { cachedResponse } = require('../../services/core/cache')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('analytics'), limitToSection('analytics'), cachedResponse('analytics', 120))

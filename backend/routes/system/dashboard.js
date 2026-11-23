@@ -1,6 +1,6 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
-const { cachedResponse } = require('../../services/cache')
+const { cachedResponse } = require('../../services/core/cache')
 
 const resources = {
   users: require('../../models/User'),

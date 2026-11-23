@@ -140,7 +140,7 @@ async function handle(xml, soapAction) {
   const shop = await findShop(note.recipient)
   if (!shop) return { status: 200, message: `No connected eBay shop for ${note.recipient || 'unknown seller'}` }
 
-  await require('../../services/syncQueue').enqueue(kind, shop._id, { push: true })
+  await require('../../services/core/syncQueue').enqueue(kind, shop._id, { push: true })
   return { status: 200, message: `${note.event}: queued ${kind} sync for ${shop.name}`, job: kind }
 }
 

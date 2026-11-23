@@ -19,7 +19,7 @@
 const crypto = require('crypto')
 const config = require('./config')
 const Shop = require('../../models/Shop')
-const cache = require('../../services/cache')
+const cache = require('../../services/core/cache')
 
 const EVENTS = {
   bg_order_status_change_event: 'orders',
@@ -120,7 +120,7 @@ async function process(eventCode, data, signature) {
   if (!shop) return { message: `No Temu shop found for mall ${mallId}` }
   if (shop.status !== 'connected') return { message: `Shop ${shop.name} is not connected; ignored` }
 
-  await require('../../services/syncQueue').enqueue(kind, shop._id, { push: true })
+  await require('../../services/core/syncQueue').enqueue(kind, shop._id, { push: true })
   return { message: `${eventCode}${data.parentOrderSn ? ` ${data.parentOrderSn}` : ''}: queued ${kind} sync for ${shop.name}`, job: kind }
 }
 

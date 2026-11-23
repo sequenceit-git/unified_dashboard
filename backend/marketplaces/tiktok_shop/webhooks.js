@@ -10,7 +10,7 @@
 const crypto = require('crypto')
 const config = require('./config')
 const Shop = require('../../models/Shop')
-const cache = require('../../services/cache')
+const cache = require('../../services/core/cache')
 
 const EVENTS = {
   ORDER_STATUS_CHANGE: 'orders',
@@ -142,7 +142,7 @@ async function handle(rawBody, body, authHeader, topicQuery = '') {
     return { status: 200, message: `Shop ${shop.name} is not connected; ignored` }
   }
 
-  await require('../../services/syncQueue').enqueue(kind, shop._id, { push: true })
+  await require('../../services/core/syncQueue').enqueue(kind, shop._id, { push: true })
   return { status: 200, message: `${topic || kind}: queued ${kind} sync for ${shop.name}`, job: kind }
 }
 

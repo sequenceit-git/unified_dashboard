@@ -7,7 +7,7 @@ const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
 const marketplaceManager = require('../../services/marketplace')
 const { canonical: canonicalMarketplace } = require('../../marketplaces')
-const events = require('../../services/events')
+const events = require('../../services/core/events')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireMainRoute('inventory'), limitToSection('inventory'))
@@ -186,7 +186,7 @@ router.post('/adjust', async (req, res) => {
       warnings.push(`Listing sync error: ${err.message}`)
     }
 
-    await require('../../services/notify').stockChangedOnShops(updated, { was: stockBefore, stock: updated.stock }).catch(() => {})
+    await require('../../services/core/notify').stockChangedOnShops(updated, { was: stockBefore, stock: updated.stock }).catch(() => {})
     await events.publish({ type: 'sync', kind: 'listings', ok: true }).catch(() => {})
 
     res.status(201).json({ stockBefore, stockAfter, change, log, pushedToMarketplaces: pushedCount, warnings })

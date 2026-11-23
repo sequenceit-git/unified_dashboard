@@ -9,8 +9,8 @@ const { canonical: canonicalMarketplace } = registry
 const PACKAGE_SHOP = registry.all().find((a) => typeof a.service.getShippingDocument === 'function')?.key
 const profiles = require('../../services/marketplace/profiles')
 const sections = require('../../services/marketplace/sections')
-const syncQueue = require('../../services/syncQueue')
-const cache = require('../../services/cache')
+const syncQueue = require('../../services/core/syncQueue')
+const cache = require('../../services/core/cache')
 
 const router = express.Router()
 

@@ -509,7 +509,7 @@ router.post('/relist', async (req, res) => {
     listing.lastSyncedAt = new Date()
     await listing.save()
     await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
-    await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
+    await require('../../services/core/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     await syncReportOpportunities(report)
     res.json({ success: true, listedShops: opp.listedShops || [], listingUrl: listing.listingUrl })
   } catch (err) {

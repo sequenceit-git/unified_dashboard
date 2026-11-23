@@ -1,6 +1,6 @@
 const express = require('express')
 const { requireAuth, loadAccess } = require('../../middleware/auth')
-const events = require('../../services/events')
+const events = require('../../services/core/events')
 
 const router = express.Router()
 

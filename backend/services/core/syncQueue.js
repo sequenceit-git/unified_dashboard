@@ -8,7 +8,7 @@
  */
 
 const { Queue, QueueEvents, Worker } = require('bullmq')
-const Shop = require('../models/Shop')
+const Shop = require('../../models/Shop')
 const redis = require('./redis')
 const cache = require('./cache')
 const events = require('./events')
@@ -21,8 +21,8 @@ function autoSync(name) {
   return process.env[name] ? process.env[name] === 'true' : true
 }
 
-const manager = () => require('./marketplace')
-const registry = require('../marketplaces')
+const manager = () => require('../marketplace')
+const registry = require('../../marketplaces')
 /** The shop's marketplace adapter, or null for an unknown marketplace. */
 const shopAdapter = (shop) => (registry.KEYS.includes(shop?.marketplace) ? registry.get(shop.marketplace) : null)
 
@@ -35,7 +35,7 @@ const KINDS = {
   inbox: {
     every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 2) : 0),
     applies: (shop) => Boolean(shopAdapter(shop)?.capabilities?.inbox) && shop.apiAccess?.inbox?.ok !== false,
-    run: (shop) => require('./inboxBot').syncAndReply(shop),
+    run: (shop) => require('../inboxBot').syncAndReply(shop),
     clears: () => ['resp:dashboard:'],
   },
   orders: {

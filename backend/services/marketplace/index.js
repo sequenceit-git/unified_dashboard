@@ -552,7 +552,7 @@ class UnifiedMarketplaceManager {
       const shop = shops.find((item) => item.marketplace === marketplace && item.status === 'connected')
         || shops.find((item) => item.marketplace === marketplace)
       if (shop?.status === 'connected') {
-        const syncQueue = require('../syncQueue')
+        const syncQueue = require('../core/syncQueue')
         const stale = !shop.apiAccessCheckedAt || Date.now() - new Date(shop.apiAccessCheckedAt).getTime() > profiles.ACCESS_TTL_MS
         if (refresh || !shop.apiAccess) {
           const access = await syncQueue.enqueue('access', shop._id, { wait: true, timeoutMs: 30000 })
@@ -1070,7 +1070,7 @@ class UnifiedMarketplaceManager {
       && !String(item.externalListingId || '').includes(':')
     const prevStock = (consolidated || upgradedFromSingle) ? undefined : wasStock
     if (!created && Number.isFinite(item.stock)) await this.reconcileStock(product, listing, shop, prevStock, item.stock)
-    const notify = require('../notify')
+    const notify = require('../core/notify')
     await notify.listingStatusChanged(listing, shop, { wasStatus, wasRaw, imported: created }).catch(() => {})
     if (Number.isFinite(item.stock)) {
       await notify.stockChanged(product, shop, { was: wasStock, stock: item.stock }).catch(() => {})
@@ -1197,7 +1197,7 @@ class UnifiedMarketplaceManager {
         if (Array.isArray(next.grantedScopes)) doc.grantedScopes = next.grantedScopes
         await doc.save()
       } catch (err) {
-        require('../notify').tokenFailed(doc, err.message).catch(() => {})
+        require('../core/notify').tokenFailed(doc, err.message).catch(() => {})
         if (err.deadLogin) {
           // The login can't be refreshed any more: show the shop as needing a reconnect and stop syncing it.
           await Shop.updateOne({ _id: doc._id }, { status: 'error', authError: err.message }).catch(() => {})

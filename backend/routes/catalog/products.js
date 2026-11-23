@@ -247,7 +247,7 @@ router.patch('/:id', async (req, res) => {
     const changes = changedListingFields(before, doc)
     const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
     if (changes.quantity != null) {
-      await require('../../services/notify').stockChangedOnShops(doc, { was: before.stock, stock: doc.stock }).catch(() => {})
+      await require('../../services/core/notify').stockChangedOnShops(doc, { was: before.stock, stock: doc.stock }).catch(() => {})
     }
     res.json({ ...doc.toObject(), marketplaceSync })
   } catch (err) {
@@ -386,7 +386,7 @@ router.post('/:id/list', async (req, res) => {
         { productId: product._id, shopId: shop._id, marketplace: shop.marketplace, price, status: 'error', syncError: apiErr.message, lastSyncedAt: new Date() },
         { new: true, upsert: true, runValidators: true },
       )
-      await require('../../services/notify').listingStatusChanged(failed, shop, {}).catch(() => {})
+      await require('../../services/core/notify').listingStatusChanged(failed, shop, {}).catch(() => {})
       return res.status(422).json({ error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [] })
     }
 
@@ -454,7 +454,7 @@ router.post('/:id/list', async (req, res) => {
       )
     }
     await marketplaceManager.rememberListing(shop._id, [product.sku, finalSku, publishRes.externalListingId].filter(Boolean))
-    await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
+    await require('../../services/core/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     const out = listing.toObject ? listing.toObject() : { ...listing }
     out.product = updatedProduct || product
     if (publishRes.warnings?.length) out.warnings = publishRes.warnings
@@ -510,7 +510,7 @@ router.post('/:id/listing-action', async (req, res) => {
     if (action === 'publish' || action === 'relist' || action === 'recover') {
       await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
     }
-    await require('../../services/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
+    await require('../../services/core/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     res.json({
       ...listing.toObject(),
       listingUrl: listing.listingUrl,

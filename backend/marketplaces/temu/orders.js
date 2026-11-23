@@ -86,7 +86,7 @@ module.exports = {
    * most `maxCalls` of these calls.
    */
   async fillOrderDetails(accessToken, orders, { maxCalls = 20 } = {}) {
-    const cache = require('../../services/cache')
+    const cache = require('../../services/core/cache')
     let calls = 0
     for (const order of orders) {
       if (calls >= maxCalls) break

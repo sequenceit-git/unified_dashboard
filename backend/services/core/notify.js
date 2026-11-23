@@ -4,8 +4,8 @@
  * research. Routine successful syncs do not create notifications.
  */
 
-const Notification = require('../models/Notification')
-const Product = require('../models/Product')
+const Notification = require('../../models/Notification')
+const Product = require('../../models/Product')
 const events = require('./events')
 
 const SHOP_LABEL = { ebay: 'eBay', tiktok_shop: 'TikTok Shop', temu: 'Temu Shop' }
@@ -111,7 +111,7 @@ async function stockChanged(product, shop, { was, stock } = {}) {
 /** Raises or clears a low-stock alert on every shop listing for this product. */
 async function stockChangedOnShops(product, { was, stock } = {}) {
   if (!product?._id) return
-  const Listing = require('../models/Listing')
+  const Listing = require('../../models/Listing')
   const listings = await Listing.find({ productId: product._id }).populate('shopId', 'name marketplace')
   if (!listings.length) {
     await stockChanged(product, null, { was, stock })
