@@ -6,7 +6,7 @@
  *   docker compose exec backend npm run split-products            # dry run: prints the plan only
  *   docker compose exec backend npm run split-products -- --apply # backs up, then writes
  *
- * Pause automatic sync first (ORDER_AUTO_SYNC / LISTING_AUTO_SYNC / INBOX_AUTO_SYNC=false).
+ * Pause all sync first (SYNC_PAUSED=true in .env, then restart the backend).
  * The backup is written to /app/backups/split-products-<time>/ (EJSON, restorable with mongoimport).
  * It is not on a volume and deliberately not under uploads/ (served publicly): the script prints
  * the `docker cp` command to copy it to the server.

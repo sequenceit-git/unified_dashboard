@@ -110,3 +110,24 @@ test('create stamps the product with this shop', async () => {
     assert.equal(seen.created.marketplace, 'ebay')
   } finally { restore() }
 })
+
+test("deleting an unlisted product forgets its SKU only on this shop's stores", async () => {
+  const { stubModules: stub2, freshRequire: fresh2 } = require('../../../../test/helpers/stub')
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean']) p[m] = () => p; return p }
+  const shopQueries = []
+  const forgotten = []
+  const product = { _id: 'p1', sku: 'S1', marketplace: 'ebay', createdBy: 'u1' }
+  const restore = stub2({
+    '/models/Product': { findById: () => chain(product), deleteOne: async () => ({}), findByIdAndDelete: async () => product },
+    '/models/Listing': { find: () => chain([]), deleteMany: async () => ({}), distinct: async () => [] },
+    '/models/Shop': { find: (q) => { shopQueries.push(q); return chain([{ _id: 'shopA' }]) }, findById: () => chain(null) },
+    '/models/ResearchReport': { updateMany: () => ({ catch: () => {} }) },
+    '../manager': { forgetListing: async (l, extra) => { forgotten.push([l.shopId, extra]) } },
+    '/catalog/productImport': {},
+  })
+  try {
+    await fresh2('marketplaces/ebay/app/services/products.js').remove({ ...admin, params: { id: 'p1' } }).catch(() => {})
+    assert.ok(shopQueries.length > 0)
+    assert.ok(shopQueries.every((q) => q.marketplace === 'ebay'), 'only this shop\'s stores')
+  } finally { restore() }
+})

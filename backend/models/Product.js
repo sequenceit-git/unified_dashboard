@@ -28,6 +28,8 @@ const productSchema = new mongoose.Schema(
   {
     /** The shop this product belongs to: each shop has its own products, stock and price. */
     marketplace: { type: String, enum: KEYS, index: true },
+    /** Set on products split from a shared product by scripts/split-products-per-shop.js. */
+    splitFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: undefined },
     sku: { type: String, required: true },
     title: { type: String, required: true },
     subtitle: { type: String },

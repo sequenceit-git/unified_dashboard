@@ -20,7 +20,7 @@ APIs, and stock is kept separately per shop, so a product's data must not be sha
 5. **Migration safety.** The script never runs on production by itself: the user runs it inside the
    container. It writes a JSON backup of the touched collections first, prints the plan by default,
    writes only with `--apply`, and is safe to run twice. Code and migration deploy together with
-   automatic sync paused (`ORDER_AUTO_SYNC=false LISTING_AUTO_SYNC=false INBOX_AUTO_SYNC=false`).
+   all sync paused (`SYNC_PAUSED=true`).
 6. **Delivery:** reviewed plan, native execution, one fresh reviewer at the end.
 
 ## Unchanged
@@ -30,15 +30,18 @@ Overview (it sums per shop), notifications, sync intervals.
 
 ## Deploy runbook
 
-1. In the server's `.env` set `ORDER_AUTO_SYNC=false`, `LISTING_AUTO_SYNC=false`,
-   `INBOX_AUTO_SYNC=false`.
+1. In the server's `.env` set `SYNC_PAUSED=true`. This stops every sync, including the ones
+   marketplace webhooks trigger (the `*_AUTO_SYNC` flags alone don't stop those). Webhooks are
+   still answered; the regular sync catches up afterwards.
 2. `git pull && docker compose up -d --build backend frontend`
 3. Dry run, read the summary: `docker compose exec backend npm run split-products`
 4. Apply: `docker compose exec backend npm run split-products -- --apply`
 5. Copy the backup out right away (the script prints the exact command), e.g.
    `docker cp unified-dashboard-backend:/app/backups/split-products-<time> ./`
-6. Run the dry run again: it must report 0 products, 0 copies.
-7. Remove the three `*_AUTO_SYNC=false` lines and `docker compose up -d backend`.
+6. Run the dry run again: it must report 0 products, 0 copies and 0 listings attached to another
+   shop's product. If `--apply` stopped midway (connection drop), just run it again: it reuses the
+   copies already made and finishes.
+7. Remove `SYNC_PAUSED=true` and `docker compose up -d backend`.
 
 Between steps 2 and 4 product pages show no products (they have no shop yet), so run the
 migration right after the deploy.

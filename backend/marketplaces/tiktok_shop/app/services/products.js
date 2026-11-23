@@ -229,7 +229,8 @@ async function remove(ctx) {
       return { deleted: false, removedListings: listings.length, note: 'The product is still listed on shops outside your access.' }
     }
     if (!listings.length) {
-      const shops = await Shop.find({ status: 'connected' }).select('_id')
+      // This shop's stores only: the same SKU on another shop is that shop's own product.
+      const shops = await Shop.find({ status: 'connected', marketplace: 'tiktok_shop' }).select('_id')
       for (const shop of shops) await marketplaceManager.forgetListing({ shopId: shop._id }, [doc.sku])
     }
     await Product.findByIdAndDelete(doc._id)

@@ -19,3 +19,22 @@ test("scheduler runs the shop's own sync job", async () => {
     restore()
   }
 })
+
+test('SYNC_PAUSED=true skips every sync job, including webhook pushes', async () => {
+  const ran = []
+  const restore = stubModules({
+    '/models/Shop': modelStub(() => ({ _id: 'T1', name: 'Temu store', marketplace: 'temu', status: 'connected' })),
+    '/notify': { fromSync: async () => {} },
+    '../../marketplaces': { get: () => ({ app: { sync: { orders: async () => { ran.push('orders') } } } }), KEYS: ['temu'], canonical: (k) => k },
+  })
+  process.env.SYNC_PAUSED = 'true'
+  try {
+    const { runJob, enqueue } = freshRequire('services/core/syncQueue.js')
+    assert.deepEqual(await runJob('orders', 'T1'), { skipped: 'Sync is paused (SYNC_PAUSED=true)' })
+    assert.deepEqual(await enqueue('orders', 'T1', { push: true }), { skipped: 'Sync is paused (SYNC_PAUSED=true)' })
+    assert.deepEqual(ran, [])
+  } finally {
+    delete process.env.SYNC_PAUSED
+    restore()
+  }
+})

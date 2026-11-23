@@ -28,6 +28,11 @@ const shopAdapter = (shop) => (registry.KEYS.includes(shop?.marketplace) ? regis
  * `every` is the schedule in minutes (0 = manual only). `clears` are cache prefixes made stale.
  * `applies` skips shops whose API can't do the job, so the logs stay quiet.
  */
+/** SYNC_PAUSED=true stops every sync job (scheduled, webhook-triggered, manual), e.g. during a data
+ * migration. Webhooks are still answered; the regular sync catches up once it is unset. */
+const PAUSED = { skipped: 'Sync is paused (SYNC_PAUSED=true)' }
+const paused = () => process.env.SYNC_PAUSED === 'true'
+
 const KINDS = {
   inbox: {
     every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 2) : 0),
@@ -81,6 +86,7 @@ function logResult(kind, shop, result) {
 async function runJob(kind, shopId) {
   const spec = KINDS[kind]
   if (!spec) throw new Error(`Unknown sync job ${kind}`)
+  if (paused()) return PAUSED
   const shop = await Shop.findById(shopId)
   if (!shop || shop.status !== 'connected') return { skipped: 'Shop is not connected' }
   if (!spec.applies(shop)) return { skipped: `${kind} is not available for ${shop.name}` }
@@ -185,6 +191,7 @@ function getQueueEvents() {
  */
 async function enqueue(kind, shopId, { wait = false, timeoutMs = 15000, push = false } = {}) {
   if (!KINDS[kind]) throw new Error(`Unknown sync job ${kind}`)
+  if (paused()) return PAUSED
   const id = String(shopId)
   if (push) return enqueuePush(kind, id)
   if (!redis.enabled()) {

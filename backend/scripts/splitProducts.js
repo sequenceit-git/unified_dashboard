@@ -18,7 +18,9 @@ function planSplit({ shops, products, listings, orders, logs, reports, makeId })
     if (!listingsOf.has(key)) listingsOf.set(key, [])
     listingsOf.get(key).push(listing)
   }
-  const plan = { assign: [], copies: [], repoint: { listings: [], orderItems: [], logs: [], reports: [] } }
+  const plan = { assign: [], copies: [], repoint: { listings: [], orderItems: [], logs: [], reports: [] }, mismatched: 0 }
+  // Copies made by an earlier run that stopped before giving the original its shop: reuse them.
+  const madeCopies = new Map(products.filter((p) => p.splitFrom && p.marketplace).map((p) => [`${idOf(p.splitFrom)}|${p.marketplace}`, p._id]))
   /** productId → marketplace → id of that shop's product (the original or its copy) */
   const owner = new Map()
 
@@ -44,6 +46,8 @@ function planSplit({ shops, products, listings, orders, logs, reports, makeId })
       if (index === 0) {
         plan.assign.push({ productId: product._id, marketplace: market, ...numbers(market) })
         ids.set(market, product._id)
+      } else if (madeCopies.has(`${pid}|${market}`)) {
+        ids.set(market, madeCopies.get(`${pid}|${market}`))
       } else {
         const newId = makeId()
         plan.copies.push({ fromId: product._id, newId, marketplace: market, ...numbers(market) })
@@ -55,6 +59,14 @@ function planSplit({ shops, products, listings, orders, logs, reports, makeId })
       const target = ids.get(marketOf(listing))
       if (target && idOf(target) !== pid) plan.repoint.listings.push([listing._id, target])
     }
+  }
+
+  // Listings on one shop still attached to another shop's product (should be 0 after a full run).
+  const productMarket = new Map(products.filter((p) => p.marketplace).map((p) => [idOf(p._id), p.marketplace]))
+  for (const listing of listings) {
+    const market = productMarket.get(idOf(listing.productId))
+    const shopMarketOf = shopMarket.get(idOf(listing.shopId)) || registry.canonical(listing.marketplace)
+    if (market && shopMarketOf && market !== shopMarketOf) plan.mismatched += 1
   }
 
   const copyFor = (productId, market) => {
@@ -84,32 +96,41 @@ function planSplit({ shops, products, listings, orders, logs, reports, makeId })
 /** Plans the split; with `apply` backs up, then writes. Returns a summary of what (would have) changed. */
 async function run({ apply, db, makeId, log = console.log }) {
   const data = await db.load()
-  const plan = planSplit({ ...data, makeId })
-  const summary = {
-    assigned: plan.assign.length,
-    copies: plan.copies.length,
-    listings: plan.repoint.listings.length,
-    orderItems: plan.repoint.orderItems.length,
-    logs: plan.repoint.logs.length,
-    reports: plan.repoint.reports.length,
+  let plan = planSplit({ ...data, makeId })
+  const summarize = (p) => ({
+    assigned: p.assign.length,
+    copies: p.copies.length,
+    listings: p.repoint.listings.length,
+    orderItems: p.repoint.orderItems.length,
+    logs: p.repoint.logs.length,
+    reports: p.repoint.reports.length,
+    mismatched: p.mismatched,
     applied: Boolean(apply),
-  }
+  })
+  let summary = summarize(plan)
   log(`Products given a shop: ${summary.assigned}; copies for other shops: ${summary.copies}`)
   log(`Repointed to a shop's copy: ${summary.listings} listings, ${summary.orderItems} order items, ${summary.logs} inventory logs, ${summary.reports} research links`)
+  log(`Listings attached to another shop's product: ${summary.mismatched} (0 once the split is complete)`)
   if (!apply) {
     log('Dry run: nothing written. Run again with --apply to make these changes.')
     return summary
   }
   await db.backup(data)
+  // Plan again from a fresh read so sales since the dry run are not overwritten.
+  const latest = await db.load()
+  plan = planSplit({ ...latest, makeId })
+  summary = summarize(plan)
   // A copy reuses its product's SKU, so the old "SKU unique overall" index goes first.
   await db.dropOldSkuIndex()
-  await db.assign(plan.assign)
-  const byId = new Map(data.products.map((product) => [idOf(product._id), product]))
+  // Copies and repoints first, originals' shop last: if this stops midway, a re-run still sees the
+  // unfinished originals (no shop yet) and reuses the copies already made (splitFrom).
+  const byId = new Map(latest.products.map((product) => [idOf(product._id), product]))
   await db.createCopies(plan.copies.map((copy) => {
     const { _id, ...rest } = byId.get(idOf(copy.fromId))
-    return { ...rest, _id: copy.newId, marketplace: copy.marketplace, stock: copy.stock, basePrice: copy.price }
+    return { ...rest, _id: copy.newId, splitFrom: copy.fromId, marketplace: copy.marketplace, stock: copy.stock, basePrice: copy.price }
   }))
   await db.repoint(plan.repoint)
+  await db.assign(plan.assign)
   await db.ensureIndexes()
   log('Done.')
   return summary
