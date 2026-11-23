@@ -1,0 +1,1212 @@
+{
+  "shop": "temu",
+  "sources": [
+    "https://partner.temu.com/documentation",
+    "https://partner-us.temu.com/documentation",
+    "https://github.com/opastorello/temu-api-docs"
+  ],
+  "researchedAt": "2026-11-23",
+  "notes": [
+    "The official reference needs a signed-in partner account; this list comes from its public daily mirror (global partner portal). Regional portals (US, EU) can differ: entries marked confirmed:false need checking in the partner account.",
+    "All Temu calls are POST to the regional router (e.g. https://openapi-b-us.temu.com/openapi/router) with the method name as \"type\"; ids are the method names."
+  ],
+  "endpoints": [
+    {
+      "id": "temu.searchrec.ad.create",
+      "group": "Ads",
+      "name": "Advertisement creation interface",
+      "summary": "Advertisement creation",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.searchrec.ad.detail.query",
+      "group": "Ads",
+      "name": "Advertising campaign details query interface",
+      "summary": "Advertising campaign details query",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.searchrec.ad.goods.create.query",
+      "group": "Ads",
+      "name": "Advertising goods can create query interface",
+      "summary": "Advertising goods can create query",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.searchrec.ad.log.query",
+      "group": "Ads",
+      "name": "Advertisement log query interface",
+      "summary": "Advertisement log query",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.searchrec.ad.modify",
+      "group": "Ads",
+      "name": "Advertisement modify interface",
+      "summary": "Advertisement modify",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.searchrec.ad.reports.goods.query",
+      "group": "Ads",
+      "name": "Advertisement goods data report (goods dimension) interface",
+      "summary": "Advertisement goods data report (goods dimension)",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.searchrec.ad.reports.mall.query",
+      "group": "Ads",
+      "name": "Advertisement overall data report (mall dimension) interface",
+      "summary": "Advertisement overall data report (mall dimension)",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.searchrec.ad.roas.pred",
+      "group": "Ads",
+      "name": "Advertising roas prediction interface",
+      "summary": "Advertising roas prediction",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.open.accesstoken.create",
+      "group": "Authorization",
+      "name": "Get Access Token",
+      "summary": "Temu's authorization callback interface allows developers to receive notifications when a user has successfully authorized their application. When after the user grants permission, Temu will redirect back to the develope",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.open.accesstoken.info.get",
+      "group": "Authorization",
+      "name": "Get Accesstoken Detail Information",
+      "summary": "This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.mall.tags.get",
+      "group": "Authorization",
+      "name": "get  store tags",
+      "summary": "This API allows sellers to retrieve the list of store tags currently assigned to their store.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.arbok.open.cert.queryNeedUploadItems",
+      "group": "Compliance",
+      "name": "bg.arbok.open.cert.queryNeedUploadItems",
+      "summary": "￼External key customers have their own development capabilities and can call APIs to query the content to be uploaded",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.arbok.open.cert.uploadProductCert",
+      "group": "Compliance",
+      "name": "bg.arbok.open.cert.uploadProductCert",
+      "summary": "External key customers have their own development capabilities and can call APIs to submit qualifications",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.arbok.open.product.cert.query",
+      "group": "Compliance",
+      "name": "query product cert",
+      "summary": "Some large stores with R&D capabilities, after using the Kaiping interface to upload qualifications in batches, need to query the reasons for the rejection of product qualifications in batches",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.arbok.open.upload.uploadFile",
+      "group": "Compliance",
+      "name": "bg.arbok.open.upload.uploadFile",
+      "summary": "Large external customers have their own development capabilities and can call APIs to upload files",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.compliance.edit",
+      "group": "Compliance",
+      "name": "edit_compliance",
+      "summary": "edit compliance info",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.compliance.metadata.get",
+      "group": "Compliance",
+      "name": "query_compliance_metadata",
+      "summary": "query compliance metadata",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.compliance.goods.list.query",
+      "group": "Compliance",
+      "name": "Product compliance list query",
+      "summary": "Product management attribute list query",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.flash.open.upload.real.image",
+      "group": "Flash (real images)",
+      "name": "Kaiping real shot picture upload",
+      "summary": "For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.flash.open.upload.recognize",
+      "group": "Flash (real images)",
+      "name": "Kaiping real-time image acquisition test result interface",
+      "summary": "For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.amount.query",
+      "group": "Order",
+      "name": "Get order amount api",
+      "summary": "Provide the supply price information corresponding to the orders for the self-developed ERP",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.combinedshipment.list.get",
+      "group": "Order",
+      "name": "Combined Shipment Orders",
+      "summary": "The bg.order.combinedshipment.list.get interface is designed for merchants to retrieve combined shipping groups including lists of parent orders that can be combined for shipping.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.customization.get",
+      "group": "Order",
+      "name": "Query order customization information",
+      "summary": "Self developed sellers and third-party ISVs obtain customized product content information in bulk through Open API",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.decryptshippinginfo.get",
+      "group": "Order",
+      "name": "Get Order Buyer Sensitive Address Information",
+      "summary": "bg.order.decryptshippinginfo.get interface is designed to retrieve sensitive shipping address information for a specific order.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.detail.v2.get",
+      "group": "Order",
+      "name": "Get Order Detail information",
+      "summary": "The bg.order.detail.v2.get interface is designed for merchants to retrieve detailed information about a specific order within their respective stores. This functionality provides merchants with access to comprehensive or",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.list.v2.get",
+      "group": "Order",
+      "name": "Batch Get Order Information",
+      "summary": "The bg.order.list.v2.get interface is designed for support batch return of corresponding order lists based on filtering criteria.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.shippinginfo.v2.get",
+      "group": "Order",
+      "name": "Get Order Buyer Address Information v2",
+      "summary": "The bg.order.shippinginfo.get.V2 interface is designed to retrieve shipping address information for a specific order. This functionality is crucial for merchants and logistics providers to ensure that orders are shipped ",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.order.unshipped.package.get",
+      "group": "Order",
+      "name": "bg order unshipped package get",
+      "summary": "The bg.order.unshipped.package.get interface is for sellers to query information about packages that have been fulfilled successfully by Temu-integrated channel.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.order.amount.v2.query",
+      "group": "Order",
+      "name": "Get order amount api",
+      "summary": "Provide the supply price information corresponding to the orders for the self-developed ERP. This API is currently available only in select marketplaces.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.order.cancel.appeal.apply",
+      "group": "Order",
+      "name": "Merchant initiates order cancellation application interface",
+      "summary": "Support merchants to initiate cancellation requests through the interface",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.order.cancel.appeal.result.get",
+      "group": "Order",
+      "name": "Merchant initiates order cancellation result query interface",
+      "summary": "Merchant queries the status of cancellation order appeal records",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.order.cancel.outofstock.apply",
+      "group": "Order",
+      "name": "Merchant order out of stock cancel apply",
+      "summary": "The user takes the initiative to initiate a stock-out situation, which will be submitted to the risk control department for review.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.order.cancel.outofstock.result.get",
+      "group": "Order",
+      "name": "Merchant order out of stock cancel result query",
+      "summary": "After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.order.verification.upload",
+      "group": "Order verification",
+      "name": "Merchants upload verification information before shipping.",
+      "summary": "The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.goods.compliancelabel.get",
+      "group": "Product",
+      "name": "bg.goods.compliancelabel.get",
+      "summary": "page query goods compliance labels",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.add",
+      "group": "Product",
+      "name": "Add New Items On Temu",
+      "summary": "Add New Items On Temu",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.category.check",
+      "group": "Product",
+      "name": "goods category precheck",
+      "summary": "precheck category misplacement",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.category.recommend",
+      "group": "Product",
+      "name": "Query Recommended Category by Product Name",
+      "summary": "query recommended category by product name",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.cats.get",
+      "group": "Product",
+      "name": "Query Categories",
+      "summary": "Get Temu Categories",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.compliance.edit",
+      "group": "Product",
+      "name": "Edit product qualification information",
+      "summary": "Edit product qualification information",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.compliance.extra.template.get",
+      "group": "Product",
+      "name": "Inquire Required Compliance Information",
+      "summary": "Inquire Required Compliance Information",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.compliance.info.fill.list.query",
+      "group": "Product",
+      "name": "Query compliance information fill in the drop-down list",
+      "summary": "local-local goods B, query compliance information fill in the drop-down list",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.compliance.property.check",
+      "group": "Product",
+      "name": "Verify Product Attribute Settings",
+      "summary": "Verify Product Attribute Settings",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.compliance.rules.get",
+      "group": "Product",
+      "name": "Query Mandatory Qualification Information",
+      "summary": "Query Mandatory Qualification Information",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.detail.query",
+      "group": "Product",
+      "name": "Query local goods detail",
+      "summary": "Query local goods detail",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.gallery.signature.get",
+      "group": "Product",
+      "name": "Get Signature",
+      "summary": "Get gallery Signature",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.image.upload",
+      "group": "Product",
+      "name": "Image material processing",
+      "summary": "Image material processing",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.list.query",
+      "group": "Product",
+      "name": "Get product list",
+      "summary": "Get product list",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.out.sn.check",
+      "group": "Product",
+      "name": "Check if contribution ID for goods is repeated",
+      "summary": "Check if contribution ID for goods is repeated",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.out.sn.set",
+      "group": "Product",
+      "name": "Set contribution ID for goods",
+      "summary": "Set contribution ID for goods",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.partial.update",
+      "group": "Product",
+      "name": "Partial Edit Product",
+      "summary": "Edit a subset of the product properties (e.g. description, brand, images, attributes).",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.priceorder.change.sku.price",
+      "group": "Product",
+      "name": "Batch change SKU base price",
+      "summary": "Support merchants within the white list to modify sku base prices in batches.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.priceorder.query",
+      "group": "Product",
+      "name": "Query price offer Info",
+      "summary": "Support merchants within the white list to query the price offer list.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.property.get",
+      "group": "Product",
+      "name": "Get temu attributes",
+      "summary": "Get Temu goods attributes",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.property.relations.level.template",
+      "group": "Product",
+      "name": "Query dependency and level in relation-property database",
+      "summary": "Obtaining the hierarchical attribute value and hierarchical id of vehicle type library data.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.property.relations",
+      "group": "Product",
+      "name": "Query relation-property data of the product",
+      "summary": "Query the relational database data associated with goods, such as vehicle library.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.property.relations.template",
+      "group": "Product",
+      "name": "Query property data in relation- property database",
+      "summary": "Query the full quantum attribute by the dependency id of the parent attribute value and the hierarchical id.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.publish.status.get",
+      "group": "Product",
+      "name": "Batch Query Product Publication Status",
+      "summary": "Batch Query Product Publication Status",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.sale.status.set",
+      "group": "Product",
+      "name": "Modify The Listing Status Of Products",
+      "summary": "Support goods/SKU dimension for listing and delisting operations",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.size.element.get",
+      "group": "Product",
+      "name": "Query Size Chart Element Information",
+      "summary": "Check size chart/image upload limits and requirements for this category.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.sku.list.price.query",
+      "group": "Product",
+      "name": "Batch query latest supplier price of SKUs.",
+      "summary": "This is an API for batch querying the latest supply prices of SKUs for local-to-local goods.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.sku.list.query",
+      "group": "Product",
+      "name": "Get sku list",
+      "summary": "Get sku list, as well as get  Variants",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.sku.out.sn.check",
+      "group": "Product",
+      "name": "Check if contribution ID for SKU is repeated",
+      "summary": "Check if contribution ID for SKU is duplicate",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.sku.out.sn.set",
+      "group": "Product",
+      "name": "Set contribution ID for SKU",
+      "summary": "Set contribution ID for SKU",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.spec.id.get",
+      "group": "Product",
+      "name": "Search And Generate Merchant-Customized Specifications",
+      "summary": "Search And Generate Merchant-Customized Specifications",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.stock.edit",
+      "group": "Product",
+      "name": "Edit product stock",
+      "summary": "Edit product stock with full-update and diff-update",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.tax.code.get",
+      "group": "Product",
+      "name": "Get ITC list",
+      "summary": "local-local goods B",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.template.get",
+      "group": "Product",
+      "name": "Query Product Attributes Template",
+      "summary": "query product attributes template",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.update",
+      "group": "Product",
+      "name": "Update Goods Draft On Temu",
+      "summary": "Edit all properties (e.g. description, brand, images, attributes) of a product.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.local.goods.videocoverimage.get",
+      "group": "Product",
+      "name": "Get video cover",
+      "summary": "Used to obtain the cover image of the video screen",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.attributes.edit",
+      "group": "Product",
+      "name": "temu.local.goods.attributes.edit",
+      "summary": "temu.local.goods.attributes.edit",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.baseprice.recommend",
+      "group": "Product",
+      "name": "recommend base price",
+      "summary": "recommend baseprice",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.brand.trademark.V2.get",
+      "group": "Product",
+      "name": "Query trademarks and properties",
+      "summary": "Query trademarks and properties",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.cats.rules.get",
+      "group": "Product",
+      "name": "Query the rules for posting products",
+      "summary": "Query the rules for posting products",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.compliance.v2.edit",
+      "group": "Product",
+      "name": "edit goods compliance interface v2 version",
+      "summary": "edit goods compliance interface v2 version",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.delete",
+      "group": "Product",
+      "name": "Product deletion",
+      "summary": "Product deletion",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.illegal.vocabulary.check",
+      "group": "Product",
+      "name": "check illeagl vocabulary",
+      "summary": "check illegal vocabulary",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.image.v2.upload",
+      "group": "Product",
+      "name": "Image material processing",
+      "summary": "Image material processing",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.list.retrieve",
+      "group": "Product",
+      "name": "Product list Retrieve",
+      "summary": "local goods list search",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.missing.attributes.get",
+      "group": "Product",
+      "name": "temu.local.goods.missing.attributes.get",
+      "summary": "temu.local.goods.missing.attributes.get",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.pre.sale.status.edit",
+      "group": "Product",
+      "name": "Temu Pre-sale Bulk Enable/Disable API",
+      "summary": "This API allows batch enabling or disabling the pre-sale status for multiple SKUs belonging to a product item.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.recommendedprice.query",
+      "group": "Product",
+      "name": "Batch query recommended price",
+      "summary": "Support merchants in querying the recommended supply prices.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.sku.net.content.unit.query",
+      "group": "Product",
+      "name": "Query the name of physical unit for Unit-count-field",
+      "summary": "Query multi-language information of sku transfer type net content unit",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.sku.stock.query",
+      "group": "Product",
+      "name": "local goods query product stock",
+      "summary": "local-local goods B",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.spec.info.get",
+      "group": "Product",
+      "name": "Query specification information",
+      "summary": "Used to query the specification value information in different languages corresponding to the platform's specification ID",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.v2.add",
+      "group": "Product",
+      "name": "Add New Items On Temu",
+      "summary": "Add New Items On Temu",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.goods.v3.add",
+      "group": "Product",
+      "name": "Add New Items On Temu",
+      "summary": "Post products to temu and automatically populate the database based on the original product data provided.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.product.attributes.get",
+      "group": "Product",
+      "name": "Query Attribute Template",
+      "summary": "Query Attribute Template",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.product.variation.get",
+      "group": "Product",
+      "name": "Query Mandatory And Optional Variations Of Products",
+      "summary": "Query Mandatory And Optional variations Of Products",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.local.sku.list.retrieve",
+      "group": "Product",
+      "name": "Get SKU list",
+      "summary": "local sku list search",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.promotion.activity.candidate.goods.query",
+      "group": "Promotions",
+      "name": "paged query for activity candidate products.",
+      "summary": "the local to local activity candidate goods",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.promotion.activity.goods.enroll",
+      "group": "Promotions",
+      "name": "product Registration the activity",
+      "summary": "enroll products in the local to local activity",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.promotion.activity.goods.operation.query",
+      "group": "Promotions",
+      "name": "querying the operation result of active goods.",
+      "summary": "query the result of operation in the local to local activity",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.promotion.activity.goods.query",
+      "group": "Promotions",
+      "name": "paged query activity products",
+      "summary": "query the local to local activity goods",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.promotion.activity.goods.update",
+      "group": "Promotions",
+      "name": "Update Activity Goods Information",
+      "summary": "update activity goods information in the local to local activity",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.promotion.activity.query",
+      "group": "Promotions",
+      "name": "paging query activity information",
+      "summary": "query the local to local activity",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.aftersales.aftersales.list.get",
+      "group": "Returns and after-sales",
+      "name": "Query sub after-sales order information",
+      "summary": "This interface is designed for use in an e-commerce platform, specifically for handling after-sales service requests related to product returns and refunds. The interface allows merchants or administrators to retrieve a ",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.aftersales.cancel.agree",
+      "group": "Returns and after-sales",
+      "name": "Agree cancel order",
+      "summary": "Agree cancel order",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.aftersales.cancel.list.get",
+      "group": "Returns and after-sales",
+      "name": "Query cancel order after-sales information",
+      "summary": "Query cancel order after-sales information",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.aftersales.parentaftersales.list.get",
+      "group": "Returns and after-sales",
+      "name": "Query the information of parent after-sales orders",
+      "summary": "This interface is designed to provide real-time updates on the current after-sales status of an order within an e-commerce platform. It allows merchants and buyers to retrieve detailed information about the progress of a",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.aftersales.parentreturnorder.get",
+      "group": "Returns and after-sales",
+      "name": "Query after-sales reverse logistics information.",
+      "summary": "This interface is designed to provide merchants or administrators within an e-commerce platform with detailed return logistics information for a set of after-sales service requests.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.aftersales.carrier.get",
+      "group": "Returns and after-sales",
+      "name": "Query return carrier information",
+      "summary": "This interface is designed to query return carrier information.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.aftersales.parentaftersales.detail.get",
+      "group": "Returns and after-sales",
+      "name": "query aftersales detail",
+      "summary": "This interface is designed to provide detailed information on after-sales orders in real time",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.aftersales.refund.issue",
+      "group": "Returns and after-sales",
+      "name": "issue refund",
+      "summary": "This interface is designed to enable merchants to efficiently process refund requests within the e-commerce platform.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.aftersales.returnaddress.get",
+      "group": "Returns and after-sales",
+      "name": "Get Return Order Buyer Address Information",
+      "summary": "temu.aftersales.returnaddress.get interface is designed to retrieve sensitive shipping address information for a specific return order.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.aftersales.returnlabel.prepare.get",
+      "group": "Returns and after-sales",
+      "name": "Query return label preparation information",
+      "summary": "This interface is designed to query return label preparation information.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.aftersales.signature.get",
+      "group": "Returns and after-sales",
+      "name": "Query signature information",
+      "summary": "This interface is designed to query signature information.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.aftersales.upload.returnlabel",
+      "group": "Returns and after-sales",
+      "name": "Upload return label",
+      "summary": "This interface is designed to upload return label.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.freight.template.list.query",
+      "group": "Shipping",
+      "name": "Query Freight Template List",
+      "summary": "query freight template list by Temu seller, use for claim that goods logistics fee rules  when listing items",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.companies.get",
+      "group": "Shipping",
+      "name": "get logistics companies",
+      "summary": "Obtain full logistics providers that support shipping at the corresponding regoin",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.create",
+      "group": "Shipping",
+      "name": "Buy shipping api",
+      "summary": "The bg.logistics.shipment.create interface is for sellers to place online logistics orders and receive package numbers, which enables to effortlessly place logistics orders with selected carriers online.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.document.get",
+      "group": "Shipping",
+      "name": "Print shipping label api",
+      "summary": "The bg.logistics.shipment.document.get interface is for sellers to obtain the express delivery waybill which has been fulfilled successfully by Temu-integrated channel so as to facilitate the printing of the express deli",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.result.get",
+      "group": "Shipping",
+      "name": "Get buy shipping detail api",
+      "summary": "The bg.logistics.shipment.result.get interface is for sellers to query the result of placing online logistics orders, with the shipping label status including in-progress{0}, successful{1}, and failed{2}.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.shippingtype.update",
+      "group": "Shipping",
+      "name": "Edit shipping information api",
+      "summary": "The bg.logistics.shipment.shippingtype.update interface is used by sellers to update logistics tracking numbers, supporting the following scenarios: non-integrated logistics updating logistics tracking numbers; Temu-inte",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.sub.confirm",
+      "group": "Shipping",
+      "name": "Add additional tracking information in batch api",
+      "summary": "The bg.logistics.shipment.sub.confirm interface should only be used in scenarios where the smallest sku needs to be shipped as split packages, and can append the sub-parcel information to the main parcel.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.update",
+      "group": "Shipping",
+      "name": "Try buy shipping again api",
+      "summary": "The bg.logistics.shipment.update interface is for sellers to create shipment logistics orders later, and to re-order online if the order fails.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.v2.confirm",
+      "group": "Shipping",
+      "name": "Confirm Order Shipment",
+      "summary": "The bg.logistic.shipment.v2.confirm interface is designed to synchronize and return order fulfillment information through this interface. Switch the order status from pending shipment to shipped.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipment.v2.get",
+      "group": "Shipping",
+      "name": "Get Order Shipment Information",
+      "summary": "The bg.logistics.shipment.v2.get interface is for sellers to verify shipped info after self-fulfillment.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shipped.package.confirm",
+      "group": "Shipping",
+      "name": "bg logistics shipped package confirm",
+      "summary": "The bg.logistics.shipped.package.confirm interface is for sellers to support batch conversion of packages that have been fulfilled successfully by Temu-integrated channel but not shipped to shipped, and will be automatic",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.shippingservices.get",
+      "group": "Shipping",
+      "name": "Get available shipping services api",
+      "summary": "The bg.logistics.shippingservices.get interface is for sellers to retrieve supported shipping carriers based on package dimensions and weight, which allows sellers to quickly determine which carriers can handle shipment ",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.logistics.warehouse.list.get",
+      "group": "Shipping",
+      "name": "Get shipping address api",
+      "summary": "Sellers can use this API to obtain the shop's warehouse information.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.logistics.label.list.get",
+      "group": "Shipping",
+      "name": "temu logistics label list get",
+      "summary": "You can use this interface to query the package information that has been fulfilled using the temu shipping form.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.logistics.shiplogisticstype.get",
+      "group": "Shipping",
+      "name": "Get all online ship logistics type",
+      "summary": "You can get all online ship logistics type information from this api. After that, they can call \"bg.logistics.shipment.create\" to buy-shipping on Temu. Once you choose to buy-shipping with ship logistics type, Temu will ",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.logistics.shipment.pickup.reservation.cancel",
+      "group": "Shipping",
+      "name": "Cancel reservationSn  api",
+      "summary": "The temu.logistics.shipment.pickup.reservation.cancel API enables sellers to cancel reservationSn.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.logistics.shipment.pickup.reservation.create",
+      "group": "Shipping",
+      "name": "Create package reservation api",
+      "summary": "The temu.logistics.shipment.pickup.reservation.create API enables sellers to schedule package pickups. When multiple packages meet the criteria for consolidated pickup appointments, they will be merged into a single rese",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.logistics.shipment.pickup.reservation.result.get",
+      "group": "Shipping",
+      "name": "Get package reservation result api",
+      "summary": "The temu.logistics.shipment.pickup.reservation.result.get API retrieves reservation details for the current package. When multiple packages correspond to one reservationSn, the response returns all packages under that re",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "temu.track.trackinginfo.get",
+      "group": "Shipping",
+      "name": "temu.track.trackinginfo.get",
+      "summary": "Logistics trajectory detail query interface",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.cooperativewarehouse.fulfill.cancel",
+      "group": "Warehouse",
+      "name": "Cooperative warehouse fulfill cancel",
+      "summary": "cooperation warehouse ERP order",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.cooperativewarehouse.fulfill.query",
+      "group": "Warehouse",
+      "name": "Cooperative warehouse fulfill query",
+      "summary": "cooperate warehouse erp order",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.cooperativewarehouse.fulfill.submit",
+      "group": "Warehouse",
+      "name": "Cooperative warehouse fulfill submit",
+      "summary": "cooperativewarehouse_fulfill",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.cooperativewarehouse.provider.list",
+      "group": "Warehouse",
+      "name": "Cooperative warehouse provider list",
+      "summary": "cooperate warehouse erp order",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.cooperativewarehouse.token.authorization",
+      "group": "Warehouse",
+      "name": "Cooperative warehouse token authorization",
+      "summary": "Cooperative warehouse token authorization",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "bg.tmc.message.update",
+      "group": "Webhook",
+      "name": "Update Shop Webhook",
+      "summary": "This API updates the shop's webhook for specific event codes.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    }
+  ]
+}
