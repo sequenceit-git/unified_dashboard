@@ -1,0 +1,3665 @@
+{
+  "shop": "tiktok_shop",
+  "sources": [
+    "https://partner.tiktokshop.com/docv2/page/tts-api-concepts-overview",
+    "https://github.com/isaackogan/TikTok-Shop-Api-SDKs"
+  ],
+  "researchedAt": "2026-11-23",
+  "notes": [
+    "Built from the OpenAPI spec generated from the Partner Center API reference (spec version 2026.11.19); each endpoint's \"docs\" is its official page.",
+    "Latest version of each endpoint only. Affiliate creator and affiliate partner APIs are listed as not for sellers.",
+    "Webhook topics (44) are events TikTok sends, not endpoints; the Event API (subscribe/list/delete) is listed."
+  ],
+  "endpoints": [
+    {
+      "id": "DELETE /affiliate_creator/202409/showcases/products",
+      "group": "Affiliate creator",
+      "name": "Remove Showcase Products",
+      "summary": "This API removes the products in the creator's showcase.",
+      "scope": "Manage Showcase Products",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/remove-showcase-products-202409"
+    },
+    {
+      "id": "DELETE /affiliate_seller/202409/open_collaborations/products/{product_id}",
+      "group": "Affiliate seller",
+      "name": "Remove Open Collaboration",
+      "summary": "Remove a product's open collaboration.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/remove-open-collaboration-202409"
+    },
+    {
+      "id": "DELETE /affiliate_seller/202409/target_collaborations/{target_collaboration_id}",
+      "group": "Affiliate seller",
+      "name": "Remove Target Collaboration",
+      "summary": "This API is used by Seller to remove affiliate target collaboration.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/remove-target-collaboration-202409"
+    },
+    {
+      "id": "DELETE /event/202309/webhooks",
+      "group": "Event",
+      "name": "Delete Webhook for an Event",
+      "summary": "Deletes the shop's webhook URL for the specified event topic.",
+      "scope": "Shop Authorized Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/delete-webhook-for-an-event-202309"
+    },
+    {
+      "id": "DELETE /product/202309/global_products",
+      "group": "Products",
+      "name": "Delete Global Products",
+      "summary": "Delete global products that you no longer need.",
+      "scope": "Global Product Delete",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/delete-global-products-202309"
+    },
+    {
+      "id": "DELETE /product/202309/products",
+      "group": "Products",
+      "name": "Delete Products",
+      "summary": "Delete non-frozen products that you no longer need.",
+      "scope": "Product Delete & Recover",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/delete-products-202309"
+    },
+    {
+      "id": "DELETE /promotion/202309/activities/{activity_id}/products",
+      "group": "Promotion",
+      "name": "Remove Promotion Activity Products",
+      "summary": "Use this API for `FIXED_PRICE`, `DIRECT_DISCOUNT`, `FLASHSALE`, `BUY_MORE_SAVE_MORE`, `BUY_X_GET_Y`, `GIFT_WITH_PURCHASE`, and `SHIPPING_DISCOUNT` activities.",
+      "scope": "Promotion Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/remove-promotion-activity-products-202309"
+    },
+    {
+      "id": "DELETE /seller/202611/materials",
+      "group": "Seller",
+      "name": "Delete Shop Material",
+      "summary": "Delete a seller material for the currently authorized shop.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/delete-shop-material-202611"
+    },
+    {
+      "id": "GET /affiliate_creator/202405/showcases/products",
+      "group": "Affiliate creator",
+      "name": "Get Showcase Products",
+      "summary": "This API lists the products in the creator's showcase, paginated by specified page size and iterated through pages by page token for up to 2000 products in the showcase.",
+      "scope": "Content Posting, Read Showcase Products",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-showcase-products-202405"
+    },
+    {
+      "id": "GET /affiliate_creator/202412/samples/labels",
+      "group": "Affiliate creator",
+      "name": "Check Creator Sample Eligibility",
+      "summary": "Check if a creator can apply for a sample of a specific product.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-creator-sample-eligibility-202412"
+    },
+    {
+      "id": "GET /affiliate_creator/202508/profiles",
+      "group": "Affiliate creator",
+      "name": "Get Creator Profile",
+      "summary": "Retrieves profile information for the creator associated with the access token.",
+      "scope": "Affiliate Information, Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-creator-profile-202508"
+    },
+    {
+      "id": "GET /affiliate_creator/202509/shop_products",
+      "group": "Affiliate creator",
+      "name": "Get Shop Products",
+      "summary": "Searches for products in the shop bound to the authenticated creator.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-products-202509"
+    },
+    {
+      "id": "GET /affiliate_creator/202509/videos/{video_id}/status",
+      "group": "Affiliate creator",
+      "name": "Get Shoppable Video Status",
+      "summary": "Use this API to get shoppable video posting results.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shoppable-video-status-202509"
+    },
+    {
+      "id": "GET /affiliate_creator/202601/videos/precheck_tasks/{task_id}",
+      "group": "Affiliate creator",
+      "name": "Get Shoppable Video Precheck Result",
+      "summary": "Retrieve the violation and, when enabled, good-quality check results for a video precheck task.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shoppable-video-precheck-result-202601"
+    },
+    {
+      "id": "GET /affiliate_creator/202606/toko_product_mappers",
+      "group": "Affiliate creator",
+      "name": "Map Tokopedia to TikTok Shop Product IDs",
+      "summary": "Returns mappings from the specified Tokopedia product IDs to the corresponding TikTok Shop product IDs.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/map-tokopedia-to-tiktok-shop-product-ids-202606"
+    },
+    {
+      "id": "GET /affiliate_partner/202405/campaigns",
+      "group": "Affiliate partner",
+      "name": "Get Affiliate Partner Campaign List",
+      "summary": "Lists campaigns for an affiliate partner, filtered by campaign category, participation state, and campaign status.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-affiliate-partner-campaign-list-202405"
+    },
+    {
+      "id": "GET /affiliate_partner/202405/campaigns/{campaign_id}",
+      "group": "Affiliate partner",
+      "name": "Get Affiliate Partner Campaign Detail",
+      "summary": "This API offers the ability to get affiliate campaign details.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-affiliate-partner-campaign-detail-202405"
+    },
+    {
+      "id": "GET /affiliate_partner/202405/campaigns/{campaign_id}/products",
+      "group": "Affiliate partner",
+      "name": "Get Affiliate Partner Campaign Product List",
+      "summary": "This API offers the ability to list products submitted by sellers in an Affiliate Partner campaign.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-affiliate-partner-campaign-product-list-202405"
+    },
+    {
+      "id": "GET /affiliate_partner/202501/campaigns/{campaign_id}/products/performance",
+      "group": "Affiliate partner",
+      "name": "Get Campaign Product Performance List",
+      "summary": "Retrieves a paginated list of product-level performance statistics for the specified partner campaign.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-campaign-product-performance-list-202501"
+    },
+    {
+      "id": "GET /affiliate_partner/202508/campaigns/{campaign_id}/products/{product_id}/creator/{creator_temp_id}/content/statistics",
+      "group": "Affiliate partner",
+      "name": "Get Affiliate Campaign Creator Product Content Statistics",
+      "summary": "Retrieves performance statistics for a creator's video or live-room content associated with an affiliate campaign product.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-affiliate-campaign-creator-product-content-statistics-202508"
+    },
+    {
+      "id": "GET /affiliate_partner/202508/campaigns/{campaign_id}/products/{product_id}/creator/{creator_temp_id}/content/statistics/sample/status",
+      "group": "Affiliate partner",
+      "name": "Get Affiliate Campaign Creator Product Sample Status",
+      "summary": "Retrieves delivery and tracking details for a creator's product sample in an affiliate campaign.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-affiliate-campaign-creator-product-sample-status-202508"
+    },
+    {
+      "id": "GET /affiliate_partner/202508/campaigns/{campaign_id}/products/{product_id}/performance",
+      "group": "Affiliate partner",
+      "name": "Get Creator Performance for Campaign Product",
+      "summary": "Returns a paginated list of creators associated with a product in an affiliate partner campaign, together with available collaboration and performance details such as commission, free-sample status, follower count, and v",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-creator-performance-for-campaign-product-202508"
+    },
+    {
+      "id": "GET /affiliate_seller/202409/open_collaboration_settings",
+      "group": "Affiliate seller",
+      "name": "Get Open Collaboration Settings",
+      "summary": "Get the open collaboration settings, including auto add settings.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-open-collaboration-settings-202409"
+    },
+    {
+      "id": "GET /affiliate_seller/202410/open_collaborations/sample_rules",
+      "group": "Affiliate seller",
+      "name": "Get Open Collaboration Sample Rules",
+      "summary": "Use this API to get the status and the details of the sample rules for products under an open collaboration.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-open-collaboration-sample-rules-202410"
+    },
+    {
+      "id": "GET /affiliate_seller/202412/conversation/{conversation_id}/messages",
+      "group": "Affiliate seller",
+      "name": "Get Creator Conversation Messages",
+      "summary": "Retrieves a page of messages from a conversation.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-creator-conversation-messages-202412"
+    },
+    {
+      "id": "GET /affiliate_seller/202412/conversations",
+      "group": "Affiliate seller",
+      "name": "Get Conversation List",
+      "summary": "Retrieve the seller's IM conversations.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-conversation-list-202412"
+    },
+    {
+      "id": "GET /affiliate_seller/202412/conversations/messages/list/newest",
+      "group": "Affiliate seller",
+      "name": "Get Latest Unread Messages",
+      "summary": "Get the unread messages from the last minute.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-latest-unread-messages-202412"
+    },
+    {
+      "id": "GET /affiliate_seller/202508/open_collaborations/creator_content_details",
+      "group": "Affiliate seller",
+      "name": "Get Open Collaboration Creator Content Details",
+      "summary": "This API allows a seller to retrieve creator profiles, content counts, and promotion details for a specified product in open collaboration.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-open-collaboration-creator-content-details-202508"
+    },
+    {
+      "id": "GET /affiliate_seller/202508/target_collaborations/{target_collaboration_id}",
+      "group": "Affiliate seller",
+      "name": "Query Target Collaboration Detail",
+      "summary": "This API is used by Sellers to get target collaboration information.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/query-target-collaboration-detail-202508"
+    },
+    {
+      "id": "GET /affiliate_seller/202512/sample_applications/deeplink",
+      "group": "Affiliate seller",
+      "name": "Seller Get Sample Request Deeplink",
+      "summary": "Use this API to get a TikTok deeplink, use this deeplink to launch the TikTok app and land the user on the sample request page.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/seller-get-sample-request-deeplink-202512"
+    },
+    {
+      "id": "GET /affiliate_seller/202603/compass/offline_tasks",
+      "group": "Affiliate seller",
+      "name": "Get Compass Task List",
+      "summary": "Retrieve the list of export tasks created via Open API for the authorized seller (last 7 days).",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-compass-task-list-202603"
+    },
+    {
+      "id": "GET /affiliate_seller/202603/compass/offline_tasks/{task_id}/file",
+      "group": "Affiliate seller",
+      "name": "Download Compass Task File",
+      "summary": "Download the result file of a completed export task by taskId.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/download-compass-task-file-202603"
+    },
+    {
+      "id": "GET /affiliate_seller/202607/creator_outreach/quota",
+      "group": "Affiliate seller",
+      "name": "Get Weekly Creator Outreach Quota",
+      "summary": "Query the weekly outreach invitation quota for a shop.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-weekly-creator-outreach-quota-202607"
+    },
+    {
+      "id": "GET /affiliate_seller/202608/conversations/group_counts",
+      "group": "Affiliate seller",
+      "name": "Get Inbox Category Counts",
+      "summary": "Query the number of sessions grouped by status such as read, unread, starred and archived.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-inbox-category-counts-202608"
+    },
+    {
+      "id": "GET /affiliate_seller/202608/marketplace_creators/{creator_user_id}",
+      "group": "Affiliate seller",
+      "name": "Get Marketplace Creator Performance",
+      "summary": "Returns marketplace information and performance metrics for the specified creator.",
+      "scope": "Read Creator Marketplace",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-marketplace-creator-performance-202608"
+    },
+    {
+      "id": "GET /affiliate_seller/202611/partner_campaigns",
+      "group": "Affiliate seller",
+      "name": "Search Seller Partner Campaigns",
+      "summary": "Lists partner campaigns visible to the authorized shop.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-seller-partner-campaigns-202611"
+    },
+    {
+      "id": "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}",
+      "group": "Affiliate seller",
+      "name": "Get Seller Partner Campaign Detail",
+      "summary": "Returns the rules, registration period, campaign period, available statistics and applicable shop or agency summaries for a campaign visible to the authorized shop.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-seller-partner-campaign-detail-202611"
+    },
+    {
+      "id": "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/candidate_products",
+      "group": "Affiliate seller",
+      "name": "Get Seller Partner Campaign Candidate Products",
+      "summary": "Lists the authorized shop's live products as candidates for a partner campaign.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-seller-partner-campaign-candidate-products-202611"
+    },
+    {
+      "id": "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/products",
+      "group": "Affiliate seller",
+      "name": "Get Seller Partner Campaign Registered Products",
+      "summary": "Lists the authorized shop's product registrations for one partner campaign.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-seller-partner-campaign-registered-products-202611"
+    },
+    {
+      "id": "GET /analytics/202403/videos/performances",
+      "group": "Analytics",
+      "name": "Get Video Performances",
+      "summary": "Use this US-creator-only API to retrieve TikTok e-commerce video metrics, including anchor_display_rate, click_through_rate, orders, items_sold, and GMV, for the requested videos.",
+      "scope": "Content Posting, Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-video-performances-202403"
+    },
+    {
+      "id": "GET /analytics/202502/live_rooms/{live_room_id}/core_stats",
+      "group": "Analytics",
+      "name": "Get Live Room Core Stats",
+      "summary": "Returns core stats for the specified live room, including GMV, order counts, buyer counts, product click counts, and view counts.",
+      "scope": "Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-live-room-core-stats-202502"
+    },
+    {
+      "id": "GET /analytics/202502/live_rooms/{live_room_id}/gmv_trend_performances",
+      "group": "Analytics",
+      "name": "Get Live Room GMV and Order Trends",
+      "summary": "Returns GMV trend performance points for the specified live room, including GMV and created-order trend values.",
+      "scope": "Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-live-room-gmv-and-order-trends-202502"
+    },
+    {
+      "id": "GET /analytics/202502/live_rooms/{live_room_id}/interactive_trend_performances",
+      "group": "Analytics",
+      "name": "Get Live Room Interactive Trends",
+      "summary": "Returns interactive trend performance points for the specified live room, including watch, comment, and share counts.",
+      "scope": "Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-live-room-interactive-trends-202502"
+    },
+    {
+      "id": "GET /analytics/202502/live_rooms/{live_room_id}/product_stats",
+      "group": "Analytics",
+      "name": "Get Live Room Product Stats",
+      "summary": "Returns product performance statistics for the specified live room, including product IDs, names, GMV, unit price, inventory counts, and click counts.",
+      "scope": "Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-live-room-product-stats-202502"
+    },
+    {
+      "id": "GET /analytics/202502/live_rooms/{live_room_id}/traffic_performances",
+      "group": "Analytics",
+      "name": "Get Live Room Traffic Performance",
+      "summary": "Returns traffic performance for a live room owned by the authenticated creator, including watch counts grouped by primary traffic source and sub-source for distribution analysis.",
+      "scope": "Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-live-room-traffic-performance-202502"
+    },
+    {
+      "id": "GET /analytics/202502/live_rooms/{live_room_id}/user_portraits",
+      "group": "Analytics",
+      "name": "Get Live Room User Portraits",
+      "summary": "Returns user portrait indicators for the specified live room, including age, gender, fan, advertisement, and region distributions.",
+      "scope": "Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-live-room-user-portraits-202502"
+    },
+    {
+      "id": "GET /analytics/202502/live_rooms/{live_room_id}/view_trend_performances",
+      "group": "Analytics",
+      "name": "Get Live Room View Trends",
+      "summary": "Returns viewer count trend data points for the specified live room, grouped by online, entering, and leaving viewers.",
+      "scope": "Live Data",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-live-room-view-trends-202502"
+    },
+    {
+      "id": "GET /analytics/202509/shop_products/{product_id}/performance",
+      "group": "Analytics",
+      "name": "Get Shop Product Performance Detail",
+      "summary": "Returns detailed performance metrics for the specified product.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-product-performance-detail-202509"
+    },
+    {
+      "id": "GET /analytics/202509/shop_skus/{sku_id}/performance",
+      "group": "Analytics",
+      "name": "Get Shop SKU Performance Detail",
+      "summary": "Returns performance metrics for the specified SKU.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-sku-performance-detail-202509"
+    },
+    {
+      "id": "GET /analytics/202509/shop_skus/performance",
+      "group": "Analytics",
+      "name": "Get Shop SKU Performance List",
+      "summary": "Returns a paginated list of performance metrics for the shop's SKUs over the requested date range.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-sku-performance-list-202509"
+    },
+    {
+      "id": "GET /analytics/202509/shop_videos/{video_id}/performance",
+      "group": "Analytics",
+      "name": "Get Shop Video Performance Details",
+      "summary": "Returns detailed performance metrics for a (requested) video.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-video-performance-details-202509"
+    },
+    {
+      "id": "GET /analytics/202509/shop_videos/{video_id}/products/performance",
+      "group": "Analytics",
+      "name": "Get Shop Video Product Performance List",
+      "summary": "Returns performance metrics for a list of products promoted in a given video.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-video-product-performance-list-202509"
+    },
+    {
+      "id": "GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes",
+      "group": "Analytics",
+      "name": "Get Shop LIVE Minute Performance",
+      "summary": "Returns minute-level performance for a LIVE session after the session is finished.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-live-minute-performance-202510"
+    },
+    {
+      "id": "GET /analytics/202510/shop/performance/{date}/performance_per_hour",
+      "group": "Analytics",
+      "name": "Get Shop Performance Per Hour",
+      "summary": "Returns hourly shop performance details for the requested date.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-performance-per-hour-202510"
+    },
+    {
+      "id": "GET /analytics/202511/creators/bestselling",
+      "group": "Analytics",
+      "name": "Get Bestselling Creators",
+      "summary": "Returns up to 100 creators, filtered by `author_type`, ranked by GMV in the selected `currency` for the reporting period ending on `date` and defined by `time_slot`.",
+      "scope": "Bestsellers",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-bestselling-creators-202511"
+    },
+    {
+      "id": "GET /analytics/202511/lives/bestselling",
+      "group": "Analytics",
+      "name": "Get Bestselling LIVE Sessions",
+      "summary": "Get up to 100 LIVE sessions ranked by GMV for the period defined by `date` and `time_slot`.",
+      "scope": "Bestsellers",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-bestselling-live-sessions-202511"
+    },
+    {
+      "id": "GET /analytics/202511/products/bestselling",
+      "group": "Analytics",
+      "name": "Get Bestselling Products",
+      "summary": "Returns up to 100 products ranked by GMV for the target date range.",
+      "scope": "Bestsellers",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-bestselling-products-202511"
+    },
+    {
+      "id": "GET /analytics/202511/videos/bestselling",
+      "group": "Analytics",
+      "name": "Get Bestselling Videos",
+      "summary": "Returns up to 100 videos ranked by gross merchandise value (GMV) in descending order for the date range selected by `date` and `time_slot`.",
+      "scope": "Bestsellers",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-bestselling-videos-202511"
+    },
+    {
+      "id": "GET /analytics/202512/shop/{live_id}/products_performance",
+      "group": "Analytics",
+      "name": "Get Shop LIVE Products Performance List",
+      "summary": "Returns sale performance for each product in a shop-related LIVE session from the official account or marketing accounts.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-live-products-performance-list-202512"
+    },
+    {
+      "id": "GET /analytics/202605/shop_products/performance",
+      "group": "Analytics",
+      "name": "Get Shop Product Performance List",
+      "summary": "Returns a paginated list of shop products and their total, seller-channel, affiliate-channel, and Shop Tab performance metrics for the specified date range.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-product-performance-list-202605"
+    },
+    {
+      "id": "GET /analytics/202605/shop_videos/performance",
+      "group": "Analytics",
+      "name": "Get Shop Video Performance List",
+      "summary": "Returns a list of videos and associated metrics for a shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-video-performance-list-202605"
+    },
+    {
+      "id": "GET /analytics/202606/shop_performances/metrics",
+      "group": "Analytics",
+      "name": "Get SPS Metrics",
+      "summary": "Returns SPS metric details and benchmark thresholds for the authorized shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-sps-metrics-202606"
+    },
+    {
+      "id": "GET /analytics/202606/shop_performances/metrics/{metric_code}/diagnosis",
+      "group": "Analytics",
+      "name": "Get SPS Metric Diagnosis",
+      "summary": "Returns diagnosis details for a single SPS metric, including benchmark thresholds, trends, calculation details, and distribution details.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-sps-metric-diagnosis-202606"
+    },
+    {
+      "id": "GET /analytics/202606/shop_performances/metrics/{metric_code}/problem_details",
+      "group": "Analytics",
+      "name": "Get SPS Metric Problem Details",
+      "summary": "Returns problem order or chat details for a selected SPS metric.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-sps-metric-problem-details-202606"
+    },
+    {
+      "id": "GET /analytics/202606/shop_performances/metrics/{metric_code}/top_items",
+      "group": "Analytics",
+      "name": "Get SPS Metric Top Items",
+      "summary": "Returns the top products for NRR, NBFR, or AHT, or the top logistics providers for OTDR.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-sps-metric-top-items-202606"
+    },
+    {
+      "id": "GET /analytics/202609/shop_lives/overview_performance",
+      "group": "Analytics",
+      "name": "Get Shop LIVE Performance Overview",
+      "summary": "Returns overall performance metrics for all LIVE stream sessions under a certain shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-live-performance-overview-202609"
+    },
+    {
+      "id": "GET /analytics/202609/shop_lives/performance",
+      "group": "Analytics",
+      "name": "Get Shop LIVE Performance List",
+      "summary": "Returns a list of LIVE stream sessions and associated metrics for a shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-live-performance-list-202609"
+    },
+    {
+      "id": "GET /analytics/202609/shop_videos/batch_performance",
+      "group": "Analytics",
+      "name": "Get Shop Videos Performance Details",
+      "summary": "Returns detailed performance metrics for the requested videos.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-videos-performance-details-202609"
+    },
+    {
+      "id": "GET /analytics/202609/shop_videos/overview_performance",
+      "group": "Analytics",
+      "name": "Get Shop Video Performance Overview",
+      "summary": "Returns overall performance metrics for all videos under a shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-video-performance-overview-202609"
+    },
+    {
+      "id": "GET /analytics/202609/shop/performance",
+      "group": "Analytics",
+      "name": "Get Shop Performance",
+      "summary": "Returns performance metrics at shop/seller level.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-performance-202609"
+    },
+    {
+      "id": "GET /analytics/202610/acc/brands",
+      "group": "Analytics",
+      "name": "Get ACC Brands",
+      "summary": "Get authorized ACC brands and their associated industries for the current shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-acc-brands-202610"
+    },
+    {
+      "id": "GET /analytics/202610/acc/overview",
+      "group": "Analytics",
+      "name": "Get ACC Audience Overview",
+      "summary": "Get ACC audience key metrics, benchmarks, and trends.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-acc-audience-overview-202610"
+    },
+    {
+      "id": "GET /analytics/202610/acc/penetration",
+      "group": "Analytics",
+      "name": "Get ACC Audience Penetration",
+      "summary": "Retrieve viewed, clicked, and ordered audience counts and penetration ratios for a brand over the selected reporting window.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-acc-audience-penetration-202610"
+    },
+    {
+      "id": "GET /analytics/202610/acc/preferences",
+      "group": "Analytics",
+      "name": "Get ACC Audience Preference List",
+      "summary": "Get a paginated ranking of products, live streams, videos, or photo posts preferred by the selected ACC audience for a brand.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-acc-audience-preference-list-202610"
+    },
+    {
+      "id": "GET /analytics/202610/acc/preferences/live/factors",
+      "group": "Analytics",
+      "name": "Get ACC LIVE Sales Factors",
+      "summary": "Get a paginated ranking of LIVE types (sales factors) for a selected ACC audience, scope, and reporting window.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-acc-live-sales-factors-202610"
+    },
+    {
+      "id": "GET /analytics/202610/acc/preferences/product/categories",
+      "group": "Analytics",
+      "name": "Get ACC Top Sales Categories",
+      "summary": "Get ACC product category sales rankings for the selected audience, brand and date window.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-acc-top-sales-categories-202610"
+    },
+    {
+      "id": "GET /analytics/202610/acc/preferences/summary",
+      "group": "Analytics",
+      "name": "Get ACC Audience Preference Summary",
+      "summary": "Retrieve ACC audience preference summaries for products, livestreams, videos, and photo posts for the selected brand, audience segment, scope, and reporting window.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-acc-audience-preference-summary-202610"
+    },
+    {
+      "id": "GET /analytics/202610/off_site/details",
+      "group": "Analytics",
+      "name": "Get Off Site Performance Details",
+      "summary": "Retrieve paginated weekly off-site performance details for videos, LIVE sessions, or products, including GMV and off-site effect metrics.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-off-site-performance-details-202610"
+    },
+    {
+      "id": "GET /analytics/202610/off_site/insights",
+      "group": "Analytics",
+      "name": "Get Off Site Audience Insights",
+      "summary": "Compare weekly on-site and off-site attributed customer audience distributions.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-off-site-audience-insights-202610"
+    },
+    {
+      "id": "GET /analytics/202610/off_site/overview",
+      "group": "Analytics",
+      "name": "Get Off Site Performance Overview",
+      "summary": "Retrieve weekly off-site performance metrics and trends.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-off-site-performance-overview-202610"
+    },
+    {
+      "id": "GET /analytics/202610/off_site/pixels",
+      "group": "Analytics",
+      "name": "Get Shop Off Site Pixels",
+      "summary": "Retrieve the Pixel IDs available to the authorized shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-off-site-pixels-202610"
+    },
+    {
+      "id": "GET /analytics/202610/shop_performances/benefits",
+      "group": "Analytics",
+      "name": "Get SPS Benefits",
+      "summary": "Returns the current SPS benefits for the authorized shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-sps-benefits-202610"
+    },
+    {
+      "id": "GET /analytics/202610/shop_performances/overview",
+      "group": "Analytics",
+      "name": "Get SPS Overview",
+      "summary": "Returns the SPS overview for the authorized shop, including the score, tier and dimensions.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-sps-overview-202610"
+    },
+    {
+      "id": "GET /analytics/202611/ai_report/campaigns",
+      "group": "Analytics",
+      "name": "Get AI Report Campaign Periods",
+      "summary": "Retrieve the authorized shop's campaigns for the current year that have started by today.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-ai-report-campaign-periods-202611"
+    },
+    {
+      "id": "GET /analytics/202611/ai_report/catalog",
+      "group": "Analytics",
+      "name": "Get AI Report Catalog",
+      "summary": "Retrieve the complete configured catalog of metrics, dimensions, time buckets and row details for the authorized shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-ai-report-catalog-202611"
+    },
+    {
+      "id": "GET /analytics/202611/ai_report/rules",
+      "group": "Analytics",
+      "name": "Get AI Report Query Rules",
+      "summary": "Retrieve the complete finite configuration snapshot of main query constraints.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-ai-report-query-rules-202611"
+    },
+    {
+      "id": "GET /authorization/202309/shops",
+      "group": "Authorization",
+      "name": "Get Authorized Shops",
+      "summary": "Retrieves the list of shops that a seller has authorized for an app.",
+      "scope": "FS Order&Fulfillment Management, Shop Authorized Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-authorized-shops-202309"
+    },
+    {
+      "id": "GET /authorization/202405/category_assets",
+      "group": "Authorization",
+      "name": "Get Authorized Category Assets",
+      "summary": "Retrieves the list of business category assets authorized by a partner for an app.",
+      "scope": "Partner Authorized Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-authorized-category-assets-202405"
+    },
+    {
+      "id": "GET /customer_engagement/202412/message_templates",
+      "group": "Customer engagement",
+      "name": "Get Message Templates",
+      "summary": "Get a library of customer engagement message templates predefined by TikTok Shop, which you can use directly in your customer engagement communications.",
+      "scope": "Customer Engagement - Read",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-message-templates-202412"
+    },
+    {
+      "id": "GET /customer_engagement/202502/permissions",
+      "group": "Customer engagement",
+      "name": "Get Engagement Feature Permissions",
+      "summary": "Retrieve the shop's authorization status for customer engagement features.",
+      "scope": "Customer Engagement - Read",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-engagement-feature-permissions-202502"
+    },
+    {
+      "id": "GET /customer_service/202309/agents/settings",
+      "group": "Customer service",
+      "name": "Get Agent Settings",
+      "summary": "This API is used to get agent settings.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-agent-settings-202309"
+    },
+    {
+      "id": "GET /customer_service/202309/conversations",
+      "group": "Customer service",
+      "name": "Get Conversations",
+      "summary": "Use this API to retrieve a shop's conversations with buyers.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-conversations-202309"
+    },
+    {
+      "id": "GET /customer_service/202309/conversations/{conversation_id}/messages",
+      "group": "Customer service",
+      "name": "Get Conversation Messages",
+      "summary": "Use this API to retrieve a page of messages in a conversation between a buyer and a shop.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-conversation-messages-202309"
+    },
+    {
+      "id": "GET /customer_service/202407/performance",
+      "group": "Customer service",
+      "name": "Get Customer Service Performance",
+      "summary": "Retrieves customer service performance metrics for a shop over a selected time period.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-customer-service-performance-202407"
+    },
+    {
+      "id": "GET /customer_service/202601/conversations/{conversation_id}",
+      "group": "Customer service",
+      "name": "Get Conversation",
+      "summary": "Use this API to retrieve information about a conversation by ID.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-conversation-202601"
+    },
+    {
+      "id": "GET /event/202309/webhooks",
+      "group": "Event",
+      "name": "Get Shop Webhooks",
+      "summary": "Retrieves the enabled webhooks configured for the shop and their corresponding webhook URLs.",
+      "scope": "Shop Authorized Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-webhooks-202309"
+    },
+    {
+      "id": "GET /fbt/202408/warehouses",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Get FBT Warehouse List",
+      "summary": "This API is used to retrieve all Fulfilled by TikTok warehouse information including the warehouse name, warehouse address information, etc.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-fbt-warehouse-list-202408"
+    },
+    {
+      "id": "GET /fbt/202409/merchants/onboarded_regions",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Get FBT Merchant Onboarded Regions",
+      "summary": "This API verifies whether a seller is registered as a Fulfillment by TikTok (FBT) merchant.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-fbt-merchant-onboarded-regions-202409"
+    },
+    {
+      "id": "GET /fbt/202601/mcf_outbound_orders",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Get FBT MCF Order Status",
+      "summary": "Use this API to retrieve an MCF order and the current status and fulfillment details of its consign orders.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-fbt-mcf-order-status-202601"
+    },
+    {
+      "id": "GET /fbt/202601/merchants/mcf_status",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Get FBT Merchant MCF Status",
+      "summary": "Checks whether a seller is onboarded to Fulfillment by TikTok (FBT) and enrolled in Multi-Channel Fulfillment (MCF).",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-fbt-merchant-mcf-status-202601"
+    },
+    {
+      "id": "GET /fbt/202602/inbound_orders",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Get FBT Inbound Order Details",
+      "summary": "Retrieves details for the specified FBT inbound orders, including planned and actual receiving information and status history.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-fbt-inbound-order-details-202602"
+    },
+    {
+      "id": "GET /finance/202309/statements",
+      "group": "Finance",
+      "name": "Get Statements",
+      "summary": "Retrieves the statements generated for a shop and the key statement information based on a specified date range or their payment status.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-statements-202309"
+    },
+    {
+      "id": "GET /finance/202309/withdrawals",
+      "group": "Finance",
+      "name": "Get Seller Financial Transactions",
+      "summary": "Retrieves seller financial transaction records within an optional creation-time range, filtered by the required transaction types.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-seller-financial-transactions-202309"
+    },
+    {
+      "id": "GET /finance/202501/orders/{order_id}/statement_transactions",
+      "group": "Finance",
+      "name": "Get Transactions by Order",
+      "summary": "Retrieves the SKU-level details of an order transaction.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-transactions-by-order-202501"
+    },
+    {
+      "id": "GET /finance/202501/statements/{statement_id}/statement_transactions",
+      "group": "Finance",
+      "name": "Get Transactions by Statement",
+      "summary": "Retrieves the details of a statement, including the transactions, which can be a standard order transaction, an adjustment transaction, or a reserve-related transaction.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-transactions-by-statement-202501"
+    },
+    {
+      "id": "GET /finance/202507/orders/unsettled",
+      "group": "Finance",
+      "name": "Get Unsettled Transactions",
+      "summary": "This API allows the partner to retrieve a list of unsettled transactions (incl.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-unsettled-transactions-202507"
+    },
+    {
+      "id": "GET /finance/202605/payments",
+      "group": "Finance",
+      "name": "Get Payments",
+      "summary": "**This API is currently unavailable to SEA markets.** Retrieves records of automated payments for a shop based on a specified date range.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-payments-202605"
+    },
+    {
+      "id": "GET /finance/202609/account_balances",
+      "group": "Finance",
+      "name": "Get TradeIn Supplier Account Balance",
+      "summary": "Retrieves the available account balance for the currently authorized TradeIn supplier.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-tradein-supplier-account-balance-202609"
+    },
+    {
+      "id": "GET /finance/202609/account_transactions",
+      "group": "Finance",
+      "name": "Get TradeIn Account Transactions",
+      "summary": "Retrieves account transaction records for the currently authorized TradeIn supplier.",
+      "scope": "Finance Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-tradein-account-transactions-202609"
+    },
+    {
+      "id": "GET /fulfillment/202309/combinable_packages/search",
+      "group": "Fulfillment",
+      "name": "Search Combinable Packages",
+      "summary": "Use this API to query orders eligible for combined shipping.",
+      "scope": "Package Split And Combine",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-combinable-packages-202309"
+    },
+    {
+      "id": "GET /fulfillment/202309/orders/{order_id}/tracking",
+      "group": "Fulfillment",
+      "name": "Get Order Tracking",
+      "summary": "This API can use the order number to obtain the corresponding logistics tracking information.",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-order-tracking-202309"
+    },
+    {
+      "id": "GET /fulfillment/202309/orders/split_attributes",
+      "group": "Fulfillment",
+      "name": "Get Order Split Attributes",
+      "summary": "Checks whether one or more TikTok Shop orders can be split into multiple packages.",
+      "scope": "FS Order&Fulfillment Management, Package Split And Combine",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-order-split-attributes-202309"
+    },
+    {
+      "id": "GET /fulfillment/202309/packages/{package_id}",
+      "group": "Fulfillment",
+      "name": "Get Package Detail",
+      "summary": "Returns information about a package, including handover time slot, tracking number, and shipping provider information.",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-package-detail-202309"
+    },
+    {
+      "id": "GET /fulfillment/202309/packages/{package_id}/handover_time_slots",
+      "group": "Fulfillment",
+      "name": "Get Package Handover Time Slots",
+      "summary": "Use this API to retrieve a specified package's door-to-door pickup time slots and handover availability for pickup, drop-off, and, in the UK, van collection.",
+      "scope": "Package Split And Combine",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-package-handover-time-slots-202309"
+    },
+    {
+      "id": "GET /fulfillment/202309/packages/{package_id}/shipping_documents",
+      "group": "Fulfillment",
+      "name": "Get Package Shipping Document",
+      "summary": "For packages shipped with TikTok Shipping, use this API to retrieve the URL of the shipping document selected by `document_type` for the package specified by `package_id`.",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-package-shipping-document-202309"
+    },
+    {
+      "id": "GET /fulfillment/202508/tts_tracking_validation",
+      "group": "Fulfillment",
+      "name": "Check TikTok Shipping and Collection by TikTok Coverage",
+      "summary": "Enables a seller or warehouse to validate whether a tracking number is covered by TikTok Shipping (TTS) or Collection by TikTok (CBT).",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-tiktok-shipping-and-collection-by-tiktok-coverage-202508"
+    },
+    {
+      "id": "GET /logistics/202309/delivery_options/{delivery_option_id}/shipping_providers",
+      "group": "Logistics",
+      "name": "Get Shipping Providers",
+      "summary": "Returns the shipping providers available for the specified delivery option.",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic, Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shipping-providers-202309"
+    },
+    {
+      "id": "GET /logistics/202309/global_warehouses",
+      "group": "Logistics",
+      "name": "Get Global Seller Warehouses",
+      "summary": "This API retrieves global warehouses associated with the seller, including each warehouse's global warehouse ID, name, and ownership.",
+      "scope": "Global Shop Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-seller-warehouses-202309"
+    },
+    {
+      "id": "GET /logistics/202309/warehouses",
+      "group": "Logistics",
+      "name": "Get Warehouse List",
+      "summary": "Retrieves warehouses associated with the seller, including names, effective statuses, types, default designations, and available address information.",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-warehouse-list-202309"
+    },
+    {
+      "id": "GET /logistics/202309/warehouses/{warehouse_id}/delivery_options",
+      "group": "Logistics",
+      "name": "Get Warehouse Delivery Options",
+      "summary": "This API is used to obtain a list of delivery options available through the seller's designated warehouse.",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-warehouse-delivery-options-202309"
+    },
+    {
+      "id": "GET /logistics/202510/seller_templates",
+      "group": "Logistics",
+      "name": "Get Shipping Template Availability",
+      "summary": "get seller's available shipping template and return the reason why the template is not available，this api is now only available for JP and UK market",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shipping-template-availability-202510"
+    },
+    {
+      "id": "GET /logistics/202604/orders/{order_id}/tracking",
+      "group": "Logistics",
+      "name": "Get Logistics Tracking",
+      "summary": "Use this API to retrieve detailed logistics tracking information for an order.",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-logistics-tracking-202604"
+    },
+    {
+      "id": "GET /logistics/202606/seller_template/template_exist",
+      "group": "Logistics",
+      "name": "Check Shipping Template Existence",
+      "summary": "Checks whether the authenticated shop has a shipping template for the specified business warehouse.",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-shipping-template-existence-202606"
+    },
+    {
+      "id": "GET /order/202406/orders/{order_id}/external_orders",
+      "group": "Orders",
+      "name": "Get External Order References",
+      "summary": "If you have used the `Add External Order References` API, use this API to retrieve the external order references associated with a TikTok Shop order for the specified external order management system (OMS) platform.",
+      "scope": "Read External Order References",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-external-order-references-202406"
+    },
+    {
+      "id": "GET /order/202407/orders/{order_id}/price_detail",
+      "group": "Orders",
+      "name": "Get Order Price Details",
+      "summary": "Get the detailed pricing calculation information of an order or a line item, including vouchers, tax, etc.",
+      "scope": "Order Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-order-price-details-202407"
+    },
+    {
+      "id": "GET /order/202507/orders",
+      "group": "Orders",
+      "name": "Get Order Detail",
+      "summary": "Get detailed information for up to 50 TikTok Shop orders specified by their IDs, including order status, payment details, price and tax information, package information, and shipping address information when available.",
+      "scope": "FS Order&Fulfillment Management, Order Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-order-detail-202507"
+    },
+    {
+      "id": "GET /product/202309/brands",
+      "group": "Products",
+      "name": "Get Brands",
+      "summary": "Retrieve brands for your shop, including the built-in brands and any custom brands created using the [Create Custom Brands API](650a0926f1fd3102b91bbfb0).",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-brands-202309"
+    },
+    {
+      "id": "GET /product/202309/categories",
+      "group": "Products",
+      "name": "Get Categories",
+      "summary": "Retrieve the list of product categories available for your shop.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-categories-202309"
+    },
+    {
+      "id": "GET /product/202309/categories/{category_id}/attributes",
+      "group": "Products",
+      "name": "Get Category Attributes",
+      "summary": "Retrieve the standard built-in product and sales attributes for listing a product in a particular category based on your shop's location.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-category-attributes-202309"
+    },
+    {
+      "id": "GET /product/202309/categories/{category_id}/global_attributes",
+      "group": "Products",
+      "name": "Get Global Attributes",
+      "summary": "Retrieve the standard built-in product and sales attributes for listing a global product in a particular category across the seller's markets.",
+      "scope": "Global Category Infomation",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-attributes-202309"
+    },
+    {
+      "id": "GET /product/202309/categories/{category_id}/global_rules",
+      "group": "Products",
+      "name": "Get Global Category Rules",
+      "summary": "Retrieve the additional requirements (beyond mandatory product attributes) for listing a global product in a particular category, regardless of market variations.",
+      "scope": "Global Category Infomation",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-category-rules-202309"
+    },
+    {
+      "id": "GET /product/202309/categories/{category_id}/rules",
+      "group": "Products",
+      "name": "Get Category Rules",
+      "summary": "Retrieve the additional requirements (beyond mandatory product attributes) for listing a product in a particular category based on your shop's location.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-category-rules-202309"
+    },
+    {
+      "id": "GET /product/202309/global_categories",
+      "group": "Products",
+      "name": "Get Global Categories",
+      "summary": "Retrieve all available product categories, regardless of market variations.",
+      "scope": "Global Category Infomation",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-categories-202309"
+    },
+    {
+      "id": "GET /product/202309/global_products/{global_product_id}",
+      "group": "Products",
+      "name": "Get Global Product",
+      "summary": "Retrieve all properties of a global product that is in the \"DRAFT\", \"UNPUBLISHED\", or \"PUBLISHED\" status, and the corresponding local product IDs in the published markets.",
+      "scope": "Global Product Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-product-202309"
+    },
+    {
+      "id": "GET /product/202309/products/{product_id}",
+      "group": "Products",
+      "name": "Get Product",
+      "summary": "Retrieve product details by product ID, including products in the `FREEZE` or `DELETED` status.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-product-202309"
+    },
+    {
+      "id": "GET /product/202312/prerequisites",
+      "group": "Products",
+      "name": "Check Listing Prerequisites",
+      "summary": "Check if a TikTok shop is ready to list products.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-listing-prerequisites-202312"
+    },
+    {
+      "id": "GET /product/202405/products/diagnoses",
+      "group": "Products",
+      "name": "Get Product Diagnoses",
+      "summary": "Diagnose multiple existing live (status: `ACTIVATE`) products to obtain information that helps you to improve the product content, enhancing product visibility and customer trust.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-product-diagnoses-202405"
+    },
+    {
+      "id": "GET /product/202405/products/seo_words",
+      "group": "Products",
+      "name": "Get Products SEO Words",
+      "summary": "Obtain SEO suggestions for product titles of live products (status: `ACTIVATE`) to enhance product visibility.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-products-seo-words-202405"
+    },
+    {
+      "id": "GET /product/202405/products/suggestions",
+      "group": "Products",
+      "name": "Get Recommended Product Title And Description",
+      "summary": "Obtain AI-optimized product titles and descriptions for live products (status: `ACTIVATE`).",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-recommended-product-title-and-description-202405"
+    },
+    {
+      "id": "GET /product/202506/images/translation_tasks",
+      "group": "Products",
+      "name": "Get Image Translation Tasks",
+      "summary": "Retrieves the image translation task status and translated images for one or more previously submitted images.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-image-translation-tasks-202506"
+    },
+    {
+      "id": "GET /product/202507/global_listing_rules",
+      "group": "Products",
+      "name": "Get Global Listing Rules",
+      "summary": "Retrieves the global listing rules for a local shop that belongs to a global seller.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-listing-rules-202507"
+    },
+    {
+      "id": "GET /product/202507/products/{product_id}/replicated_products",
+      "group": "Products",
+      "name": "Get Global Replicated Products",
+      "summary": "Retrieves the globally associated replicas in other markets if the product has been replicated through local replication.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-replicated-products-202507"
+    },
+    {
+      "id": "GET /product/202604/opportunities/{opportunity_id}",
+      "group": "Products",
+      "name": "Get Opportunity Detail",
+      "summary": "Retrieve the full details of a single opportunity lead by its ID, including market trend data, competition level, and recommended actions.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-opportunity-detail-202604"
+    },
+    {
+      "id": "GET /product/202604/opportunities/submissions",
+      "group": "Products",
+      "name": "Get Submission Records",
+      "summary": "Retrieve a paginated list of submission records for the authorized seller, including submission status, review results, and linked opportunity/product information.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-submission-records-202604"
+    },
+    {
+      "id": "GET /product/202606/skpps/{product_id}",
+      "group": "Products",
+      "name": "Get Product SKPP Detail",
+      "summary": "Return the SKPP qualification status, current and target scores, task progress and suggested actions, reward eligibility and status, and offline snapshot time for one product.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-product-skpp-detail-202606"
+    },
+    {
+      "id": "GET /product/202606/skpps/sum",
+      "group": "Products",
+      "name": "Get Shop SKPP Summary",
+      "summary": "Return the shop-level SKPP summary, including qualified and eligible product counts, earned ad credit, and incremental visibility in the last 30 days.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-skpp-summary-202606"
+    },
+    {
+      "id": "GET /product/202610/property_recommendation_tasks/{task_id}",
+      "group": "Products",
+      "name": "Get Product Property Recommendation Task",
+      "summary": "Retrieves the product property recommendation result for an image-based product listing task after the completion webhook is received.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-product-property-recommendation-task-202610"
+    },
+    {
+      "id": "GET /product/202611/search_videos",
+      "group": "Products",
+      "name": "List Post-view Search Videos",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-post-view-search-videos-202611"
+    },
+    {
+      "id": "GET /product/202611/search_videos/{video_id}",
+      "group": "Products",
+      "name": "Get Post-view Search Video",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-post-view-search-video-202611"
+    },
+    {
+      "id": "GET /product/202611/search_videos/{video_id}/comments",
+      "group": "Products",
+      "name": "Get Post-view Search Video Comments",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-post-view-search-video-comments-202611"
+    },
+    {
+      "id": "GET /product/202611/search_videos/{video_id}/keywords",
+      "group": "Products",
+      "name": "Get Post-view Search Video Keywords",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-post-view-search-video-keywords-202611"
+    },
+    {
+      "id": "GET /product/202611/search_videos/{video_id}/products",
+      "group": "Products",
+      "name": "Get Post-view Search Video Products",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-post-view-search-video-products-202611"
+    },
+    {
+      "id": "GET /promotion/202309/activities/{activity_id}",
+      "group": "Promotion",
+      "name": "Get Activity",
+      "summary": "Get the details of a promotion activity.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-activity-202309"
+    },
+    {
+      "id": "GET /promotion/202406/coupons/{coupon_id}",
+      "group": "Promotion",
+      "name": "Get Coupon",
+      "summary": "Use this API to get the full details of a coupon matching the {coupon_id}.",
+      "scope": "Customer Service, Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-coupon-202406"
+    },
+    {
+      "id": "GET /promotion/202611/campaign_groups",
+      "group": "Promotion",
+      "name": "List Campaign Group",
+      "summary": "List campaign groups visible to the shop.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-campaign-group-202611"
+    },
+    {
+      "id": "GET /promotion/202611/campaign_groups/{campaign_group_id}",
+      "group": "Promotion",
+      "name": "Get Campaign Group",
+      "summary": "Get a campaign group's basic information, campaign period, sales period, and linked campaign groups.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-campaign-group-202611"
+    },
+    {
+      "id": "GET /promotion/202611/campaigns",
+      "group": "Promotion",
+      "name": "List Campaign",
+      "summary": "List unified Campaign summaries visible to the shop within a specified campaign group.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-campaign-202611"
+    },
+    {
+      "id": "GET /promotion/202611/livestream_campaigns/{livestream_campaign_id}",
+      "group": "Promotion",
+      "name": "Get Livestream Campaign",
+      "summary": "Get details of a featured livestream or livestream competition, including times, participation requirements, benefits, agreement requirements, and the shop's registered session statistics.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-livestream-campaign-202611"
+    },
+    {
+      "id": "GET /promotion/202611/product_campaigns/{product_campaign_id}",
+      "group": "Promotion",
+      "name": "Get Product Campaign",
+      "summary": "Get a product campaign's basic information, registration period, participation rules, benefits and fees, shop eligibility, product registration quota, and participation statistics.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-product-campaign-202611"
+    },
+    {
+      "id": "GET /promotion/202611/registered_campaigns",
+      "group": "Promotion",
+      "name": "List Registered Campaign",
+      "summary": "List the shop's registered campaign summaries, with registration statistics and product negotiation statistics where applicable to the campaign type.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-registered-campaign-202611"
+    },
+    {
+      "id": "GET /promotion/202611/registered_campaigns/counts",
+      "group": "Promotion",
+      "name": "Get Registered Campaign Counts",
+      "summary": "Get the shop's registered campaign counts: all_count, upcoming_count, active_count, and ended_count.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-registered-campaign-counts-202611"
+    },
+    {
+      "id": "GET /promotion/202611/shop_campaigns/{shop_campaign_id}",
+      "group": "Promotion",
+      "name": "Get Shop Campaign",
+      "summary": "Get a shop campaign's basic information, registration period, shop participation requirements, benefits and fees, shop eligibility, and participation statistics.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-campaign-202611"
+    },
+    {
+      "id": "GET /promotion/202611/short_video_campaigns/{short_video_campaign_id}",
+      "group": "Promotion",
+      "name": "Get Short Video Campaign",
+      "summary": "Get short video competition details, including times, participation requirements, benefits, agreement requirements, and account registration statistics.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-short-video-campaign-202611"
+    },
+    {
+      "id": "GET /return_refund/202309/reject_reasons",
+      "group": "Return and refund",
+      "name": "Get Reject Reasons",
+      "summary": "Use this API to retrieve the seller reject-reason options currently applicable to the specified aftersales request.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-reject-reasons-202309"
+    },
+    {
+      "id": "GET /return_refund/202309/returns/{return_id}/records",
+      "group": "Return and refund",
+      "name": "Get Return Records",
+      "summary": "Use this API to retrieve the record entries for a specific return request.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-return-records-202309"
+    },
+    {
+      "id": "GET /return_refund/202601/decision_eligibility",
+      "group": "Return and refund",
+      "name": "Get Decision Eligibility",
+      "summary": "Use this API to evaluate which seller decisions are currently allowed for the specified aftersales request.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-decision-eligibility-202601"
+    },
+    {
+      "id": "GET /return_refund/202602/orders/{order_id}/aftersale_eligibility",
+      "group": "Return and refund",
+      "name": "Get Aftersale Eligibility",
+      "summary": "Use this API to check whether a seller or buyer can initiate refund-only, return-and-refund, or cancellation requests for an order.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-aftersale-eligibility-202602"
+    },
+    {
+      "id": "GET /return_refund/202606/review_decision",
+      "group": "Return and refund",
+      "name": "Get Available Review Decisions",
+      "summary": "Description of [GET]/return_refund/:version/Get_Review_Decision",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-available-review-decisions-202606"
+    },
+    {
+      "id": "GET /seller/202309/permissions",
+      "group": "Seller",
+      "name": "Get Global Product Permission",
+      "summary": "Retrieves whether a cross-border seller is permitted to manage global products.",
+      "scope": "Global Shop Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-global-product-permission-202309"
+    },
+    {
+      "id": "GET /seller/202309/shops",
+      "group": "Seller",
+      "name": "Get Active Shops",
+      "summary": "Retrieves all active shops associated with the authenticated seller account.",
+      "scope": "Global Shop Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-active-shops-202309"
+    },
+    {
+      "id": "GET /seller/202601/shop_groups",
+      "group": "Seller",
+      "name": "Get Shop Group and Related Shops",
+      "summary": "Retrieves the product interoperability group and related shops for the authenticated shop.",
+      "scope": "Shop Authorized Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-group-and-related-shops-202601"
+    },
+    {
+      "id": "GET /seller/202611/carousel_permission",
+      "group": "Seller",
+      "name": "Get Shop Carousel Permission",
+      "summary": "Retrieve the carousel-related permissions for the currently authorized shop, including auto-post permission and photo mode permission.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-shop-carousel-permission-202611"
+    },
+    {
+      "id": "GET /seller/202611/material_statuses",
+      "group": "Seller",
+      "name": "Check Material Statuses",
+      "summary": "Query the review statuses of pending material IDs for the currently authorized shop.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-material-statuses-202611"
+    },
+    {
+      "id": "GET /seller/202611/materials",
+      "group": "Seller",
+      "name": "List Shop Materials",
+      "summary": "List image material groups for the currently authorized shop under one product.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-shop-materials-202611"
+    },
+    {
+      "id": "POST /affiliate_creator/202405/open_collaborations/products/search",
+      "group": "Affiliate creator",
+      "name": "Search Open Collaboration Products",
+      "summary": "This API is used to search the information of products with open collaboration by category, commission rate, and keywords.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-open-collaboration-products-202405"
+    },
+    {
+      "id": "POST /affiliate_creator/202405/showcases/products/add",
+      "group": "Affiliate creator",
+      "name": "Add Showcase Products",
+      "summary": "This API adds products to the authenticated creator's showcase.",
+      "scope": "Content Posting, Manage Showcase Products",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/add-showcase-products-202405"
+    },
+    {
+      "id": "POST /affiliate_creator/202405/target_collaborations/search",
+      "group": "Affiliate creator",
+      "name": "Search Creator Target Collaborations",
+      "summary": "Searches for the authenticated creator's target collaborations and the products within them for the TikTok Shop specified by `shop_id`.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-creator-target-collaborations-202405"
+    },
+    {
+      "id": "POST /affiliate_creator/202409/sample_applications/fulfillments/search",
+      "group": "Affiliate creator",
+      "name": "Creator Search Sample Application Fulfillments",
+      "summary": "You, the creator, can use this API to query the fulfillment status for the received sample applications.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/creator-search-sample-application-fulfillments-202409"
+    },
+    {
+      "id": "POST /affiliate_creator/202409/showcases/products/top",
+      "group": "Affiliate creator",
+      "name": "Move Showcase Products to the Top",
+      "summary": "Use this API to move products to the top of the authenticated creator's showcase.",
+      "scope": "Manage Showcase Products",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/move-showcase-products-to-the-top-202409"
+    },
+    {
+      "id": "POST /affiliate_creator/202410/orders/search",
+      "group": "Affiliate creator",
+      "name": "Search Creator Affiliate Orders",
+      "summary": "Search affiliate orders attributed to the authenticated creator.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-creator-affiliate-orders-202410"
+    },
+    {
+      "id": "POST /affiliate_creator/202412/sample_applications/search",
+      "group": "Affiliate creator",
+      "name": "Search Creator Sample Applications",
+      "summary": "Search sample applications for the authenticated creator.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-creator-sample-applications-202412"
+    },
+    {
+      "id": "POST /affiliate_creator/202412/sample_applications/single_query",
+      "group": "Affiliate creator",
+      "name": "Get Creator Sample Application Detail",
+      "summary": "Get the sample detail of specified sample application.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-creator-sample-application-detail-202412"
+    },
+    {
+      "id": "POST /affiliate_creator/202504/affiliate_sharing_links/publisher/{publisher_id}/generate_batch",
+      "group": "Affiliate creator",
+      "name": "Generate Publisher Sharing Links in Batch",
+      "summary": "You can use this API to generate material sharing links for a specific publisher.",
+      "scope": "Read Affiliate Share Link",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/generate-publisher-sharing-links-in-batch-202504"
+    },
+    {
+      "id": "POST /affiliate_creator/202505/affiliate_sharing_links/general_publishers/generate_batch",
+      "group": "Affiliate creator",
+      "name": "Generate General Sharing Links",
+      "summary": "You can use this API to generate material sharing links for your publishers.",
+      "scope": "Read Affiliate Share Link",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/generate-general-sharing-links-202505"
+    },
+    {
+      "id": "POST /affiliate_creator/202505/orders/trace/search",
+      "group": "Affiliate creator",
+      "name": "Search Affiliate Orders by Creator",
+      "summary": "Retrieves affiliate orders attributed to the creator represented by the current access token.",
+      "scope": "Read Affiliate Share Link",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-affiliate-orders-by-creator-202505"
+    },
+    {
+      "id": "POST /affiliate_creator/202505/videos/video_files",
+      "group": "Affiliate creator",
+      "name": "Upload Shoppable Video File",
+      "summary": "Upload a video file before posting a shoppable video to TikTok.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-shoppable-video-file-202505"
+    },
+    {
+      "id": "POST /affiliate_creator/202509/open_collaborations/products",
+      "group": "Affiliate creator",
+      "name": "Get Open Collaboration Product List By Product Ids",
+      "summary": "Retrieves open collaboration product information for the specified product IDs.",
+      "scope": "Read Creator Affiliate Collaborations",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-open-collaboration-product-list-by-product-ids-202509"
+    },
+    {
+      "id": "POST /affiliate_creator/202511/photos/photo_files",
+      "group": "Affiliate creator",
+      "name": "Upload Shoppable Photo File",
+      "summary": "Use this API to upload the photos before photo posting.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-shoppable-photo-file-202511"
+    },
+    {
+      "id": "POST /affiliate_creator/202511/videos/precheck_task",
+      "group": "Affiliate creator",
+      "name": "Create Video Precheck Task",
+      "summary": "Use this API to create a task that checks a video and its shoppable content anchor for violations.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-video-precheck-task-202511"
+    },
+    {
+      "id": "POST /affiliate_creator/202607/map_toko_product",
+      "group": "Affiliate creator",
+      "name": "Get Tokopedia and TikTok Shop Product ID Mappings",
+      "summary": "Returns mappings from the specified Tokopedia product IDs to the corresponding TikTok Shop product IDs.",
+      "scope": "Read Affiliate Share Link",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-tokopedia-and-tiktok-shop-product-id-mappings-202607"
+    },
+    {
+      "id": "POST /affiliate_creator/202607/videos",
+      "group": "Affiliate creator",
+      "name": "Post Shoppable Video",
+      "summary": "Use this API to post the shoppable video.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/post-shoppable-video-202607"
+    },
+    {
+      "id": "POST /affiliate_creator/202610/photos",
+      "group": "Affiliate creator",
+      "name": "Post Shoppable Photos",
+      "summary": "Use this API to post the shoppable photos with uris and metadata.",
+      "scope": "Content Posting",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/post-shoppable-photos-202610"
+    },
+    {
+      "id": "POST /affiliate_partner/202405/campaigns",
+      "group": "Affiliate partner",
+      "name": "Create Affiliate Partner Campaign",
+      "summary": "Creates an affiliate partner campaign for either specific sellers identified by shop code or eligible seller types.",
+      "scope": "Manage Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-affiliate-partner-campaign-202405"
+    },
+    {
+      "id": "POST /affiliate_partner/202405/campaigns/{campaign_id}/partial_edit",
+      "group": "Affiliate partner",
+      "name": "Edit Affiliate Partner Campaign",
+      "summary": "Partially updates an Affiliate Partner campaign.",
+      "scope": "Manage Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/edit-affiliate-partner-campaign-202405"
+    },
+    {
+      "id": "POST /affiliate_partner/202405/campaigns/{campaign_id}/products/{product_id}/promotion_link/generate",
+      "group": "Affiliate partner",
+      "name": "Generate Affiliate Partner Campaign Product Link",
+      "summary": "Generates a promotion link for a product in an existing online campaign.",
+      "scope": "Manage Product Promote Links",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/generate-affiliate-partner-campaign-product-link-202405"
+    },
+    {
+      "id": "POST /affiliate_partner/202405/campaigns/{campaign_id}/products/{product_id}/review",
+      "group": "Affiliate partner",
+      "name": "Review Affiliate Partner Campaign Product",
+      "summary": "Use this API as a TikTok Affiliate Partner to approve or reject a product submitted by a seller to a campaign.",
+      "scope": "Manage Affiliate Partner Campaign Products",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/review-affiliate-partner-campaign-product-202405"
+    },
+    {
+      "id": "POST /affiliate_partner/202405/campaigns/{campaign_id}/publish",
+      "group": "Affiliate partner",
+      "name": "Publish Affiliate Partner Campaign",
+      "summary": "This API offers the ability to publish an Affiliate Partner campaign.",
+      "scope": "Manage Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/publish-affiliate-partner-campaign-202405"
+    },
+    {
+      "id": "POST /affiliate_partner/202505/campaigns/{campaign_id}/products/promotion_links/generate_batch",
+      "group": "Affiliate partner",
+      "name": "Generate Campaign Product Promotion Links in Batch",
+      "summary": "Generate promotion links for multiple products in an online campaign.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/generate-campaign-product-promotion-links-in-batch-202505"
+    },
+    {
+      "id": "POST /affiliate_partner/202603/cap_order/search",
+      "group": "Affiliate partner",
+      "name": "Search CAP Affiliate Orders",
+      "summary": "Search affiliate orders for an MCN (Creator Agency Partner) within the specified or default creation-time range.",
+      "scope": "Read CAP earnings order",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-cap-affiliate-orders-202603"
+    },
+    {
+      "id": "POST /affiliate_partner/202603/orders/search",
+      "group": "Affiliate partner",
+      "name": "Search TAP Affiliate Orders",
+      "summary": "TAP can use this API to retrieve a list of affiliate orders and track the affiliate conversions.",
+      "scope": "Read Affiliate Partner Campaigns",
+      "sellerFacing": false,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-tap-affiliate-orders-202603"
+    },
+    {
+      "id": "POST /affiliate_seller/202405/open_collaboration_settings",
+      "group": "Affiliate seller",
+      "name": "Edit Open Collaboration Settings",
+      "summary": "This API is used to edit a Seller's open collaboration settings.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/edit-open-collaboration-settings-202405"
+    },
+    {
+      "id": "POST /affiliate_seller/202405/open_collaborations/products/search",
+      "group": "Affiliate seller",
+      "name": "Seller Search Open Collaboration Products",
+      "summary": "Searches for open-collaboration products on the TikTok Shop Affiliate Product Marketplace within the regions where the seller is registered to sell.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/seller-search-open-collaboration-products-202405"
+    },
+    {
+      "id": "POST /affiliate_seller/202409/sample_applications/{application_id}/fulfillments/search",
+      "group": "Affiliate seller",
+      "name": "Search Sample Application Fulfillments",
+      "summary": "You, the seller, can use this API to get the fulfillment status of the specific sample application and whether the fulfillment resulted in orders.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-sample-application-fulfillments-202409"
+    },
+    {
+      "id": "POST /affiliate_seller/202410/open_collaborations/sample_rules",
+      "group": "Affiliate seller",
+      "name": "Edit Open Collaboration Sample Rule",
+      "summary": "Use this API to manage sample rules in open collaborations, like valid time periods, or thresholds for creators to request samples.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/edit-open-collaboration-sample-rule-202410"
+    },
+    {
+      "id": "POST /affiliate_seller/202410/orders/search",
+      "group": "Affiliate seller",
+      "name": "Search Seller Affiliate Orders",
+      "summary": "This API allows the partner to retrieve a list of affiliate orders (orders which are affiliate-commission eligible) generated by a seller, returning the order ID and the product ID.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-seller-affiliate-orders-202410"
+    },
+    {
+      "id": "POST /affiliate_seller/202412/conversations/{conversation_id}/messages",
+      "group": "Affiliate seller",
+      "name": "Send IM Message",
+      "summary": "Sends a message of the selected type in the specified conversation.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/send-im-message-202412"
+    },
+    {
+      "id": "POST /affiliate_seller/202412/conversatons/read",
+      "group": "Affiliate seller",
+      "name": "Mark Conversations as Read",
+      "summary": "Mark the messages in the specified conversations to be read.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/mark-conversations-as-read-202412"
+    },
+    {
+      "id": "POST /affiliate_seller/202412/open_collaborations",
+      "group": "Affiliate seller",
+      "name": "Create Open Collaboration",
+      "summary": "This API allows the seller to create an open collaboration.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-open-collaboration-202412"
+    },
+    {
+      "id": "POST /affiliate_seller/202412/open_collaborations/search",
+      "group": "Affiliate seller",
+      "name": "Search Open Collaborations",
+      "summary": "Search the merchant's open collaborations.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-open-collaborations-202412"
+    },
+    {
+      "id": "POST /affiliate_seller/202507/sample_applications/{application_id}/review",
+      "group": "Affiliate seller",
+      "name": "Review a Sample Application",
+      "summary": "This API allows the seller to approve or reject a creator's sample application in an open collaboration.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/review-a-sample-application-202507"
+    },
+    {
+      "id": "POST /affiliate_seller/202508/conversations",
+      "group": "Affiliate seller",
+      "name": "Get or Create Creator Conversation",
+      "summary": "Get the existing conversation or create a new conversation with the specified TikTok creator.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-or-create-creator-conversation-202508"
+    },
+    {
+      "id": "POST /affiliate_seller/202508/open_collaborations/{open_collaboration_id}/remove_creator",
+      "group": "Affiliate seller",
+      "name": "Remove Creator From Open Collaboration Product",
+      "summary": "This API is used to remove creators from open collaboration.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/remove-creator-from-open-collaboration-product-202508"
+    },
+    {
+      "id": "POST /affiliate_seller/202508/sample_applications/search",
+      "group": "Affiliate seller",
+      "name": "Search Sample Applications",
+      "summary": "This API is provided for sellers to query sample applications based on various criteria such as products, creators, or application statuses.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-sample-applications-202508"
+    },
+    {
+      "id": "POST /affiliate_seller/202508/target_collaborations",
+      "group": "Affiliate seller",
+      "name": "Create Target Collaboration",
+      "summary": "This API is used to create a target collaboration.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-target-collaboration-202508"
+    },
+    {
+      "id": "POST /affiliate_seller/202508/target_collaborations/search",
+      "group": "Affiliate seller",
+      "name": "Search Target Collaborations",
+      "summary": "This API is used by Seller to search for all existing target collaborations.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-target-collaborations-202508"
+    },
+    {
+      "id": "POST /affiliate_seller/202509/target_collaboration/{target_collaboration_id}/link",
+      "group": "Affiliate seller",
+      "name": "Generate Target Collaboration Link",
+      "summary": "Generate a Target Collaboration Link that the seller can share with the creator.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/generate-target-collaboration-link-202509"
+    },
+    {
+      "id": "POST /affiliate_seller/202511/images/upload",
+      "group": "Affiliate seller",
+      "name": "Upload Message Image",
+      "summary": "You must use this API to upload the image first, before sending an image as a message using [Send IM Messsage](https://partner.tiktokshop.com/docv2/page/send-im-message-202412)",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-message-image-202511"
+    },
+    {
+      "id": "POST /affiliate_seller/202603/compass/offline_task",
+      "group": "Affiliate seller",
+      "name": "Create Compass Offline Export Task",
+      "summary": "Create an asynchronous offline export task for the specified doc_type and plan_type within a given time window.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-compass-offline-export-task-202603"
+    },
+    {
+      "id": "POST /affiliate_seller/202605/target_collaborations/conflicts/check",
+      "group": "Affiliate seller",
+      "name": "Check Target Collaboration Conflicts",
+      "summary": "Retrieve conflicting target collaborations for the product and determine if they can be terminated",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-target-collaboration-conflicts-202605"
+    },
+    {
+      "id": "POST /affiliate_seller/202605/target_collaborations/conflicts/resolve",
+      "group": "Affiliate seller",
+      "name": "Resolve Target Collaboration Conflicts",
+      "summary": "Execute resolution actions on resolvable conflict items within the scope of seller authorization.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/resolve-target-collaboration-conflicts-202605"
+    },
+    {
+      "id": "POST /affiliate_seller/202608/conversations/{conversation_id}/status",
+      "group": "Affiliate seller",
+      "name": "Update Conversation Status",
+      "summary": "Support starring or archiving a given conversation with creator.",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-conversation-status-202608"
+    },
+    {
+      "id": "POST /affiliate_seller/202608/creator_outreach/records/query",
+      "group": "Affiliate seller",
+      "name": "Get Weekly Creator Outreach Records",
+      "summary": "Query weekly detailed outreach‑invitation records for a specified seller, including whether IM messages/invitations were sent to a unconnected creator, and whether the creator added products or replied to IM messages.",
+      "scope": "Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-weekly-creator-outreach-records-202608"
+    },
+    {
+      "id": "POST /affiliate_seller/202608/marketplace_creators/search",
+      "group": "Affiliate seller",
+      "name": "Search Creators in Creator Marketplace",
+      "summary": "This API is used by Sellers to search for Creators in the Creator Marketplace.",
+      "scope": "Read Creator Marketplace",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-creators-in-creator-marketplace-202608"
+    },
+    {
+      "id": "POST /affiliate_seller/202608/marketplace_creators/search/filter",
+      "group": "Affiliate seller",
+      "name": "Get Creator Marketplace Advanced Search Filters",
+      "summary": "This API allows you to obtain the advanced filters available in Seller Search Creator Marketplace.",
+      "scope": "Read Creator Marketplace",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-creator-marketplace-advanced-search-filters-202608"
+    },
+    {
+      "id": "POST /affiliate_seller/202608/media/upload",
+      "group": "Affiliate seller",
+      "name": "Upload Message Image V2",
+      "summary": "You must use this API to upload the image first, before sending an image as a message using [Send IM Messsage](https://partner.tiktokshop.com/docv2/page/send-im-message-202412)",
+      "scope": "Manage Affiliate Messages",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-message-image-v2-202608"
+    },
+    {
+      "id": "POST /affiliate_seller/202608/target_collaborations/creator_promotion_details/query",
+      "group": "Affiliate seller",
+      "name": "Query Creator Promotion Details in Target Collaboration",
+      "summary": "Query the creator commission rate, number of promotional video contents and number of live‑stream promotions for specified creator, specified invitation and specified product.",
+      "scope": "Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/query-creator-promotion-details-in-target-collaboration-202608"
+    },
+    {
+      "id": "POST /affiliate_seller/202610/creator_outreach/eligibility/check",
+      "group": "Affiliate seller",
+      "name": "Check Creator Outreach Eligibility",
+      "summary": "Check whether creators meet the shop's connection and quota requirements before initiating creator outreach.",
+      "scope": "Read Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-creator-outreach-eligibility-202610"
+    },
+    {
+      "id": "POST /affiliate_seller/202611/partner_campaigns/{campaign_id}/products",
+      "group": "Affiliate seller",
+      "name": "Register Seller Partner Campaign Products",
+      "summary": "Submits 1 to 200 products belonging to the authorized shop to one partner campaign.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/register-seller-partner-campaign-products-202611"
+    },
+    {
+      "id": "POST /analytics/202611/ai_report/data/query",
+      "group": "Analytics",
+      "name": "Query AI Report Data",
+      "summary": "Query grouped metric values and optional row details for one authorized shop.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/query-ai-report-data-202611"
+    },
+    {
+      "id": "POST /analytics/202611/ai_report/dimension_options/search",
+      "group": "Analytics",
+      "name": "Search AI Report Dimension Options",
+      "summary": "Find filter values for a dimension returned by the catalog.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-ai-report-dimension-options-202611"
+    },
+    {
+      "id": "POST /analytics/202611/ai_report/query_config/validate",
+      "group": "Analytics",
+      "name": "Validate AI Report Query Configuration",
+      "summary": "Validate the query configuration without fetching report rows.",
+      "scope": "TikTok Shop Analytics",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/validate-ai-report-query-configuration-202611"
+    },
+    {
+      "id": "POST /customer_engagement/202412/engagement_tasks",
+      "group": "Customer engagement",
+      "name": "Create Engagement Task",
+      "summary": "Create an engagement task that acts as a container for grouping messages with similar content and rules, allowing sellers to track and compare task performance across different types of content.",
+      "scope": "Customer Engagement - Write",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-engagement-task-202412"
+    },
+    {
+      "id": "POST /customer_engagement/202412/messages",
+      "group": "Customer engagement",
+      "name": "Send Engagement Message",
+      "summary": "Send messages to specific customers for a particular engagement task.",
+      "scope": "Customer Engagement - Write",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/send-engagement-message-202412"
+    },
+    {
+      "id": "POST /customer_engagement/202412/performances",
+      "group": "Customer engagement",
+      "name": "Get Engagement Task Performances",
+      "summary": "Retrieve detailed performance metrics for a customer engagement task, including message reads, order conversions, and other key engagement statistics.",
+      "scope": "Customer Engagement - Read",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-engagement-task-performances-202412"
+    },
+    {
+      "id": "POST /customer_engagement/202502/engagement_tasks/custom",
+      "group": "Customer engagement",
+      "name": "Create Custom Engagement Task",
+      "summary": "Create an engagement task that uses a self-defined custom message instead of predefined message templates from TikTok Shop.",
+      "scope": "Customer Engagement - Write",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-custom-engagement-task-202502"
+    },
+    {
+      "id": "POST /customer_service/202309/conversations",
+      "group": "Customer service",
+      "name": "Create Conversation",
+      "summary": "Use this API to create a conversation with the specified buyer, on behalf of a shop.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-conversation-202309"
+    },
+    {
+      "id": "POST /customer_service/202309/conversations/{conversation_id}/messages/read",
+      "group": "Customer service",
+      "name": "Mark Buyer Messages as Read",
+      "summary": "Use this API to mark all messages sent by the buyer as read.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/mark-buyer-messages-as-read-202309"
+    },
+    {
+      "id": "POST /customer_service/202309/images/upload",
+      "group": "Customer service",
+      "name": "Upload Image for Buyer Messages",
+      "summary": "You must use this API to upload the image first, before sending an image as a message using [Send Message](650a58bbbace3e02b7556286).",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-image-for-buyer-messages-202309"
+    },
+    {
+      "id": "POST /customer_service/202602/sessions/search",
+      "group": "Customer service",
+      "name": "Search Sessions",
+      "summary": "Search customer service sessions by their start-time range and, optionally, the buyer's nickname.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-sessions-202602"
+    },
+    {
+      "id": "POST /customer_service/202605/conversations/{conversation_id}/sessions/{session_id}/end",
+      "group": "Customer service",
+      "name": "End Session",
+      "summary": "Use this API to end an active customer service session assigned to an agent.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/end-session-202605"
+    },
+    {
+      "id": "POST /customer_service/202606/conversations/{conversation_id}/messages",
+      "group": "Customer service",
+      "name": "Send Message",
+      "summary": "Use this API to send a message to the buyer in a conversation.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/send-message-202606"
+    },
+    {
+      "id": "POST /fbt/202408/inventory/search",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Search FBT Inventory",
+      "summary": "This API is used to retrieve detailed inventory information for goods and matched SKUs, including sellable inventory, reserved inventory, unsellable inventory, and in-transit inventory at the warehouse level.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-fbt-inventory-202408"
+    },
+    {
+      "id": "POST /fbt/202410/inventory_records/search",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Search FBT Inventory Record",
+      "summary": "This API is used to retrieve detailed inventory change records for goods at the warehouse level.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-fbt-inventory-record-202410"
+    },
+    {
+      "id": "POST /fbt/202601/mcf_outbound_orders/cancel",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Cancel FBT MCF Order",
+      "summary": "An FBT multi-channel fulfillment (MCF) order may be split into one or more consign orders for fulfillment.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/cancel-fbt-mcf-order-202601"
+    },
+    {
+      "id": "POST /fbt/202601/mcf/goods/inventory/search",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Query Goods Inventory For MCF",
+      "summary": "Search available inventory for MCF goods.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/query-goods-inventory-for-mcf-202601"
+    },
+    {
+      "id": "POST /fbt/202602/create_update_inbound_plan",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Create or Update Inbound Plan",
+      "summary": "Creates a new inbound plan or fully replaces the contents of an existing inbound plan by using a goods item list or carton configurations with dimensions.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-or-update-inbound-plan-202602"
+    },
+    {
+      "id": "POST /fbt/202602/inbound_method_detail",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Get Inbound Method Detail",
+      "summary": "Retrieves placement details for an inbound plan.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-inbound-method-detail-202602"
+    },
+    {
+      "id": "POST /fbt/202602/inbound_orders/cancel",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Cancel Inbound Order",
+      "summary": "This API is used to cancel one inbound order per request prior to warehouse arrival, preventing further processing and updating the order status.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/cancel-inbound-order-202602"
+    },
+    {
+      "id": "POST /fbt/202602/inbound_orders/label_print",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Print Inbound Order Labels",
+      "summary": "This API generates label files for an inbound order using an **asynchronous Long-Running Operation (LRO)**.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/print-inbound-order-labels-202602"
+    },
+    {
+      "id": "POST /fbt/202602/inbound_orders/tracking_update",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Update Inbound Order Tracking",
+      "summary": "Updates carton-level tracking information for an inbound order after shipment and before the order is marked as `Delivered` or `Received`.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-inbound-order-tracking-202602"
+    },
+    {
+      "id": "POST /fbt/202602/list_available_inbound_method",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "List Available Inbound Methods",
+      "summary": "Retrieves valid inbound shipping methods and arrival time windows for a specific plan.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-available-inbound-methods-202602"
+    },
+    {
+      "id": "POST /fbt/202603/confirm_inbound_method",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Confirm Inbound Method",
+      "summary": "Confirm a currently available warehouse placement option for an FBT inbound plan.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/confirm-inbound-method-202603"
+    },
+    {
+      "id": "POST /fbt/202603/goods/hazmat_and_expiration_info/search",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Search Goods Hazmat And Expiration Info",
+      "summary": "Search hazmat and expiration information for goods by TikTok Shop SKU IDs.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-goods-hazmat-and-expiration-info-202603"
+    },
+    {
+      "id": "POST /fbt/202603/goods/update_goods_sku_relation",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Update Goods-SKU Relations",
+      "summary": "Bind or unbind TikTok Shop SKUs to FBT goods.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-goods-sku-relations-202603"
+    },
+    {
+      "id": "POST /fbt/202603/ship_inbound_order",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Ship Inbound Order",
+      "summary": "Finalizes carton and shipping details for an inbound order that is ready to ship.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/ship-inbound-order-202603"
+    },
+    {
+      "id": "POST /fbt/202607/goods/create_goods",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Create FBT Goods",
+      "summary": "Create FBT goods records and link each record to a TikTok Shop SKU.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-fbt-goods-202607"
+    },
+    {
+      "id": "POST /fbt/202607/goods/search",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Search Goods Info",
+      "summary": "Retrieves goods belonging to the merchant that match the specified filters and returns their IDs, names, goods-SKU relationships, merchant-declared measurements, warehouse-confirmed measurements, and other attributes.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-goods-info-202607"
+    },
+    {
+      "id": "POST /fbt/202607/goods/update_goods_info",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Update FBT Goods Info",
+      "summary": "Update FBT goods information, including goods name, image URL, dimensions, hazmat details, shelf-life attributes, and return address information.",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-fbt-goods-info-202607"
+    },
+    {
+      "id": "POST /fbt/202607/mcf_outbound_orders",
+      "group": "Fulfilled by TikTok (FBT)",
+      "name": "Create FBT MCF Order",
+      "summary": "For orders created on other sales channels that require fulfillment via FBT, this API enables you to create corresponding orders (hereinafter referred to as MCF Orders).",
+      "scope": "Fulfilled by TikTok(FBT) Info",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-fbt-mcf-order-202607"
+    },
+    {
+      "id": "POST /fulfillment/202309/files/upload",
+      "group": "Fulfillment",
+      "name": "Upload Proof of Delivery File",
+      "summary": "This API is used for the seller to upload the proof of delivery file for a package, and to generate the URL of the corresponding file.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-proof-of-delivery-file-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/images/upload",
+      "group": "Fulfillment",
+      "name": "Upload Proof of Delivery Image",
+      "summary": "This API is used for the seller to upload the proof of delivery image for a package, and to generate the URL of the corresponding file.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-proof-of-delivery-image-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/orders/{order_id}/shipping_info/update",
+      "group": "Fulfillment",
+      "name": "Update Order Shipping Info",
+      "summary": "If the seller entered an incorrect tracking number, this API allows the seller to update the tracking number and shipping provider for an order that has already been shipped.",
+      "scope": "Logistics Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-order-shipping-info-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/orders/{order_id}/shipping_services/query",
+      "group": "Fulfillment",
+      "name": "Get Eligible Shipping Services",
+      "summary": "Retrieve available shipping services in the US and JP.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-eligible-shipping-services-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/orders/{order_id}/split",
+      "group": "Fulfillment",
+      "name": "Confirm Order Split",
+      "summary": "Use this API to confirm an order split.",
+      "scope": "FS Order&Fulfillment Management, Package Split And Combine",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/confirm-order-split-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/packages/{package_id}/ship",
+      "group": "Fulfillment",
+      "name": "Ship Package",
+      "summary": "Use this API to ship a package.",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/ship-package-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/packages/{package_id}/uncombine",
+      "group": "Fulfillment",
+      "name": "Uncombine Packages",
+      "summary": "Use this API to uncombine one or more orders from an already combined package.",
+      "scope": "Package Split And Combine",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/uncombine-packages-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/packages/combine",
+      "group": "Fulfillment",
+      "name": "Combine Package",
+      "summary": "Use this API to combine orders from each specified package into new fulfillment packages.",
+      "scope": "Package Split And Combine",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/combine-package-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/packages/deliver",
+      "group": "Fulfillment",
+      "name": "Update Package Delivery Status",
+      "summary": "Use this API to report delivery outcomes for SOF (Seller Own Fleet) packages or confirm O2O (Store Pickup) package delivery.",
+      "scope": "Update Delivery Status",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-package-delivery-status-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/packages/search",
+      "group": "Fulfillment",
+      "name": "Search Package",
+      "summary": "Retrieve packages, optionally filtered by creation time, update time, or package status.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-package-202309"
+    },
+    {
+      "id": "POST /fulfillment/202309/packages/ship",
+      "group": "Fulfillment",
+      "name": "Batch Ship Packages",
+      "summary": "Use this API to ship one or more packages in a single request.",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/batch-ship-packages-202309"
+    },
+    {
+      "id": "POST /fulfillment/202407/bundles",
+      "group": "Fulfillment",
+      "name": "Create First Mile Bundle",
+      "summary": "If you send multiple packages to TikTok Shop warehouse in a single first-mile bundle, you can use the API to create a first-mile bundle on TikTok Shop and get the bundle ID.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-first-mile-bundle-202407"
+    },
+    {
+      "id": "POST /fulfillment/202502/invoice/upload",
+      "group": "Fulfillment",
+      "name": "Upload Invoice",
+      "summary": "Upload the invoice document.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-invoice-202502"
+    },
+    {
+      "id": "POST /fulfillment/202510/first_mile_bundle",
+      "group": "Fulfillment",
+      "name": "Create First Mile Bundle(V2)",
+      "summary": "If you send multiple packages to TikTok Shop warehouse in a single first-mile bundle, you can use the API to create a first-mile bundle on TikTok Shop and get the bundle ID.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-first-mile-bundle-v2-202510"
+    },
+    {
+      "id": "POST /fulfillment/202512/packages",
+      "group": "Fulfillment",
+      "name": "Create Packages",
+      "summary": "Use this API to ship orders (purchase labels).",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-packages-202512"
+    },
+    {
+      "id": "POST /fulfillment/202601/redeem_info/callback",
+      "group": "Fulfillment",
+      "name": "Submit Redemption Information",
+      "summary": "Submit redemption information for one or more line items in a TikTok Shop order so TikTok Shop can fulfill those items.",
+      "scope": "Manage Seller Redeem Info Callback",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/submit-redemption-information-202601"
+    },
+    {
+      "id": "POST /fulfillment/202606/pod_details/get",
+      "group": "Fulfillment",
+      "name": "Get POD Customization Details",
+      "summary": "Retrieves the POD customization details for specified order lines in a TikTok Shop order.",
+      "scope": "Manage Seller Redeem Info Callback",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-pod-customization-details-202606"
+    },
+    {
+      "id": "POST /fulfillment/202607/orders/customs_info/query",
+      "group": "Fulfillment",
+      "name": "Get Order Customs Requirements",
+      "summary": "This API is used to query whether an order requires extra customs clearance information, whether such information has been submitted, and the list of submitted customs clearance information.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-order-customs-requirements-202607"
+    },
+    {
+      "id": "POST /fulfillment/202607/orders/customs_info/submit",
+      "group": "Fulfillment",
+      "name": "Submit Customs Clearance Information",
+      "summary": "This API is used to submit extra customs clearance information for discrepancies between declared information and physical goods.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/submit-customs-clearance-information-202607"
+    },
+    {
+      "id": "POST /fulfillment/202609/order/sof/track/update",
+      "group": "Fulfillment",
+      "name": "Tracking status update",
+      "summary": "**This API is currently exclusive to the following markets: US, BR.** This API is suitable for merchants to deliver and carry orders by themselves, without shipping orders through third-party service providers, that is, ",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/tracking-status-update-202609"
+    },
+    {
+      "id": "POST /fulfillment/202610/orders/{order_id}/packages",
+      "group": "Fulfillment",
+      "name": "Mark Package As Shipped",
+      "summary": "**This API is currently exclusive to the following markets: US, UK, ES, IE, IT, DE, FR, JP.** This API is for sellers who fulfill orders through their own selected/preferred logistics carrier, and allows sellers to uploa",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/mark-package-as-shipped-202610"
+    },
+    {
+      "id": "POST /fulfillment/202610/packages/{package_id}/shipping_info/update",
+      "group": "Fulfillment",
+      "name": "Update Package Shipping Info",
+      "summary": "If the seller entered an incorrect tracking number, this API allows the seller to update the tracking number and shipping provider for a package that has already been shipped.",
+      "scope": "FS Order&Fulfillment Management, Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-package-shipping-info-202610"
+    },
+    {
+      "id": "POST /open/202512/file/init",
+      "group": "Tools",
+      "name": "Upload File Init",
+      "summary": "Use this API to initialize a file upload session.",
+      "scope": "Content Posting, Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-file-init-202512"
+    },
+    {
+      "id": "POST /order/202309/orders/search",
+      "group": "Orders",
+      "name": "Get Order List",
+      "summary": "Returns a list of orders created or updated during the timeframe indicated by the specified parameters.",
+      "scope": "FS Order&Fulfillment Management, Order Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-order-list-202309"
+    },
+    {
+      "id": "POST /order/202406/orders/external_order_search",
+      "group": "Orders",
+      "name": "Search Orders by External Order Reference",
+      "summary": "If you have used the `Add External Order References` API to sync information from your external order management system (OMS) to corresponding orders in TikTok Shop, you may call this API to search for order information ",
+      "scope": "Read External Order References",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-orders-by-external-order-reference-202406"
+    },
+    {
+      "id": "POST /order/202406/orders/external_orders",
+      "group": "Orders",
+      "name": "Add External Order References",
+      "summary": "If you use an external order management system (OMS), its order and line item IDs may differ from the corresponding TikTok Shop IDs.",
+      "scope": "Write External Order References",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/add-external-order-references-202406"
+    },
+    {
+      "id": "POST /order/202605/orders/blind_box_result/callback",
+      "group": "Orders",
+      "name": "Update The Blind Box Opening Results",
+      "summary": "After the merchant completes blind box opening in a live room, use this callback to send the opening results for an order back to the platform.",
+      "scope": "Order Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-the-blind-box-opening-results-202605"
+    },
+    {
+      "id": "POST /order/202606/pod_details/search",
+      "group": "Orders",
+      "name": "Search POD Customization Details",
+      "summary": "Search for POD customization details for the specified order lines.",
+      "scope": "Order Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-pod-customization-details-202606"
+    },
+    {
+      "id": "POST /product/202309/brands",
+      "group": "Products",
+      "name": "Create Custom Brands",
+      "summary": "Create custom brands for your own use across all markets.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-custom-brands-202309"
+    },
+    {
+      "id": "POST /product/202309/categories/recommend",
+      "group": "Products",
+      "name": "Recommend Category",
+      "summary": "Retrieve the recommended category for a candidate product based on its title, description, and images.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/recommend-category-202309"
+    },
+    {
+      "id": "POST /product/202309/files/upload",
+      "group": "Products",
+      "name": "Upload Product File",
+      "summary": "Upload non-image files, such as PDF or video to TikTok Shop.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-product-file-202309"
+    },
+    {
+      "id": "POST /product/202309/global_categories/recommend",
+      "group": "Products",
+      "name": "Recommend Global Categories",
+      "summary": "Retrieve a recommended leaf category and its category hierarchy for a candidate global product based on its title, description, and images.",
+      "scope": "Global Category Infomation",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/recommend-global-categories-202309"
+    },
+    {
+      "id": "POST /product/202309/global_products",
+      "group": "Products",
+      "name": "Create Global Product",
+      "summary": "Create global products to be sold in one or multiple shops outside of the seller's base country.",
+      "scope": "Global Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-global-product-202309"
+    },
+    {
+      "id": "POST /product/202309/global_products/{global_product_id}/inventory/update",
+      "group": "Products",
+      "name": "Update Global Inventory",
+      "summary": "Update the inventory of a global product in `DRAFT`, `UNPUBLISHED`, or `PUBLISHED` status.",
+      "scope": "Global Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-global-inventory-202309"
+    },
+    {
+      "id": "POST /product/202309/global_products/{global_product_id}/publish",
+      "group": "Products",
+      "name": "Publish Global Product",
+      "summary": "Publish and convert a global product to local products in one or multiple shops in supported markets.",
+      "scope": "Global Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/publish-global-product-202309"
+    },
+    {
+      "id": "POST /product/202309/images/upload",
+      "group": "Products",
+      "name": "Upload Product Image",
+      "summary": "Upload a local image to TikTok Shop for use as a product image, variant image, size chart, certification image, or another supported image use case.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-product-image-202309"
+    },
+    {
+      "id": "POST /product/202309/inventory/search",
+      "group": "Products",
+      "name": "Inventory Search",
+      "summary": "Retrieve inventory information for multiple products or SKUs.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/inventory-search-202309"
+    },
+    {
+      "id": "POST /product/202309/products",
+      "group": "Products",
+      "name": "Create Product",
+      "summary": "Create and list products intended for sale exclusively in local shops.",
+      "scope": "Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-product-202309"
+    },
+    {
+      "id": "POST /product/202309/products/{product_id}/inventory/update",
+      "group": "Products",
+      "name": "Update Inventory",
+      "summary": "Update the inventory quantity of SKUs belonging to a product.",
+      "scope": "Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-inventory-202309"
+    },
+    {
+      "id": "POST /product/202309/products/{product_id}/prices/update",
+      "group": "Products",
+      "name": "Update Price",
+      "summary": "Update the price of multiple SKUs belonging to a product in the `ACTIVATE` status and not included in any ongoing promotions.",
+      "scope": "Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-price-202309"
+    },
+    {
+      "id": "POST /product/202309/products/activate",
+      "group": "Products",
+      "name": "Activate Products",
+      "summary": "Activate hidden products that are in the `Seller_deactivated` or `Platform_deactivated` status and display them in the TikTok Shop catalog.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/activate-products-202309"
+    },
+    {
+      "id": "POST /product/202309/products/deactivate",
+      "group": "Products",
+      "name": "Deactivate Products",
+      "summary": "Deactivate products that are in the `Activate` status and hide them from buyers.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/deactivate-products-202309"
+    },
+    {
+      "id": "POST /product/202309/products/listing_check",
+      "group": "Products",
+      "name": "Check Product Listing",
+      "summary": "Identify any issues with your product properties in advance to ensure your product is ready for listing.",
+      "scope": "Product Basic, Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/check-product-listing-202309"
+    },
+    {
+      "id": "POST /product/202309/products/recover",
+      "group": "Products",
+      "name": "Recover Products",
+      "summary": "Recover products that are in the `Deleted` status.",
+      "scope": "Product Delete & Recover",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/recover-products-202309"
+    },
+    {
+      "id": "POST /product/202312/global_products/search",
+      "group": "Products",
+      "name": "Search Global Products",
+      "summary": "Retrieve a list of global products that meet the specified conditions.",
+      "scope": "Global Product Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-global-products-202312"
+    },
+    {
+      "id": "POST /product/202404/images/optimize",
+      "group": "Products",
+      "name": "Optimize Images",
+      "summary": "Optimize images used in your TikTok Shop by changing the background to white.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/optimize-images-202404"
+    },
+    {
+      "id": "POST /product/202407/products/category_upgrade_task",
+      "group": "Products",
+      "name": "Create Category Upgrade Task",
+      "summary": "Create a task to upgrade live products (status: `ACTIVATE`) from a 3-level to a 7-level category tree.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-category-upgrade-task-202407"
+    },
+    {
+      "id": "POST /product/202407/sizecharts/search",
+      "group": "Products",
+      "name": "Search Size Charts",
+      "summary": "Retrieve size charts that a seller has created.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-size-charts-202407"
+    },
+    {
+      "id": "POST /product/202409/compliance/manufacturers",
+      "group": "Products",
+      "name": "Create Manufacturer",
+      "summary": "Add a manufacturer for a seller.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-manufacturer-202409"
+    },
+    {
+      "id": "POST /product/202409/compliance/manufacturers/{manufacturer_id}/partial_edit",
+      "group": "Products",
+      "name": "Partial Edit Manufacturer",
+      "summary": "Edit the details of a manufacturer in the EU languages supported by TikTok Shop.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/partial-edit-manufacturer-202409"
+    },
+    {
+      "id": "POST /product/202409/compliance/responsible_persons",
+      "group": "Products",
+      "name": "Create Responsible Person",
+      "summary": "Add a new EU responsible person who ensures a seller's products comply with EU regulations.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-responsible-person-202409"
+    },
+    {
+      "id": "POST /product/202409/compliance/responsible_persons/{responsible_person_id}/partial_edit",
+      "group": "Products",
+      "name": "Partial Edit Responsible Person",
+      "summary": "Edit the details of an EU responsible person in the EU languages supported by TikTok Shop.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/partial-edit-responsible-person-202409"
+    },
+    {
+      "id": "POST /product/202411/products/diagnose_optimize",
+      "group": "Products",
+      "name": "Diagnose and Optimize Product",
+      "summary": "Diagnose products to obtain information that helps you to improve the product content, enhancing product visibility and customer trust.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/diagnose-and-optimize-product-202411"
+    },
+    {
+      "id": "POST /product/202501/compliance/manufacturers/search",
+      "group": "Products",
+      "name": "Search Manufacturers",
+      "summary": "Retrieve a list of manufacturers in the EU languages supported by TikTok Shop based on their IDs or keyword.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-manufacturers-202501"
+    },
+    {
+      "id": "POST /product/202501/compliance/responsible_persons/search",
+      "group": "Products",
+      "name": "Search Responsible Persons",
+      "summary": "Retrieve a list of responsible persons in the EU languages supported by TikTok Shop based on their ID or keywords.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-responsible-persons-202501"
+    },
+    {
+      "id": "POST /product/202502/products/search",
+      "group": "Products",
+      "name": "Search Products",
+      "summary": "Retrieve a list of products that meet the specified conditions.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-products-202502"
+    },
+    {
+      "id": "POST /product/202505/images/translation_tasks",
+      "group": "Products",
+      "name": "Create Image Translation Tasks",
+      "summary": "Initiates a translation task for one or more images.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-image-translation-tasks-202505"
+    },
+    {
+      "id": "POST /product/202507/products/{product_id}/global_replicate",
+      "group": "Products",
+      "name": "Replicate Product",
+      "summary": "Description of [POST]/product/:version/Replicate_Product",
+      "scope": "Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/replicate-product-202507"
+    },
+    {
+      "id": "POST /product/202509/products/{product_id}/partial_edit",
+      "group": "Products",
+      "name": "Partial Edit Product",
+      "summary": "Edit some properties (e.g.",
+      "scope": "Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/partial-edit-product-202509"
+    },
+    {
+      "id": "POST /product/202601/compliance/auditing/research",
+      "group": "Products",
+      "name": "Search Products for Compliance Auditing",
+      "summary": "Search live products and retrieve the product information needed by a compliance vendor to prepare a compliance testing report.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-products-for-compliance-auditing-202601"
+    },
+    {
+      "id": "POST /product/202602/packages/recommend",
+      "group": "Products",
+      "name": "Get Product Package Recommendations",
+      "summary": "Retrieve recommended weight and dimension ranges for product packages.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/get-product-package-recommendations-202602"
+    },
+    {
+      "id": "POST /product/202604/appeals/submit",
+      "group": "Products",
+      "name": "Submit Size Chart Appeal",
+      "summary": "#### Appeal Size Chart Verification Initiates an appeal process for a product that was blocked during the listing phase due to a size chart verification failure.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/submit-size-chart-appeal-202604"
+    },
+    {
+      "id": "POST /product/202604/opportunities/{opportunity_id}/submit",
+      "group": "Products",
+      "name": "Submit Product via Opportunity",
+      "summary": "Submit an existing product as a response to a specific opportunity lead.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/submit-product-via-opportunity-202604"
+    },
+    {
+      "id": "POST /product/202604/opportunities/query",
+      "group": "Products",
+      "name": "List Opportunities",
+      "summary": "Search and retrieve a paginated list of opportunity leads available to the authorized seller, with optional filters by type, status, category, etc and ordered by the algorithm ranking model.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-opportunities-202604"
+    },
+    {
+      "id": "POST /product/202604/products/gpa_upgrade_task",
+      "group": "Products",
+      "name": "Create GPA Upgrade Task",
+      "summary": "This interface is only available for EU L2L sellers.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-gpa-upgrade-task-202604"
+    },
+    {
+      "id": "POST /product/202606/skpps/search",
+      "group": "Products",
+      "name": "List Product SKPP Statuses",
+      "summary": "Batch query SKPP status for the seller's products.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/list-product-skpp-statuses-202606"
+    },
+    {
+      "id": "POST /product/202608/inventory/operation/settings",
+      "group": "Products",
+      "name": "Update Stock Operation Settings",
+      "summary": "Configure auto-restock behavior for 1 to 500 SKUs in one request.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-stock-operation-settings-202608"
+    },
+    {
+      "id": "POST /product/202609/brands/suggest",
+      "group": "Products",
+      "name": "Suggest Brands",
+      "summary": "Recommend brands based on product information.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/suggest-brands-202609"
+    },
+    {
+      "id": "POST /product/202609/products/{product_id}/strikethrough_price/submit",
+      "group": "Products",
+      "name": "Submit Strikethrough Price",
+      "summary": "Submit external pricing information for a product's SKUs so that TikTok Shop can verify the product's list price for use as a strikethrough price.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/submit-strikethrough-price-202609"
+    },
+    {
+      "id": "POST /product/202609/products/package/predict",
+      "group": "Products",
+      "name": "Predict Product Package Dimensions and Weight",
+      "summary": "Predicts the package dimensions and weight for one candidate product based on its leaf category.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/predict-product-package-dimensions-and-weight-202609"
+    },
+    {
+      "id": "POST /product/202609/products/properties/recommend",
+      "group": "Products",
+      "name": "Recommend Required Product Properties",
+      "summary": "Predicts the required product properties and their recommended values from the product category and content.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/recommend-required-product-properties-202609"
+    },
+    {
+      "id": "POST /product/202610/image_listing_tasks",
+      "group": "Products",
+      "name": "Create Image-based Product Listing Task",
+      "summary": "Creates an asynchronous image-based product listing task from the product title, leaf category, and one product image.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-image-based-product-listing-task-202610"
+    },
+    {
+      "id": "POST /product/202610/size_charts",
+      "group": "Products",
+      "name": "Create Size Chart V2",
+      "summary": "Create one size chart from structured table data.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-size-chart-v2-202610"
+    },
+    {
+      "id": "POST /product/202610/size_charts/edit",
+      "group": "Products",
+      "name": "Edit Size Chart V2",
+      "summary": "Edit an existing seller-owned size chart by replacing its structured table and editable metadata.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/edit-size-chart-v2-202610"
+    },
+    {
+      "id": "POST /product/202611/search_videos/{video_id}/comments",
+      "group": "Products",
+      "name": "Add Post-view Search Video Comment",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/add-post-view-search-video-comment-202611"
+    },
+    {
+      "id": "POST /product/202611/search_videos/{video_id}/products",
+      "group": "Products",
+      "name": "Change Post-view Search Video Products",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/change-post-view-search-video-products-202611"
+    },
+    {
+      "id": "POST /promotion/202309/activities",
+      "group": "Promotion",
+      "name": "Create Promotion Activity",
+      "summary": "Create a fixed-price, percentage-off, flash sale, shipping-discount, Buy More Save More, Gift With Purchase, or Buy X Get Y promotion activity.",
+      "scope": "Promotion Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-promotion-activity-202309"
+    },
+    {
+      "id": "POST /promotion/202309/activities/{activity_id}/deactivate",
+      "group": "Promotion",
+      "name": "Deactivate Activity",
+      "summary": "Deactivate an ongoing or upcoming activity.",
+      "scope": "Promotion Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/deactivate-activity-202309"
+    },
+    {
+      "id": "POST /promotion/202309/activities/search",
+      "group": "Promotion",
+      "name": "Search Promotion Activities",
+      "summary": "Search product discount, flash sale, shipping discount, Buy More Save More, Gift With Purchase, and Buy X Get Y promotion activities.",
+      "scope": "Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-promotion-activities-202309"
+    },
+    {
+      "id": "POST /promotion/202406/coupons/search",
+      "group": "Promotion",
+      "name": "Search Coupon List",
+      "summary": "Use this API to search coupons.",
+      "scope": "Customer Service, Promotion Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-coupon-list-202406"
+    },
+    {
+      "id": "POST /promotion/202607/activities/{activity_id}/republish",
+      "group": "Promotion",
+      "name": "Republish Activity",
+      "summary": "Use this API to republish a product discount activity or a flash deal activity that expired or was deactivated within the last 7 days.",
+      "scope": "Promotion Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/republish-activity-202607"
+    },
+    {
+      "id": "POST /return_refund/202309/cancellations/{cancel_id}/approve",
+      "group": "Return and refund",
+      "name": "Approve Cancellation",
+      "summary": "Use this API to approve a buyer-initiated cancellation request identified by cancel_id.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/approve-cancellation-202309"
+    },
+    {
+      "id": "POST /return_refund/202309/cancellations/{cancel_id}/reject",
+      "group": "Return and refund",
+      "name": "Reject Cancellation",
+      "summary": "Use this API to reject a buyer's cancellation request for the specified cancel_id.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/reject-cancellation-202309"
+    },
+    {
+      "id": "POST /return_refund/202309/returns/{return_id}/approve",
+      "group": "Return and refund",
+      "name": "Approve Return",
+      "summary": "Use this API to approve a buyer's return request.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/approve-return-202309"
+    },
+    {
+      "id": "POST /return_refund/202405/returns/shipping_documents",
+      "group": "Return and refund",
+      "name": "Upload Return Shipping Information",
+      "summary": "Use this API to upload return shipping documents, tracking numbers, and carriers for buyers.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-return-shipping-information-202405"
+    },
+    {
+      "id": "POST /return_refund/202602/cancellations",
+      "group": "Return and refund",
+      "name": "Cancel Order",
+      "summary": "Use this API to cancel an order on behalf of a seller.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/cancel-order-202602"
+    },
+    {
+      "id": "POST /return_refund/202602/cancellations/search",
+      "group": "Return and refund",
+      "name": "Search Cancellations",
+      "summary": "Use this API to search and retrieve one or more order cancellations.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-cancellations-202602"
+    },
+    {
+      "id": "POST /return_refund/202602/refunds/calculate",
+      "group": "Return and refund",
+      "name": "Calculate Refund",
+      "summary": "Use this API to estimate the refundable amount for a cancellation, refund, or return-and-refund request.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/calculate-refund-202602"
+    },
+    {
+      "id": "POST /return_refund/202602/returns",
+      "group": "Return and refund",
+      "name": "Create Return",
+      "summary": "Use this API to create a seller-initiated aftersales request for an order on behalf of the buyer.",
+      "scope": "Fulfillment Basic, Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/create-return-202602"
+    },
+    {
+      "id": "POST /return_refund/202602/returns/search",
+      "group": "Return and refund",
+      "name": "Search Returns",
+      "summary": "Use this API to search returns by return ID, order ID, buyer, return type, return status, arbitration status, or create/update time window.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-returns-202602"
+    },
+    {
+      "id": "POST /return_refund/202603/aftersales/search",
+      "group": "Return and refund",
+      "name": "Search Aftersales Requests",
+      "summary": "Searches aftersales requests for the authorized shop.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-aftersales-requests-202603"
+    },
+    {
+      "id": "POST /return_refund/202604/rma/search",
+      "group": "Return and refund",
+      "name": "Search Return Merchandise Authorizations",
+      "summary": "Searches return merchandise authorizations (RMAs) for the authorized shop.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/search-return-merchandise-authorizations-202604"
+    },
+    {
+      "id": "POST /return_refund/202606/returns/{return_id}/reject",
+      "group": "Return and refund",
+      "name": "Reject Return",
+      "summary": "Use this API to reject a buyer's refund-only, return-and-refund, or replacement request, or to offer a partial refund after the package is received.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/reject-return-202606"
+    },
+    {
+      "id": "POST /return_refund/202609/aftersales/review",
+      "group": "Return and refund",
+      "name": "Review Aftersales Requests",
+      "summary": "API used to review (approve, reject, or offer alternatives to) a buyer's return request.",
+      "scope": "Return & Refund Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/review-aftersales-requests-202609"
+    },
+    {
+      "id": "POST /seller/202611/images/upload",
+      "group": "Seller",
+      "name": "Upload Shop Image",
+      "summary": "Upload an image material up to 10 MiB to TOS for the current shop.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-shop-image-202611"
+    },
+    {
+      "id": "POST /seller/202611/materials/upload",
+      "group": "Seller",
+      "name": "Upload Shop Materials",
+      "summary": "Upload image materials for the current shop.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/upload-shop-materials-202611"
+    },
+    {
+      "id": "POST /supply_chain/202309/packages/sync",
+      "group": "Supply chain",
+      "name": "Confirm Package Shipment",
+      "summary": "Use this API to submit package shipment information.",
+      "scope": "Fulfillment Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/confirm-package-shipment-202309"
+    },
+    {
+      "id": "PUT /affiliate_seller/202508/target_collaborations/{target_collaboration_id}",
+      "group": "Affiliate seller",
+      "name": "Update Target Collaboration",
+      "summary": "This API is used by sellers to update a STANDARD target collaboration.",
+      "scope": "Manage Seller Affiliate Collaboration",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-target-collaboration-202508"
+    },
+    {
+      "id": "PUT /customer_service/202309/agents/settings",
+      "group": "Customer service",
+      "name": "Update Agent Settings",
+      "summary": "Use this API to set whether the shop owner's customer service account can accept auto-assigned chats.",
+      "scope": "Customer Service",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-agent-settings-202309"
+    },
+    {
+      "id": "PUT /event/202309/webhooks",
+      "group": "Event",
+      "name": "Update Shop Webhook",
+      "summary": "Updates the shop's webhook URL for a specific event topic.",
+      "scope": "Shop Authorized Information",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-shop-webhook-202309"
+    },
+    {
+      "id": "PUT /product/202309/global_products/{global_product_id}",
+      "group": "Products",
+      "name": "Edit Global Product",
+      "summary": "Edit all properties (e.g.",
+      "scope": "Global Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/edit-global-product-202309"
+    },
+    {
+      "id": "PUT /product/202509/global_products/{global_product_id}/partial_edit",
+      "group": "Products",
+      "name": "Partial Edit Global Product",
+      "summary": "Partially update an existing global product.",
+      "scope": "Product Basic",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/partial-edit-global-product-202509"
+    },
+    {
+      "id": "PUT /product/202509/products/{product_id}",
+      "group": "Products",
+      "name": "Edit Product",
+      "summary": "Edit all properties (e.g.",
+      "scope": "Product Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/edit-product-202509"
+    },
+    {
+      "id": "PUT /product/202611/search_videos/{video_id}/keywords",
+      "group": "Products",
+      "name": "Update Post-view Search Video Keywords",
+      "summary": "Only US shops are supported.",
+      "scope": "Product Optimization",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-post-view-search-video-keywords-202611"
+    },
+    {
+      "id": "PUT /promotion/202309/activities/{activity_id}",
+      "group": "Promotion",
+      "name": "Update Promotion Activity",
+      "summary": "Update an existing promotion activity.",
+      "scope": "Promotion Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-promotion-activity-202309"
+    },
+    {
+      "id": "PUT /promotion/202309/activities/{activity_id}/products",
+      "group": "Promotion",
+      "name": "Update Promotion Activity Products",
+      "summary": "Use this API as follows: - For a `FIXED_PRICE`, `DIRECT_DISCOUNT`, or `FLASHSALE` activity with PRODUCT or VARIATION scope, provide a non-empty `products` array.",
+      "scope": "Promotion Modify",
+      "sellerFacing": true,
+      "confirmed": true,
+      "docs": "https://partner.tiktokshop.com/docv2/page/update-promotion-activity-products-202309"
+    }
+  ]
+}
