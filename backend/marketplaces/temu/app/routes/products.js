@@ -3,12 +3,13 @@ const { requireAuth, loadAccess, requireMainRoute, limitToSection } = require('.
 
 const service = require('../services/products')
 const { HttpError, ctxOf } = require('../../../../utils/httpError')
-const { onlyShop } = require('../../../../middleware/shopScope')
+const { onlyShop, belongsToShop } = require('../../../../middleware/shopScope')
 
 /** /api/<shop>/products for one shop (its key is fixed by the URL). */
 function productsRoutes(shopKey) {
   const router = express.Router()
 
+  router.param('id', belongsToShop(() => require('../../../../models/Product'), shopKey, 'Product'))
   router.use(requireAuth, loadAccess, onlyShop(shopKey), requireMainRoute('products'), limitToSection('products'))
 
   // GET /api/<shop>/products?q=&status=&category=&stock=low|out&shop=&sort=&page=&limit=

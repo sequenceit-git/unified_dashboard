@@ -96,31 +96,13 @@ async function list(ctx) {
     if (ctx.query.stock === 'out') filter.stock = 0
     const ids = await scopedIds(ctx)
     if (ids) filter._id = { $in: ids }
-    let marketplace = null
-    if (ctx.query.marketplace && !ctx.query.shop) {
-      marketplace = 'temu'
-      if (!marketplace) throw new HttpError(400, { error: 'Unknown marketplace' })
-      const listingFilter = { marketplace, ...listingStatusFilter(ctx.query.listing) }
-      const rows = await Listing.find(listingFilter).select('productId')
-      let productIds = rows.map((row) => row.productId)
-      if (ids) {
-        const allowed = new Set(ids.map(String))
-        productIds = productIds.filter((id) => allowed.has(String(id)))
-      }
-      const unlisted = !ids && (!ctx.query.listing || ctx.query.listing === 'all')
-      // A sub-admin's own drafts show on the tab of the shop they're meant for (or every tab if none).
-      if (ids && (!ctx.query.listing || ctx.query.listing === 'all')) {
-        const drafts = await ownDrafts(ctx)
-        for (const row of drafts) {
-          const target = row.attributes?.targetMarketplace
-          if (!target || target === marketplace) productIds.push(row._id)
-        }
-      }
-      if (unlisted) {
-        filter.$and = [{ $or: [{ _id: { $in: productIds } }, { 'attributes.targetMarketplace': marketplace }] }]
-      } else {
-        filter._id = { $in: productIds }
-      }
+    // This shop's products only: each shop has its own products, stock and price.
+    filter.marketplace = 'temu'
+    const marketplace = 'temu'
+    if (ctx.query.listing && ctx.query.listing !== 'all') {
+      const rows = await Listing.find({ marketplace, ...listingStatusFilter(ctx.query.listing) }).select('productId')
+      const allowed = ids ? new Set(ids.map(String)) : null
+      filter._id = { $in: rows.map((row) => row.productId).filter((id) => !allowed || allowed.has(String(id))) }
     }
     if (ctx.query.shop) {
       const shopId = ctx.user.role === 'sub_admin' && !ctx.allowedShopIds.some((id) => String(id) === ctx.query.shop)
@@ -168,7 +150,7 @@ async function fillAttributes(ctx) {
 /** GET /categories */
 async function categories(ctx) {
     const ids = await scopedIds(ctx)
-    return await Product.distinct('category', ids ? { _id: { $in: ids } } : {})
+    return await Product.distinct('category', { marketplace: 'temu', ...(ids ? { _id: { $in: ids } } : {}) })
 }
 
 /** GET /:id */
@@ -185,7 +167,7 @@ async function get(ctx) {
 
 /** POST / */
 async function create(ctx) {
-    const body = { ...ctx.body, createdBy: ctx.user.id }
+    const body = { ...ctx.body, marketplace: 'temu', createdBy: ctx.user.id }
     if (Array.isArray(body.variants) && body.variants.length > 0) {
       body.variants = body.variants.map((v) => ({
         ...v,
@@ -219,7 +201,7 @@ async function update(ctx) {
     }
     const doc = await Product.findByIdAndUpdate(ctx.params.id, update, { new: true, runValidators: true })
     const changes = changedListingFields(before, doc)
-    const marketplaceSync = Object.keys(changes).length ? await require('../../../../services/catalog/fanOut').pushProductChanges(doc, changes) : []
+    const marketplaceSync = Object.keys(changes).length ? await marketplaceManager.pushProductChanges(doc, changes) : []
     if (changes.quantity != null) {
       await require('../../../../services/core/notify').stockChangedOnShops(doc, { was: before.stock, stock: doc.stock }).catch(() => {})
     }
@@ -481,7 +463,7 @@ async function sync(ctx) {
     const product = await Product.findById(ctx.params.id)
     if (!product) throw new HttpError(404, { error: 'Product not found' })
 
-    const results = await require('../../../../services/catalog/fanOut').pushProductChanges(product, {
+    const results = await marketplaceManager.pushProductChanges(product, {
       price: product.basePrice,
       quantity: product.stock,
       variants: product.variants,
@@ -507,7 +489,7 @@ async function updatePrice(ctx) {
     const product = await Product.findByIdAndUpdate(ctx.params.id, { basePrice: numPrice }, { new: true })
     if (!product) throw new HttpError(404, { error: 'Product not found' })
 
-    const results = await require('../../../../services/catalog/fanOut').pushProductChanges(product, { price: numPrice })
+    const results = await marketplaceManager.pushProductChanges(product, { price: numPrice })
     return { product, pushedToMarketplaces: results.filter((item) => item.ok).length, marketplaceSync: results }
 }
 

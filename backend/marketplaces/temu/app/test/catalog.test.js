@@ -20,8 +20,8 @@ function load(db = {}) {
     distinct: async () => [],
   }
   const Listing = { find: () => chain(db.listings || []), distinct: async () => [] }
-  const manager = {}
-  const fanOut = { pushProductChanges: async (doc, changes) => { seen.pushed = changes; return [{ ok: true }] } }
+  // Product edits go to this shop's own listings through its own manager.
+  const manager = { pushProductChanges: async (doc, changes) => { seen.pushed = changes; return [{ ok: true }] } }
   const restore = stubModules({
     '/models/Product': Product,
     '/models/Listing': Listing,
@@ -30,7 +30,6 @@ function load(db = {}) {
     '../../services/marketplace': manager,
     '../marketplace': manager,
     '../manager': manager,
-    '/catalog/fanOut': fanOut,
     '/catalog/productImport': {},
     '/core/notify': { stockChangedOnShops: async () => {} },
   })
@@ -93,5 +92,21 @@ test('a product not listed on this shop has shopListing: null', async () => {
     const res = await service.list({ ...admin, query: { marketplace: 'temu' } })
     assert.equal(res.data.length, 1)
     assert.strictEqual(res.data[0].shopListing, null)
+  } finally { restore() }
+})
+
+test("list filters by this shop's products", async () => {
+  const { service, seen, restore } = load({ products: [] })
+  try {
+    await service.list({ ...admin, query: { marketplace: 'temu' } })
+    assert.equal(seen.productFilter.marketplace, 'temu')
+  } finally { restore() }
+})
+
+test('create stamps the product with this shop', async () => {
+  const { service, seen, restore } = load()
+  try {
+    await service.create({ ...admin, body: { title: 'Mug', marketplace: 'ebay' } })
+    assert.equal(seen.created.marketplace, 'temu')
   } finally { restore() }
 })

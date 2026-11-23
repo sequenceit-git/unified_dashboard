@@ -171,6 +171,7 @@ async function inventory(ctx) {
     if (Object.keys(listingFilter).length) {
       filter._id = { $in: await Listing.find(listingFilter).distinct('productId') }
     }
+    filter.marketplace = 'temu'
     const low = await Product.find(filter)
       .select('sku title stock lowStockThreshold')
       .sort({ stock: 1 })

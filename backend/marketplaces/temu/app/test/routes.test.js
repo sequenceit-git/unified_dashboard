@@ -24,3 +24,8 @@ test('Temu app has no inbox', () => {
   assert.equal(app.sync.inbox, undefined)
   assert.equal(require('../api').routeList.some((r) => r.split(' ')[1].startsWith('/inbox')), false)
 })
+
+test("another shop's product id is a 404", async () => {
+  const router = require('../routes/products')('temu')
+  assert.ok(router.params?.id?.length, 'the products routes check that an :id belongs to this shop')
+})

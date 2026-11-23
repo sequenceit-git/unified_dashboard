@@ -223,7 +223,7 @@ class Manager {
               item.externalListingId ? `EBAY-${item.externalListingId}` : null,
               item.externalListingId ? `TTS-${item.externalListingId}` : null,
             ].filter(Boolean)
-            prod = await Product.findOne({ $or: [{ sku: { $in: candidates } }, { 'variants.sku': { $in: candidates } }] })
+            prod = await Product.findOne({ marketplace: 'temu', $or: [{ sku: { $in: candidates } }, { 'variants.sku': { $in: candidates } }] })
           }
 
           let itemImages = []
@@ -236,6 +236,7 @@ class Manager {
           if (!prod) {
             const prefix = skuPrefix(shop.marketplace)
             prod = await Product.create({
+              marketplace: 'temu',
               sku: item.sku || (item.externalListingId ? `${prefix}-${item.externalListingId}` : newSku(shop.marketplace)),
               title: item.title || `Item ${item.sku || item.externalListingId}`,
               category: 'General',
@@ -363,7 +364,6 @@ class Manager {
           })
           createdCount++
 
-          const soldProductIds = new Set()
           // Deduct stock for newly imported order. Not for orders that arrive already cancelled or
           // refunded, and not for eBay sales the last listing sync already counted (eBay's own
           // stock fell when the item sold, and listing sync copies that number).
@@ -399,7 +399,6 @@ class Manager {
                       { $set: { stock: shopStock, ...(shopStock === 0 ? { status: 'out_of_stock' } : {}) } },
                     )
                   }
-                  soldProductIds.add(String(item.productId))
                   await InventoryLog.create({
                     productId: item.productId,
                     ...(variantIdx !== -1 ? { variantSku: variants[variantIdx].sku } : {}),
@@ -415,11 +414,6 @@ class Manager {
                 console.warn('[syncOrders] Failed to deduct stock for order item:', logErr.message)
               }
             }
-          }
-          // A sale here lowers the shared stock; tell the other shops that sell the same product.
-          for (const productId of soldProductIds) {
-            const sold = await Product.findById(productId)
-            if (sold) await require('../../../services/catalog/fanOut').propagateStock(sold, { exceptShopId: shop._id })
           }
         }
         } catch (ordErr) {
@@ -722,14 +716,14 @@ class Manager {
     let stock = before
     let changed = false
     if (!Number.isFinite(was)) {
-      const others = await Listing.countDocuments({ productId: product._id, _id: { $ne: listing._id } })
+      const others = await Listing.countDocuments({ productId: product._id, marketplace: 'temu', _id: { $ne: listing._id } })
       if (!others) {
-        // Only this shop sells it, so the marketplace number is the truth.
+        // Its only listing, so the marketplace number is the truth.
         stock = now
         changed = stock !== before
       } else if (now !== stock) {
-        // First read of a listing on a product other shops also sell: it adopts the shared stock.
-        await require('../../../services/catalog/fanOut').propagateStock(product, { onlyListingId: listing._id })
+        // First read of another listing of this product on this shop: it adopts the product stock.
+        await this.propagateStock(product, { onlyListingId: listing._id })
         return
       }
     } else if (now !== was) {
@@ -747,7 +741,6 @@ class Manager {
       change: stock - before,
       reason: 'sync',
     }).catch(() => {})
-    await require('../../../services/catalog/fanOut').propagateStock(product, { exceptShopId: shop._id })
   }
 
   /** One listing's revise call for a dashboard edit; null when the shop can't revise listings. */
@@ -774,6 +767,75 @@ class Manager {
     })
   }
 
+  /**
+   * Pushes the product stock to temu's own listings of it (each shop has its own products, so
+   * nothing goes to another shop). A listing's stored stock is set before the push (and put back
+   * if it fails) so the next sync reads no change and does not count the push as a sale.
+   */
+  async propagateStock(product, { onlyListingId = null } = {}) {
+    const quantity = Math.max(0, Math.floor(Number(product.stock) || 0))
+    const filter = { productId: product._id, marketplace: 'temu', status: { $in: ['live', 'out_of_stock'] } }
+    if (onlyListingId) filter._id = onlyListingId
+    const listings = await Listing.find(filter)
+    const results = []
+    for (const listing of listings) {
+      if (listing.stock === quantity) continue
+      const shop = await Shop.findById(listing.shopId)
+      if (!shop || shop.status !== 'connected') continue
+      const before = { stock: listing.stock, status: listing.status }
+      listing.stock = quantity
+      listing.status = quantity > 0 ? 'live' : 'out_of_stock'
+      await listing.save()
+      try {
+        const res = await this.pushStockOne(shop, listing, product, quantity)
+        if (res?.status === 'ended' || res?.ended) {
+          listing.status = 'ended'
+          listing.marketplaceStatus = res.marketplaceStatus || 'Ended'
+        }
+        listing.syncError = null
+        listing.lastSyncedAt = new Date()
+        await listing.save()
+        results.push({ shopName: shop.name, ok: true })
+      } catch (err) {
+        Object.assign(listing, before, { syncError: `Stock update failed: ${err.message}` })
+        await listing.save()
+        console.warn(`[stock] ${shop.name}: could not set ${product.sku} to ${quantity}: ${err.message}`)
+        results.push({ shopName: shop.name, ok: false, error: err.message })
+      }
+    }
+    return results
+  }
+
+  /** Pushes dashboard edits (title, description, images, price, stock) to temu's live listings of this product. */
+  async pushProductChanges(product, changes) {
+    const results = []
+    const listings = await Listing.find({ productId: product._id, marketplace: 'temu', status: { $in: ['live', 'out_of_stock', 'pending', 'paused'] } })
+    for (const listing of listings) {
+      const shop = await Shop.findById(listing.shopId)
+      if (!shop || shop.status !== 'connected') continue
+      try {
+        const res = await this.reviseOne(shop, listing, product, changes)
+        if (res === null) continue // the listing API can't revise listings
+        listing.syncError = null
+        if (changes.price != null && !res?.skipped?.includes('price')) listing.price = changes.price
+        if (changes.quantity != null) listing.stock = Math.max(0, Math.floor(Number(changes.quantity)))
+        if (res?.status === 'ended' || res?.ended) {
+          listing.status = 'ended'
+          listing.marketplaceStatus = res.marketplaceStatus || 'Ended'
+        } else if (changes.quantity != null && ['live', 'out_of_stock'].includes(listing.status)) {
+          listing.status = Number(changes.quantity) > 0 ? 'live' : 'out_of_stock'
+        }
+        results.push({ shopName: shop.name, ok: true, ...(res?.skipped?.length ? { skipped: res.skipped } : {}) })
+      } catch (err) {
+        listing.syncError = err.message
+        results.push({ shopName: shop.name, ok: false, error: err.message })
+      }
+      if (changes.quantity != null || !listing.lastSyncedAt) listing.lastSyncedAt = new Date()
+      await listing.save()
+    }
+    return results
+  }
+
   /** Saves one marketplace listing, creating or updating its product. */
   async saveSyncedListing(shop, item) {
     const ids = [...new Set([...(item.aliases || []), ...listingAliases(item.externalListingId)])]
@@ -785,7 +847,7 @@ class Manager {
       })
     let product = listing ? await Product.findById(listing.productId) : null
     if (!product && item.matchSkus?.length) {
-      product = await Product.findOne({ $or: [{ sku: { $in: item.matchSkus } }, { 'variants.sku': { $in: item.matchSkus } }] })
+      product = await Product.findOne({ marketplace: 'temu', $or: [{ sku: { $in: item.matchSkus } }, { 'variants.sku': { $in: item.matchSkus } }] })
     }
     if (await this.isForgotten(shop._id, item, product)) {
       if (product?.source === 'marketplace_sync') {
@@ -823,6 +885,7 @@ class Manager {
     const created = !product
     if (created) {
       product = await Product.create({
+        marketplace: 'temu',
         sku: item.sku,
         ...Object.fromEntries(Object.entries(fromMarketplace).filter(([, value]) => value !== undefined && value !== '')),
         title: item.title || `Item ${item.externalListingId}`,
@@ -853,7 +916,7 @@ class Manager {
       if (item.listingStatus === 'live' && product.status === 'draft') product.status = 'active'
       // A made-up SKU (draft or random ID) becomes the real one, if no other product uses it.
       if (isMachineSku(product.sku) && item.sku && !isMachineSku(item.sku) && item.sku !== product.sku
-        && !(await Product.exists({ sku: item.sku, _id: { $ne: product._id } }))) {
+        && !(await Product.exists({ marketplace: 'temu', sku: item.sku, _id: { $ne: product._id } }))) {
         product.sku = item.sku
       }
       await product.save()
