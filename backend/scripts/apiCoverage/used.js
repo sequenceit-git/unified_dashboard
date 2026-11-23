@@ -89,7 +89,8 @@ function normalizeId(id) {
   const [first, ...rest] = String(id).trim().split(' ')
   if (!rest.length) return first
   const method = METHODS.includes(first.toUpperCase()) ? first.toUpperCase() : first
-  return `${method} ${rest.join(' ').replace(/\{[^}]*\}/g, '{}')}`
+  // Path parameters (named or a literal number, e.g. eBay US category tree 0) compare equal.
+  return `${method} ${rest.join(' ').replace(/\{[^}]*\}/g, '{}').replace(/\/\d+(?=\/|$)/g, '/{}')}`
 }
 
 module.exports = { usedEndpoints, normalizeId, cleanPath }

@@ -1,0 +1,3901 @@
+{
+  "shop": "ebay",
+  "sources": [
+    "https://developer.ebay.com/api-docs/master/buy/browse/openapi/3/buy_browse_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/catalog/openapi/3/commerce_catalog_v1_beta_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/charity/openapi/3/commerce_charity_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/feedback/openapi/3/commerce_feedback_v1_beta_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/identity/openapi/3/commerce_identity_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/media/openapi/3/commerce_media_v1_beta_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/message/openapi/3/commerce_message_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/notification/openapi/3/commerce_notification_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/taxonomy/openapi/3/commerce_taxonomy_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/commerce/translation/openapi/3/commerce_translation_v1_beta_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/account/openapi/3/sell_account_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/account/v2/openapi/3/sell_account_v2_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/analytics/openapi/3/sell_analytics_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/feed/openapi/3/sell_feed_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/finances/openapi/3/sell_finances_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/fulfillment/openapi/3/sell_fulfillment_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/inventory/openapi/3/sell_inventory_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/logistics/openapi/3/sell_logistics_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/marketing/openapi/3/sell_marketing_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/metadata/openapi/3/sell_metadata_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/negotiation/openapi/3/sell_negotiation_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/recommendation/openapi/3/sell_recommendation_v1_oas3.json",
+    "https://developer.ebay.com/api-docs/master/sell/stores/openapi/3/sell_stores_v1_oas3.json",
+    "https://developer.ebay.com/webservices/latest/ebaySvc.wsdl",
+    "https://developer.ebay.com/devzone/xml/docs/reference/ebay/index.html",
+    "https://developer.ebay.com/devzone/post-order/index.html",
+    "https://developer.ebay.com/api-docs/static/oauth-tokens.html"
+  ],
+  "researchedAt": "2026-11-23",
+  "notes": [
+    "Sell Compliance API: eBay publishes no contract for it any more (retired); not listed.",
+    "Buy Browse: only the two methods the dashboard uses, as not for sellers."
+  ],
+  "endpoints": [
+    {
+      "id": "GET /buy/browse/v1/item_summary/search",
+      "group": "Browse API",
+      "name": "search",
+      "summary": "This method searches for eBay items by various query parameters and retrieves summaries of the items.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "GET /buy/browse/v1/item/get_item_by_legacy_id",
+      "group": "Browse API",
+      "name": "getItemByLegacyId",
+      "summary": "This method is a bridge between the eBay legacy APIs, such as Shopping and Finding, and the eBay Buy APIs.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/catalog/v1_beta/product/{epid}",
+      "group": "Catalog API",
+      "name": "getProduct",
+      "summary": "This method retrieves details of the catalog product identified by the eBay product identifier (ePID) specified in the request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/catalog/v1_beta/product_summary/search",
+      "group": "Catalog API",
+      "name": "search",
+      "summary": "This method searches for and retrieves summaries of one or more products in the eBay catalog that match the search criteria provided by a seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/charity/v1/charity_org/{charity_org_id}",
+      "group": "Charity API",
+      "name": "getCharityOrg",
+      "summary": "This call is used to retrieve detailed information about supported charitable organizations.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/charity/v1/charity_org",
+      "group": "Charity API",
+      "name": "getCharityOrgs",
+      "summary": "This call is used to search for supported charitable organizations.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/feedback/v1/awaiting_feedback",
+      "group": "Feedback API",
+      "name": "getItemsAwaitingFeedback",
+      "summary": "This method retrieves line items awaiting feedback from the user's order partner.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.feedback",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/feedback/v1/feedback",
+      "group": "Feedback API",
+      "name": "getFeedback",
+      "summary": "This method enables users to retrieve feedback for any specified user ID and feedback type (sent or received).",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.feedback",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/feedback/v1/feedback",
+      "group": "Feedback API",
+      "name": "leaveFeedback",
+      "summary": "This method creates and submits feedback to the user's order partner for a line item in the order.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.feedback",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/feedback/v1/feedback_rating_summary",
+      "group": "Feedback API",
+      "name": "getFeedbackRatingSummary",
+      "summary": "This method provides a detailed overview of feedback ratings associated with a user in the eBay marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.feedback",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/feedback/v1/respond_to_feedback",
+      "group": "Feedback API",
+      "name": "respondToFeedback",
+      "summary": "This method allows users to respond to feedback provided by the order partner for a specific line item in an order.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.feedback",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/identity/v1/user",
+      "group": "Identity API",
+      "name": "getUser",
+      "summary": "This method retrieves the account profile information for an authenticated user, which requires a User access token.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/image/create_image_from_file",
+      "group": "Media API",
+      "name": "createImageFromFile",
+      "summary": "This method uploads a picture file to eBay Picture Services (EPS) using multipart/form-data.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/image/create_image_from_url",
+      "group": "Media API",
+      "name": "createImageFromUrl",
+      "summary": "This method uploads a picture to eBay Picture Services (EPS) from the specified URL.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/media/v1_beta/image/{image_id}",
+      "group": "Media API",
+      "name": "getImage",
+      "summary": "This method retrieves an EPS image URL and its expiration details for the unique identifier specified in the path parameter image_id.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/video",
+      "group": "Media API",
+      "name": "createVideo",
+      "summary": "This method creates a video resource.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/media/v1_beta/video/{video_id}",
+      "group": "Media API",
+      "name": "getVideo",
+      "summary": "This method retrieves a video's metadata and content given a specified video ID.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/video/{video_id}/upload",
+      "group": "Media API",
+      "name": "uploadVideo",
+      "summary": "This method associates the specified file with the specified video ID and uploads the input file.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/document",
+      "group": "Media API",
+      "name": "createDocument",
+      "summary": "This method stages a document to be uploaded, and requires the type of document to be uploaded, and the language(s) that the document contains.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/document/create_document_from_url",
+      "group": "Media API",
+      "name": "createDocumentFromUrl",
+      "summary": "This method downloads a document from the provided URL and adds that document to the user's account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/media/v1_beta/document/{document_id}",
+      "group": "Media API",
+      "name": "getDocument",
+      "summary": "This method retrieves the current status and metadata of the specified document.Important! The document ID value returned in the response payload of the createDocument method is a required input path parameter for this m",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/document/{document_id}/upload",
+      "group": "Media API",
+      "name": "uploadDocument",
+      "summary": "This method associates the specified file with the specified document ID and uploads the input file.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/media/v1_beta/post_order/document/{document_id}",
+      "group": "Media API",
+      "name": "downloadPostOrderDocument",
+      "summary": "This method downloads the file associated with the specified document ID.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.post_order.document",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /commerce/media/v1_beta/post_order/document/{document_id}",
+      "group": "Media API",
+      "name": "removePostOrderDocument",
+      "summary": "This method deletes a previously uploaded document by its document ID.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.post_order.document",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/media/v1_beta/post_order/document",
+      "group": "Media API",
+      "name": "uploadPostOrderDocument",
+      "summary": "This method uploads a document for post‑order processes (for example, a seller providing a return shipping label).",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.post_order.document",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/message/v1/bulk_update_conversation",
+      "group": "M2M Public API Service",
+      "name": "bulkUpdateConversation",
+      "summary": "This method can be used to update the conversationStatus of up to 10 conversations.The conversationId, existing conversationType, and updated conversationStatus for each conversation to modify are required in the convers",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.message",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/message/v1/conversation/{conversation_id}",
+      "group": "M2M Public API Service",
+      "name": "getConversation",
+      "summary": "This method can be used to retrieve messages within a specific conversation.The conversation_id of the conversation for which to retrieve messages is required as path parameters, and the and conversation_type of the conv",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.message",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/message/v1/conversation",
+      "group": "M2M Public API Service",
+      "name": "getConversations",
+      "summary": "This method can be used to retrieve one or more conversations associated with a user.The conversation_type query parameter is required when using this method to specify if the retrieved conversations are from eBay or fro",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.message",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/message/v1/send_message",
+      "group": "M2M Public API Service",
+      "name": "sendMessage",
+      "summary": "This method can be used to start a conversation with another user or send a message in an existing conversation with another user based on the information provided in the request.To send a message, one of the conversatio",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.message",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/message/v1/update_conversation",
+      "group": "M2M Public API Service",
+      "name": "updateConversation",
+      "summary": "This method can be used to update the conversationStatus or the read status of a specified conversation.Note: Only one of these statuses can be updated at a time using this method.",
+      "scope": "https://api.ebay.com/oauth/api_scope/commerce.message",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/config",
+      "group": "Notification API",
+      "name": "getConfig",
+      "summary": "This method allows applications to retrieve a previously created configuration.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /commerce/notification/v1/config",
+      "group": "Notification API",
+      "name": "updateConfig",
+      "summary": "This method allows applications to create a new configuration or update an existing configuration.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/destination",
+      "group": "Notification API",
+      "name": "getDestinations",
+      "summary": "This method allows applications to retrieve a paginated collection of destination resources and related details.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/notification/v1/destination",
+      "group": "Notification API",
+      "name": "createDestination",
+      "summary": "This method allows applications to create a destination.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/destination/{destination_id}",
+      "group": "Notification API",
+      "name": "getDestination",
+      "summary": "This method allows applications to fetch the details for a destination.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /commerce/notification/v1/destination/{destination_id}",
+      "group": "Notification API",
+      "name": "updateDestination",
+      "summary": "This method allows applications to update a destination.Note: The destination should be created and ready to respond with the expected challengeResponse for the endpoint to be registered successfully.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /commerce/notification/v1/destination/{destination_id}",
+      "group": "Notification API",
+      "name": "deleteDestination",
+      "summary": "This method provides applications a way to delete a destination.The same destination ID can be used by many destinations.Trying to delete an active destination results in an error.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/public_key/{public_key_id}",
+      "group": "Notification API",
+      "name": "getPublicKey",
+      "summary": "This method allows users to retrieve a public key using a specified key ID.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/subscription",
+      "group": "Notification API",
+      "name": "getSubscriptions",
+      "summary": "This method allows applications to retrieve a list of all subscriptions.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/notification/v1/subscription",
+      "group": "Notification API",
+      "name": "createSubscription",
+      "summary": "This method allows applications to create a subscription for a topic and supported schema version.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/notification/v1/subscription/{subscription_id}/filter",
+      "group": "Notification API",
+      "name": "createSubscriptionFilter",
+      "summary": "This method allows applications to create a filter for a subscription.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/subscription/{subscription_id}",
+      "group": "Notification API",
+      "name": "getSubscription",
+      "summary": "This method allows applications to retrieve subscription details for the specified subscription.Specify the subscription to retrieve using the subscription_id.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /commerce/notification/v1/subscription/{subscription_id}",
+      "group": "Notification API",
+      "name": "updateSubscription",
+      "summary": "This method allows applications to update a subscription.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /commerce/notification/v1/subscription/{subscription_id}",
+      "group": "Notification API",
+      "name": "deleteSubscription",
+      "summary": "This method allows applications to delete a subscription.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}",
+      "group": "Notification API",
+      "name": "getSubscriptionFilter",
+      "summary": "This method allows applications to retrieve the filter details for the specified subscription filter.Specify the subscription filter to retrieve by using the subscription_id and the filter_id associated with the subscrip",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}",
+      "group": "Notification API",
+      "name": "deleteSubscriptionFilter",
+      "summary": "This method allows applications to disable the active filter on a subscription, so that a new subscription filter may be added.Note: Subscription filters in PENDING status can not be disabled.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/notification/v1/subscription/{subscription_id}/disable",
+      "group": "Notification API",
+      "name": "disableSubscription",
+      "summary": "This method disables a subscription, which prevents the subscription from providing notifications.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/notification/v1/subscription/{subscription_id}/enable",
+      "group": "Notification API",
+      "name": "enableSubscription",
+      "summary": "This method allows applications to enable a disabled subscription.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/notification/v1/subscription/{subscription_id}/test",
+      "group": "Notification API",
+      "name": "testSubscription",
+      "summary": "This method triggers a mocked test payload that includes a notification ID, publish date, and so on.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/topic/{topic_id}",
+      "group": "Notification API",
+      "name": "getTopic",
+      "summary": "This method allows applications to retrieve details for the specified topic.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/notification/v1/topic",
+      "group": "Notification API",
+      "name": "getTopics",
+      "summary": "This method returns a paginated collection of all supported topics, along with the details for the topics.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/fetch_item_aspects",
+      "group": "Taxonomy API",
+      "name": "fetchItemAspects",
+      "summary": "Get Aspects for All Leaf Categories in a Marketplace",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/get_default_category_tree_id",
+      "group": "Taxonomy API",
+      "name": "getDefaultCategoryTreeId",
+      "summary": "Get a Default Category Tree ID",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}",
+      "group": "Taxonomy API",
+      "name": "getCategoryTree",
+      "summary": "Get a Category Tree",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_category_subtree",
+      "group": "Taxonomy API",
+      "name": "getCategorySubtree",
+      "summary": "Get a Category Subtree",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_category_suggestions",
+      "group": "Taxonomy API",
+      "name": "getCategorySuggestions",
+      "summary": "Get Suggested Categories",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_item_aspects_for_category",
+      "group": "Taxonomy API",
+      "name": "getItemAspectsForCategory",
+      "summary": "This call returns a list of aspects that are appropriate or necessary for accurately describing items in the specified leaf category.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_properties",
+      "group": "Taxonomy API",
+      "name": "getCompatibilityProperties",
+      "summary": "Get Compatibility Properties",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_property_values",
+      "group": "Taxonomy API",
+      "name": "getCompatibilityPropertyValues",
+      "summary": "Get Compatibility Property Values",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_expired_categories",
+      "group": "Taxonomy API",
+      "name": "getExpiredCategories",
+      "summary": "This method retrieves the mappings of expired leaf categories in the specified category tree to their corresponding active leaf categories.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /commerce/translation/v1_beta/translate",
+      "group": "Translation API",
+      "name": "translate",
+      "summary": "This method translates listing title and listing description text from one language into another.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/custom_policy",
+      "group": "Account v1 API",
+      "name": "getCustomPolicies",
+      "summary": "This method retrieves the list of custom policies defined for a seller's account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v1/custom_policy",
+      "group": "Account v1 API",
+      "name": "createCustomPolicy",
+      "summary": "This method creates a new custom policy that specifies the seller's terms for complying with local governmental regulations.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/custom_policy/{custom_policy_id}",
+      "group": "Account v1 API",
+      "name": "getCustomPolicy",
+      "summary": "This method retrieves the custom policy specified by the custom_policy_id path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/account/v1/custom_policy/{custom_policy_id}",
+      "group": "Account v1 API",
+      "name": "updateCustomPolicy",
+      "summary": "This method updates an existing custom policy specified by the custom_policy_id path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v1/fulfillment_policy",
+      "group": "Account v1 API",
+      "name": "createFulfillmentPolicy",
+      "summary": "This method creates a new fulfillment policy for an eBay marketplace where the policy encapsulates seller's terms for fulfilling item purchases.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}",
+      "group": "Account v1 API",
+      "name": "getFulfillmentPolicy",
+      "summary": "This method retrieves the complete details of a fulfillment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}",
+      "group": "Account v1 API",
+      "name": "updateFulfillmentPolicy",
+      "summary": "This method updates an existing fulfillment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}",
+      "group": "Account v1 API",
+      "name": "deleteFulfillmentPolicy",
+      "summary": "This method deletes a fulfillment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/fulfillment_policy",
+      "group": "Account v1 API",
+      "name": "getFulfillmentPolicies",
+      "summary": "This method retrieves all the fulfillment policies configured for the marketplace you specify using the marketplace_id query parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/fulfillment_policy/get_by_policy_name",
+      "group": "Account v1 API",
+      "name": "getFulfillmentPolicyByName",
+      "summary": "This method retrieves the details for a specific fulfillment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/payment_policy",
+      "group": "Account v1 API",
+      "name": "getPaymentPolicies",
+      "summary": "This method retrieves all the payment business policies configured for the marketplace you specify using the marketplace_id query parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v1/payment_policy",
+      "group": "Account v1 API",
+      "name": "createPaymentPolicy",
+      "summary": "This method creates a new payment policy where the policy encapsulates seller's terms for order payments.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/payment_policy/{payment_policy_id}",
+      "group": "Account v1 API",
+      "name": "getPaymentPolicy",
+      "summary": "This method retrieves the complete details of a payment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/account/v1/payment_policy/{payment_policy_id}",
+      "group": "Account v1 API",
+      "name": "updatePaymentPolicy",
+      "summary": "This method updates an existing payment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/account/v1/payment_policy/{payment_policy_id}",
+      "group": "Account v1 API",
+      "name": "deletePaymentPolicy",
+      "summary": "This method deletes a payment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/payment_policy/get_by_policy_name",
+      "group": "Account v1 API",
+      "name": "getPaymentPolicyByName",
+      "summary": "This method retrieves the details of a specific payment policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}",
+      "group": "Account v1 API",
+      "name": "getPaymentsProgram",
+      "summary": "Note: This method is no longer applicable, as all seller accounts globally have been enabled for the new eBay payment and checkout flow.This method returns whether or not the user is opted-in to the specified payments pr",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}/onboarding",
+      "group": "Account v1 API",
+      "name": "getPaymentsProgramOnboarding",
+      "summary": "Note: This method is no longer applicable, as all seller accounts globally have been enabled for the new eBay payment and checkout flow.This method retrieves a seller's onboarding status for a payments program for a spec",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/privilege",
+      "group": "Account v1 API",
+      "name": "getPrivileges",
+      "summary": "This method retrieves the seller's current set of privileges, including whether or not the seller's eBay registration has been completed, as well as the details of their site-wide sellingLimit (the amount and quantity th",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/program/get_opted_in_programs",
+      "group": "Account v1 API",
+      "name": "getOptedInPrograms",
+      "summary": "This method gets a list of the seller programs that the seller has opted-in to.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v1/program/opt_in",
+      "group": "Account v1 API",
+      "name": "optInToProgram",
+      "summary": "This method opts the seller in to an eBay seller program.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v1/program/opt_out",
+      "group": "Account v1 API",
+      "name": "optOutOfProgram",
+      "summary": "This method opts the seller out of a seller program in which they are currently opted in to.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/rate_table",
+      "group": "Account v1 API",
+      "name": "getRateTables",
+      "summary": "This method retrieves a seller's shipping rate tables for the country specified in the country_code query parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/return_policy",
+      "group": "Account v1 API",
+      "name": "getReturnPolicies",
+      "summary": "This method retrieves all the return policies configured for the marketplace you specify using the marketplace_id query parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v1/return_policy",
+      "group": "Account v1 API",
+      "name": "createReturnPolicy",
+      "summary": "This method creates a new return policy where the policy encapsulates seller's terms for returning items.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/return_policy/{return_policy_id}",
+      "group": "Account v1 API",
+      "name": "getReturnPolicy",
+      "summary": "This method retrieves the complete details of the return policy specified by the returnPolicyId path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/account/v1/return_policy/{return_policy_id}",
+      "group": "Account v1 API",
+      "name": "updateReturnPolicy",
+      "summary": "This method updates an existing return policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/account/v1/return_policy/{return_policy_id}",
+      "group": "Account v1 API",
+      "name": "deleteReturnPolicy",
+      "summary": "This method deletes a return policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/return_policy/get_by_policy_name",
+      "group": "Account v1 API",
+      "name": "getReturnPolicyByName",
+      "summary": "This method retrieves the details of a specific return policy.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v1/bulk_create_or_replace_sales_tax",
+      "group": "Account v1 API",
+      "name": "bulkCreateOrReplaceSalesTax",
+      "summary": "This method creates or updates multiple sales-tax table entries.Sales-tax tables can be set up for countries that support different tax jurisdictions.Note: Sales-tax tables are only available for the US (EBAY_US) and Can",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}",
+      "group": "Account v1 API",
+      "name": "getSalesTax",
+      "summary": "This call retrieves the current sales-tax table entry for a specific tax jurisdiction.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}",
+      "group": "Account v1 API",
+      "name": "createOrReplaceSalesTax",
+      "summary": "This method creates or updates a sales-tax table entry for a jurisdiction.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}",
+      "group": "Account v1 API",
+      "name": "deleteSalesTax",
+      "summary": "This call deletes a sales-tax table entry for a jurisdiction.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/sales_tax",
+      "group": "Account v1 API",
+      "name": "getSalesTaxes",
+      "summary": "Use this call to retrieve all sales tax table entries that the seller has defined for a specific country.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/subscription",
+      "group": "Account v1 API",
+      "name": "getSubscription",
+      "summary": "This method retrieves a list of subscriptions associated with the seller account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/kyc",
+      "group": "Account v1 API",
+      "name": "getKYC",
+      "summary": "Note: This method was originally created to see which onboarding requirements were still pending for sellers being onboarded for eBay managed payments, but now that all seller accounts are onboarded globally, this method",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v1/advertising_eligibility",
+      "group": "Account v1 API",
+      "name": "getAdvertisingEligibility",
+      "summary": "This method allows developers to check the seller eligibility status for eBay advertising programs.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v2/rate_table/{rate_table_id}",
+      "group": "Account v2 API",
+      "name": "getRateTable",
+      "summary": "This method retrieves an existing rate table identified by the rate_table_id path parameter.Shipping rate tables are currently supported by the following marketplaces: United States, Canada, United Kingdom, Germany, Aust",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/rate_table/{rate_table_id}/update_shipping_cost",
+      "group": "Account v2 API",
+      "name": "updateShippingCost",
+      "summary": "This method allows sellers to update shippingCost and/or additionalCost information for an existing shipping rate table identified by the rate_table_id path parameter.A successful call returns an HTTP status code of 204 ",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v2/payout_settings",
+      "group": "Account v2 API",
+      "name": "getPayoutSettings",
+      "summary": "Important! Split-payout functionality is only available to mainland China sellers, who can split payouts between their Payoneer account and bank account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/payout_settings/update_percentage",
+      "group": "Account v2 API",
+      "name": "updatePayoutPercentage",
+      "summary": "Important! Split-payout functionality is only available to mainland China sellers, who can split payouts between their Payoneer account and bank account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/combined_shipping_rules/create_calculated_shipping_rules",
+      "group": "Account v2 API",
+      "name": "createCalculatedShippingRules",
+      "summary": "This method creates or registers calculated shipping rules that determine combined shipping costs based on weight, item count, or cost parameters for an authenticated seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/combined_shipping_rules/create_flat_shipping_rules",
+      "group": "Account v2 API",
+      "name": "createFlatShippingRules",
+      "summary": "This method is used to create fixed-rate (flat) shipping rules that apply standard combined shipping costs for a seller’s listings.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/combined_shipping_rules/create_promotional_shipping_rule",
+      "group": "Account v2 API",
+      "name": "createPromotionalShippingRule",
+      "summary": "This method defines promotional shipping rules such as discounts or free-shipping thresholds, configurable by marketplace for the seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v2/combined_shipping_rules",
+      "group": "Account v2 API",
+      "name": "getCombinedShippingRules",
+      "summary": "This method retrieves all existing combined shipping rule configurations defined by the authenticated seller, including calculated, flat, and promotional types.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/combined_shipping_rules/update_calculated_shipping_rules",
+      "group": "Account v2 API",
+      "name": "updateCalculatedShippingRules",
+      "summary": "This method updates previously defined calculated shipping rules to modify discount percentages, weight offsets, or amount parameters for the seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/combined_shipping_rules/update_combined_payments",
+      "group": "Account v2 API",
+      "name": "updateCombinedPayments",
+      "summary": "This method configures or modifies combined payment settings that determine how unpaid orders can be merged for a single invoice within a defined duration for the seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/combined_shipping_rules/update_flat_shipping_rules",
+      "group": "Account v2 API",
+      "name": "updateFlatShippingRules",
+      "summary": "This method updates existing shipping rules.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/account/v2/combined_shipping_rules/update_promotional_shipping_rule",
+      "group": "Account v2 API",
+      "name": "updatePromotionalShippingRule",
+      "summary": "This method updates an existing promotional shipping rule to adjust discount thresholds, eligibility criteria, or duration for the seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/account/v2/user_preferences",
+      "group": "Account v2 API",
+      "name": "getUserPreferences",
+      "summary": "This method retrieves the seller's preferences for a specific eBay marketplace, such as combined payment preferences, same-day shipping cutoff time, excluded shipping locations, and opt-in status for Business Policies an",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PATCH /sell/account/v2/user_preferences",
+      "group": "Account v2 API",
+      "name": "setUserPreferences",
+      "summary": "This method is used to modify one or more preferences for a seller on a specific marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.account",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}",
+      "group": "Analytics API",
+      "name": "getCustomerServiceMetric",
+      "summary": "Use this method to retrieve a seller's performance and rating for the customer service metric.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/analytics/v1/seller_standards_profile",
+      "group": "Analytics API",
+      "name": "findSellerStandardsProfiles",
+      "summary": "This call retrieves all the standards profiles for the associated seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}",
+      "group": "Analytics API",
+      "name": "getSellerStandardsProfile",
+      "summary": "This call retrieves a single standards profile for the associated seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/analytics/v1/traffic_report",
+      "group": "Analytics API",
+      "name": "getTrafficReport",
+      "summary": "This method returns a report that details the user traffic received by a seller's listings.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/order_task",
+      "group": "Feed API",
+      "name": "getOrderTasks",
+      "summary": "This method returns the details and status for an array of order tasks based on a specified feed_type or schedule_id.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/feed/v1/order_task",
+      "group": "Feed API",
+      "name": "createOrderTask",
+      "summary": "This method creates an order download task with filter criteria for the order report.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/order_task/{task_id}",
+      "group": "Feed API",
+      "name": "getOrderTask",
+      "summary": "This method retrieves the task details and status of the specified task.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/inventory_task",
+      "group": "Feed API",
+      "name": "getInventoryTasks",
+      "summary": "This method searches for multiple tasks of a specific feed type, and includes date filters and pagination.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/feed/v1/inventory_task",
+      "group": "Feed API",
+      "name": "createInventoryTask",
+      "summary": "This method creates an inventory-related download task for a specified feed type with optional filter criteria.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/inventory_task/{task_id}",
+      "group": "Feed API",
+      "name": "getInventoryTask",
+      "summary": "This method retrieves the task details and status of the specified inventory-related task.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/schedule",
+      "group": "Feed API",
+      "name": "getSchedules",
+      "summary": "This method retrieves an array containing the details and status of all schedules based on the specified feed_type.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/feed/v1/schedule",
+      "group": "Feed API",
+      "name": "createSchedule",
+      "summary": "This method creates a schedule, which is a subscription to the specified schedule template.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/schedule/{schedule_id}",
+      "group": "Feed API",
+      "name": "getSchedule",
+      "summary": "This method retrieves schedule details and status of the specified schedule.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/feed/v1/schedule/{schedule_id}",
+      "group": "Feed API",
+      "name": "updateSchedule",
+      "summary": "This method updates an existing schedule.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/feed/v1/schedule/{schedule_id}",
+      "group": "Feed API",
+      "name": "deleteSchedule",
+      "summary": "This method deletes an existing schedule.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/schedule/{schedule_id}/download_result_file",
+      "group": "Feed API",
+      "name": "getLatestResultFile",
+      "summary": "This method downloads the latest Order Report generated by the schedule.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/schedule_template/{schedule_template_id}",
+      "group": "Feed API",
+      "name": "getScheduleTemplate",
+      "summary": "This method retrieves the details of the specified template.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/schedule_template",
+      "group": "Feed API",
+      "name": "getScheduleTemplates",
+      "summary": "This method retrieves an array containing the details and status of all schedule templates based on the specified feed_type.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/task",
+      "group": "Feed API",
+      "name": "getTasks",
+      "summary": "This method returns the details and status for an array of tasks based on a specified feed_type or schedule_id.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/feed/v1/task",
+      "group": "Feed API",
+      "name": "createTask",
+      "summary": "This method creates an upload task or a download task without filter criteria.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/task/{task_id}/download_input_file",
+      "group": "Feed API",
+      "name": "getInputFile",
+      "summary": "This method downloads the file previously uploaded using uploadFile.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/task/{task_id}/download_result_file",
+      "group": "Feed API",
+      "name": "getResultFile",
+      "summary": "This method retrieves the generated file that is associated with the specified task ID.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/task/{task_id}",
+      "group": "Feed API",
+      "name": "getTask",
+      "summary": "This method retrieves the details and status of the specified task.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/feed/v1/task/{task_id}/upload_file",
+      "group": "Feed API",
+      "name": "uploadFile",
+      "summary": "This method associates the specified file with the specified task ID and uploads the input file.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/customer_service_metric_task",
+      "group": "Feed API",
+      "name": "getCustomerServiceMetricTasks",
+      "summary": "Use this method to return an array of customer service metric tasks.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/feed/v1/customer_service_metric_task",
+      "group": "Feed API",
+      "name": "createCustomerServiceMetricTask",
+      "summary": "Use this method to create a customer service metrics download task with filter criteria for the customer service metrics report.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/feed/v1/customer_service_metric_task/{task_id}",
+      "group": "Feed API",
+      "name": "getCustomerServiceMetricTask",
+      "summary": "Use this method to retrieve customer service metric task details for the specified task.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/order_earnings",
+      "group": "Finances API",
+      "name": "getOrderEarnings",
+      "summary": "This method returns detailed order-level financial data for each order associated with a seller account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances.earnings.read",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/order_earnings/{order_id}",
+      "group": "Finances API",
+      "name": "getOrderEarningsById",
+      "summary": "This method returns detailed order-level financial data including order earnings, gross amount, expenses, and refunds.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances.earnings.read",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/order_earnings_summary",
+      "group": "Finances API",
+      "name": "getOrderEarningsSummary",
+      "summary": "This method returns a summarized view of order earnings information for one or more orders associated with a seller account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances.earnings.read",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/payout/{payout_Id}",
+      "group": "Finances API",
+      "name": "getPayout",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/payout",
+      "group": "Finances API",
+      "name": "getPayouts",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/payout_summary",
+      "group": "Finances API",
+      "name": "getPayoutSummary",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/seller_funds_summary",
+      "group": "Finances API",
+      "name": "getSellerFundsSummary",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/transaction",
+      "group": "Finances API",
+      "name": "getTransactions",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/transaction_summary",
+      "group": "Finances API",
+      "name": "getTransactionSummary",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/transfer/{transfer_Id}",
+      "group": "Finances API",
+      "name": "getTransfer",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/finances/v1/billing_activity",
+      "group": "Finances API",
+      "name": "getBillingActivities",
+      "summary": "Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/order/{orderId}",
+      "group": "Fulfillment API",
+      "name": "getOrder",
+      "summary": "Use this call to retrieve the contents of an order based on its unique identifier, orderId.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/order",
+      "group": "Fulfillment API",
+      "name": "getOrders",
+      "summary": "Use this method to search for and retrieve one or more orders based on their creation date, last modification date, or fulfillment status using the filter parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/fulfillment/v1/order/{order_id}/issue_refund",
+      "group": "Fulfillment API",
+      "name": "issueRefund",
+      "summary": "Issue Refund",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.finances",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment",
+      "group": "Fulfillment API",
+      "name": "getShippingFulfillments",
+      "summary": "Use this call to retrieve the contents of all fulfillments currently defined for a specified order based on the order's unique identifier, orderId.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment",
+      "group": "Fulfillment API",
+      "name": "createShippingFulfillment",
+      "summary": "When you group an order's line items into one or more packages, each package requires a corresponding plan for handling, addressing, and shipping; this is a shipping fulfillment.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment/{fulfillmentId}",
+      "group": "Fulfillment API",
+      "name": "getShippingFulfillment",
+      "summary": "Use this call to retrieve the contents of a fulfillment based on its unique identifier, fulfillmentId (combined with the associated order's orderId).",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}",
+      "group": "Fulfillment API",
+      "name": "getPaymentDispute",
+      "summary": "Get Payment Dispute Details",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content",
+      "group": "Fulfillment API",
+      "name": "fetchEvidenceContent",
+      "summary": "Get Payment Dispute Evidence File",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity",
+      "group": "Fulfillment API",
+      "name": "getActivities",
+      "summary": "Get Payment Dispute Activity",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/fulfillment/v1/payment_dispute_summary",
+      "group": "Fulfillment API",
+      "name": "getPaymentDisputeSummaries",
+      "summary": "Search Payment Dispute by Filters",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest",
+      "group": "Fulfillment API",
+      "name": "contestPaymentDispute",
+      "summary": "Contest Payment Dispute",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept",
+      "group": "Fulfillment API",
+      "name": "acceptPaymentDispute",
+      "summary": "Accept Payment Dispute",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file",
+      "group": "Fulfillment API",
+      "name": "uploadEvidenceFile",
+      "summary": "Upload an Evidence File",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence",
+      "group": "Fulfillment API",
+      "name": "addEvidence",
+      "summary": "Add an Evidence File",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence",
+      "group": "Fulfillment API",
+      "name": "updateEvidence",
+      "summary": "Update evidence",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.payment.dispute",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/bulk_create_or_replace_inventory_item",
+      "group": "Inventory API",
+      "name": "bulkCreateOrReplaceInventoryItem",
+      "summary": "Note: Please note that any eBay listing created using the Inventory API cannot be revised or relisted using the Trading API calls.Note: Each listing can be revised up to 250 times in one calendar day.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/bulk_get_inventory_item",
+      "group": "Inventory API",
+      "name": "bulkGetInventoryItem",
+      "summary": "This call retrieves up to 25 inventory item records.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/bulk_update_price_quantity",
+      "group": "Inventory API",
+      "name": "bulkUpdatePriceQuantity",
+      "summary": "This call is used by the seller to update the total ship-to-home quantity of one inventory item, and/or to update the price and/or quantity of one or more offers associated with one inventory item.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/inventory_item/{sku}",
+      "group": "Inventory API",
+      "name": "getInventoryItem",
+      "summary": "This call retrieves the inventory item record for a given SKU.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/inventory/v1/inventory_item/{sku}",
+      "group": "Inventory API",
+      "name": "createOrReplaceInventoryItem",
+      "summary": "Note: Please note that any eBay listing created using the Inventory API cannot be revised or relisted using the Trading API calls.Note: Each listing can be revised up to 250 times in one calendar day.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/inventory/v1/inventory_item/{sku}",
+      "group": "Inventory API",
+      "name": "deleteInventoryItem",
+      "summary": "This call is used to delete an inventory item record associated with a specified SKU.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/inventory_item",
+      "group": "Inventory API",
+      "name": "getInventoryItems",
+      "summary": "This call retrieves all inventory item records defined for the seller's account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/inventory_item/{sku}/product_compatibility",
+      "group": "Inventory API",
+      "name": "getProductCompatibility",
+      "summary": "This call is used by the seller to retrieve the list of products that are compatible with the inventory item.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/inventory/v1/inventory_item/{sku}/product_compatibility",
+      "group": "Inventory API",
+      "name": "createOrReplaceProductCompatibility",
+      "summary": "This call is used by the seller to create or replace a list of products that are compatible with the inventory item.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/inventory/v1/inventory_item/{sku}/product_compatibility",
+      "group": "Inventory API",
+      "name": "deleteProductCompatibility",
+      "summary": "This call is used by the seller to delete the list of products that are compatible with the inventory item that is associated with the compatible product list.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}",
+      "group": "Inventory API",
+      "name": "getInventoryItemGroup",
+      "summary": "This call retrieves the inventory item group for a given inventoryItemGroupKey value.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}",
+      "group": "Inventory API",
+      "name": "createOrReplaceInventoryItemGroup",
+      "summary": "Note: Each listing can be revised up to 250 times in one calendar day.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}",
+      "group": "Inventory API",
+      "name": "deleteInventoryItemGroup",
+      "summary": "This call deletes the inventory item group for a given inventoryItemGroupKey value.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/bulk_migrate_listing",
+      "group": "Inventory API",
+      "name": "bulkMigrateListing",
+      "summary": "This call is used to convert existing eBay Listings to the corresponding Inventory API objects.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations",
+      "group": "Inventory API",
+      "name": "getSkuLocationMapping",
+      "summary": "This method allows sellers to retrieve the locations mapped to a specific SKU within a listing.The listingId and sku of the listing are passed in as path parameters.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations",
+      "group": "Inventory API",
+      "name": "createOrReplaceSkuLocationMapping",
+      "summary": "This method allows sellers to map multiple fulfillment center locations to single-SKU listing, or to a single SKU within a multiple-variation listing.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations",
+      "group": "Inventory API",
+      "name": "deleteSkuLocationMapping",
+      "summary": "This method allows sellers to remove all location mappings associated with a specific SKU within a listing.The listingId and sku of the listing are passed in as path parameters.Important! To remove all location mappings ",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/bulk_create_offer",
+      "group": "Inventory API",
+      "name": "bulkCreateOffer",
+      "summary": "This call creates multiple offers (up to 25) for specific inventory items on a specific eBay marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/bulk_publish_offer",
+      "group": "Inventory API",
+      "name": "bulkPublishOffer",
+      "summary": "Note: Each listing can be revised up to 250 times in one calendar day.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/offer",
+      "group": "Inventory API",
+      "name": "getOffers",
+      "summary": "This call retrieves all existing offers for the specified SKU value.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/offer",
+      "group": "Inventory API",
+      "name": "createOffer",
+      "summary": "This call creates an offer for a specific inventory item on a specific eBay marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/offer/{offerId}",
+      "group": "Inventory API",
+      "name": "getOffer",
+      "summary": "This call retrieves a specific published or unpublished offer.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/inventory/v1/offer/{offerId}",
+      "group": "Inventory API",
+      "name": "updateOffer",
+      "summary": "This call updates an existing offer.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/inventory/v1/offer/{offerId}",
+      "group": "Inventory API",
+      "name": "deleteOffer",
+      "summary": "If used against an unpublished offer, this call will permanently delete that offer.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/offer/get_listing_fees",
+      "group": "Inventory API",
+      "name": "getListingFees",
+      "summary": "This call is used to retrieve the expected listing fees for up to 250 unpublished offers.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/offer/{offerId}/publish",
+      "group": "Inventory API",
+      "name": "publishOffer",
+      "summary": "Note: Each listing can be revised up to 250 times in one calendar day.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/offer/publish_by_inventory_item_group",
+      "group": "Inventory API",
+      "name": "publishOfferByInventoryItemGroup",
+      "summary": "Note: Please note that any eBay listing created using the Inventory API cannot be revised or relisted using the Trading API calls.Note: Each listing can be revised up to 250 times in one calendar day.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/offer/{offerId}/withdraw",
+      "group": "Inventory API",
+      "name": "withdrawOffer",
+      "summary": "This call is used to end a single-variation listing that is associated with the specified offer.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/offer/withdraw_by_inventory_item_group",
+      "group": "Inventory API",
+      "name": "withdrawOfferByInventoryItemGroup",
+      "summary": "This call is used to end a multiple-variation eBay listing that is associated with the specified inventory item group.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/location/{merchantLocationKey}",
+      "group": "Inventory API",
+      "name": "getInventoryLocation",
+      "summary": "This call retrieves all defined details of the inventory location that is specified by the merchantLocationKey path parameter.A successful call will return an HTTP status value of 200 OK.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/location/{merchantLocationKey}",
+      "group": "Inventory API",
+      "name": "createInventoryLocation",
+      "summary": "Use this call to create a new inventory location.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/inventory/v1/location/{merchantLocationKey}",
+      "group": "Inventory API",
+      "name": "deleteInventoryLocation",
+      "summary": "This call deletes the inventory location that is specified in the merchantLocationKey path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/location/{merchantLocationKey}/disable",
+      "group": "Inventory API",
+      "name": "disableInventoryLocation",
+      "summary": "This call disables the inventory location that is specified in the merchantLocationKey path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/location/{merchantLocationKey}/enable",
+      "group": "Inventory API",
+      "name": "enableInventoryLocation",
+      "summary": "This call enables a disabled inventory location that is specified in the merchantLocationKey path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/inventory/v1/location",
+      "group": "Inventory API",
+      "name": "getInventoryLocations",
+      "summary": "This call retrieves all defined details for every inventory location associated with the seller's account.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/inventory/v1/location/{merchantLocationKey}/update_location_details",
+      "group": "Inventory API",
+      "name": "updateInventoryLocation",
+      "summary": "Use this call to update location details for an existing inventory location.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/logistics/v1_beta/shipment/{shipmentId}/cancel",
+      "group": "Logistics API",
+      "name": "cancelShipment",
+      "summary": "This method cancels the shipment associated with the specified shipment ID and the associated shipping label is deleted.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.logistics",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/logistics/v1_beta/shipment/create_from_shipping_quote",
+      "group": "Logistics API",
+      "name": "createFromShippingQuote",
+      "summary": "This method creates a shipment based on the shippingQuoteId and rateId values supplied in the request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.logistics",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/logistics/v1_beta/shipment/{shipmentId}/download_label_file",
+      "group": "Logistics API",
+      "name": "downloadLabelFile",
+      "summary": "This method returns the shipping label file that was generated for the shipmentId value specified in the request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.logistics",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/logistics/v1_beta/shipment/{shipmentId}",
+      "group": "Logistics API",
+      "name": "getShipment",
+      "summary": "This method retrieves the shipment details for the specified shipment ID.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.logistics",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/logistics/v1_beta/shipping_quote",
+      "group": "Logistics API",
+      "name": "createShippingQuote",
+      "summary": "The createShippingQuote method returns a shipping quote that contains a list of live \"rates.\" Each rate represents an offer made by a shipping carrier for a specific service and each offer has a live quote for the base s",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.logistics",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/logistics/v1_beta/shipping_quote/{shippingQuoteId}",
+      "group": "Logistics API",
+      "name": "getShippingQuote",
+      "summary": "This method retrieves the complete details of the shipping quote associated with the specified shippingQuoteId value.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.logistics",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_inventory_reference",
+      "group": "Marketing API",
+      "name": "bulkCreateAdsByInventoryReference",
+      "summary": "This method adds multiple listings that are managed with the Inventory API to an existing Promoted Listings campaign.For general strategy campaigns using the Cost Per Sale (CPS) model, bulk ads may be directly created fo",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_listing_id",
+      "group": "Marketing API",
+      "name": "bulkCreateAdsByListingId",
+      "summary": "This method adds multiple listings to an existing Promoted Listings campaign using listingId values generated by the Trading API or Inventory API, or using values generated by an ad group ID.For general strategy campaign",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_inventory_reference",
+      "group": "Marketing API",
+      "name": "bulkDeleteAdsByInventoryReference",
+      "summary": "This method works with listings created with the Inventory API.The method deletes a set of ads, as specified by a list of inventory reference IDs, from the specified campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_listing_id",
+      "group": "Marketing API",
+      "name": "bulkDeleteAdsByListingId",
+      "summary": "This method works with listing IDs created with either the Trading API or the Inventory API.The method deletes a set of ads, as specified by a list of listingID values from a Promoted Listings campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_inventory_reference",
+      "group": "Marketing API",
+      "name": "bulkUpdateAdsBidByInventoryReference",
+      "summary": "This method works with listings created with either the Trading API or the Inventory API.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_listing_id",
+      "group": "Marketing API",
+      "name": "bulkUpdateAdsBidByListingId",
+      "summary": "This method works with listings created with either the Trading API or the Inventory API.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status",
+      "group": "Marketing API",
+      "name": "bulkUpdateAdsStatus",
+      "summary": "Note: This method is only available for select partners who have been approved for the priority strategy program.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status_by_listing_id",
+      "group": "Marketing API",
+      "name": "bulkUpdateAdsStatusByListingId",
+      "summary": "The method updates the status of ads in bulk, based on listing ID values.Specify the campaign_id as a path parameter and supply a set of listing IDs with their updated adStatus values in the request body.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad",
+      "group": "Marketing API",
+      "name": "getAds",
+      "summary": "This method retrieves Promoted Listings ads that are associated with listings created with either the Trading API or the Inventory API.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad",
+      "group": "Marketing API",
+      "name": "createAdByListingId",
+      "summary": "This method adds a listing to an existing Promoted Listings campaign using a listingId value generated by the Trading API or Inventory API, or using a value generated by an ad group ID.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/create_ads_by_inventory_reference",
+      "group": "Marketing API",
+      "name": "createAdsByInventoryReference",
+      "summary": "This method adds a listing that is managed with the Inventory API to an existing Promoted Listings campaign.For general strategy campaigns using the Cost Per Sale (CPS) funding model, an ad may be directly created for th",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}",
+      "group": "Marketing API",
+      "name": "getAd",
+      "summary": "This method retrieves the specified ad from the specified campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}",
+      "group": "Marketing API",
+      "name": "deleteAd",
+      "summary": "This method removes the specified ad from the specified campaign.Pass the ID of the ad to delete with the ID of the campaign associated with the ad as path parameters to the call.Call getCampaigns to get the current list",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/delete_ads_by_inventory_reference",
+      "group": "Marketing API",
+      "name": "deleteAdsByInventoryReference",
+      "summary": "This method works with listings that are managed with the Inventory API.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/get_ads_by_inventory_reference",
+      "group": "Marketing API",
+      "name": "getAdsByInventoryReference",
+      "summary": "This method retrieves Promoted Listings ads associated with listings that are managed with the Inventory API from the specified campaign.Supply the campaign_id as a path parameter and use query parameters to specify the ",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}/update_bid",
+      "group": "Marketing API",
+      "name": "updateBid",
+      "summary": "This method updates the bid percentage (also known as the \"ad rate\") for the specified ad in the specified campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group",
+      "group": "Marketing API",
+      "name": "getAdGroups",
+      "summary": "This method retrieves ad groups for the specified campaigns.Each campaign can only have one ad group.In the request, supply the campaign_ids as path parameters.Call getCampaigns to retrieve a list of the current campaign",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group",
+      "group": "Marketing API",
+      "name": "createAdGroup",
+      "summary": "This method adds an ad group to an existing priority strategy campaign that uses manual targeting.To create an ad group for a campaign, specify the defaultBid for the ad group in the payload of the request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}",
+      "group": "Marketing API",
+      "name": "getAdGroup",
+      "summary": "This method retrieves the details of a specified ad group, such as the ad group’s default bid and status.In the request, specify the campaign_id and ad_group_id as path parameters.Call getCampaigns to retrieve a list of ",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}",
+      "group": "Marketing API",
+      "name": "updateAdGroup",
+      "summary": "This method updates the ad group associated with a campaign.With this method, you can modify the default bid for the ad group, change the state of the ad group, or change the name of the ad group.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_bids",
+      "group": "Marketing API",
+      "name": "suggestBids",
+      "summary": "This method allows sellers to retrieve the suggested bids for input keywords and match type.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_keywords",
+      "group": "Marketing API",
+      "name": "suggestKeywords",
+      "summary": "This method allows sellers to retrieve a list of keyword ideas to be targeted for Promoted Listings campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/clone",
+      "group": "Marketing API",
+      "name": "cloneCampaign",
+      "summary": "This method clones (makes a copy of) the specified campaign's campaign criterion.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign",
+      "group": "Marketing API",
+      "name": "getCampaigns",
+      "summary": "This method retrieves the details for all of the seller's defined campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign",
+      "group": "Marketing API",
+      "name": "createCampaign",
+      "summary": "This method can be used to create a Promoted Listings general, priority, or offsite campaign.A Promoted Listings campaign is the structure in which you place the ads or ad group for the listings you wish to promote.Note:",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}",
+      "group": "Marketing API",
+      "name": "getCampaign",
+      "summary": "This method retrieves the details of a single campaign, as specified with the campaign_id query parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/marketing/v1/ad_campaign/{campaign_id}",
+      "group": "Marketing API",
+      "name": "deleteCampaign",
+      "summary": "This method deletes the campaign specified by the campaign_id query parameter.Note: You can only delete campaigns that have ended.Call getCampaigns to retrieve the campaign_id and the campaign status (RUNNING, PAUSED, EN",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/end",
+      "group": "Marketing API",
+      "name": "endCampaign",
+      "summary": "This method ends an active (RUNNING) or paused campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/find_campaign_by_ad_reference",
+      "group": "Marketing API",
+      "name": "findCampaignByAdReference",
+      "summary": "This method retrieves the campaigns containing the listing that is specified using either a listing ID, or an inventory reference ID and inventory reference type pair.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/get_campaign_by_name",
+      "group": "Marketing API",
+      "name": "getCampaignByName",
+      "summary": "This method retrieves the details of a single campaign, as specified with the campaign_name query parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/pause",
+      "group": "Marketing API",
+      "name": "pauseCampaign",
+      "summary": "This method pauses an active (RUNNING) campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/resume",
+      "group": "Marketing API",
+      "name": "resumeCampaign",
+      "summary": "This method resumes a paused campaign, as long as its end date is in the future.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/suggest_budget",
+      "group": "Marketing API",
+      "name": "suggestBudget",
+      "summary": "Note: This method is only supported for Promoted Offsite campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/suggest_items",
+      "group": "Marketing API",
+      "name": "suggestItems",
+      "summary": "This method allows sellers to obtain ideas for listings, which can be targeted for Promoted Listings campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/suggest_max_cpc",
+      "group": "Marketing API",
+      "name": "suggestMaxCpc",
+      "summary": "Note: This method is only supported for smart targeting priority strategy campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_ad_rate_strategy",
+      "group": "Marketing API",
+      "name": "updateAdRateStrategy",
+      "summary": "This method updates the ad rate strategy for an existing rules-based general strategy ad campaign that uses the Cost Per Sale (CPS) funding model.Specify the campaign_id as a path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_bidding_strategy",
+      "group": "Marketing API",
+      "name": "updateBiddingStrategy",
+      "summary": "This method allows sellers to change the bidding strategy for a specified Cost Per Click (CPC) campaign that uses manual targeting.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_budget",
+      "group": "Marketing API",
+      "name": "updateCampaignBudget",
+      "summary": "This method updates the daily budget for a priority strategy campaign that uses the Cost Per Click (CPC) funding model.A click occurs when an eBay user finds and clicks on the seller’s listing (within the search results)",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_identification",
+      "group": "Marketing API",
+      "name": "updateCampaignIdentification",
+      "summary": "This method can be used to change the name of a campaign, as well as modify the start or end dates.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_keyword",
+      "group": "Marketing API",
+      "name": "bulkCreateKeyword",
+      "summary": "This method adds keywords, in bulk, to an existing priority strategy ad group in a campaign that uses manual targeting.This method also sets the CPC rate for each keyword, depending on the selected bidding strategy, as f",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_keyword",
+      "group": "Marketing API",
+      "name": "bulkUpdateKeyword",
+      "summary": "This method updates the bids and statuses of keywords, in bulk, for an existing priority strategy campaign.In the request, supply the campaign_id as a path parameter.Call the getCampaigns method to retrieve a list of cur",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword",
+      "group": "Marketing API",
+      "name": "getKeywords",
+      "summary": "This method can be used to retrieve all of the keywords for ad groups in priority strategy campaigns that use the Cost Per Click (CPC) funding model.In the request, specify the campaign_id as a path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_campaign/{campaign_id}/keyword",
+      "group": "Marketing API",
+      "name": "createKeyword",
+      "summary": "This method creates keywords using a specified campaign ID for an existing priority strategy campaign that uses manual targeting.In the request, supply the campaign_id as a path parameter.Call the suggestKeywords method ",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}",
+      "group": "Marketing API",
+      "name": "getKeyword",
+      "summary": "This method retrieves details on a specific keyword from an ad group within a priority strategy campaign that uses the Cost Per Click (CPC) funding model.In the request, specify the campaign_id and keyword_id as path par",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}",
+      "group": "Marketing API",
+      "name": "updateKeyword",
+      "summary": "This method updates keywords using a campaign ID and keyword ID for an existing priority strategy campaign.In the request, specify the campaign_id and keyword_id as path parameters.Call the getCampaigns method to retriev",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/bulk_create_negative_keyword",
+      "group": "Marketing API",
+      "name": "bulkCreateNegativeKeyword",
+      "summary": "This method adds negative keywords, in bulk, to an existing ad group in a priority strategy campaign that uses manual targeting.Specify the campaignId and adGroupId in the request body, along with the negativeKeywordText",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/bulk_update_negative_keyword",
+      "group": "Marketing API",
+      "name": "bulkUpdateNegativeKeyword",
+      "summary": "This method updates the statuses of existing negative keywords, in bulk.Specify the negativeKeywordId and negativeKeywordStatus in the request body.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/negative_keyword",
+      "group": "Marketing API",
+      "name": "getNegativeKeywords",
+      "summary": "This method can be used to retrieve all of the negative keywords for ad groups in priority strategy campaigns that use the Cost Per Click (CPC) funding model.The results can be filtered using the campaign_ids, ad_group_i",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/negative_keyword",
+      "group": "Marketing API",
+      "name": "createNegativeKeyword",
+      "summary": "This method adds a negative keyword to an existing ad group in a priority strategy campaign that uses manual targeting.Specify the campaignId and adGroupId in the request body, along with the negativeKeywordText and nega",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/negative_keyword/{negative_keyword_id}",
+      "group": "Marketing API",
+      "name": "getNegativeKeyword",
+      "summary": "This method retrieves details on a specific negative keyword.In the request, specify the negative_keyword_id as a path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/marketing/v1/negative_keyword/{negative_keyword_id}",
+      "group": "Marketing API",
+      "name": "updateNegativeKeyword",
+      "summary": "This method updates the status of an existing negative keyword.Specify the negative_keyword_id as a path parameter, and specify the negativeKeywordStatus in the request body.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_report/{report_id}",
+      "group": "Marketing API",
+      "name": "getReport",
+      "summary": "This call downloads the report as specified by the report_id path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_report_metadata",
+      "group": "Marketing API",
+      "name": "getReportMetadata",
+      "summary": "This call retrieves information that details the fields used in each of the Promoted Listings reports.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_report_metadata/{report_type}",
+      "group": "Marketing API",
+      "name": "getReportMetadataForReportType",
+      "summary": "This call retrieves metadata that details the fields used by a specific Promoted Listings report type.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_report_task",
+      "group": "Marketing API",
+      "name": "getReportTasks",
+      "summary": "This method returns information on all the existing report tasks related to a seller.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/ad_report_task",
+      "group": "Marketing API",
+      "name": "createReportTask",
+      "summary": "This method creates a report task, which generates a Promoted Listings report based on the values specified in the call.The report is generated based on the criteria you specify, including the report type, the report's d",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/ad_report_task/{report_task_id}",
+      "group": "Marketing API",
+      "name": "getReportTask",
+      "summary": "This call returns the details of a specific Promoted Listings report task, as specified by the report_task_id path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/marketing/v1/ad_report_task/{report_task_id}",
+      "group": "Marketing API",
+      "name": "deleteReportTask",
+      "summary": "This call deletes the report task specified by the report_task_id path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/item_price_markdown",
+      "group": "Marketing API",
+      "name": "createItemPriceMarkdownPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/item_price_markdown/{promotion_id}",
+      "group": "Marketing API",
+      "name": "getItemPriceMarkdownPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/marketing/v1/item_price_markdown/{promotion_id}",
+      "group": "Marketing API",
+      "name": "updateItemPriceMarkdownPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}",
+      "group": "Marketing API",
+      "name": "deleteItemPriceMarkdownPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/item_promotion",
+      "group": "Marketing API",
+      "name": "createItemPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/item_promotion/{promotion_id}",
+      "group": "Marketing API",
+      "name": "getItemPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/marketing/v1/item_promotion/{promotion_id}",
+      "group": "Marketing API",
+      "name": "updateItemPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/marketing/v1/item_promotion/{promotion_id}",
+      "group": "Marketing API",
+      "name": "deleteItemPromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set",
+      "group": "Marketing API",
+      "name": "getListingSet",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/promotion",
+      "group": "Marketing API",
+      "name": "getPromotions",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/promotion/{promotion_id}/pause",
+      "group": "Marketing API",
+      "name": "pausePromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/promotion/{promotion_id}/resume",
+      "group": "Marketing API",
+      "name": "resumePromotion",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/promotion_report",
+      "group": "Marketing API",
+      "name": "getPromotionReports",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/promotion_summary_report",
+      "group": "Marketing API",
+      "name": "getPromotionSummaryReport",
+      "summary": "Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/email_campaign",
+      "group": "Marketing API",
+      "name": "getEmailCampaigns",
+      "summary": "This method retrieves a list of email campaigns from a seller's eBay store.Users can filter the results by email campaign type, email campaign status, and marketplace ID using the q query parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/marketing/v1/email_campaign",
+      "group": "Marketing API",
+      "name": "createEmailCampaign",
+      "summary": "This method creates a new email campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/email_campaign/{email_campaign_id}",
+      "group": "Marketing API",
+      "name": "getEmailCampaign",
+      "summary": "This method returns the details of a single email campaign specified by the email_campaign_id path parameter.Call getEmailCampaigns to retrieve a list of all email campaigns from a seller's eBay store.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/marketing/v1/email_campaign/{email_campaign_id}",
+      "group": "Marketing API",
+      "name": "updateEmailCampaign",
+      "summary": "This method lets users update an existing email campaign.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/marketing/v1/email_campaign/{email_campaign_id}",
+      "group": "Marketing API",
+      "name": "deleteEmailCampaign",
+      "summary": "This method deletes the email campaign specified by the email_campaign_id path parameter.Call getEmailCampaigns to retrieve all of the seller's email campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/email_campaign/audience",
+      "group": "Marketing API",
+      "name": "getAudiences",
+      "summary": "This method retrieves all available email newsletter audiences for the email campaign type specified by the emailCampaignType path parameter.Use the optional limit and offset path parameters to paginate the results and t",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/email_campaign/{email_campaign_id}/email_preview",
+      "group": "Marketing API",
+      "name": "getEmailPreview",
+      "summary": "This method returns a preview of the email sent by the email campaign indicated by the email_campaign_id path parameter.Call getEmailCampaigns to obtain a list of email campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/marketing/v1/email_campaign/report",
+      "group": "Marketing API",
+      "name": "getEmailReport",
+      "summary": "This method returns the seller's email campaign performance report for a time period specified by the startDate and endDate path parameters.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.marketing",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_automotive_parts_compatibility_policies",
+      "group": "Metadata API",
+      "name": "getAutomotivePartsCompatibilityPolicies",
+      "summary": "This method returns the eBay policies that define how to list automotive parts compatibility items in the categories of the specified marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_category_policies",
+      "group": "Metadata API",
+      "name": "getCategoryPolicies",
+      "summary": "This method returns eBay category policy metadata for all leaf categories on the specified marketplace.By default, this method returns metadata on all leaf categories.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_classified_ad_policies",
+      "group": "Metadata API",
+      "name": "getClassifiedAdPolicies",
+      "summary": "This method returns eBay classified ad policy metadata for all leaf categories on the specified marketplace.By default, this method returns metadata on all leaf categories.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_currencies",
+      "group": "Metadata API",
+      "name": "getCurrencies",
+      "summary": "This method returns the default currency used by the eBay marketplace specified in the request.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_extended_producer_responsibility_policies",
+      "group": "Metadata API",
+      "name": "getExtendedProducerResponsibilityPolicies",
+      "summary": "This method returns the Extended Producer Responsibility policies for one, multiple, or all eBay categories in an eBay marketplace.The identifier of the eBay marketplace is passed in as a path parameter, and unless one o",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_hazardous_materials_labels",
+      "group": "Metadata API",
+      "name": "getHazardousMaterialsLabels",
+      "summary": "This method returns hazardous materials label information for the specified eBay marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_item_condition_policies",
+      "group": "Metadata API",
+      "name": "getItemConditionPolicies",
+      "summary": "This method returns item condition metadata on one, multiple, or all eBay categories on an eBay marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_structure_policies",
+      "group": "Metadata API",
+      "name": "getListingStructurePolicies",
+      "summary": "This method returns the eBay policies that define the allowed listing structures for the categories of a specific marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_type_policies",
+      "group": "Metadata API",
+      "name": "getListingTypePolicies",
+      "summary": "This method returns eBay listing type policy metadata for all leaf categories on the specified marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_motors_listing_policies",
+      "group": "Metadata API",
+      "name": "getMotorsListingPolicies",
+      "summary": "This method returns eBay Motors policy metadata for all leaf categories on the specified marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_negotiated_price_policies",
+      "group": "Metadata API",
+      "name": "getNegotiatedPricePolicies",
+      "summary": "This method returns the eBay policies that define the supported negotiated price features (like \"best offer\") for the categories of a specific marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_product_safety_labels",
+      "group": "Metadata API",
+      "name": "getProductSafetyLabels",
+      "summary": "This method returns product safety label information for the specified eBay marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_regulatory_policies",
+      "group": "Metadata API",
+      "name": "getRegulatoryPolicies",
+      "summary": "This method returns regulatory policies for one, multiple, or all eBay categories in an eBay marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_return_policies",
+      "group": "Metadata API",
+      "name": "getReturnPolicies",
+      "summary": "This method returns the eBay policies that define whether or not you must include a return policy for the items you list in the categories of a specific marketplace, plus the guidelines for creating domestic and internat",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_shipping_policies",
+      "group": "Metadata API",
+      "name": "getShippingPolicies",
+      "summary": "This method returns eBay shipping policy metadata for all leaf categories on the specified marketplace.By default, this method returns metadata on all leaf categories.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_site_visibility_policies",
+      "group": "Metadata API",
+      "name": "getSiteVisibilityPolicies",
+      "summary": "This method returns eBay international site visibility policy metadata for all leaf categories on the specified marketplace.By default, this method returns metadata on all leaf categories.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/metadata/v1/compatibilities/get_compatibilities_by_specification",
+      "group": "Metadata API",
+      "name": "getCompatibilitiesBySpecification",
+      "summary": "This method is used to retrieve all compatible application name-value pairs for a part based on the provided specification(s).The part's relevant dimensions and/or characteristics can be provided through the specificatio",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/metadata/v1/compatibilities/get_compatibility_property_names",
+      "group": "Metadata API",
+      "name": "getCompatibilityPropertyNames",
+      "summary": "This method is used to retrieve product compatibility property names for the specified compatibility-enabled category.Compatibility property names can be used alongside the corresponding compatibility property value (ret",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/metadata/v1/compatibilities/get_compatibility_property_values",
+      "group": "Metadata API",
+      "name": "getCompatibilityPropertyValues",
+      "summary": "This method is used to retrieve product compatibility property values associated with a single property name, in the specified category.Compatibility property values can be used alongside the corresponding compatibility ",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/metadata/v1/compatibilities/get_multi_compatibility_property_values",
+      "group": "Metadata API",
+      "name": "getMultiCompatibilityPropertyValues",
+      "summary": "This method is used to retrieve product compatibility property values associated with multiple property names, in the specified category.Compatibility property values can be used alongside the corresponding compatibility",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/metadata/v1/compatibilities/get_product_compatibilities",
+      "group": "Metadata API",
+      "name": "getProductCompatibilities",
+      "summary": "This method is used to retrieve all available item compatibility details for the specified product.Item compatibility details can be used to see the properties for which an item is compatible.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_exclude_shipping_locations",
+      "group": "Metadata API",
+      "name": "getExcludeShippingLocations",
+      "summary": "This method retrieves a list of locations that the seller can use as excluded shipping locations within their listings or in their fulfillment business policies for the specified marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_handling_times",
+      "group": "Metadata API",
+      "name": "getHandlingTimes",
+      "summary": "This method retrieves a list of supported handling times for the specified marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_carriers",
+      "group": "Metadata API",
+      "name": "getShippingCarriers",
+      "summary": "This method retrieves a list of supported shipping carriers for the specified marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_locations",
+      "group": "Metadata API",
+      "name": "getShippingLocations",
+      "summary": "This method retrieves a list of supported shipping locations for the specified marketplace.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_services",
+      "group": "Metadata API",
+      "name": "getShippingServices",
+      "summary": "This method retrieves a list of shipping services supported for the specified marketplace, including valid shipping services, shipping times, and package constraints such as size and weight.Manage shipping services using",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/metadata/v1/country/{countryCode}/sales_tax_jurisdiction",
+      "group": "Metadata API",
+      "name": "getSalesTaxJurisdictions",
+      "summary": "This method retrieves all sales-tax jurisdictions for the country specified in the countryCode path parameter.",
+      "scope": "https://api.ebay.com/oauth/api_scope",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/negotiation/v1/find_eligible_items",
+      "group": "Negotiation API",
+      "name": "findEligibleItems",
+      "summary": "This method evaluates a seller's current listings and returns the set of IDs that are eligible for a seller-initiated discount offer to a buyer.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/negotiation/v1/send_offer_to_interested_buyers",
+      "group": "Negotiation API",
+      "name": "sendOfferToInterestedBuyers",
+      "summary": "This method sends eligible buyers offers to purchase items in a listing at a discount.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/recommendation/v1/find",
+      "group": "Recommendation API",
+      "name": "findListingRecommendations",
+      "summary": "The find method currently returns information for a single recommendation type (AD) which contains information that sellers can use to configure Promoted Listings ad campaigns.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/stores/v1/store/categories",
+      "group": "Store API",
+      "name": "getStoreCategories",
+      "summary": "This method is used to retrieve the category hierarchy for an eBay user's store.Note: Three levels of store categories are supported.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/stores/v1/store/categories",
+      "group": "Store API",
+      "name": "addStoreCategory",
+      "summary": "This method is used to add a single new custom category to a user's eBay store through an asynchronous request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "PUT /sell/stores/v1/store/categories/{category_id}",
+      "group": "Store API",
+      "name": "renameStoreCategory",
+      "summary": "This method is used to rename the single category of a user's eBay store through an asynchronous request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "DELETE /sell/stores/v1/store/categories/{category_id}",
+      "group": "Store API",
+      "name": "deleteStoreCategory",
+      "summary": "This method is used to delete one custom category of a user's eBay store through an asynchronous request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/stores/v1/store",
+      "group": "Store API",
+      "name": "getStore",
+      "summary": "This method is used to retrieve information for an eBay user's store such as store name, store URL, and description.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/stores/v1/store/tasks/{task_id}",
+      "group": "Store API",
+      "name": "getStoreTask",
+      "summary": "This method retrieves the current status of a recent store operation.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /sell/stores/v1/store/tasks",
+      "group": "Store API",
+      "name": "getStoreTasks",
+      "summary": "This method retrieves the status of all async store tasks for a store.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /sell/stores/v1/store/categories/move_category",
+      "group": "Store API",
+      "name": "moveStoreCategory",
+      "summary": "This method is used to move an existing user's eBay store custom category through an asynchronous request.",
+      "scope": "https://api.ebay.com/oauth/api_scope/sell.stores",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddFixedPriceItem",
+      "group": "Trading API",
+      "name": "AddFixedPriceItem",
+      "summary": "AddFixedPriceItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddItem",
+      "group": "Trading API",
+      "name": "AddItem",
+      "summary": "AddItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddItems",
+      "group": "Trading API",
+      "name": "AddItems",
+      "summary": "AddItems",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddMemberMessageAAQToPartner",
+      "group": "Trading API",
+      "name": "AddMemberMessageAAQToPartner",
+      "summary": "AddMemberMessageAAQToPartner",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddMemberMessageRTQ",
+      "group": "Trading API",
+      "name": "AddMemberMessageRTQ",
+      "summary": "AddMemberMessageRTQ",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddMemberMessagesAAQToBidder",
+      "group": "Trading API",
+      "name": "AddMemberMessagesAAQToBidder",
+      "summary": "AddMemberMessagesAAQToBidder",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddOrder",
+      "group": "Trading API",
+      "name": "AddOrder",
+      "summary": "AddOrder",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddSecondChanceItem",
+      "group": "Trading API",
+      "name": "AddSecondChanceItem",
+      "summary": "AddSecondChanceItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddToItemDescription",
+      "group": "Trading API",
+      "name": "AddToItemDescription",
+      "summary": "AddToItemDescription",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:AddToWatchList",
+      "group": "Trading API",
+      "name": "AddToWatchList",
+      "summary": "AddToWatchList",
+      "scope": "",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:CompleteSale",
+      "group": "Trading API",
+      "name": "CompleteSale",
+      "summary": "CompleteSale",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:ConfirmIdentity",
+      "group": "Trading API",
+      "name": "ConfirmIdentity",
+      "summary": "ConfirmIdentity",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:DeleteMyMessages",
+      "group": "Trading API",
+      "name": "DeleteMyMessages",
+      "summary": "DeleteMyMessages",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:EndFixedPriceItem",
+      "group": "Trading API",
+      "name": "EndFixedPriceItem",
+      "summary": "EndFixedPriceItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:EndItem",
+      "group": "Trading API",
+      "name": "EndItem",
+      "summary": "EndItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:EndItems",
+      "group": "Trading API",
+      "name": "EndItems",
+      "summary": "EndItems",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:FetchToken",
+      "group": "Trading API",
+      "name": "FetchToken",
+      "summary": "FetchToken",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetAccount",
+      "group": "Trading API",
+      "name": "GetAccount",
+      "summary": "GetAccount",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetAllBidders",
+      "group": "Trading API",
+      "name": "GetAllBidders",
+      "summary": "GetAllBidders",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetBestOffers",
+      "group": "Trading API",
+      "name": "GetBestOffers",
+      "summary": "GetBestOffers",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetBidderList",
+      "group": "Trading API",
+      "name": "GetBidderList",
+      "summary": "GetBidderList",
+      "scope": "",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetDescriptionTemplates",
+      "group": "Trading API",
+      "name": "GetDescriptionTemplates",
+      "summary": "GetDescriptionTemplates",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetFeedback",
+      "group": "Trading API",
+      "name": "GetFeedback",
+      "summary": "GetFeedback",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetItem",
+      "group": "Trading API",
+      "name": "GetItem",
+      "summary": "GetItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetItemShipping",
+      "group": "Trading API",
+      "name": "GetItemShipping",
+      "summary": "GetItemShipping",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetItemTransactions",
+      "group": "Trading API",
+      "name": "GetItemTransactions",
+      "summary": "GetItemTransactions",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetItemsAwaitingFeedback",
+      "group": "Trading API",
+      "name": "GetItemsAwaitingFeedback",
+      "summary": "GetItemsAwaitingFeedback",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetMemberMessages",
+      "group": "Trading API",
+      "name": "GetMemberMessages",
+      "summary": "GetMemberMessages",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetMessagePreferences",
+      "group": "Trading API",
+      "name": "GetMessagePreferences",
+      "summary": "GetMessagePreferences",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetMyMessages",
+      "group": "Trading API",
+      "name": "GetMyMessages",
+      "summary": "GetMyMessages",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetMyeBayBuying",
+      "group": "Trading API",
+      "name": "GetMyeBayBuying",
+      "summary": "GetMyeBayBuying",
+      "scope": "",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetMyeBaySelling",
+      "group": "Trading API",
+      "name": "GetMyeBaySelling",
+      "summary": "GetMyeBaySelling",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetNotificationPreferences",
+      "group": "Trading API",
+      "name": "GetNotificationPreferences",
+      "summary": "GetNotificationPreferences",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetNotificationsUsage",
+      "group": "Trading API",
+      "name": "GetNotificationsUsage",
+      "summary": "GetNotificationsUsage",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetOrders",
+      "group": "Trading API",
+      "name": "GetOrders",
+      "summary": "GetOrders",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetSellerEvents",
+      "group": "Trading API",
+      "name": "GetSellerEvents",
+      "summary": "GetSellerEvents",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetSellerList",
+      "group": "Trading API",
+      "name": "GetSellerList",
+      "summary": "GetSellerList",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetSellerTransactions",
+      "group": "Trading API",
+      "name": "GetSellerTransactions",
+      "summary": "GetSellerTransactions",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetSessionID",
+      "group": "Trading API",
+      "name": "GetSessionID",
+      "summary": "GetSessionID",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetShippingDiscountProfiles",
+      "group": "Trading API",
+      "name": "GetShippingDiscountProfiles",
+      "summary": "GetShippingDiscountProfiles",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetStore",
+      "group": "Trading API",
+      "name": "GetStore",
+      "summary": "GetStore",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetStoreCategoryUpdateStatus",
+      "group": "Trading API",
+      "name": "GetStoreCategoryUpdateStatus",
+      "summary": "GetStoreCategoryUpdateStatus",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetTaxTable",
+      "group": "Trading API",
+      "name": "GetTaxTable",
+      "summary": "GetTaxTable",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetTokenStatus",
+      "group": "Trading API",
+      "name": "GetTokenStatus",
+      "summary": "GetTokenStatus",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetUser",
+      "group": "Trading API",
+      "name": "GetUser",
+      "summary": "GetUser",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetUserContactDetails",
+      "group": "Trading API",
+      "name": "GetUserContactDetails",
+      "summary": "GetUserContactDetails",
+      "scope": "",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetUserPreferences",
+      "group": "Trading API",
+      "name": "GetUserPreferences",
+      "summary": "GetUserPreferences",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GeteBayDetails",
+      "group": "Trading API",
+      "name": "GeteBayDetails",
+      "summary": "GeteBayDetails",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:LeaveFeedback",
+      "group": "Trading API",
+      "name": "LeaveFeedback",
+      "summary": "LeaveFeedback",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:PlaceOffer",
+      "group": "Trading API",
+      "name": "PlaceOffer",
+      "summary": "PlaceOffer",
+      "scope": "",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:RelistFixedPriceItem",
+      "group": "Trading API",
+      "name": "RelistFixedPriceItem",
+      "summary": "RelistFixedPriceItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:RelistItem",
+      "group": "Trading API",
+      "name": "RelistItem",
+      "summary": "RelistItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:RemoveFromWatchList",
+      "group": "Trading API",
+      "name": "RemoveFromWatchList",
+      "summary": "RemoveFromWatchList",
+      "scope": "",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:RespondToBestOffer",
+      "group": "Trading API",
+      "name": "RespondToBestOffer",
+      "summary": "RespondToBestOffer",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:RespondToFeedback",
+      "group": "Trading API",
+      "name": "RespondToFeedback",
+      "summary": "RespondToFeedback",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:ReviseFixedPriceItem",
+      "group": "Trading API",
+      "name": "ReviseFixedPriceItem",
+      "summary": "ReviseFixedPriceItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:ReviseInventoryStatus",
+      "group": "Trading API",
+      "name": "ReviseInventoryStatus",
+      "summary": "ReviseInventoryStatus",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:ReviseItem",
+      "group": "Trading API",
+      "name": "ReviseItem",
+      "summary": "ReviseItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:ReviseMyMessages",
+      "group": "Trading API",
+      "name": "ReviseMyMessages",
+      "summary": "ReviseMyMessages",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:ReviseMyMessagesFolders",
+      "group": "Trading API",
+      "name": "ReviseMyMessagesFolders",
+      "summary": "ReviseMyMessagesFolders",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:RevokeToken",
+      "group": "Trading API",
+      "name": "RevokeToken",
+      "summary": "RevokeToken",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SendInvoice",
+      "group": "Trading API",
+      "name": "SendInvoice",
+      "summary": "SendInvoice",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SetMessagePreferences",
+      "group": "Trading API",
+      "name": "SetMessagePreferences",
+      "summary": "SetMessagePreferences",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SetNotificationPreferences",
+      "group": "Trading API",
+      "name": "SetNotificationPreferences",
+      "summary": "SetNotificationPreferences",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SetShippingDiscountProfiles",
+      "group": "Trading API",
+      "name": "SetShippingDiscountProfiles",
+      "summary": "SetShippingDiscountProfiles",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SetStoreCategories",
+      "group": "Trading API",
+      "name": "SetStoreCategories",
+      "summary": "SetStoreCategories",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SetTaxTable",
+      "group": "Trading API",
+      "name": "SetTaxTable",
+      "summary": "SetTaxTable",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SetUserNotes",
+      "group": "Trading API",
+      "name": "SetUserNotes",
+      "summary": "SetUserNotes",
+      "scope": "",
+      "sellerFacing": false,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:SetUserPreferences",
+      "group": "Trading API",
+      "name": "SetUserPreferences",
+      "summary": "SetUserPreferences",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:VerifyAddFixedPriceItem",
+      "group": "Trading API",
+      "name": "VerifyAddFixedPriceItem",
+      "summary": "VerifyAddFixedPriceItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:VerifyAddItem",
+      "group": "Trading API",
+      "name": "VerifyAddItem",
+      "summary": "VerifyAddItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:VerifyAddSecondChanceItem",
+      "group": "Trading API",
+      "name": "VerifyAddSecondChanceItem",
+      "summary": "VerifyAddSecondChanceItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:VerifyRelistItem",
+      "group": "Trading API",
+      "name": "VerifyRelistItem",
+      "summary": "VerifyRelistItem",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "Trading:GetCategoryFeatures",
+      "group": "Trading API",
+      "name": "GetCategoryFeatures",
+      "summary": "Retired: not in the current Trading API WSDL, yet still called by the dashboard.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true,
+      "retired": true
+    },
+    {
+      "id": "POST /post-order/v2/cancellation/{cancelId}/approve",
+      "group": "Post-Order API",
+      "name": "approveCancellationRequest",
+      "summary": "Seller agrees to a buyer cancellation request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/cancellation/check_eligibility",
+      "group": "Post-Order API",
+      "name": "checkCancellationEligibility",
+      "summary": "Checks whether an order can be cancelled.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/cancellation",
+      "group": "Post-Order API",
+      "name": "createCancellation",
+      "summary": "Requests or performs an order cancellation.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/cancellation/{cancelId}",
+      "group": "Post-Order API",
+      "name": "getCancellation",
+      "summary": "Returns details of a cancellation request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/cancellation/{cancelId}/reject",
+      "group": "Post-Order API",
+      "name": "rejectCancellationRequest",
+      "summary": "Seller declines a cancellation request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/cancellation/search",
+      "group": "Post-Order API",
+      "name": "searchCancellations",
+      "summary": "Searches cancellations.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/casemanagement/{caseId}/appeal",
+      "group": "Post-Order API",
+      "name": "appealCaseDecision",
+      "summary": "Appeals a case decision.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/casemanagement/{caseId}",
+      "group": "Post-Order API",
+      "name": "getCase",
+      "summary": "Returns details of one case.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/casemanagement/search",
+      "group": "Post-Order API",
+      "name": "searchCases",
+      "summary": "Searches cases.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/inquiry/{inquiryId}/escalate",
+      "group": "Post-Order API",
+      "name": "escalateInquiry",
+      "summary": "Escalates an inquiry to an item-not-received case.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/inquiry/{inquiryId}",
+      "group": "Post-Order API",
+      "name": "getInquiry",
+      "summary": "Returns the history and details of an inquiry.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/inquiry/{inquiryId}/issue_refund",
+      "group": "Post-Order API",
+      "name": "issueInquiryRefund",
+      "summary": "Refunds a line item in an item-not-received inquiry.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/inquiry/{inquiryId}/provide_shipment_info",
+      "group": "Post-Order API",
+      "name": "provideInquiryShipmentInfo",
+      "summary": "Supplies shipment information for an inquiry.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/inquiry/search",
+      "group": "Post-Order API",
+      "name": "searchInquiries",
+      "summary": "Searches inquiries.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/inquiry/{inquiryId}/send_message",
+      "group": "Post-Order API",
+      "name": "sendInquiryMessage",
+      "summary": "Messages the buyer about an inquiry.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/{returnId}/add_shipping_label",
+      "group": "Post-Order API",
+      "name": "addShippingLabelInfo",
+      "summary": "Adds a seller-provided return shipping label.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return",
+      "group": "Post-Order API",
+      "name": "createReturnRequest",
+      "summary": "Requests a return for an item.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/{returnId}/escalate",
+      "group": "Post-Order API",
+      "name": "escalateReturn",
+      "summary": "Escalates a return request into a case.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/return/{returnId}",
+      "group": "Post-Order API",
+      "name": "getReturn",
+      "summary": "Returns details of a return request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/return/{returnId}/files",
+      "group": "Post-Order API",
+      "name": "getReturnFiles",
+      "summary": "Returns the files attached to a return request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/return/preference",
+      "group": "Post-Order API",
+      "name": "getReturnPreferences",
+      "summary": "Returns the seller's return preferences.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/return/{returnId}/tracking",
+      "group": "Post-Order API",
+      "name": "getShipmentTrackingInfo",
+      "summary": "Returns tracking for a returned item.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/{returnId}/issue_refund",
+      "group": "Post-Order API",
+      "name": "issueReturnRefund",
+      "summary": "Issues a refund for a returned item.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/{returnId}/mark_as_received",
+      "group": "Post-Order API",
+      "name": "markReturnReceived",
+      "summary": "Marks a returned item as received.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/{returnId}/decide",
+      "group": "Post-Order API",
+      "name": "processReturnRequest",
+      "summary": "Approves, declines or otherwise acts on a return request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "GET /post-order/v2/return/search",
+      "group": "Post-Order API",
+      "name": "searchReturns",
+      "summary": "Searches return requests.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/{returnId}/send_message",
+      "group": "Post-Order API",
+      "name": "sendReturnMessage",
+      "summary": "Messages the buyer about a return.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/preference",
+      "group": "Post-Order API",
+      "name": "setReturnPreferences",
+      "summary": "Sets the seller's return preferences.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /post-order/v2/return/{returnId}/file/upload",
+      "group": "Post-Order API",
+      "name": "uploadReturnFile",
+      "summary": "Uploads files for a return request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
+      "id": "POST /identity/v1/oauth2/token",
+      "group": "OAuth",
+      "name": "getToken",
+      "summary": "Mints application and user access tokens and refreshes them.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    }
+  ]
+}
