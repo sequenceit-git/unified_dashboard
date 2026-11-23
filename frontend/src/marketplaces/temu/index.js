@@ -44,5 +44,7 @@ export default {
   },
   liveUpdates: { pushes: 'order changes', arrives: 'orders' },
   shipNeedsTracking: true,
+  /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
+  listing: { temuFields: true },
   listingDefaults: { canList: false },
 }

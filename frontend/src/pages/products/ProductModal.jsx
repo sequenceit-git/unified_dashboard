@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import Button from '../../components/ui/Button'
@@ -6,18 +7,18 @@ import { Input, Select } from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import Badge from '../../components/ui/Badge'
-import IdentifierCodeField from '../../components/listing/IdentifierCodeField'
-import EbayIdentifierField from '../../components/listing/EbayIdentifierField'
-import EbayBestOfferField from '../../components/listing/EbayBestOfferField'
+import IdentifierCodeField from '../../marketplaces/tiktok_shop/listing/IdentifierCodeField'
+import EbayIdentifierField from '../../marketplaces/ebay/listing/IdentifierField'
+import EbayBestOfferField from '../../marketplaces/ebay/listing/BestOfferField'
 import VariantEditor from '../../components/listing/VariantEditor'
-import { validateIdentifierCode, validateVariantsForTikTok } from '../../lib/tiktokListing'
+import { validateIdentifierCode, validateVariantsForTikTok } from '../../marketplaces/tiktok_shop/listing/rules'
 import {
   DISPATCH_TIMES,
   isNewCondition,
   validateBestOffer,
   validateEbayIdentifierCode,
   validateVariantsForEbay,
-} from '../../lib/ebayListing'
+} from '../../marketplaces/ebay/listing/rules'
 import { listingActionsFor, listingBadge, useShopProfile } from '../../hooks/useShopProfiles'
 import { CONDITIONS } from '../../lib/listingConditions'
 
@@ -62,8 +63,10 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
   const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const shopForm = profile?.productForm || {}
-  const isTikTok = marketplace === 'tiktok_shop'
-  const isEbay = marketplace === 'ebay'
+  // The shop decides which listing field set it uses (src/marketplaces/<key>/index.js → listing).
+  const listing = getShop(marketplace)?.listing || {}
+  const isTikTok = Boolean(listing.tiktokFields)
+  const isEbay = Boolean(listing.ebayFields)
   const titleMax = shopForm.titleMax || 0
   const subtitleMax = shopForm.subtitleMax || (isEbay ? 55 : 0)
   const packageRequired = Boolean(shopForm.packageDetails?.required)

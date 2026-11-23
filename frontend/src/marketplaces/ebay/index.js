@@ -3,6 +3,7 @@
  * choices shared pages make (promotion form, cancellation rules, listing defaults, buyer links).
  */
 import Wordmark from './Wordmark'
+import { validateVariantsForEbay } from './listing/rules'
 import returns from './sections/returns'
 import offers from './sections/offers'
 import promotions from './sections/promotions'
@@ -59,6 +60,8 @@ export default {
   cancellations: { rejectNeedsTracking: true },
   liveUpdates: { pushes: 'sales and messages', arrives: 'sales and messages' },
   shipNeedsTracking: true,
+  /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
+  listing: { ebayFields: true, validateVariants: validateVariantsForEbay },
   listingDefaults: {
     conditionDescription: true,
     variants: true,

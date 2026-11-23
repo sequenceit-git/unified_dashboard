@@ -1,15 +1,16 @@
 import { useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import Button from '../ui/Button'
 import { Input, Select } from '../ui/Input'
-import IdentifierCodeField from './IdentifierCodeField'
-import EbayIdentifierField from './EbayIdentifierField'
+import IdentifierCodeField from '../../marketplaces/tiktok_shop/listing/IdentifierCodeField'
+import EbayIdentifierField from '../../marketplaces/ebay/listing/IdentifierField'
 import {
   cartesianVariants,
   extractOptionGroups,
   readFileAsDataUrl,
-} from '../../lib/tiktokListing'
+} from '../../marketplaces/tiktok_shop/listing/rules'
 
 /**
  * Multi-variant (SKU) editor shared by TikTok Shop and eBay listings:
@@ -29,7 +30,7 @@ export default function VariantEditor({
   requireStock = true,
 }) {
   const { token } = useAuth()
-  const isEbay = marketplace === 'ebay'
+  const isEbay = Boolean(getShop(marketplace)?.listing?.ebayFields)
   const maxGroups = isEbay ? 5 : 3
   const maxNameLen = isEbay ? 40 : 20
   const maxSkus = isEbay ? 250 : 300

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import Button from '../../components/ui/Button'
@@ -8,12 +9,12 @@ import { useApi } from '../../hooks/useApi'
 import { marketplaceLabel } from '../../marketplaces'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import AttributeField, { matchAspects } from '../../components/listing/AttributeField'
-import BrandPicker from '../../components/listing/BrandPicker'
-import CertificationFields, { certificationNeeded, certificationPayload } from '../../components/listing/CertificationFields'
-import IdentifierCodeField from '../../components/listing/IdentifierCodeField'
-import EbayIdentifierField from '../../components/listing/EbayIdentifierField'
-import EbayBestOfferField from '../../components/listing/EbayBestOfferField'
-import SizeChartField from '../../components/listing/SizeChartField'
+import BrandPicker from '../../marketplaces/tiktok_shop/listing/BrandPicker'
+import CertificationFields, { certificationNeeded, certificationPayload } from '../../marketplaces/tiktok_shop/listing/CertificationFields'
+import IdentifierCodeField from '../../marketplaces/tiktok_shop/listing/IdentifierCodeField'
+import EbayIdentifierField from '../../marketplaces/ebay/listing/IdentifierField'
+import EbayBestOfferField from '../../marketplaces/ebay/listing/BestOfferField'
+import SizeChartField from '../../marketplaces/tiktok_shop/listing/SizeChartField'
 import VariantEditor from '../../components/listing/VariantEditor'
 import {
   SAVE_MODES,
@@ -22,7 +23,7 @@ import {
   normalizeCategoryRules,
   validateIdentifierCode,
   validateVariantsForTikTok,
-} from '../../lib/tiktokListing'
+} from '../../marketplaces/tiktok_shop/listing/rules'
 import {
   DISPATCH_TIMES,
   isNewCondition,
@@ -31,7 +32,7 @@ import {
   validateBestOffer,
   validateEbayIdentifierCode,
   validateVariantsForEbay,
-} from '../../lib/ebayListing'
+} from '../../marketplaces/ebay/listing/rules'
 import { CONDITIONS } from '../../lib/listingConditions'
 
 function useDebounced(value, ms) {
@@ -56,8 +57,10 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
   const selectedShop = shops.find((s) => s._id === shopId)
   const marketplace = selectedShop?.marketplace
   const caps = selectedShop?.listing || {}
-  const isTikTok = marketplace === 'tiktok_shop'
-  const isEbay = marketplace === 'ebay'
+  // The shop decides which listing field set it uses (src/marketplaces/<key>/index.js → listing).
+  const listing = getShop(marketplace)?.listing || {}
+  const isTikTok = Boolean(listing.tiktokFields)
+  const isEbay = Boolean(listing.ebayFields)
 
   const [price, setPrice] = useState(product.basePrice || '')
   const [listPrice, setListPrice] = useState(product.listPrice ?? '')
@@ -172,7 +175,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
     api.get(`/api/shops/${shopId}/categories/${categoryId}/rules`, token)
       .then((rules) => {
         if (cancelled) return
-        if (marketplace === 'tiktok_shop') {
+        if (isTikTok) {
           setCategoryRules(normalizeCategoryRules(rules))
         } else {
           const normalized = normalizeEbayCategoryRules(rules)
@@ -184,7 +187,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
       })
       .catch(() => {
         if (cancelled) return
-        if (marketplace === 'tiktok_shop') setCategoryRules(normalizeCategoryRules([]))
+        if (isTikTok) setCategoryRules(normalizeCategoryRules([]))
         else setEbayRules(normalizeEbayCategoryRules(null))
       })
     return () => { cancelled = true }
@@ -768,7 +771,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
         {caps.canList && (
           <div>
             <ImageDropzone images={images} onChange={setImages} label={`Listing Images (up to ${caps.maxImages || 12})`} maxImages={caps.maxImages || 12} />
-            {marketplace === 'ebay' && (
+            {isEbay && (
               <p className="mt-1 text-xs text-indigo-600 font-medium">eBay requires pictures to be at least 500px on the longest side.</p>
             )}
             {images.length === 0 && <p className="mt-1 text-xs text-amber-600">At least 1 image is needed to publish.</p>}

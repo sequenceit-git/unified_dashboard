@@ -1,4 +1,4 @@
-import { Input } from '../ui/Input'
+import { Input } from '../../../components/ui/Input'
 
 export function certificationNeeded(rule, aspects, schema) {
   if (!rule) return false

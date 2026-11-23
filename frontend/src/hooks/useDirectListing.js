@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api'
-import { inferIdentifierFromGtin } from '../lib/tiktokListing'
-import { normalizeEbayCategoryRules } from '../lib/ebayListing'
+import { inferIdentifierFromGtin } from '../marketplaces/tiktok_shop/listing/rules'
+import { normalizeEbayCategoryRules } from '../marketplaces/ebay/listing/rules'
 
 function emptySession() {
   return {

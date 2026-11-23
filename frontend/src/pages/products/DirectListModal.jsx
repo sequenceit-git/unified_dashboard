@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import Button from '../../components/ui/Button'
@@ -6,12 +7,12 @@ import { Input, Select } from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import ImageDropzone from '../../components/ui/ImageDropzone'
 import AttributeField, { matchAspects } from '../../components/listing/AttributeField'
-import BrandPicker from '../../components/listing/BrandPicker'
-import CertificationFields, { certificationNeeded, certificationPayload } from '../../components/listing/CertificationFields'
-import IdentifierCodeField from '../../components/listing/IdentifierCodeField'
-import EbayIdentifierField from '../../components/listing/EbayIdentifierField'
-import EbayBestOfferField from '../../components/listing/EbayBestOfferField'
-import SizeChartField from '../../components/listing/SizeChartField'
+import BrandPicker from '../../marketplaces/tiktok_shop/listing/BrandPicker'
+import CertificationFields, { certificationNeeded, certificationPayload } from '../../marketplaces/tiktok_shop/listing/CertificationFields'
+import IdentifierCodeField from '../../marketplaces/tiktok_shop/listing/IdentifierCodeField'
+import EbayIdentifierField from '../../marketplaces/ebay/listing/IdentifierField'
+import EbayBestOfferField from '../../marketplaces/ebay/listing/BestOfferField'
+import SizeChartField from '../../marketplaces/tiktok_shop/listing/SizeChartField'
 import VariantEditor from '../../components/listing/VariantEditor'
 import {
   SAVE_MODES,
@@ -21,7 +22,7 @@ import {
   normalizeCategoryRules,
   validateIdentifierCode,
   validateVariantsForTikTok,
-} from '../../lib/tiktokListing'
+} from '../../marketplaces/tiktok_shop/listing/rules'
 import {
   DISPATCH_TIMES,
   isNewCondition,
@@ -30,7 +31,7 @@ import {
   validateBestOffer,
   validateEbayIdentifierCode,
   validateVariantsForEbay,
-} from '../../lib/ebayListing'
+} from '../../marketplaces/ebay/listing/rules'
 import { listingFormFor, useShopProfile } from '../../hooks/useShopProfiles'
 import { clearDirectListing, startDirectFetch, useDirectListing } from '../../hooks/useDirectListing'
 import { useApi } from '../../hooks/useApi'
@@ -87,8 +88,10 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const subtitleMax = layout.subtitleMax || 55
   const maxImages = layout.maxImages
   const packageRequired = layout.package === 'required'
-  const isTikTok = marketplace === 'tiktok_shop'
-  const isEbay = marketplace === 'ebay'
+  // The shop decides which listing field set it uses (src/marketplaces/<key>/index.js → listing).
+  const listing = getShop(marketplace)?.listing || {}
+  const isTikTok = Boolean(listing.tiktokFields)
+  const isEbay = Boolean(listing.ebayFields)
 
   const { session, update } = useDirectListing(marketplace)
   const {
@@ -156,7 +159,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
             .map(([name, value]) => ({ name, value })),
         }))
         const missing = productList
-          .filter((attr) => (attr.required || attr.recommended || marketplace === 'tiktok_shop') && !hasAspectValue(matched[attr.id]))
+          .filter((attr) => (attr.required || attr.recommended || isTikTok) && !hasAspectValue(matched[attr.id]))
           .slice(0, 25)
         if (!useAi || !missing.length) return
         update({ fillingAttributes: true })
@@ -198,7 +201,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     api.get(`/api/shops/${shop._id}/categories/${categoryId}/rules`, token)
       .then((rules) => {
         if (cancelled) return
-        if (marketplace === 'tiktok_shop') {
+        if (isTikTok) {
           update({ categoryRules: normalizeCategoryRules(rules) })
         } else {
           const normalized = normalizeEbayCategoryRules(rules)
@@ -212,7 +215,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
       })
       .catch(() => {
         if (cancelled) return
-        if (marketplace === 'tiktok_shop') update({ categoryRules: normalizeCategoryRules([]) })
+        if (isTikTok) update({ categoryRules: normalizeCategoryRules([]) })
         else update({ ebayRules: normalizeEbayCategoryRules(null) })
       })
     return () => { cancelled = true }
@@ -819,7 +822,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     </div>
   )
 
-  const draftFields = marketplace === 'tiktok_shop' ? tiktokFields : marketplace === 'temu' ? temuFields : ebayFields
+  const draftFields = listing.tiktokFields ? tiktokFields : listing.temuFields ? temuFields : ebayFields
 
   return (
     <Modal title={`Direct listing · ${shopLabel}`} onClose={onClose} size="5xl" closeOnBackdrop={!fetching && !saving}>

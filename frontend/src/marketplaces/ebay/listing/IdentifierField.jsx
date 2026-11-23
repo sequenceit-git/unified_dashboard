@@ -1,6 +1,6 @@
-import Button from '../ui/Button'
-import { Input, Select } from '../ui/Input'
-import { EBAY_IDENTIFIER_TYPES, EBAY_ID_HINTS, validateEbayIdentifierCode } from '../../lib/ebayListing'
+import Button from '../../../components/ui/Button'
+import { Input, Select } from '../../../components/ui/Input'
+import { EBAY_IDENTIFIER_TYPES, EBAY_ID_HINTS, validateEbayIdentifierCode } from './rules'
 
 /** eBay product identifier (UPC / EAN / ISBN) with "Does not apply" quick helper. */
 export default function EbayIdentifierField({

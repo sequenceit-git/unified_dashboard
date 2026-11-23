@@ -1,5 +1,5 @@
-import { Input, Select } from '../ui/Input'
-import { IDENTIFIER_HINTS, IDENTIFIER_TYPES, validateIdentifierCode } from '../../lib/tiktokListing'
+import { Input, Select } from '../../../components/ui/Input'
+import { IDENTIFIER_HINTS, IDENTIFIER_TYPES, validateIdentifierCode } from './rules'
 
 /** Regulated product identifier code input (GTIN / UPC / EAN / ISBN / JAN). */
 export default function IdentifierCodeField({ value, onChange, label = 'Product identifier (GTIN / UPC / EAN)', compact = false }) {

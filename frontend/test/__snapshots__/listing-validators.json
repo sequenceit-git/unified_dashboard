@@ -1,0 +1,192 @@
+{
+ "ebay": [
+  [
+   [],
+   "",
+   ""
+  ],
+  [
+   [
+    {
+     "sku": "",
+     "price": "",
+     "stock": ""
+    }
+   ],
+   "eBay multi-variation listings must have 1 to 5 variation option types.",
+   "eBay multi-variation listings must have 1 to 5 variation option types."
+  ],
+  [
+   [
+    {
+     "sku": "A",
+     "price": "10",
+     "stock": "2",
+     "options": {
+      "Color": "Red"
+     }
+    },
+    {
+     "sku": "A",
+     "price": "0",
+     "stock": "-1",
+     "options": {
+      "Color": "Red"
+     }
+    }
+   ],
+   "Red: price must be greater than 0.",
+   "Red: price must be greater than 0."
+  ],
+  [
+   [
+    {
+     "sku": "B1",
+     "price": "5",
+     "stock": "1",
+     "options": {
+      "Size": "M"
+     }
+    },
+    {
+     "sku": "B2",
+     "price": "6",
+     "stock": "0",
+     "options": {
+      "Size": "L"
+     }
+    }
+   ],
+   "L: stock must be at least 1.",
+   ""
+  ]
+ ],
+ "tiktok": [
+  [
+   [],
+   "",
+   ""
+  ],
+  [
+   [
+    {
+     "sku": "",
+     "price": "",
+     "stock": ""
+    }
+   ],
+   "Variant 1: price must be between $0.01 and $7,600.00.",
+   "Variant 1: price must be between $0.01 and $7,600.00."
+  ],
+  [
+   [
+    {
+     "sku": "A",
+     "price": "10",
+     "stock": "2",
+     "options": {
+      "Color": "Red"
+     }
+    },
+    {
+     "sku": "A",
+     "price": "0",
+     "stock": "-1",
+     "options": {
+      "Color": "Red"
+     }
+    }
+   ],
+   "Red: price must be between $0.01 and $7,600.00.",
+   "Red: price must be between $0.01 and $7,600.00."
+  ],
+  [
+   [
+    {
+     "sku": "B1",
+     "price": "5",
+     "stock": "1",
+     "options": {
+      "Size": "M"
+     }
+    },
+    {
+     "sku": "B2",
+     "price": "6",
+     "stock": "0",
+     "options": {
+      "Size": "L"
+     }
+    }
+   ],
+   "L: stock must be between 1 and 99,999.",
+   ""
+  ]
+ ],
+ "bestOffer": [
+  [
+   {
+    "enabled": true,
+    "autoAccept": "5",
+    "autoDecline": "9"
+   },
+   10,
+   ""
+  ],
+  [
+   {
+    "enabled": true,
+    "autoAccept": "20"
+   },
+   10,
+   ""
+  ],
+  [
+   {
+    "enabled": false
+   },
+   10,
+   ""
+  ]
+ ],
+ "ebayId": [
+  [
+   {
+    "type": "UPC",
+    "code": "123"
+   },
+   "Invalid UPC \"123\" (12 digits or \"Does not apply\")."
+  ],
+  [
+   {
+    "type": "EAN",
+    "code": "4006381333931"
+   },
+   ""
+  ],
+  [
+   {},
+   ""
+  ]
+ ],
+ "ttId": [
+  [
+   {
+    "type": "GTIN",
+    "code": "1"
+   },
+   "Invalid GTIN code \"1\" (expected 14 digits)."
+  ],
+  [
+   {
+    "type": "UPC",
+    "code": "036000291452"
+   },
+   ""
+  ],
+  [
+   {},
+   ""
+  ]
+ ]
+}

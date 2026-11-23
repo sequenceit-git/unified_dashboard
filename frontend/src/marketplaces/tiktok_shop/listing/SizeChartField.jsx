@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../../auth/AuthContext'
-import { api } from '../../lib/api'
-import { Select } from '../ui/Input'
-import { readFileAsDataUrl } from '../../lib/tiktokListing'
+import { useAuth } from '../../../auth/AuthContext'
+import { api } from '../../../lib/api'
+import { Select } from '../../../components/ui/Input'
+import { readFileAsDataUrl } from './rules'
 
 /** TikTok Shop size chart picker (saved template or image upload) when supported/required by category. */
 export default function SizeChartField({ shopId, rules, value, onChange }) {

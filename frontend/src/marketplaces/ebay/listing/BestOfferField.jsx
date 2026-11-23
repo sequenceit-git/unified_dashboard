@@ -1,5 +1,5 @@
-import { Input } from '../ui/Input'
-import { validateBestOffer } from '../../lib/ebayListing'
+import { Input } from '../../../components/ui/Input'
+import { validateBestOffer } from './rules'
 
 /** eBay Best Offer toggle and optional auto-accept / auto-decline thresholds. */
 export default function EbayBestOfferField({ value, onChange, minPrice = null }) {

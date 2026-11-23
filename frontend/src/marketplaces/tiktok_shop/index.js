@@ -3,6 +3,7 @@
  * shop-specific choices shared pages make (promotions, listing defaults).
  */
 import returns from './sections/returns'
+import { validateVariantsForTikTok } from './listing/rules'
 import promotions from './sections/promotions'
 import fulfillment from './sections/fulfillment'
 import { FiMusic } from 'react-icons/fi'
@@ -49,6 +50,8 @@ export default {
   promotions: { canCreate: true, pauseVerb: 'Deactivate' },
   liveUpdates: { pushes: 'sales and messages', arrives: 'sales and messages' },
   shipNeedsTracking: true,
+  /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
+  listing: { tiktokFields: true, validateVariants: validateVariantsForTikTok },
   listingDefaults: {
     variants: true,
     brands: true,

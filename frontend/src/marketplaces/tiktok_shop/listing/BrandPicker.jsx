@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../../auth/AuthContext'
-import { api } from '../../lib/api'
-import { Input, Select } from '../ui/Input'
+import { useAuth } from '../../../auth/AuthContext'
+import { api } from '../../../lib/api'
+import { Input, Select } from '../../../components/ui/Input'
 
 /** Searchable TikTok Shop brand selector (`brand_id` + display `brand`). */
 export default function BrandPicker({ shopId, categoryId = '', brandId = '', brand = '', onChange }) {
