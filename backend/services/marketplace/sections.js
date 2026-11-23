@@ -491,7 +491,128 @@ function temuGoodsRows(result) {
   return rows
 }
 
+/** parentAfterSalesStatus (Temu Return and Refund Guide). */
+const TEMU_AFTERSALES_STATUS = {
+  1: 'Requested',
+  2: 'Package shipped',
+  3: 'Pending: return received',
+  4: 'Refund processing',
+  5: 'Refunded',
+  6: 'Cancelled by buyer',
+  7: 'Rejected',
+  8: 'Pending: return label',
+  9: 'Refund processing',
+  10: 'Return requested',
+  11: 'Platform reviewing',
+}
+
+/** Ad report values are `{ val }` objects. */
+const adVal = (field) => {
+  const value = field && typeof field === 'object' ? field.val : field
+  const n = Number(value)
+  return value == null || value === '' || !Number.isFinite(n) ? null : n
+}
+const adMoney = (field) => {
+  const n = adVal(field)
+  return n == null ? null : { value: n, currency: 'USD' }
+}
+
+/** The ads report's timestamp unit isn't documented: try milliseconds, then seconds. */
+async function temuAdReport(token, days) {
+  const end = Date.now()
+  const start = end - days * 24 * 3600 * 1000
+  try {
+    return await temu.call('temu.searchrec.ad.reports.mall.query', { access_token: token, startTs: start, endTs: end })
+  } catch (err) {
+    if (String(err.code) !== '230012000') throw err
+    return temu.call('temu.searchrec.ad.reports.mall.query', {
+      access_token: token,
+      startTs: Math.floor(start / 1000),
+      endTs: Math.floor(end / 1000),
+    })
+  }
+}
+
 const TEMU = {
+  async promotions(token) {
+    const activityRow = (row) => ({
+      id: row.activityId,
+      name: row.activityName || '',
+      type: words(row.activityType),
+      status: words(row.activityStatus),
+      joined: row.isJoinedActivity ? 'Yes' : '',
+      starts: temuTime(row.activityStartTime),
+      ends: temuTime(row.activityEndTime),
+    })
+    const columns = [col('name', 'Activity'), col('type', 'Type'), col('status', 'Status', 'status'), col('joined', 'Joined'), col('starts', 'Starts', 'date'), col('ends', 'Ends', 'date')]
+    const list = await tables([
+      {
+        id: 'joined',
+        title: 'Promotions you joined',
+        columns,
+        load: async () => ((await temu.call('bg.promotion.activity.query', {
+          access_token: token,
+          pageNumber: 1,
+          pageSize: 50,
+          onlyQueryJoinedActivity: true,
+        })).activityList || []).map(activityRow),
+      },
+      {
+        id: 'available',
+        title: 'Temu promotions',
+        note: 'Enroll goods in a promotion in Temu Seller Center.',
+        columns,
+        load: async () => ((await temu.call('bg.promotion.activity.query', {
+          access_token: token,
+          pageNumber: 1,
+          pageSize: 50,
+        })).activityList || []).map(activityRow),
+      },
+    ])
+    return {
+      summary: [
+        { label: 'Joined', value: list[0].rows.length, type: 'number' },
+        { label: 'Available', value: list[1].rows.filter((row) => !row.joined).length, type: 'number' },
+      ],
+      tables: list,
+    }
+  },
+
+  async ads(token) {
+    let report = null
+    const list = await tables([
+      {
+        id: 'goods',
+        title: 'Ads by goods (last 30 days)',
+        columns: [col('goodsId', 'Goods'), col('spend', 'Spend', 'money'), col('sales', 'Ad sales', 'money'), col('orders', 'Orders', 'number'), col('roas', 'ROAS', 'number'), col('impressions', 'Impressions', 'number'), col('clicks', 'Clicks', 'number')],
+        load: async () => {
+          report = await temuAdReport(token, 30)
+          return (report?.reportsItemList || []).map((row) => ({
+            goodsId: row.goodsId,
+            spend: adMoney(row.adSpend),
+            sales: adMoney(row.orderPayAmt),
+            orders: adVal(row.orderPayCnt),
+            roas: adVal(row.roas),
+            impressions: adVal(row.imprCnt),
+            clicks: adVal(row.clkCnt),
+          }))
+        },
+      },
+    ])
+    const totals = report?.reportsSummary || {}
+    const summary = report?.summary || {}
+    const pick = (all, key) => adVal(totals[all]) ?? adVal(summary[key]?.ad)
+    return {
+      summary: [
+        { label: 'Ad spend', value: pick('adSpendAll', 'spend'), type: 'number' },
+        { label: 'Ad sales', value: pick('orderPayAmtAll', 'orderPayAmt'), type: 'number' },
+        { label: 'ROAS', value: pick('roasAll', 'roas'), type: 'number' },
+        { label: 'Orders', value: pick('orderPayCntAll', 'orderPayCnt'), type: 'number' },
+      ],
+      tables: list,
+    }
+  },
+
   async returns(token) {
     const end = Math.floor(Date.now() / 1000)
     const start = end - 90 * 24 * 3600
@@ -499,6 +620,7 @@ const TEMU = {
       {
         id: 'returns',
         title: 'Returns and refunds (last 90 days)',
+        note: 'Temu lets apps approve returns (full refund) and cancellations only. Decline or partially refund in Temu Seller Center.',
         columns: [col('id', 'Request'), col('order', 'Order'), col('status', 'Status', 'status'), col('opened', 'Opened', 'date'), col('updated', 'Updated', 'date'), col('respondBy', 'Respond by', 'date')],
         load: async () => (await temu.call('bg.aftersales.parentaftersales.list.get', {
           access_token: token,
@@ -518,12 +640,34 @@ const TEMU = {
           respondBy: temuTime(row.operateExpireTimeMs),
         })) || [],
       },
+      {
+        id: 'cancellations',
+        title: 'Cancellation requests',
+        columns: [col('cancelId', 'Request'), col('orderId', 'Order'), col('status', 'Status', 'status'), col('items', 'Items', 'number'), col('opened', 'Opened', 'date')],
+        load: async () => ((await temu.call('bg.aftersales.cancel.list.get', {
+          access_token: token,
+          pageNo: 1,
+          pageSize: 50,
+        })).data || []).map((row) => {
+          const lines = row.afterSalesInfoList || []
+          const status = Number(row.parentAfterSalesStatus)
+          return {
+            cancelId: row.parentAfterSalesSn,
+            orderId: lines[0]?.parentOrderSn || '',
+            // 1 = waiting for the seller; everything else is already settled.
+            status: status === 1 ? 'Pending' : (TEMU_AFTERSALES_STATUS[status] || 'Closed'),
+            items: lines.reduce((sum, line) => sum + Number(line.applyGoodsNumber || 0), 0) || lines.length,
+            opened: temuTime(lines[0]?.createAtMillis),
+          }
+        }),
+      },
     ])
     const open = list[0].rows.filter((row) => !/refunded|rejected|cancelled/i.test(row.status)).length
     return {
       summary: [
         { label: 'Open requests', value: open, type: 'number' },
         { label: 'Requests', value: list[0].rows.length, type: 'number' },
+        { label: 'Pending cancellations', value: list[1].rows.filter((row) => row.status === 'Pending').length, type: 'number' },
       ],
       tables: list,
     }

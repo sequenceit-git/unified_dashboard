@@ -86,19 +86,27 @@ router.post('/tiktok/webhooks', async (req, res) => {
 })
 
 // POST /api/temu/webhooks — Temu webhook events (callback URL set in the Temu Partner Platform).
-// Matches the shop by mallId and queues an orders sync; the data itself is fetched from Temu.
+// Checks the signature, decrypts eventData and answers at once (Temu allows 500 ms), then queues
+// an orders sync for the shop; the order data itself is fetched from Temu.
 router.post(
   '/temu/webhooks',
   express.text({ type: () => true, limit: '1mb' }),
-  async (req, res) => {
+  (req, res) => {
+    let opened
     try {
-      const result = await temuNotifications.handle(req.body, req.headers)
-      if (result.status !== 200) console.warn(`[temu-webhook] ${result.message}`)
-      res.status(result.status).json({ success: result.status === 200, message: result.message })
+      opened = temuNotifications.open(req.body, req.headers)
     } catch (err) {
       console.error('[temu-webhook] failed:', err.message)
-      res.status(500).json({ success: false, error: 'Could not process webhook' })
+      return res.status(500).json({ success: false, error: 'Could not process webhook' })
     }
+    if (opened.status !== 200) {
+      console.warn(`[temu-webhook] ${opened.message}`)
+      return res.status(opened.status).json({ success: false, message: opened.message })
+    }
+    res.status(200).json({ result: {} })
+    temuNotifications.process(opened.eventCode, opened.data, opened.signature)
+      .then((result) => console.log(`[temu-webhook] ${result.message}`))
+      .catch((err) => console.error('[temu-webhook] failed:', err.message))
   },
 )
 

@@ -284,9 +284,11 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
                 <Button size="sm" onClick={() => onAction('cancel-approve', row)}>
                   Approve
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => onAction('cancel-reject', row)}>
-                  Reject
-                </Button>
+                {marketplace !== 'temu' && (
+                  <Button size="sm" variant="secondary" onClick={() => onAction('cancel-reject', row)}>
+                    Reject
+                  </Button>
+                )}
               </div>
             )
           },
@@ -309,9 +311,11 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
                 <Button size="sm" onClick={() => onAction('return-approve', row)}>
                   {marketplace === 'temu' ? 'Approve & refund' : 'Approve'}
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => onAction('return-decline', row)}>
-                  Decline
-                </Button>
+                {marketplace !== 'temu' && (
+                  <Button size="sm" variant="secondary" onClick={() => onAction('return-decline', row)}>
+                    Decline
+                  </Button>
+                )}
               </div>
             )
           },
@@ -495,7 +499,7 @@ export default function ShopSectionPage() {
       if (!window.confirm(`Approve cancellation for Order ${row.orderId || row.cancelId}?`)) return
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/cancellations/decide', { marketplace: shopSection.marketplace, cancelId: row.cancelId, action: 'approve' }, token)
+        await api.post('/api/shops/sections/cancellations/decide', { marketplace: shopSection.marketplace, cancelId: row.cancelId, orderId: row.orderId, action: 'approve' }, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)
@@ -540,6 +544,7 @@ export default function ShopSectionPage() {
         await api.post('/api/shops/sections/returns/decide', {
           marketplace: shopSection.marketplace,
           returnId: row.returnId,
+          orderId: row.orderId,
           decision: 'APPROVE',
           ...(row.returnType ? { returnType: row.returnType } : {}),
           ...(row.rawStatus ? { rawStatus: row.rawStatus } : {}),

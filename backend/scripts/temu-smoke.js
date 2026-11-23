@@ -19,14 +19,18 @@ const manager = require('../services/marketplace')
 const { PROFILES } = require('../services/marketplace/profiles')
 
 const WRITE_SCOPE_AUDIT = [
-  'bg.logistics.shipped.package.confirm',
   'bg.logistics.shipment.v2.confirm',
   'bg.logistics.companies.get',
-  'bg.order.cancel.apply',
+  'bg.logistics.warehouse.list.get',
   'temu.order.cancel.outofstock.apply',
   'temu.aftersales.refund.issue',
-  'temu.aftersales.claim.reject',
+  'bg.aftersales.cancel.agree',
+  'bg.order.shippinginfo.v2.get',
+  'bg.order.amount.query',
+  'bg.local.goods.stock.edit',
+  'bg.local.goods.sale.status.set',
   'bg.local.goods.priceorder.change.sku.price',
+  'bg.tmc.message.update',
 ]
 
 const results = []
@@ -86,9 +90,13 @@ async function main() {
     await check('Orders paging (bg.order.list.v2.get)', async () => {
       const { orders } = await temu.getOrders(token, { limit: 10 })
       const line = orders[0]?.items?.[0]
+      const withTotal = orders.filter((order) => order.totals?.total > 0).length
+      const toShip = orders.filter((order) => ['pending', 'paid'].includes(order.status))
+      const withAddress = toShip.filter((order) => order.shippingAddress?.street).length
+      const counts = `${withTotal}/${orders.length} with total, ${withAddress}/${toShip.length} to-ship with address`
       return line
-        ? `${orders.length} orders (sample: externalListingId=${Boolean(line.externalListingId)}, lineItemId=${Boolean(line.lineItemId)})`
-        : `${orders.length} orders`
+        ? `${orders.length} orders; ${counts} (sample: externalListingId=${Boolean(line.externalListingId)}, lineItemId=${Boolean(line.lineItemId)})`
+        : `${orders.length} orders; ${counts}`
     })
   }
 

@@ -164,7 +164,7 @@ class UnifiedMarketplaceManager {
     await this.withShopToken(shop, async (token) => {
       let lineItems = (order.items || [])
         .filter((item) => item.lineItemId)
-        .map((item) => ({ lineItemId: item.lineItemId, quantity: item.quantity }))
+        .map((item) => ({ lineItemId: item.lineItemId, quantity: item.quantity, externalListingId: item.externalListingId }))
       // Orders imported before line-item IDs were stored: read them from eBay.
       if (shop.marketplace === 'ebay' && lineItems.length !== (order.items || []).length) {
         const remote = await service.getOrder(token, order.externalOrderId)
@@ -765,7 +765,17 @@ class UnifiedMarketplaceManager {
           if ((ord.items || []).length === existing.items.length) {
             existing.items.forEach((item, i) => {
               if (!item.lineItemId && ord.items[i]?.lineItemId) item.lineItemId = ord.items[i].lineItemId
+              if (!item.externalListingId && ord.items[i]?.externalListingId) item.externalListingId = ord.items[i].externalListingId
             })
+          }
+          // Totals the marketplace filled in later (Temu reports amounts separately).
+          if (!Number(existing.totals?.total) && Number(ord.totals?.total)) {
+            existing.totals = { ...(existing.totals?.toObject?.() || existing.totals || {}), ...ord.totals }
+            if ((ord.items || []).length === existing.items.length) {
+              existing.items.forEach((item, i) => {
+                if (!item.unitPrice && ord.items[i]?.unitPrice) item.unitPrice = ord.items[i].unitPrice
+              })
+            }
           }
           if (ord.shippingAddress) {
             const prevAddr = existing.shippingAddress?.toObject?.() || existing.shippingAddress || {}

@@ -230,7 +230,7 @@ router.post('/sections/offers/send', sectionGuard('offers'), async (req, res) =>
 router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res) => {
   try {
     const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
-    const { returnId, decision = 'APPROVE', comments, returnType, rawStatus } = req.body
+    const { returnId, decision = 'APPROVE', comments, returnType, rawStatus, orderId } = req.body
     if (!returnId) return res.status(400).json({ error: 'returnId is required' })
 
     const shop = await findConnectedShop(req, res, marketplace)
@@ -242,7 +242,7 @@ router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.decideReturn(token, returnId, { decision, comments, returnType, rawStatus, shop })
+      service.decideReturn(token, returnId, { decision, comments, returnType, rawStatus, orderId, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)
@@ -283,7 +283,7 @@ router.post('/sections/cancellations/decide', sectionGuard('returns'), async (re
     }
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
-      service.decideCancellation(token, cancelId, { action, trackingNumber: resolvedTracking, shipmentDate: resolvedShipmentDate, shop })
+      service.decideCancellation(token, cancelId, { action, trackingNumber: resolvedTracking, shipmentDate: resolvedShipmentDate, orderId, shop })
     )
 
     await cache.del(`shop:${shop._id}:section:returns`)

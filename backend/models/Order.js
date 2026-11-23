@@ -17,6 +17,8 @@ const orderItemSchema = new mongoose.Schema(
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     sku: { type: String },
     lineItemId: { type: String },
+    // Marketplace listing id; Temu `goodsId:skuId`, needed to confirm shipments.
+    externalListingId: { type: String },
     title: { type: String },
     quantity: { type: Number, required: true },
     unitPrice: { type: Number },

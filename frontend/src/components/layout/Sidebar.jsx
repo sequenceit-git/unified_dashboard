@@ -22,6 +22,7 @@ import {
   FiDollarSign,
   FiVideo,
   FiStar,
+  FiTrendingUp,
   FiLock,
 } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
@@ -73,6 +74,7 @@ const SECTION_ICONS = {
   prices: FiDollarSign,
   content: FiVideo,
   creators: FiStar,
+  ads: FiTrendingUp,
 }
 
 function readOpen(storageKey, defaultOpen) {

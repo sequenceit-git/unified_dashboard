@@ -54,6 +54,15 @@ const ttOrders = ttCall('POST', '/order/202309/orders/search', { query: { page_s
 const temuGoods = (token) => temu.call('bg.local.goods.list.query', { access_token: token, pageNo: 1, pageSize: 1, goodsSearchType: 1 })
 const temuOrders = (token) => temu.call('bg.order.list.v2.get', { access_token: token, pageNumber: 1, pageSize: 1, parentOrderStatus: 0, regionId: 211 })
 const temuPriceOrders = (token) => temu.call('bg.local.goods.priceorder.query', { access_token: token, page: 1, size: 1 })
+const temuPromotions = (token) => temu.call('bg.promotion.activity.query', { access_token: token, pageNumber: 1, pageSize: 1 })
+const temuAds = (token) => {
+  const end = Date.now()
+  return temu.call('temu.searchrec.ad.reports.mall.query', { access_token: token, startTs: end - 24 * 3600 * 1000, endTs: end })
+    .catch((err) => {
+      if (String(err.code) !== '230012000') throw err
+      return temu.call('temu.searchrec.ad.reports.mall.query', { access_token: token, startTs: Math.floor(end / 1000) - 24 * 3600, endTs: Math.floor(end / 1000) })
+    })
+}
 const temuShipping = (token) => temu.call('bg.logistics.warehouse.list.get', { access_token: token })
 const temuReturns = (token) => {
   const end = Math.floor(Date.now() / 1000)
@@ -180,6 +189,8 @@ const PROFILES = {
       { id: 'fulfillment', label: 'Shipping', path: '/shop/fulfillment', route: 'orders', needs: 'bg.logistics.warehouse.list.get', probe: temuShipping },
       { id: 'returns', label: 'Returns & refunds', path: '/shop/returns', route: 'orders', needs: 'bg.aftersales.parentaftersales.list.get', probe: temuReturns },
       { id: 'prices', label: 'Price reviews', path: '/shop/prices', route: 'products', needs: 'bg.local.goods.priceorder.query', probe: temuPriceOrders },
+      { id: 'promotions', label: 'Promotions', path: '/shop/promotions', route: 'products', needs: 'bg.promotion.activity.query', probe: temuPromotions },
+      { id: 'ads', label: 'Ads', path: '/shop/ads', route: 'analytics', needs: 'temu.searchrec.ad.reports.mall.query', probe: temuAds },
       { id: 'customers', label: 'Customers', path: '/customers', route: 'customers', needs: 'bg.order.list.v2.get', probe: temuOrders },
     ],
     statuses: {
