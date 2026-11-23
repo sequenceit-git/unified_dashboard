@@ -134,18 +134,11 @@ class Manager {
       const service = SERVICE
       let updatedCount = 0
       const orderHooks = HOOKS
-      if (orderHooks.fetchOrders) {
-        ;({ rawOrders, complete: ordersComplete } = await orderHooks.fetchOrders(this, shop, token, service))
-      } else {
-        const res = await service.getOrders(token, { limit: 200, shop })
-        rawOrders = res.orders || []
-      }
+      ;({ rawOrders, complete: ordersComplete } = await orderHooks.fetchOrders(this, shop, token, service))
 
       let createdCount = 0
       let failedCount = 0
       const touchedCustomerIds = []
-      const itemHooks = HOOKS
-      const appToken = itemHooks.orderAppToken ? await itemHooks.orderAppToken(service) : null
 
       for (const ord of rawOrders) {
         try {
@@ -245,8 +238,6 @@ class Manager {
 
           let itemImages = []
           if (!prod || !prod.images || prod.images.length === 0) {
-            const tokenToUse = appToken || token
-            if (itemHooks.orderItemImages) itemImages.push(...await itemHooks.orderItemImages(service, { appToken: tokenToUse, token }, item))
             if (!itemImages.length && item.image) {
               itemImages.push(item.image)
             }

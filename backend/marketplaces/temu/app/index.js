@@ -1,12 +1,9 @@
-/**
- * Temu's app: its dashboard API, sync jobs and listing pushes.
- * Bridge to the shared code until this shop owns its own copies (per-shop backend plan).
- */
-const manager = () => require('../../../services/marketplace')
+/** Temu's app: its dashboard API, sync jobs and listing pushes, all in this folder. */
+const manager = () => require('./manager')
 
 module.exports = {
   get api() {
-    return require('../api')
+    return require('./api')
   },
   sync: {
     orders: (shop) => manager().syncOrdersForShop(shop),
