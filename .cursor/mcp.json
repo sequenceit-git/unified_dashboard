@@ -4,7 +4,7 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@ebay/npm-public-api-mcp"],
-      "envFile": "${workspaceFolder}/backend/.env",
+      "envFile": "${workspaceFolder}/.env",
       "env": {
         "EBAY_TOKEN_TYPE": "application",
         "EBAY_API_ENV": "production"

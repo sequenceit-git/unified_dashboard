@@ -1,6 +1,6 @@
 /**
  * Read-only: compares every eBay listing stored in the dashboard with what eBay reports.
- * `docker compose exec backend node scripts/ebay-listing-check.js`
+ * `docker compose exec backend npm run check:ebay-listings`
  *
  * For listings eBay does not show as active, it asks eBay for the item itself (GetItem) and
  * prints eBay's own status, quantity and sold count. Nothing is written anywhere.

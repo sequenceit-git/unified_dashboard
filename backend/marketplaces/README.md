@@ -19,7 +19,7 @@ marketplaces/
     hooks.js     shop-specific steps inside the shared sync (optional)
     profile.js   sidebar sections (+ read-only access probes), statuses, product form rules
     sections/    one file per sidebar section; each returns { summary, tables } for its subsections
-    scripts/     smoke tests and one-off fixes (npm run smoke:<shop>, cleanup:<shop>)
+    scripts/     smoke tests and read-only checks (npm run smoke:<shop>, check:ebay-listings)
     test/        node --test, APIs stubbed
 ```
 

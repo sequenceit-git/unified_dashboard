@@ -24,11 +24,11 @@ const eventRoutes = require('./routes/system/events')
 const notificationRoutes = require('./routes/system/notifications')
 
 const app = express()
-// Behind Traefik / Vercel: use the real client IP (login throttle, req.protocol).
+// Behind Traefik: use the real client IP (login throttle, req.protocol).
 app.set('trust proxy', 1)
 const PORT = process.env.PORT || 5001
 // Comma-separated frontend origins, so local + deployed frontends both work
-// without code changes, e.g. CLIENT_URL=http://localhost:5173,https://unified-dashboard-lime.vercel.app
+// without code changes, e.g. CLIENT_URL=http://localhost:5173,https://dashboard.example.com
 const CLIENT_URLS = [
   ...new Set([
     ...(process.env.CLIENT_URL || 'http://localhost:5173')
@@ -130,8 +130,7 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
   }
 })
 
-// Local dev: `node server.js` listens. On Vercel the exported app is run by
-// the serverless function in api/index.js — do NOT listen there.
+// `node server.js` listens; tests require the exported app without listening.
 if (require.main === module) {
   // Fails fast if a shop folder is missing a required adapter member.
   require('./marketplaces').assertAdapters()

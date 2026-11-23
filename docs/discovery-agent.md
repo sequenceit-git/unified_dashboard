@@ -9,7 +9,6 @@ End-to-end flow from **Launch AI Research** on the Product Discovery page (`/mar
          ▼
 [ agent/discovery/discoveryAgent.js ]  up to 4 rounds (80 candidates), until 20 products are confirmed
          ├── Stage 1  discoverCandidates   one search over the 7 US marketplaces
-         ├── memory   evidenceMemory.js    reuse evidence observed in the last 24 hours
          │   (5 products checked at a time)
          ├── Stage 2  validateProductDemand gates G1–G10, description/specs, same product on other US sites
          ├── links    usListings.js        every link re-checked; findMoreListings if fewer than 4

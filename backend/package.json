@@ -11,8 +11,7 @@
     "smoke:ebay": "node marketplaces/ebay/scripts/smoke.js",
     "smoke:temu": "node marketplaces/temu/scripts/smoke.js",
     "smoke:tiktok": "node marketplaces/tiktok_shop/scripts/smoke.js",
-    "cleanup:ebay": "node marketplaces/ebay/scripts/cleanup-placeholders.js",
-    "cleanup:temu": "node marketplaces/temu/scripts/cleanup-duplicates.js",
+    "check:ebay-listings": "node marketplaces/ebay/scripts/listing-check.js",
     "test": "node --test \"test/**/*.test.js\" \"marketplaces/**/*.test.js\""
   },
   "keywords": [],
