@@ -25,3 +25,24 @@ test('no hardcoded shop lists or shop-name checks outside src/marketplaces', () 
   assert.deepEqual(hits, [])
 })
 
+
+// Pages still over 500 lines: capped at today's size until they are split with a UI test pass.
+const LARGE_PAGE_CAPS = {
+  'pages/products/DirectListModal.jsx': 902,
+  'pages/products/ListModal.jsx': 806,
+  'pages/sub-admins/SubAdminFormPage.jsx': 686,
+  'pages/shop/ShopSectionPage.jsx': 555,
+  'pages/sub-admins/SubAdminManagementPage.jsx': 521,
+  'pages/discovery/ProductDiscoveryPage.jsx': 512,
+}
+
+test('page files stay under 500 lines (or under their cap)', () => {
+  const over = []
+  for (const file of files(path.join(SRC, 'pages'))) {
+    const rel = path.relative(SRC, file).split(path.sep).join('/')
+    const lines = fs.readFileSync(file, 'utf8').split('\n').length
+    const cap = LARGE_PAGE_CAPS[rel] || 500
+    if (lines > cap) over.push(`${rel}: ${lines} lines (max ${cap})`)
+  }
+  assert.deepEqual(over, [])
+})
