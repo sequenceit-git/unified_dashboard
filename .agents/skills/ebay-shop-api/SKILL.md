@@ -10,7 +10,7 @@ description: >-
 
 This dashboard connects our own United States eBay shop. Use marketplace `EBAY_US`, currency `USD`, and category tree `0`. Do not add other eBay sites.
 
-eBay publishes an official MCP server. This project registers it as `ebay-api` in `.cursor/mcp.json` (`npx -y @ebay/npm-public-api-mcp`). Credentials come from `backend/.env` (`EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`). Do not copy those values into git.
+eBay publishes an official MCP server. This project registers it as `ebay-api` in `.cursor/mcp.json` (`npx -y @ebay/npm-public-api-mcp`). Credentials come from the repo-root `.env` (`EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`). Do not copy those values into git.
 
 ## Use the official MCP for reads
 

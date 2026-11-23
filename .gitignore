@@ -25,3 +25,5 @@ npm-debug.log*
 .agents/*
 discovery_agent_cost_report.md
 Ai_agent_audit-report.md
+# Generated knowledge graph (rebuild with /graphify)
+graphify-out/
