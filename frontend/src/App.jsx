@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ShopSectionGate from './components/ShopSectionGate'
+import LegacyShopRedirect from './components/LegacyShopRedirect'
+import { SHOPS } from './marketplaces'
 import ShopSectionPage from './pages/shop/ShopSectionPage'
 import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import CustomersPage from './pages/customers/CustomersPage'
@@ -16,6 +18,17 @@ import OAuthCallback from './pages/auth/OAuthCallback'
 import SettingsPage from './pages/settings/SettingsPage'
 import SubAdminFormPage from './pages/sub-admins/SubAdminFormPage'
 import SubAdminManagementPage from './pages/sub-admins/SubAdminManagementPage'
+
+/** Shop pages with their own route; other sections render through ShopSectionPage. */
+const SHOP_PAGES = {
+  analytics: AnalyticsPage,
+  products: ProductsPage,
+  inventory: InventoryPage,
+  orders: OrdersPage,
+  customers: CustomersPage,
+  inbox: InboxPage,
+}
+const LEGACY_SHOP_PATHS = [...Object.keys(SHOP_PAGES).map((id) => `/${id}`), '/shop/:sectionId']
 
 function PublicOnly({ children }) {
   const { token } = useAuth()
@@ -45,14 +58,16 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/discovery" element={<Navigate to="/market-research" replace />} />
         <Route path="/" element={<RouteAccess route="dashboard"><Overview /></RouteAccess>} />
-        <Route path="/analytics" element={<RouteAccess route="analytics"><ShopSectionGate sectionId="analytics"><AnalyticsPage /></ShopSectionGate></RouteAccess>} />
         <Route path="/market-research" element={<RouteAccess route="market-research"><ProductDiscoveryPage /></RouteAccess>} />
-        <Route path="/products" element={<RouteAccess route="products"><ShopSectionGate sectionId="products"><ProductsPage /></ShopSectionGate></RouteAccess>} />
-        <Route path="/inventory" element={<RouteAccess route="inventory"><ShopSectionGate sectionId="inventory"><InventoryPage /></ShopSectionGate></RouteAccess>} />
-        <Route path="/orders" element={<RouteAccess route="orders"><ShopSectionGate sectionId="orders"><OrdersPage /></ShopSectionGate></RouteAccess>} />
-        <Route path="/customers" element={<RouteAccess route="customers"><ShopSectionGate sectionId="customers"><CustomersPage /></ShopSectionGate></RouteAccess>} />
-        <Route path="/inbox" element={<RouteAccess route="inbox"><ShopSectionGate sectionId="inbox"><InboxPage /></ShopSectionGate></RouteAccess>} />
-        <Route path="/shop/:sectionId" element={<ShopSectionPage />} />
+        {LEGACY_SHOP_PATHS.map((path) => <Route key={path} path={path} element={<LegacyShopRedirect />} />)}
+        {SHOPS.map((shop) => (
+          <Route key={shop.key} path={`/${shop.urlId}`}>
+            {Object.entries(SHOP_PAGES).map(([id, Page]) => (
+              <Route key={id} path={id} element={<RouteAccess route={id}><ShopSectionGate sectionId={id}><Page /></ShopSectionGate></RouteAccess>} />
+            ))}
+            <Route path=":sectionId" element={<ShopSectionPage />} />
+          </Route>
+        ))}
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/sub-admins" element={<AdminOnly><SubAdminManagementPage /></AdminOnly>} />
         <Route path="/sub-admins/new" element={<AdminOnly><SubAdminFormPage /></AdminOnly>} />

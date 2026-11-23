@@ -118,13 +118,11 @@ function NavItem({ to, end, onClose, nested, active, icon: Icon, children }) {
 }
 
 function shopLinkActive(pathname, search, link) {
-  const shop = new URLSearchParams(search).get('shop')
-  if (shop !== link.shop) return false
-  return pathname === link.path || pathname.startsWith(`${link.path}/`)
+  return pathname === link.to || pathname.startsWith(`${link.to}/`)
 }
 
 function ShopGroup({ section, links, pathname, search, onClose }) {
-  const currentShop = new URLSearchParams(search).get('shop') === section.id
+  const currentShop = pathname.split('/')[1] === section.id
   const [open, setOpen] = useState(() => (currentShop ? true : readOpen(section.storageKey, section.defaultOpen)))
   const Icon = section.icon
 
@@ -230,7 +228,7 @@ export default function Sidebar({ open, onClose }) {
           ...link,
           icon: SECTION_ICONS[link.id] || FiPackage,
           shop: section.id,
-          to: `${link.path}?shop=${section.id}`,
+          to: `/${section.id}/${link.id}`,
           unavailable: link.available === false,
         })),
     }

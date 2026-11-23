@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { SHOP_SECTIONS, shopSectionFromId } from '../lib/shops'
 
@@ -12,9 +12,10 @@ export function fallbackShopId(user, isAdmin) {
 }
 
 export function useShopSection() {
-  const [params] = useSearchParams()
+  const { pathname } = useLocation()
   const { user, isAdmin } = useAuth()
-  const section = shopSectionFromId(params.get('shop'))
+  // Shop pages live at /<shop>/<section>.
+  const section = shopSectionFromId(pathname.split('/')[1])
   if (!section) return null
   return allowedShopSections(user, isAdmin).some((item) => item.id === section.id) ? section : null
 }

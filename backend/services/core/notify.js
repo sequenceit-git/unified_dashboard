@@ -16,9 +16,9 @@ function shopLabel(marketplace) {
   return registry.KEYS.includes(marketplace) ? registry.get(marketplace).label : 'Shop'
 }
 
+/** Link to a shop page: /<shop>/<section> (e.g. /tiktok/orders); without a shop the old path redirects. */
 function shopPath(path, marketplace) {
-  const id = marketplace ? registry.urlId(marketplace) : marketplace
-  return id ? `${path}?shop=${id}` : path
+  return registry.KEYS.includes(marketplace) ? `/${registry.urlId(marketplace)}${path}` : path
 }
 
 async function raise({ type, shopId = null, refId = null, key, title, message = '', href = '' }) {
