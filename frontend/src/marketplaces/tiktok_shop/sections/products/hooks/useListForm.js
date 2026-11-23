@@ -102,7 +102,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
     if (!usesCategories || !shopId || !categoryQuery) return undefined
     let cancelled = false
     const mode = categorySearch.trim() ? 'search' : 'auto'
-    const url = `/api/shops/${shopId}/categories?q=${encodeURIComponent(categoryQuery)}${`&mode=${mode}`}`
+    const url = `/api/tiktok/shops/${shopId}/categories?q=${encodeURIComponent(categoryQuery)}${`&mode=${mode}`}`
     api.get(url, token)
       .then((list) => {
         if (cancelled) return
@@ -119,7 +119,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   useEffect(() => {
     if (!caps.attributes || !shopId || !categoryId) return undefined
     let cancelled = false
-    api.get(`/api/shops/${shopId}/categories/${categoryId}/attributes`, token)
+    api.get(`/api/tiktok/shops/${shopId}/categories/${categoryId}/attributes`, token)
       .then((list) => {
         if (cancelled) return
         const all = Array.isArray(list) ? list : []
@@ -142,7 +142,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   useEffect(() => {
     if (!shopId || !categoryId) return undefined
     let cancelled = false
-    api.get(`/api/shops/${shopId}/categories/${categoryId}/rules`, token)
+    api.get(`/api/tiktok/shops/${shopId}/categories/${categoryId}/rules`, token)
       .then((rules) => {
         if (cancelled) return
         setCategoryRules(normalizeCategoryRules(rules))
@@ -236,7 +236,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
         : undefined
 
       const res = await api.post(
-        `/api/products/${product._id}/list`,
+        `/api/tiktok/products/${product._id}/list`,
         {
           shopId,
           price: normalizedVariants ? summaryPrice : (Number(price) || product.basePrice),

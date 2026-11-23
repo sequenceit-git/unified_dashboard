@@ -33,7 +33,7 @@ export default function ReturnsPage() {
     setLoading(true)
     setError('')
     try {
-      setData(await api.get(`/api/shops/sections/${sectionId}${queryString({ marketplace: shopSection.marketplace, refresh: refresh ? 1 : undefined })}`, token))
+      setData(await api.get(`/api/tiktok/sections/${sectionId}${queryString({ refresh: refresh ? 1 : undefined })}`, token))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -46,7 +46,7 @@ export default function ReturnsPage() {
       if (!window.confirm(`Approve cancellation for Order ${row.orderId || row.cancelId}?`)) return
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/cancellations/decide', { marketplace: shopSection.marketplace, cancelId: row.cancelId, orderId: row.orderId, action: 'approve' }, token)
+        await api.post('/api/tiktok/sections/cancellations/decide', { cancelId: row.cancelId, orderId: row.orderId, action: 'approve' }, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)
@@ -61,8 +61,7 @@ export default function ReturnsPage() {
       }
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/cancellations/decide', {
-          marketplace: shopSection.marketplace,
+        await api.post('/api/tiktok/sections/cancellations/decide', {
           cancelId: row.cancelId,
           orderId: row.orderId,
           action: 'reject',
@@ -79,8 +78,7 @@ export default function ReturnsPage() {
       if (!window.confirm(`Approve return request for Order ${row.orderId || row.returnId}?`)) return
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/returns/decide', {
-          marketplace: shopSection.marketplace,
+        await api.post('/api/tiktok/sections/returns/decide', {
           returnId: row.returnId,
           orderId: row.orderId,
           decision: 'APPROVE',
@@ -100,8 +98,7 @@ export default function ReturnsPage() {
       if (reason === null) return
       setLoading(true)
       try {
-        await api.post('/api/shops/sections/returns/decide', {
-          marketplace: shopSection.marketplace,
+        await api.post('/api/tiktok/sections/returns/decide', {
           returnId: row.returnId,
           decision: 'DECLINE',
           comments: reason,

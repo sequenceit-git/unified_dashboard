@@ -36,7 +36,7 @@ export default function OffersPage() {
     setLoading(true)
     setError('')
     try {
-      setData(await api.get(`/api/shops/sections/${sectionId}${queryString({ marketplace: shopSection.marketplace, refresh: refresh ? 1 : undefined })}`, token))
+      setData(await api.get(`/api/ebay/sections/${sectionId}${queryString({ refresh: refresh ? 1 : undefined })}`, token))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -98,7 +98,6 @@ export default function OffersPage() {
             <SectionTable
               key={table.id}
               table={table}
-              marketplace={shopSection.marketplace}
               onAction={handleAction}
               canAct={isAdmin || isAllowed}
             />
@@ -109,7 +108,6 @@ export default function OffersPage() {
       {activeOfferItem && (
         <OfferModal
           item={activeOfferItem}
-          marketplace={shopSection.marketplace}
           token={token}
           onClose={() => setActiveOfferItem(null)}
           onSuccess={() => load({ refresh: true })}

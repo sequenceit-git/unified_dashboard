@@ -4,7 +4,7 @@ import { api } from '../../../../../lib/api'
 import Button from '../../../../../components/ui/Button'
 import Modal from '../../../../../components/ui/Modal'
 
-export default function OfferModal({ item, onClose, onSuccess, token, marketplace }) {
+export default function OfferModal({ item, onClose, onSuccess, token,  }) {
   const [discount, setDiscount] = useState('10')
   const [message, setMessage] = useState('Thanks for watching! Here is a special discount offer on this item.')
   const [allowCounter, setAllowCounter] = useState(false)
@@ -15,8 +15,7 @@ export default function OfferModal({ item, onClose, onSuccess, token, marketplac
     setBusy(true)
     setErr('')
     try {
-      await api.post('/api/shops/sections/offers/send', {
-        marketplace,
+      await api.post('/api/ebay/sections/offers/send', {
         listingId: item.listingId,
         discountPercentage: Number(discount) || 10,
         message,

@@ -34,11 +34,11 @@ export default function AnalyticsPage() {
 
   const { from, to } = useMemo(() => rangeParams(days), [days])
 
-  const summary = useApi(token ? `/api/analytics/summary${queryString({ from, to, marketplace })}` : null)
-  const revenue = useApi(token ? `/api/analytics/revenue${queryString({ from, to, marketplace })}` : null)
-  const markets = useApi(token ? `/api/analytics/marketplaces${queryString({ from, to, marketplace })}` : null)
-  const top = useApi(token ? `/api/analytics/products${queryString({ from, to, marketplace, limit: 10 })}` : null)
-  const inv = useApi(token && marketplace ? `/api/analytics/inventory${queryString({ marketplace })}` : null)
+  const summary = useApi(token ? `/api/temu/analytics/summary${queryString({ from, to })}` : null)
+  const revenue = useApi(token ? `/api/temu/analytics/revenue${queryString({ from, to })}` : null)
+  const markets = useApi(token ? `/api/temu/analytics/marketplaces${queryString({ from, to })}` : null)
+  const top = useApi(token ? `/api/temu/analytics/products${queryString({ from, to, limit: 10 })}` : null)
+  const inv = useApi(token && marketplace ? `/api/temu/analytics/inventory` : null)
 
   if (!section) return <RequireShopSection />
 

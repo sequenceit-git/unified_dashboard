@@ -36,7 +36,7 @@ export default function PromotionsPage() {
     setLoading(true)
     setError('')
     try {
-      setData(await api.get(`/api/shops/sections/${sectionId}${queryString({ marketplace: shopSection.marketplace, refresh: refresh ? 1 : undefined })}`, token))
+      setData(await api.get(`/api/tiktok/sections/${sectionId}${queryString({ refresh: refresh ? 1 : undefined })}`, token))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -50,7 +50,7 @@ export default function PromotionsPage() {
       if (!window.confirm(`${'Deactivate'} promotion "${title}"?`)) return
       setLoading(true)
       try {
-        await api.post(`/api/shops/sections/promotions/${row.promotionId}/pause`, { marketplace: shopSection.marketplace }, token)
+        await api.post(`/api/tiktok/sections/promotions/${row.promotionId}/pause`, {}, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)
@@ -64,7 +64,7 @@ export default function PromotionsPage() {
       if (!window.confirm(`Resume promotion "${title}"?`)) return
       setLoading(true)
       try {
-        await api.post(`/api/shops/sections/promotions/${row.promotionId}/resume`, { marketplace: shopSection.marketplace }, token)
+        await api.post(`/api/tiktok/sections/promotions/${row.promotionId}/resume`, {}, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)

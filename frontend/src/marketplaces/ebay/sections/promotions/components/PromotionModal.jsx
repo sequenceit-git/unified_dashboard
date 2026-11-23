@@ -24,8 +24,7 @@ export default function PromotionModal({ onClose, onSuccess, token, marketplace 
       const startDate = new Date(Date.now() + 60000).toISOString()
       const endDate = new Date(Date.now() + days * 86400000).toISOString()
       const ids = listingIds ? listingIds.split(',').map((s) => s.trim()).filter(Boolean) : []
-      await api.post('/api/shops/sections/promotions/create', {
-        marketplace,
+      await api.post('/api/ebay/sections/promotions/create', {
         name: name || `Sale ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
         description: description || 'Special Store Discount',
         percentageOff: Number(discount) || 10,

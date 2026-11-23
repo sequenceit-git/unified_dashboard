@@ -33,7 +33,7 @@ export default function FulfillmentPage() {
     setLoading(true)
     setError('')
     try {
-      setData(await api.get(`/api/shops/sections/${sectionId}${queryString({ marketplace: shopSection.marketplace, refresh: refresh ? 1 : undefined })}`, token))
+      setData(await api.get(`/api/tiktok/sections/${sectionId}${queryString({ refresh: refresh ? 1 : undefined })}`, token))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -46,7 +46,7 @@ export default function FulfillmentPage() {
       if (!window.confirm(`Mark package ${row.packageId} as ready to ship (Drop-off) on TikTok Shop?`)) return
       setLoading(true)
       try {
-        await api.post(`/api/shops/sections/fulfillment/${row.packageId}/ship`, { marketplace: shopSection.marketplace, handoverMethod: 'DROP_OFF' }, token)
+        await api.post(`/api/tiktok/sections/fulfillment/${row.packageId}/ship`, { handoverMethod: 'DROP_OFF' }, token)
         load({ refresh: true })
       } catch (e) {
         setError(e.message)
@@ -58,7 +58,7 @@ export default function FulfillmentPage() {
     if (type === 'fulfillment-label') {
       setLoading(true)
       try {
-        const doc = await api.get(`/api/shops/sections/fulfillment/${row.packageId}/label?marketplace=${shopSection.marketplace}`, token)
+        const doc = await api.get(`/api/tiktok/sections/fulfillment/${row.packageId}/label`, token)
         const url = doc.doc_url || doc.url || doc.shipping_document_url
         if (url) {
           window.open(url, '_blank')

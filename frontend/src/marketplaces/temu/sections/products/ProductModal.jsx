@@ -165,7 +165,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
       delete body.height
 
       if (product) {
-        const saved = await api.patch(`/api/products/${product._id}`, body, token)
+        const saved = await api.patch(`/api/temu/products/${product._id}`, body, token)
         const failed = (saved.marketplaceSync || []).filter((item) => !item.ok)
         if (failed.length) {
           alert(`Saved here, but not updated on: ${failed.map((item) => `${item.shopName} (${item.error})`).join('; ')}`)
@@ -173,7 +173,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
         onSaved(saved)
       } else {
         const nextAttrs = marketplace ? { ...(body.attributes || {}), targetMarketplace: marketplace } : body.attributes
-        onSaved(await api.post('/api/products', { ...body, ...(nextAttrs ? { attributes: nextAttrs } : {}) }, token))
+        onSaved(await api.post('/api/temu/products', { ...body, ...(nextAttrs ? { attributes: nextAttrs } : {}) }, token))
       }
     } catch (err) {
       setError(err.message)
@@ -282,7 +282,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                           setBusy(true)
                           setError('')
                           try {
-                            setShopListing(await api.post(`/api/products/${product._id}/listing-action`, { action: action.id, marketplace }, token))
+                            setShopListing(await api.post(`/api/temu/products/${product._id}/listing-action`, { action: action.id }, token))
                             onListingChanged?.()
                           } catch (err) {
                             setError(err.message)

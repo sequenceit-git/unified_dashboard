@@ -18,6 +18,8 @@ module.exports = {
   trading: require('./trading'),
   hooks: require('./hooks'),
   routes: require('./routes'),
+  /** The shop's dashboard API (loaded when the server mounts it, after every adapter). */
+  get api() { return require('./api') },
   aiHint: 'This listing is for eBay. Fill item specifics buyers filter by (Brand, Type, Color, Size, Material, Model, Capacity). Every value must be a string.',
   importer: require('./importItem'),
   skuPrefix: 'EBAY',

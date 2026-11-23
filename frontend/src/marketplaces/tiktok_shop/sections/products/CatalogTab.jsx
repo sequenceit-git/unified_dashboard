@@ -52,7 +52,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
   const requestId = useRef(0)
 
   useEffect(() => {
-    api.get('/api/products/categories', token).then(setCategories).catch(() => {})
+    api.get('/api/tiktok/products/categories', token).then(setCategories).catch(() => {})
   }, [token])
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
     setError('')
     try {
       const res = await api.get(
-        `/api/products${queryString({
+        `/api/tiktok/products${queryString({
           q,
           status,
           category,
@@ -118,7 +118,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
   const remove = async (id) => {
     if (!window.confirm('Delete this product? This cannot be undone.')) return
     try {
-      await api.del(`/api/products/${id}`, token)
+      await api.del(`/api/tiktok/products/${id}`, token)
       fetchRows()
     } catch (err) {
       alert(err.message)
@@ -263,7 +263,7 @@ export default function CatalogTab({ onEdit, onList, refreshKey, rowPatch = null
                         onClick: async () => {
                           if (action.confirm && !window.confirm(action.confirm)) return
                           try {
-                            const updated = await api.post(`/api/products/${r._id}/listing-action`, { action: action.id, marketplace }, token)
+                            const updated = await api.post(`/api/tiktok/products/${r._id}/listing-action`, { action: action.id }, token)
                             requestId.current += 1
                             setRows((current) => current.map((row) => (
                               String(row._id) === String(r._id) ? { ...row, shopListing: { ...row.shopListing, ...updated } } : row

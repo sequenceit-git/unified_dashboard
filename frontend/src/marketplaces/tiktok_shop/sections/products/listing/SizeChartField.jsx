@@ -15,7 +15,7 @@ export default function SizeChartField({ shopId, rules, value, onChange }) {
   useEffect(() => {
     if (!shopId || !supported) return undefined
     let cancelled = false
-    api.get(`/api/shops/${shopId}/size-charts`, token)
+    api.get(`/api/tiktok/shops/${shopId}/size-charts`, token)
       .then((list) => {
         if (!cancelled) setTemplates(Array.isArray(list) ? list : [])
       })

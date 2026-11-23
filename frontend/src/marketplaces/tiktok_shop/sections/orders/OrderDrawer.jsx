@@ -99,12 +99,12 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
       if (tracking.trim()) return saveTracking()
       return setError(`Enter a carrier and tracking number above and click "Push tracking" to mark a ${marketplaceLabel(order.marketplace)} order shipped.`)
     }
-    return mutate(() => api.patch(`/api/orders/${order._id}/status`, { status }, token))
+    return mutate(() => api.patch(`/api/tiktok/orders/${order._id}/status`, { status }, token))
   }
 
   const saveTracking = () =>
     mutate(async () => {
-      const res = await api.patch(`/api/orders/${order._id}/shipping`, { carrier, trackingNumber: tracking }, token)
+      const res = await api.patch(`/api/tiktok/orders/${order._id}/shipping`, { carrier, trackingNumber: tracking }, token)
       // Tracking is saved here either way; tell the user when the marketplace did not accept it.
       const push = res?.marketplacePush
       if (push?.error) {
@@ -114,7 +114,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
 
   const cancelOrder = (reason = 'OUT_OF_STOCK') => {
     if (!window.confirm(`Cancel order ${order.externalOrderId} on ${marketplaceLabel(order.marketplace)}? This cannot be undone.`)) return
-    mutate(() => api.post(`/api/orders/${order._id}/cancel`, { reason, comment: 'Cancelled by merchant' }, token))
+    mutate(() => api.post(`/api/tiktok/orders/${order._id}/cancel`, { reason, comment: 'Cancelled by merchant' }, token))
   }
 
   const issueRefund = () => {
@@ -124,7 +124,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
     }
     if (!window.confirm(`Issue a refund of $${amountNum.toFixed(2)} on ${marketplaceLabel(order.marketplace)}?`)) return
     mutate(async () => {
-      await api.post(`/api/orders/${order._id}/refund`, {
+      await api.post(`/api/tiktok/orders/${order._id}/refund`, {
         amount: amountNum,
         reason: refundReason,
         comment: refundComment || 'Merchant refund',
@@ -134,10 +134,10 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
   }
 
   const addReturn = () =>
-    mutate(() => api.post(`/api/orders/${order._id}/returns`, { reason: returnReason }, token))
+    mutate(() => api.post(`/api/tiktok/orders/${order._id}/returns`, { reason: returnReason }, token))
 
   const setReturnStatus = (index, status) =>
-    mutate(() => api.patch(`/api/orders/${order._id}/returns/${index}`, { status }, token))
+    mutate(() => api.patch(`/api/tiktok/orders/${order._id}/returns/${index}`, { status }, token))
 
   const canCancel = ['pending', 'paid', 'processing'].includes(order.status)
   const canRefund = order.status !== 'refunded' && order.status !== 'cancelled'

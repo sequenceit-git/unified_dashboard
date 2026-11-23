@@ -82,7 +82,7 @@ export default function AdjustModal({ product, onClose, onSaved }) {
         payload.change = val
       }
 
-      const res = await api.post('/api/inventory/adjust', payload, token)
+      const res = await api.post('/api/temu/inventory/adjust', payload, token)
       if (res.warnings && res.warnings.length > 0) {
         setWarning(`Adjusted locally, but marketplace warning: ${res.warnings.join('; ')}`)
         setTimeout(() => {

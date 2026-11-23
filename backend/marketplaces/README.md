@@ -18,6 +18,7 @@ marketplaces/
     webhooks.js  push notifications: handle / enable
     hooks.js     shop-specific steps inside the shared sync (optional)
     routes.js    the shop's public endpoints under /api (webhooks), mounted by routes/system/api.js
+    api.js       the shop's dashboard API groups, mounted at /api/<urlId> by server.js
     profile.js   sidebar sections (+ read-only access probes), statuses, product form rules
     sections/    one file per sidebar section; each returns { summary, tables } for its subsections
     scripts/     smoke tests and read-only checks (npm run smoke:<shop>, check:ebay-listings)
@@ -41,6 +42,10 @@ Optional, read by the core only when present:
   `listingFetchLimit` (number), `listingNoun` (string).
 - `listingUrl(id, saved, { status })` — the listing's public (or Seller Center) page.
 - `routes(router)` — mounts the shop's public endpoints (webhooks; eBay account deletion).
+- `api` — the shop's dashboard API, mounted at `/api/<urlId>` (`api.js`: the route groups this shop
+  has, e.g. Temu has no inbox). The handlers live once in `routes/shop/` as `(shopKey) => router`;
+  `middleware/shopScope.js` pins `marketplace` to the shop, narrows a sub-admin's stores to it, and
+  answers 404 for another shop's order, conversation or store id.
 - `skuPrefix` — prefix of new SKUs for this shop (`EBAY`, `TTS`, `TEMU`; `EP` when none).
 - `configStatus(config)` — what `GET /api/shops/configs` reports: `{ configured, environment, ... }`.
 - `aiHint` — extra instruction for the AI when it drafts a listing for this shop from a URL.

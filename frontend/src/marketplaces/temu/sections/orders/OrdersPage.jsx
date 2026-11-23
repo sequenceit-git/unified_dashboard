@@ -38,7 +38,7 @@ export default function OrdersPage() {
     if (!quiet) setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/orders${queryString({ marketplace, status, q, sort, page, limit: 15 })}`, token)
+      const res = await api.get(`/api/temu/orders${queryString({ status, q, sort, page, limit: 15 })}`, token)
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
@@ -52,7 +52,7 @@ export default function OrdersPage() {
     setSyncing(true)
     setSyncMessage('')
     try {
-      const res = await api.post('/api/orders/sync', { marketplace }, token)
+      const res = await api.post('/api/temu/orders/sync', {}, token)
       const totalSynced = res.results?.reduce((acc, r) => acc + (r.synced || 0), 0) || 0
       const stillRunning = res.results?.some((r) => r.queued)
       setSyncMessage(stillRunning
@@ -77,12 +77,12 @@ export default function OrdersPage() {
     if (syncing) return
     fetchRows({ quiet: true })
     if (selectedId?._id) {
-      api.get(`/api/orders/${selectedId._id}`, token).then(setSelectedId).catch(() => {})
+      api.get(`/api/temu/orders/${selectedId._id}`, token).then(setSelectedId).catch(() => {})
     }
   })
 
   const openDetail = async (row) => {
-    const full = await api.get(`/api/orders/${row._id}`, token)
+    const full = await api.get(`/api/temu/orders/${row._id}`, token)
     setSelectedId(full)
   }
 
@@ -139,7 +139,7 @@ export default function OrdersPage() {
           order={selectedId}
           onClose={() => setSelectedId(null)}
           onSaved={async () => {
-            const full = await api.get(`/api/orders/${selectedId._id}`, token)
+            const full = await api.get(`/api/temu/orders/${selectedId._id}`, token)
             setSelectedId(full)
             setRefreshKey((k) => k + 1)
           }}

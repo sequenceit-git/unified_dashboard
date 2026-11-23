@@ -28,7 +28,7 @@ export default function CustomersPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/customers${queryString({ marketplace, q, sort, page, limit: 15 })}`, token)
+      const res = await api.get(`/api/temu/customers${queryString({ q, sort, page, limit: 15 })}`, token)
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
@@ -45,7 +45,7 @@ export default function CustomersPage() {
   }, [marketplace, q, sort, page])
 
   const open = async (row) => {
-    setSelected(await api.get(`/api/customers/${row._id}${queryString({ marketplace })}`, token))
+    setSelected(await api.get(`/api/temu/customers/${row._id}`, token))
   }
 
   if (!section) return <RequireShopSection />
@@ -133,7 +133,7 @@ export default function CustomersPage() {
           customer={selected}
           onClose={() => setSelected(null)}
           onSaved={async () => {
-            setSelected(await api.get(`/api/customers/${selected._id}${queryString({ marketplace })}`, token))
+            setSelected(await api.get(`/api/temu/customers/${selected._id}`, token))
             fetchRows()
           }}
         />

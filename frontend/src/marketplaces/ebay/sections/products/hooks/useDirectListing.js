@@ -83,7 +83,7 @@ export function startDirectFetch(marketplace, { url, useAi, token, titleMax, att
   const link = String(url || '').trim()
   if (!link) return Promise.resolve()
   patch(marketplace, { fetching: true, error: '', url: link, useAi })
-  const job = api.post('/api/products/import-url', { url: link, useAi, marketplace }, token)
+  const job = api.post('/api/ebay/products/import-url', { url: link, useAi }, token)
     .then((data) => {
       const attrs = attributeMap(data.attributes)
       patch(marketplace, {

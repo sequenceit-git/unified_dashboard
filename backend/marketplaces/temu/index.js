@@ -15,6 +15,8 @@ module.exports = {
   webhooks: require('./webhooks'),
   listingUrl: require('./listingUrl').listingUrl,
   routes: require('./routes'),
+  /** The shop's dashboard API (loaded when the server mounts it, after every adapter). */
+  get api() { return require('./api') },
   aiHint: 'This listing is for Temu. Keep attributes to the few facts printed on the page. Every value must be a string.',
   skuPrefix: 'TEMU',
   configStatus: (config) => ({

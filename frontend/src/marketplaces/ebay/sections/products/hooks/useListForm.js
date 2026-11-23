@@ -103,7 +103,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   useEffect(() => {
     if (!usesCategories || !shopId || !categoryQuery) return undefined
     let cancelled = false
-    const url = `/api/shops/${shopId}/categories?q=${encodeURIComponent(categoryQuery)}${''}`
+    const url = `/api/ebay/shops/${shopId}/categories?q=${encodeURIComponent(categoryQuery)}`
     api.get(url, token)
       .then((list) => {
         if (cancelled) return
@@ -120,7 +120,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   useEffect(() => {
     if (!caps.attributes || !shopId || !categoryId) return undefined
     let cancelled = false
-    api.get(`/api/shops/${shopId}/categories/${categoryId}/attributes`, token)
+    api.get(`/api/ebay/shops/${shopId}/categories/${categoryId}/attributes`, token)
       .then((list) => {
         if (cancelled) return
         const all = Array.isArray(list) ? list : []
@@ -143,7 +143,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   useEffect(() => {
     if (!shopId || !categoryId) return undefined
     let cancelled = false
-    api.get(`/api/shops/${shopId}/categories/${categoryId}/rules`, token)
+    api.get(`/api/ebay/shops/${shopId}/categories/${categoryId}/rules`, token)
       .then((rules) => {
         if (cancelled) return
         const normalized = normalizeEbayCategoryRules(rules)
@@ -248,7 +248,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
             : { enabled: false }
 
       const res = await api.post(
-        `/api/products/${product._id}/list`,
+        `/api/ebay/products/${product._id}/list`,
         {
           shopId,
           price: normalizedVariants ? summaryPrice : (Number(price) || product.basePrice),

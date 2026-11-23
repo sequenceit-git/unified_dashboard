@@ -33,7 +33,7 @@ export default function ContentPage() {
     setLoading(true)
     setError('')
     try {
-      setData(await api.get(`/api/shops/sections/${sectionId}${queryString({ marketplace: shopSection.marketplace, refresh: refresh ? 1 : undefined })}`, token))
+      setData(await api.get(`/api/tiktok/sections/${sectionId}${queryString({ refresh: refresh ? 1 : undefined })}`, token))
     } catch (err) {
       setError(err.message)
     } finally {

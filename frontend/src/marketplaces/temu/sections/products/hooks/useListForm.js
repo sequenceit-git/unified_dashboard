@@ -90,7 +90,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   useEffect(() => {
     if (!usesCategories || !shopId || !categoryQuery) return undefined
     let cancelled = false
-    const url = `/api/shops/${shopId}/categories?q=${encodeURIComponent(categoryQuery)}${''}`
+    const url = `/api/temu/shops/${shopId}/categories?q=${encodeURIComponent(categoryQuery)}`
     api.get(url, token)
       .then((list) => {
         if (cancelled) return
@@ -107,7 +107,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   useEffect(() => {
     if (!caps.attributes || !shopId || !categoryId) return undefined
     let cancelled = false
-    api.get(`/api/shops/${shopId}/categories/${categoryId}/attributes`, token)
+    api.get(`/api/temu/shops/${shopId}/categories/${categoryId}/attributes`, token)
       .then((list) => {
         if (cancelled) return
         const all = Array.isArray(list) ? list : []
@@ -188,7 +188,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
         : undefined
 
       const res = await api.post(
-        `/api/products/${product._id}/list`,
+        `/api/temu/products/${product._id}/list`,
         {
           shopId,
           price: normalizedVariants ? summaryPrice : (Number(price) || product.basePrice),

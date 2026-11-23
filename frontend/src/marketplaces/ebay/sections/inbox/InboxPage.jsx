@@ -42,7 +42,7 @@ export default function InboxPage() {
     setSavingAi(true)
     try {
       await Promise.all(
-        tabShops.map((shop) => api.patch(`/api/shops/${shop._id}/ai-reply`, { enabled: !autoReplyOn }, token)),
+        tabShops.map((shop) => api.patch(`/api/ebay/shops/${shop._id}/ai-reply`, { enabled: !autoReplyOn }, token)),
       )
       await shopsRes.refetch()
     } catch (err) {
@@ -55,7 +55,7 @@ export default function InboxPage() {
   const handleSyncInbox = async () => {
     setSyncing(true)
     try {
-      const data = await api.post('/api/inbox/sync', { marketplace }, token)
+      const data = await api.post('/api/ebay/inbox/sync', {}, token)
       const problems = (data.results || []).map((item) => item.error).filter(Boolean)
       setError(problems.join(' '))
       await fetchConvos()
@@ -82,14 +82,14 @@ export default function InboxPage() {
       let res
       if (marketplace === 'all' || shopIds.length <= 1) {
         res = await api.get(
-          `/api/inbox/conversations${queryString({ ...base, shopId: shopIds[0] })}`,
+          `/api/ebay/inbox/conversations${queryString({ ...base, shopId: shopIds[0] })}`,
           token,
         )
       } else {
         // Multiple shops share a marketplace: fan out locally, merge newest-first.
         const parts = await Promise.all(
           shopIds.map((id) =>
-            api.get(`/api/inbox/conversations${queryString({ ...base, shopId: id })}`, token),
+            api.get(`/api/ebay/inbox/conversations${queryString({ ...base, shopId: id })}`, token),
           ),
         )
         const merged = parts

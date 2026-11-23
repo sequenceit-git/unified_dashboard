@@ -28,7 +28,7 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
     setError('')
     try {
       await api.patch(
-        `/api/customers/${customer._id}`,
+        `/api/ebay/customers/${customer._id}`,
         {
           name,
           email,

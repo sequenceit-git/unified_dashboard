@@ -22,7 +22,7 @@ export default function BrandPicker({ shopId, categoryId = '', brandId = '', bra
     const params = new URLSearchParams()
     if (categoryId) params.set('categoryId', categoryId)
     if (debounced) params.set('q', debounced)
-    api.get(`/api/shops/${shopId}/brands?${params.toString()}`, token)
+    api.get(`/api/tiktok/shops/${shopId}/brands?${params.toString()}`, token)
       .then((list) => {
         if (cancelled) return
         setBrands(Array.isArray(list) ? list : [])

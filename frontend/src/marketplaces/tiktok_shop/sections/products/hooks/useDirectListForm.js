@@ -86,7 +86,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
     if (!draft || !shop?._id || !['search', 'auto', 'auto-search'].includes(layout.category) || !categoryQuery) return undefined
     let cancelled = false
     const mode = String(categorySearch || '').trim() ? 'search' : 'auto'
-    const queryUrl = `/api/shops/${shop._id}/categories?q=${encodeURIComponent(categoryQuery)}${`&mode=${mode}`}`
+    const queryUrl = `/api/tiktok/shops/${shop._id}/categories?q=${encodeURIComponent(categoryQuery)}${`&mode=${mode}`}`
     api.get(queryUrl, token)
       .then((list) => {
         if (cancelled) return
@@ -110,7 +110,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
     if (!draftSourceUrl || !shop?._id || !layout.specifics || !categoryId) return undefined
     let cancelled = false
     const known = { ...draftAttrs, ...(draftBrand ? { Brand: draftBrand } : {}) }
-    api.get(`/api/shops/${shop._id}/categories/${categoryId}/attributes`, token)
+    api.get(`/api/tiktok/shops/${shop._id}/categories/${categoryId}/attributes`, token)
       .then(async (list) => {
         if (cancelled) return
         const all = list || []
@@ -133,7 +133,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
         if (!useAi || !missing.length) return
         update({ fillingAttributes: true })
         try {
-          const filled = await api.post('/api/products/fill-attributes', {
+          const filled = await api.post('/api/tiktok/products/fill-attributes', {
             title: draftTitle,
             description: draftDesc,
             brand: draftBrand,
@@ -167,7 +167,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
   useEffect(() => {
     if (!shop?._id || !categoryId) return undefined
     let cancelled = false
-    api.get(`/api/shops/${shop._id}/categories/${categoryId}/rules`, token)
+    api.get(`/api/tiktok/shops/${shop._id}/categories/${categoryId}/rules`, token)
       .then((rules) => {
         if (cancelled) return
         update({ categoryRules: normalizeCategoryRules(rules) })
@@ -264,7 +264,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
       const finalPrice = normalizedVariants ? summaryPrice : Number(draft.price)
       const finalStock = normalizedVariants ? summaryStock : Math.max(0, Math.floor(Number(stock) || 0))
 
-      const product = await api.post('/api/products', {
+      const product = await api.post('/api/tiktok/products', {
         ...(sellerSku?.trim() && !normalizedVariants ? { sku: sellerSku.trim() } : {}),
         title: draft.title.trim(),
         description: draft.description,
@@ -310,7 +310,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
             .map((row) => [row.name.trim(), asText(row.value)]),
         ]
 
-        await api.post(`/api/products/${product._id}/list`, {
+        await api.post(`/api/tiktok/products/${product._id}/list`, {
           shopId: shop._id,
           price: finalPrice,
           stock: normalizedVariants ? summaryStock : Math.max(1, Math.floor(Number(stock) || 1)),

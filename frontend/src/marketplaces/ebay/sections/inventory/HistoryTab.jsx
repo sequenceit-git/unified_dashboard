@@ -26,7 +26,7 @@ export default function HistoryTab({ marketplace, refreshKey }) {
     setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/inventory/logs${queryString({ marketplace, reason, direction, q, from, to: to ? `${to}T23:59:59.999Z` : '', page, limit: 15 })}`, token)
+      const res = await api.get(`/api/ebay/inventory/logs${queryString({ reason, direction, q, from, to: to ? `${to}T23:59:59.999Z` : '', page, limit: 15 })}`, token)
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {

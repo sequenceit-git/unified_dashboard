@@ -22,8 +22,8 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
     setError('')
     try {
       const [t, tmps] = await Promise.all([
-        api.get(`/api/inbox/conversations/${convoId}`, token),
-        api.get(`/api/inbox/templates?shopId=${''}`, token).catch(() => []),
+        api.get(`/api/tiktok/inbox/conversations/${convoId}`, token),
+        api.get(`/api/tiktok/inbox/templates?shopId=`, token).catch(() => []),
       ])
       setThread(t)
       setTemplates(Array.isArray(tmps) ? tmps : [])
@@ -42,7 +42,7 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
     setBusy(true)
     setSendError('')
     try {
-      await api.post(`/api/inbox/conversations/${convoId}/messages`, { text: draft }, token)
+      await api.post(`/api/tiktok/inbox/conversations/${convoId}/messages`, { text: draft }, token)
       setDraft('')
       await load()
       onChanged()
@@ -54,7 +54,7 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
   }
 
   const update = async (changes) => {
-    await api.patch(`/api/inbox/conversations/${convoId}`, changes, token)
+    await api.patch(`/api/tiktok/inbox/conversations/${convoId}`, changes, token)
     await load()
     onChanged()
   }
