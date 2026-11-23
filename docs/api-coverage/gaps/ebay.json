@@ -1,0 +1,2270 @@
+{
+  "GET /commerce/catalog/v1_beta/product/{epid}": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Find an eBay catalog product (ePID) to pre-fill title, aspects and photos when listing."
+  },
+  "GET /commerce/catalog/v1_beta/product_summary/search": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Find an eBay catalog product (ePID) to pre-fill title, aspects and photos when listing."
+  },
+  "GET /commerce/charity/v1/charity_org/{charity_org_id}": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Charities a listing can donate to (eBay for Charity)."
+  },
+  "GET /commerce/charity/v1/charity_org": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Charities a listing can donate to (eBay for Charity)."
+  },
+  "GET /commerce/feedback/v1/awaiting_feedback": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "high",
+    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
+  },
+  "GET /commerce/feedback/v1/feedback": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "high",
+    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
+  },
+  "POST /commerce/feedback/v1/feedback": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "high",
+    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
+  },
+  "GET /commerce/feedback/v1/feedback_rating_summary": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "high",
+    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
+  },
+  "POST /commerce/feedback/v1/respond_to_feedback": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "high",
+    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
+  },
+  "GET /commerce/identity/v1/user": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "The connected account's eBay user profile (username, account type, registration info)."
+  },
+  "POST /commerce/media/v1_beta/image/create_image_from_file": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "POST /commerce/media/v1_beta/image/create_image_from_url": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "GET /commerce/media/v1_beta/image/{image_id}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "POST /commerce/media/v1_beta/video": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "GET /commerce/media/v1_beta/video/{video_id}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "POST /commerce/media/v1_beta/video/{video_id}/upload": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "POST /commerce/media/v1_beta/document": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "POST /commerce/media/v1_beta/document/create_document_from_url": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "GET /commerce/media/v1_beta/document/{document_id}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "POST /commerce/media/v1_beta/document/{document_id}/upload": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Upload listing images, videos and documents (manuals, certificates) to eBay."
+  },
+  "GET /commerce/media/v1_beta/post_order/document/{document_id}": {
+    "section": "returns-cases",
+    "size": "small",
+    "priority": "low",
+    "value": "Upload and manage documents attached to returns and cases."
+  },
+  "DELETE /commerce/media/v1_beta/post_order/document/{document_id}": {
+    "section": "returns-cases",
+    "size": "small",
+    "priority": "low",
+    "value": "Upload and manage documents attached to returns and cases."
+  },
+  "POST /commerce/media/v1_beta/post_order/document": {
+    "section": "returns-cases",
+    "size": "small",
+    "priority": "low",
+    "value": "Upload and manage documents attached to returns and cases."
+  },
+  "POST /commerce/message/v1/bulk_update_conversation": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Mark conversations read or archived, one at a time or in bulk."
+  },
+  "POST /commerce/message/v1/update_conversation": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Mark conversations read or archived, one at a time or in bulk."
+  },
+  "GET /commerce/notification/v1/config": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "PUT /commerce/notification/v1/config": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/notification/v1/destination": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "POST /commerce/notification/v1/destination": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/notification/v1/destination/{destination_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "PUT /commerce/notification/v1/destination/{destination_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "DELETE /commerce/notification/v1/destination/{destination_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/notification/v1/subscription": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "POST /commerce/notification/v1/subscription": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "POST /commerce/notification/v1/subscription/{subscription_id}/filter": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/notification/v1/subscription/{subscription_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "PUT /commerce/notification/v1/subscription/{subscription_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "DELETE /commerce/notification/v1/subscription/{subscription_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "DELETE /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "POST /commerce/notification/v1/subscription/{subscription_id}/disable": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "POST /commerce/notification/v1/subscription/{subscription_id}/enable": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "POST /commerce/notification/v1/subscription/{subscription_id}/test": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/notification/v1/topic/{topic_id}": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/notification/v1/topic": {
+    "section": "new: notifications",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today."
+  },
+  "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/fetch_item_aspects": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Category tree, required/recommended item specifics, compatibility properties and expired categories."
+  },
+  "GET /commerce/taxonomy/v1/get_default_category_tree_id": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Category tree, required/recommended item specifics, compatibility properties and expired categories."
+  },
+  "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Category tree, required/recommended item specifics, compatibility properties and expired categories."
+  },
+  "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_category_subtree": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Category tree, required/recommended item specifics, compatibility properties and expired categories."
+  },
+  "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_properties": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Category tree, required/recommended item specifics, compatibility properties and expired categories."
+  },
+  "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_property_values": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Category tree, required/recommended item specifics, compatibility properties and expired categories."
+  },
+  "GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_expired_categories": {
+    "section": "listings",
+    "size": "small",
+    "priority": "medium",
+    "value": "Category tree, required/recommended item specifics, compatibility properties and expired categories."
+  },
+  "POST /commerce/translation/v1_beta/translate": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Translate listing titles and descriptions for other eBay sites."
+  },
+  "GET /sell/account/v1/custom_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "POST /sell/account/v1/custom_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/custom_policy/{custom_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "PUT /sell/account/v1/custom_policy/{custom_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "POST /sell/account/v1/fulfillment_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "PUT /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "DELETE /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/fulfillment_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/fulfillment_policy/get_by_policy_name": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/payment_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "POST /sell/account/v1/payment_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/payment_policy/{payment_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "PUT /sell/account/v1/payment_policy/{payment_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "DELETE /sell/account/v1/payment_policy/{payment_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/payment_policy/get_by_policy_name": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}/onboarding": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "GET /sell/account/v1/privilege": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "GET /sell/account/v1/program/get_opted_in_programs": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "POST /sell/account/v1/program/opt_in": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "POST /sell/account/v1/program/opt_out": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "GET /sell/account/v1/rate_table": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/account/v1/return_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "POST /sell/account/v1/return_policy": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/return_policy/{return_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "PUT /sell/account/v1/return_policy/{return_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "DELETE /sell/account/v1/return_policy/{return_policy_id}": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "GET /sell/account/v1/return_policy/get_by_policy_name": {
+    "section": "new: business policies",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete the shipping, payment, return and custom policies listings point to."
+  },
+  "POST /sell/account/v1/bulk_create_or_replace_sales_tax": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "PUT /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "DELETE /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/account/v1/sales_tax": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/account/v1/subscription": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "GET /sell/account/v1/kyc": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "medium",
+    "value": "Outstanding identity-verification (KYC) checks that can hold payouts."
+  },
+  "GET /sell/account/v1/advertising_eligibility": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins."
+  },
+  "GET /sell/account/v2/rate_table/{rate_table_id}": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/rate_table/{rate_table_id}/update_shipping_cost": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/account/v2/payout_settings": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/payout_settings/update_percentage": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/combined_shipping_rules/create_calculated_shipping_rules": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/combined_shipping_rules/create_flat_shipping_rules": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/combined_shipping_rules/create_promotional_shipping_rule": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/account/v2/combined_shipping_rules": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/combined_shipping_rules/update_calculated_shipping_rules": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/combined_shipping_rules/update_combined_payments": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/combined_shipping_rules/update_flat_shipping_rules": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "POST /sell/account/v2/combined_shipping_rules/update_promotional_shipping_rule": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/account/v2/user_preferences": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "PATCH /sell/account/v2/user_preferences": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
+  },
+  "GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "medium",
+    "value": "Item-not-received and not-as-described rates benchmarked against peer sellers in the same categories."
+  },
+  "GET /sell/analytics/v1/seller_standards_profile": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected."
+  },
+  "GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected."
+  },
+  "GET /sell/analytics/v1/traffic_report": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Listing-level traffic: impressions, page views, click-through rate, sales conversion rate and quantity sold per listing and per day (eBay Seller Hub \"Traffic\" report)."
+  },
+  "GET /sell/feed/v1/order_task": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "POST /sell/feed/v1/order_task": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/order_task/{task_id}": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/inventory_task": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "POST /sell/feed/v1/inventory_task": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/inventory_task/{task_id}": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/schedule": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "POST /sell/feed/v1/schedule": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/schedule/{schedule_id}": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "PUT /sell/feed/v1/schedule/{schedule_id}": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "DELETE /sell/feed/v1/schedule/{schedule_id}": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/schedule/{schedule_id}/download_result_file": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/schedule_template/{schedule_template_id}": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/schedule_template": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/task": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "POST /sell/feed/v1/task": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/task/{task_id}/download_input_file": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/task/{task_id}/download_result_file": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/task/{task_id}": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "POST /sell/feed/v1/task/{task_id}/upload_file": {
+    "section": "new: bulk feeds",
+    "size": "large",
+    "priority": "medium",
+    "value": "Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports."
+  },
+  "GET /sell/feed/v1/customer_service_metric_task": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Download the customer-service metric report as a file."
+  },
+  "POST /sell/feed/v1/customer_service_metric_task": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Download the customer-service metric report as a file."
+  },
+  "GET /sell/feed/v1/customer_service_metric_task/{task_id}": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Download the customer-service metric report as a file."
+  },
+  "GET /sell/finances/v1/order_earnings": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "high",
+    "value": "Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total."
+  },
+  "GET /sell/finances/v1/order_earnings/{order_id}": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "high",
+    "value": "Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total."
+  },
+  "GET /sell/finances/v1/order_earnings_summary": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "high",
+    "value": "Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total."
+  },
+  "GET /sell/finances/v1/payout/{payout_Id}": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "medium",
+    "value": "Payout and transaction details: a single payout or transfer, and totals by transaction type."
+  },
+  "GET /sell/finances/v1/seller_funds_summary": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "high",
+    "value": "Money not yet paid out: available, processing and on-hold funds right now."
+  },
+  "GET /sell/finances/v1/transaction_summary": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "medium",
+    "value": "Payout and transaction details: a single payout or transfer, and totals by transaction type."
+  },
+  "GET /sell/finances/v1/transfer/{transfer_Id}": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "medium",
+    "value": "Payout and transaction details: a single payout or transfer, and totals by transaction type."
+  },
+  "GET /sell/finances/v1/billing_activity": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "medium",
+    "value": "Itemised eBay bill: insertion fees, final value fees, ad fees, store subscription and other charges."
+  },
+  "GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment/{fulfillmentId}": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Read one shipment (tracking number, carrier, line items) of an order; the list call is already used."
+  },
+  "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "GET /sell/fulfillment/v1/payment_dispute_summary": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
+  },
+  "POST /sell/inventory/v1/bulk_create_or_replace_inventory_item": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/bulk_get_inventory_item": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/bulk_update_price_quantity": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "medium",
+    "value": "Change price and quantity of up to 25 SKUs in one call (Inventory API listings only)."
+  },
+  "GET /sell/inventory/v1/inventory_item/{sku}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "PUT /sell/inventory/v1/inventory_item/{sku}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "GET /sell/inventory/v1/inventory_item/{sku}/product_compatibility": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "PUT /sell/inventory/v1/inventory_item/{sku}/product_compatibility": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "DELETE /sell/inventory/v1/inventory_item/{sku}/product_compatibility": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "GET /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "PUT /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "DELETE /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/bulk_migrate_listing": {
+    "section": "listings",
+    "size": "large",
+    "priority": "low",
+    "value": "Move existing Trading API listings into the Inventory API (SKU-based) model."
+  },
+  "GET /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "PUT /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "DELETE /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/bulk_create_offer": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/bulk_publish_offer": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "GET /sell/inventory/v1/offer": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/offer": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "GET /sell/inventory/v1/offer/{offerId}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "PUT /sell/inventory/v1/offer/{offerId}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "DELETE /sell/inventory/v1/offer/{offerId}": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/offer/get_listing_fees": {
+    "section": "listings",
+    "size": "small",
+    "priority": "high",
+    "value": "Show the listing fees eBay will charge before publishing an offer."
+  },
+  "POST /sell/inventory/v1/offer/{offerId}/publish": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/offer/publish_by_inventory_item_group": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/offer/{offerId}/withdraw": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "POST /sell/inventory/v1/offer/withdraw_by_inventory_item_group": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "low",
+    "value": "Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API."
+  },
+  "GET /sell/inventory/v1/location/{merchantLocationKey}": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "low",
+    "value": "Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup."
+  },
+  "POST /sell/inventory/v1/location/{merchantLocationKey}": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "low",
+    "value": "Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup."
+  },
+  "DELETE /sell/inventory/v1/location/{merchantLocationKey}": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "low",
+    "value": "Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup."
+  },
+  "POST /sell/inventory/v1/location/{merchantLocationKey}/disable": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "low",
+    "value": "Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup."
+  },
+  "POST /sell/inventory/v1/location/{merchantLocationKey}/enable": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "low",
+    "value": "Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup."
+  },
+  "GET /sell/inventory/v1/location": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "low",
+    "value": "Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup."
+  },
+  "POST /sell/inventory/v1/location/{merchantLocationKey}/update_location_details": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "low",
+    "value": "Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup."
+  },
+  "POST /sell/logistics/v1_beta/shipment/{shipmentId}/cancel": {
+    "section": "orders",
+    "size": "large",
+    "priority": "medium",
+    "value": "Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces)."
+  },
+  "POST /sell/logistics/v1_beta/shipment/create_from_shipping_quote": {
+    "section": "orders",
+    "size": "large",
+    "priority": "medium",
+    "value": "Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces)."
+  },
+  "GET /sell/logistics/v1_beta/shipment/{shipmentId}/download_label_file": {
+    "section": "orders",
+    "size": "large",
+    "priority": "medium",
+    "value": "Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces)."
+  },
+  "GET /sell/logistics/v1_beta/shipment/{shipmentId}": {
+    "section": "orders",
+    "size": "large",
+    "priority": "medium",
+    "value": "Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces)."
+  },
+  "POST /sell/logistics/v1_beta/shipping_quote": {
+    "section": "orders",
+    "size": "large",
+    "priority": "medium",
+    "value": "Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces)."
+  },
+  "GET /sell/logistics/v1_beta/shipping_quote/{shippingQuoteId}": {
+    "section": "orders",
+    "size": "large",
+    "priority": "medium",
+    "value": "Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces)."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_inventory_reference": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_listing_id": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_inventory_reference": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_listing_id": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_inventory_reference": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_listing_id": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status_by_listing_id": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/create_ads_by_inventory_reference": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "DELETE /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/delete_ads_by_inventory_reference": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/get_ads_by_inventory_reference": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}/update_bid": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "PUT /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_bids": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_keywords": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/clone": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "DELETE /sell/marketing/v1/ad_campaign/{campaign_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/end": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/find_campaign_by_ad_reference": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/get_campaign_by_name": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/pause": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/resume": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/suggest_budget": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/suggest_items": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/suggest_max_cpc": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_ad_rate_strategy": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_bidding_strategy": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_budget": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_identification": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "PUT /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/bulk_create_negative_keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/bulk_update_negative_keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/negative_keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "POST /sell/marketing/v1/negative_keyword": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/negative_keyword/{negative_keyword_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "PUT /sell/marketing/v1/negative_keyword/{negative_keyword_id}": {
+    "section": "new: promoted listings",
+    "size": "large",
+    "priority": "high",
+    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
+  },
+  "GET /sell/marketing/v1/ad_report/{report_id}": {
+    "section": "new: promoted listings",
+    "size": "medium",
+    "priority": "high",
+    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
+  },
+  "GET /sell/marketing/v1/ad_report_metadata": {
+    "section": "new: promoted listings",
+    "size": "medium",
+    "priority": "high",
+    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
+  },
+  "GET /sell/marketing/v1/ad_report_metadata/{report_type}": {
+    "section": "new: promoted listings",
+    "size": "medium",
+    "priority": "high",
+    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
+  },
+  "GET /sell/marketing/v1/ad_report_task": {
+    "section": "new: promoted listings",
+    "size": "medium",
+    "priority": "high",
+    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
+  },
+  "POST /sell/marketing/v1/ad_report_task": {
+    "section": "new: promoted listings",
+    "size": "medium",
+    "priority": "high",
+    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
+  },
+  "GET /sell/marketing/v1/ad_report_task/{report_task_id}": {
+    "section": "new: promoted listings",
+    "size": "medium",
+    "priority": "high",
+    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
+  },
+  "DELETE /sell/marketing/v1/ad_report_task/{report_task_id}": {
+    "section": "new: promoted listings",
+    "size": "medium",
+    "priority": "high",
+    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
+  },
+  "GET /sell/marketing/v1/item_price_markdown/{promotion_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "PUT /sell/marketing/v1/item_price_markdown/{promotion_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "POST /sell/marketing/v1/item_promotion": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "GET /sell/marketing/v1/item_promotion/{promotion_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "PUT /sell/marketing/v1/item_promotion/{promotion_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "DELETE /sell/marketing/v1/item_promotion/{promotion_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
+  },
+  "GET /sell/marketing/v1/promotion_report": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "high",
+    "value": "Promotion results: sales, units, buyers and discount given per promotion."
+  },
+  "GET /sell/marketing/v1/promotion_summary_report": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "high",
+    "value": "Promotion results: sales, units, buyers and discount given per promotion."
+  },
+  "GET /sell/marketing/v1/email_campaign": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "POST /sell/marketing/v1/email_campaign": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "GET /sell/marketing/v1/email_campaign/{email_campaign_id}": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "PUT /sell/marketing/v1/email_campaign/{email_campaign_id}": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "DELETE /sell/marketing/v1/email_campaign/{email_campaign_id}": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "GET /sell/marketing/v1/email_campaign/audience": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "GET /sell/marketing/v1/email_campaign/{email_campaign_id}/email_preview": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "GET /sell/marketing/v1/email_campaign/report": {
+    "section": "buyers",
+    "size": "medium",
+    "priority": "low",
+    "value": "Email campaigns to store followers: create, preview, send and see results."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_automotive_parts_compatibility_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_category_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_classified_ad_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_currencies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_extended_producer_responsibility_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_hazardous_materials_labels": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_item_condition_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_structure_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_type_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_motors_listing_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_negotiated_price_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_product_safety_labels": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_regulatory_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_return_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_shipping_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/marketplace/{marketplace_id}/get_site_visibility_policies": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "POST /sell/metadata/v1/compatibilities/get_compatibilities_by_specification": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "POST /sell/metadata/v1/compatibilities/get_compatibility_property_names": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "POST /sell/metadata/v1/compatibilities/get_compatibility_property_values": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "POST /sell/metadata/v1/compatibilities/get_multi_compatibility_property_values": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "POST /sell/metadata/v1/compatibilities/get_product_compatibilities": {
+    "section": "listings",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Parts fitment: which vehicles a part fits (compatibility lists on motors listings)."
+  },
+  "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_exclude_shipping_locations": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_handling_times": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_carriers": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_locations": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_services": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "GET /sell/metadata/v1/country/{countryCode}/sales_tax_jurisdiction": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
+  },
+  "POST /sell/recommendation/v1/find": {
+    "section": "listings",
+    "size": "small",
+    "priority": "high",
+    "value": "eBay's own per-listing recommendations (e.g. suggested Promoted Listings ad rate)."
+  },
+  "GET /sell/stores/v1/store/categories": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "POST /sell/stores/v1/store/categories": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "PUT /sell/stores/v1/store/categories/{category_id}": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "DELETE /sell/stores/v1/store/categories/{category_id}": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "GET /sell/stores/v1/store": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "GET /sell/stores/v1/store/tasks/{task_id}": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "GET /sell/stores/v1/store/tasks": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "POST /sell/stores/v1/store/categories/move_category": {
+    "section": "new: store",
+    "size": "medium",
+    "priority": "low",
+    "value": "eBay Store details and store categories: add, rename, move and delete categories."
+  },
+  "Trading:AddItem": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:AddItems": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:AddMemberMessageAAQToPartner": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:AddMemberMessageRTQ": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:AddMemberMessagesAAQToBidder": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:AddOrder": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders."
+  },
+  "Trading:AddSecondChanceItem": {
+    "section": "offers",
+    "size": "small",
+    "priority": "low",
+    "value": "Auctions: bidders on a listing and Second Chance Offers to non-winning bidders."
+  },
+  "Trading:AddToItemDescription": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:CompleteSale": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders."
+  },
+  "Trading:ConfirmIdentity": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed."
+  },
+  "Trading:DeleteMyMessages": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:EndItem": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:EndItems": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:FetchToken": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed."
+  },
+  "Trading:GetAccount": {
+    "section": "payouts",
+    "size": "small",
+    "priority": "low",
+    "value": "Legacy eBay invoice/account statement (the Finances API covers fees better)."
+  },
+  "Trading:GetAllBidders": {
+    "section": "offers",
+    "size": "small",
+    "priority": "low",
+    "value": "Auctions: bidders on a listing and Second Chance Offers to non-winning bidders."
+  },
+  "Trading:GetBestOffers": {
+    "section": "offers",
+    "size": "small",
+    "priority": "high",
+    "value": "Best Offers buyers sent on listings: see them and accept, decline or counter."
+  },
+  "Trading:GetDescriptionTemplates": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:GetFeedback": {
+    "section": "buyers",
+    "size": "small",
+    "priority": "medium",
+    "value": "Feedback through the Trading API (the REST Feedback API covers the same)."
+  },
+  "Trading:GetItemShipping": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:GetItemTransactions": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders."
+  },
+  "Trading:GetItemsAwaitingFeedback": {
+    "section": "buyers",
+    "size": "small",
+    "priority": "medium",
+    "value": "Feedback through the Trading API (the REST Feedback API covers the same)."
+  },
+  "Trading:GetMemberMessages": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:GetMessagePreferences": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:GetMyMessages": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:GetNotificationPreferences": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:GetNotificationsUsage": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:GetOrders": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders."
+  },
+  "Trading:GetSellerEvents": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:GetSellerList": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:GetSellerTransactions": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders."
+  },
+  "Trading:GetSessionID": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed."
+  },
+  "Trading:GetShippingDiscountProfiles": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:GetStore": {
+    "section": "new: store",
+    "size": "small",
+    "priority": "low",
+    "value": "eBay Store and its categories through the Trading API."
+  },
+  "Trading:GetStoreCategoryUpdateStatus": {
+    "section": "new: store",
+    "size": "small",
+    "priority": "low",
+    "value": "eBay Store and its categories through the Trading API."
+  },
+  "Trading:GetTaxTable": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:GetTokenStatus": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed."
+  },
+  "Trading:GetUserPreferences": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:GeteBayDetails": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:LeaveFeedback": {
+    "section": "buyers",
+    "size": "small",
+    "priority": "medium",
+    "value": "Feedback through the Trading API (the REST Feedback API covers the same)."
+  },
+  "Trading:RelistItem": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:RespondToBestOffer": {
+    "section": "offers",
+    "size": "small",
+    "priority": "high",
+    "value": "Best Offers buyers sent on listings: see them and accept, decline or counter."
+  },
+  "Trading:RespondToFeedback": {
+    "section": "buyers",
+    "size": "small",
+    "priority": "medium",
+    "value": "Feedback through the Trading API (the REST Feedback API covers the same)."
+  },
+  "Trading:ReviseItem": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:ReviseMyMessages": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:ReviseMyMessagesFolders": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:RevokeToken": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed."
+  },
+  "Trading:SendInvoice": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders."
+  },
+  "Trading:SetMessagePreferences": {
+    "section": "messages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects."
+  },
+  "Trading:SetShippingDiscountProfiles": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:SetStoreCategories": {
+    "section": "new: store",
+    "size": "small",
+    "priority": "low",
+    "value": "eBay Store and its categories through the Trading API."
+  },
+  "Trading:SetTaxTable": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:SetUserPreferences": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings."
+  },
+  "Trading:VerifyAddItem": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "Trading:VerifyAddSecondChanceItem": {
+    "section": "offers",
+    "size": "small",
+    "priority": "low",
+    "value": "Auctions: bidders on a listing and Second Chance Offers to non-winning bidders."
+  },
+  "Trading:VerifyRelistItem": {
+    "section": "listings",
+    "size": "small",
+    "priority": "low",
+    "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
+  },
+  "GET /post-order/v2/cancellation/{cancelId}": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Read one cancellation request (search and actions are already used)."
+  },
+  "POST /post-order/v2/casemanagement/{caseId}/appeal": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "eBay Money Back Guarantee cases: view case details and appeal decisions."
+  },
+  "GET /post-order/v2/casemanagement/{caseId}": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "eBay Money Back Guarantee cases: view case details and appeal decisions."
+  },
+  "POST /post-order/v2/inquiry/{inquiryId}/escalate": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
+  },
+  "GET /post-order/v2/inquiry/{inquiryId}": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
+  },
+  "POST /post-order/v2/inquiry/{inquiryId}/issue_refund": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
+  },
+  "POST /post-order/v2/inquiry/{inquiryId}/provide_shipment_info": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
+  },
+  "GET /post-order/v2/inquiry/search": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
+  },
+  "POST /post-order/v2/inquiry/{inquiryId}/send_message": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
+  },
+  "POST /post-order/v2/return/{returnId}/add_shipping_label": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "POST /post-order/v2/return": {
+    "section": "returns-cases",
+    "size": "small",
+    "priority": "low",
+    "value": "Opens a return on the buyer side; sellers normally never call it."
+  },
+  "POST /post-order/v2/return/{returnId}/escalate": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "GET /post-order/v2/return/{returnId}": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "GET /post-order/v2/return/{returnId}/files": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "GET /post-order/v2/return/preference": {
+    "section": "returns-cases",
+    "size": "small",
+    "priority": "low",
+    "value": "Read and set return preferences (automatic return rules)."
+  },
+  "GET /post-order/v2/return/{returnId}/tracking": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "POST /post-order/v2/return/{returnId}/issue_refund": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "POST /post-order/v2/return/{returnId}/mark_as_received": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "POST /post-order/v2/return/{returnId}/send_message": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  },
+  "POST /post-order/v2/return/preference": {
+    "section": "returns-cases",
+    "size": "small",
+    "priority": "low",
+    "value": "Read and set return preferences (automatic return rules)."
+  },
+  "POST /post-order/v2/return/{returnId}/file/upload": {
+    "section": "returns-cases",
+    "size": "medium",
+    "priority": "high",
+    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
+  }
+}

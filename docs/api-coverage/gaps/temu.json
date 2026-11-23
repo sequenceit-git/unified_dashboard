@@ -1,0 +1,668 @@
+{
+  "temu.searchrec.ad.create": {
+    "section": "ads",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
+  },
+  "temu.searchrec.ad.detail.query": {
+    "section": "ads",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
+  },
+  "temu.searchrec.ad.goods.create.query": {
+    "section": "ads",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
+  },
+  "temu.searchrec.ad.log.query": {
+    "section": "ads",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
+  },
+  "temu.searchrec.ad.modify": {
+    "section": "ads",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
+  },
+  "temu.searchrec.ad.reports.goods.query": {
+    "section": "ads",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-product ad report: spend, impressions, clicks, orders and ROAS for each advertised item."
+  },
+  "temu.searchrec.ad.roas.pred": {
+    "section": "ads",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
+  },
+  "temu.local.mall.tags.get": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Store tags (store type and programs)."
+  },
+  "bg.arbok.open.cert.queryNeedUploadItems": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.arbok.open.cert.uploadProductCert": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.arbok.open.product.cert.query": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.arbok.open.upload.uploadFile": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.compliance.edit": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.compliance.metadata.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.local.compliance.goods.list.query": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.flash.open.upload.real.image": {
+    "section": "goods",
+    "size": "small",
+    "priority": "low",
+    "value": "Upload real product photos (real-shot images)."
+  },
+  "bg.flash.open.upload.recognize": {
+    "section": "goods",
+    "size": "small",
+    "priority": "low",
+    "value": "Upload real product photos (real-shot images)."
+  },
+  "bg.order.combinedshipment.list.get": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "medium",
+    "value": "Orders that can ship together and unshipped packages."
+  },
+  "bg.order.customization.get": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Order customisation details and order verification uploads."
+  },
+  "bg.order.decryptshippinginfo.get": {
+    "section": "orders",
+    "size": "small",
+    "priority": "medium",
+    "value": "Buyer's full shipping address when it is masked in the order."
+  },
+  "bg.order.detail.v2.get": {
+    "section": "orders",
+    "size": "small",
+    "priority": "high",
+    "value": "Full order detail (items, prices, status) in one call."
+  },
+  "bg.order.unshipped.package.get": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "medium",
+    "value": "Orders that can ship together and unshipped packages."
+  },
+  "temu.order.amount.v2.query": {
+    "section": "orders",
+    "size": "small",
+    "priority": "medium",
+    "value": "Newer order amount breakdown (the older amount call is used)."
+  },
+  "temu.order.cancel.appeal.apply": {
+    "section": "orders",
+    "size": "small",
+    "priority": "medium",
+    "value": "Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals."
+  },
+  "temu.order.cancel.appeal.result.get": {
+    "section": "orders",
+    "size": "small",
+    "priority": "medium",
+    "value": "Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals."
+  },
+  "temu.order.cancel.outofstock.result.get": {
+    "section": "orders",
+    "size": "small",
+    "priority": "medium",
+    "value": "Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals."
+  },
+  "temu.local.order.verification.upload": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "Order customisation details and order verification uploads."
+  },
+  "bg.goods.compliancelabel.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.local.goods.add": {
+    "section": "goods",
+    "size": "large",
+    "priority": "high",
+    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
+  },
+  "bg.local.goods.category.check": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.category.recommend": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.cats.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.compliance.edit": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.local.goods.compliance.extra.template.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.local.goods.compliance.info.fill.list.query": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.local.goods.compliance.property.check": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.local.goods.compliance.rules.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "bg.local.goods.detail.query": {
+    "section": "goods",
+    "size": "small",
+    "priority": "high",
+    "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
+  },
+  "bg.local.goods.gallery.signature.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.image.upload": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.out.sn.check": {
+    "section": "goods",
+    "size": "small",
+    "priority": "medium",
+    "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
+  },
+  "bg.local.goods.out.sn.set": {
+    "section": "goods",
+    "size": "small",
+    "priority": "medium",
+    "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
+  },
+  "bg.local.goods.partial.update": {
+    "section": "goods",
+    "size": "large",
+    "priority": "high",
+    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
+  },
+  "bg.local.goods.property.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.property.relations.level.template": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.property.relations": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.property.relations.template": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.publish.status.get": {
+    "section": "goods",
+    "size": "small",
+    "priority": "medium",
+    "value": "Publication status of goods (live, under review, rejected)."
+  },
+  "bg.local.goods.size.element.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.sku.list.price.query": {
+    "section": "price-reviews",
+    "size": "small",
+    "priority": "high",
+    "value": "Temu's recommended and current supplier price per SKU, to price competitively before a price review."
+  },
+  "bg.local.goods.sku.list.query": {
+    "section": "goods",
+    "size": "small",
+    "priority": "high",
+    "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
+  },
+  "bg.local.goods.sku.out.sn.check": {
+    "section": "goods",
+    "size": "small",
+    "priority": "medium",
+    "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
+  },
+  "bg.local.goods.sku.out.sn.set": {
+    "section": "goods",
+    "size": "small",
+    "priority": "medium",
+    "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
+  },
+  "bg.local.goods.spec.id.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.tax.code.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.template.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "bg.local.goods.update": {
+    "section": "goods",
+    "size": "large",
+    "priority": "high",
+    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
+  },
+  "bg.local.goods.videocoverimage.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.attributes.edit": {
+    "section": "goods",
+    "size": "large",
+    "priority": "high",
+    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
+  },
+  "temu.local.goods.baseprice.recommend": {
+    "section": "price-reviews",
+    "size": "small",
+    "priority": "high",
+    "value": "Temu's recommended and current supplier price per SKU, to price competitively before a price review."
+  },
+  "temu.local.goods.brand.trademark.V2.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.cats.rules.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.compliance.v2.edit": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
+  },
+  "temu.local.goods.delete": {
+    "section": "goods",
+    "size": "large",
+    "priority": "high",
+    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
+  },
+  "temu.local.goods.illegal.vocabulary.check": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.image.v2.upload": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.list.retrieve": {
+    "section": "goods",
+    "size": "small",
+    "priority": "high",
+    "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
+  },
+  "temu.local.goods.missing.attributes.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.pre.sale.status.edit": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.recommendedprice.query": {
+    "section": "price-reviews",
+    "size": "small",
+    "priority": "high",
+    "value": "Temu's recommended and current supplier price per SKU, to price competitively before a price review."
+  },
+  "temu.local.goods.sku.net.content.unit.query": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.sku.stock.query": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "high",
+    "value": "Read the current stock Temu holds per SKU (to check stock sync)."
+  },
+  "temu.local.goods.spec.info.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.goods.v2.add": {
+    "section": "goods",
+    "size": "large",
+    "priority": "high",
+    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
+  },
+  "temu.local.goods.v3.add": {
+    "section": "goods",
+    "size": "large",
+    "priority": "high",
+    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
+  },
+  "temu.local.product.attributes.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.product.variation.get": {
+    "section": "goods",
+    "size": "medium",
+    "priority": "low",
+    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
+  },
+  "temu.local.sku.list.retrieve": {
+    "section": "goods",
+    "size": "small",
+    "priority": "high",
+    "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
+  },
+  "bg.promotion.activity.candidate.goods.query": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "high",
+    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
+  },
+  "bg.promotion.activity.goods.enroll": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "high",
+    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
+  },
+  "bg.promotion.activity.goods.operation.query": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "high",
+    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
+  },
+  "bg.promotion.activity.goods.query": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "high",
+    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
+  },
+  "bg.promotion.activity.goods.update": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "high",
+    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
+  },
+  "bg.aftersales.aftersales.list.get": {
+    "section": "after-sales",
+    "size": "small",
+    "priority": "high",
+    "value": "After-sales detail: each return/refund line and its full record."
+  },
+  "bg.aftersales.parentreturnorder.get": {
+    "section": "after-sales",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
+  },
+  "temu.aftersales.carrier.get": {
+    "section": "after-sales",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
+  },
+  "temu.aftersales.parentaftersales.detail.get": {
+    "section": "after-sales",
+    "size": "small",
+    "priority": "high",
+    "value": "After-sales detail: each return/refund line and its full record."
+  },
+  "temu.aftersales.returnaddress.get": {
+    "section": "after-sales",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
+  },
+  "temu.aftersales.returnlabel.prepare.get": {
+    "section": "after-sales",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
+  },
+  "temu.aftersales.signature.get": {
+    "section": "after-sales",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
+  },
+  "temu.aftersales.upload.returnlabel": {
+    "section": "after-sales",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
+  },
+  "bg.logistics.shipment.create": {
+    "section": "shipping",
+    "size": "large",
+    "priority": "high",
+    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
+  },
+  "bg.logistics.shipment.document.get": {
+    "section": "shipping",
+    "size": "large",
+    "priority": "high",
+    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
+  },
+  "bg.logistics.shipment.result.get": {
+    "section": "shipping",
+    "size": "large",
+    "priority": "high",
+    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
+  },
+  "bg.logistics.shipment.shippingtype.update": {
+    "section": "shipping",
+    "size": "large",
+    "priority": "high",
+    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
+  },
+  "bg.logistics.shipment.sub.confirm": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "medium",
+    "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
+  },
+  "bg.logistics.shipment.update": {
+    "section": "shipping",
+    "size": "large",
+    "priority": "high",
+    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
+  },
+  "bg.logistics.shipment.v2.get": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "medium",
+    "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
+  },
+  "bg.logistics.shipped.package.confirm": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "medium",
+    "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
+  },
+  "bg.logistics.shippingservices.get": {
+    "section": "shipping",
+    "size": "large",
+    "priority": "high",
+    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
+  },
+  "temu.logistics.label.list.get": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "low",
+    "value": "Carrier pickup reservations, label list and shipping logistics types."
+  },
+  "temu.logistics.shiplogisticstype.get": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "low",
+    "value": "Carrier pickup reservations, label list and shipping logistics types."
+  },
+  "temu.logistics.shipment.pickup.reservation.cancel": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "low",
+    "value": "Carrier pickup reservations, label list and shipping logistics types."
+  },
+  "temu.logistics.shipment.pickup.reservation.create": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "low",
+    "value": "Carrier pickup reservations, label list and shipping logistics types."
+  },
+  "temu.logistics.shipment.pickup.reservation.result.get": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "low",
+    "value": "Carrier pickup reservations, label list and shipping logistics types."
+  },
+  "temu.track.trackinginfo.get": {
+    "section": "shipping",
+    "size": "small",
+    "priority": "medium",
+    "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
+  },
+  "bg.cooperativewarehouse.fulfill.cancel": {
+    "section": "new: cooperative warehouse",
+    "size": "large",
+    "priority": "low",
+    "value": "Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment."
+  },
+  "bg.cooperativewarehouse.fulfill.query": {
+    "section": "new: cooperative warehouse",
+    "size": "large",
+    "priority": "low",
+    "value": "Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment."
+  },
+  "bg.cooperativewarehouse.fulfill.submit": {
+    "section": "new: cooperative warehouse",
+    "size": "large",
+    "priority": "low",
+    "value": "Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment."
+  },
+  "bg.cooperativewarehouse.provider.list": {
+    "section": "new: cooperative warehouse",
+    "size": "large",
+    "priority": "low",
+    "value": "Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment."
+  },
+  "bg.cooperativewarehouse.token.authorization": {
+    "section": "new: cooperative warehouse",
+    "size": "large",
+    "priority": "low",
+    "value": "Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment."
+  }
+}

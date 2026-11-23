@@ -33,7 +33,7 @@ for (const key of ['ebay', 'tiktok_shop', 'temu']) {
     if (key !== 'ebay' && !fs.existsSync(file)) return t.skip('not researched yet')
     const catalog = JSON.parse(fs.readFileSync(file, 'utf8'))
     assert.equal(catalog.shop, key)
-    assert.ok(Array.isArray(catalog.sources) && catalog.sources.length > 0 && catalog.sources.every((u) => /^https:\/\//.test(u)))
+    assert.ok(Array.isArray(catalog.sources) && catalog.sources.length > 0 && catalog.sources.every((u) => u.startsWith('https://')))
     assert.ok(!Number.isNaN(Date.parse(catalog.researchedAt)))
     const ids = catalog.endpoints.map((e) => e.id)
     assert.equal(new Set(ids).size, ids.length, 'unique ids')
@@ -52,5 +52,65 @@ for (const key of ['ebay', 'tiktok_shop', 'temu']) {
     const known = new Set(catalog.endpoints.map((e) => pathOf(e.id)))
     const missing = usedEndpoints(key).map((e) => e.id).filter((id) => !known.has(pathOf(id)))
     assert.deepEqual(missing, [])
+  })
+}
+
+// ---- Task 5: compare and annotate the gaps
+const row = (over) => ({ group: 'G', name: 'n', summary: 's', sellerFacing: true, confirmed: true, ...over })
+const coverageOf = () => require('../scripts/apiCoverage/compare').coverage
+
+test('an older API version counts as covered, flagged', () => {
+  const rows = coverageOf()({ endpoints: [row({ id: 'POST /product/202502/products/search' }), row({ id: 'GET /order/202309/orders' })] }, [
+    { id: 'POST /product/202309/products/search', files: ['a.js'] },
+    { id: 'GET /order/202309/orders', files: ['b.js'] },
+  ])
+  assert.equal(rows[0].status, 'covered-older')
+  assert.deepEqual(rows[0].files, ['a.js'])
+  assert.equal(rows[0].calledAs, 'POST /product/202309/products/search')
+  assert.equal(rows[1].status, 'covered')
+})
+
+test('a call whose method was guessed still covers the only endpoint at that path', () => {
+  const rows = coverageOf()({ endpoints: [row({ id: 'POST /promotion/202309/activities/search' }), row({ id: 'GET /x/v1/item/{id}' }), row({ id: 'DELETE /x/v1/item/{id}' })] }, [
+    { id: 'GET /promotion/202309/activities/search', files: ['p.js'] },
+    { id: 'DELETE /x/v1/item/{sku}', files: ['d.js'] },
+  ])
+  assert.deepEqual(rows.map((r) => r.status), ['covered', 'missing', 'covered'])
+})
+
+test('buyer APIs are never gaps', () => {
+  const rows = coverageOf()({ endpoints: [row({ id: 'GET /buy/browse/v1/item/get_item_by_legacy_id', sellerFacing: false }), row({ id: 'GET /buy/browse/v1/item_summary/search', sellerFacing: false })] }, [
+    { id: 'GET /buy/browse/v1/item/get_item_by_legacy_id', files: ['i.js'] },
+  ])
+  assert.deepEqual(rows.map((r) => r.status), ['not-for-sellers', 'not-for-sellers'])
+  assert.deepEqual(rows[0].files, ['i.js'])
+})
+
+test('unconfirmed endpoints are flagged, not silent gaps', () => {
+  const [r] = coverageOf()({ endpoints: [row({ id: 'bg.x.y', confirmed: false })] }, [])
+  assert.equal(r.status, 'missing')
+  assert.equal(r.confirmed, false)
+})
+
+const SECTIONS = {
+  ebay: ['analytics', 'messages', 'listings', 'inventory', 'orders', 'returns-cases', 'offers', 'promotions', 'payouts', 'buyers'],
+  tiktok_shop: ['analytics', 'customer-service', 'products', 'inventory', 'orders', 'packages', 'returns-cancellations', 'promotions', 'finance', 'videos-live', 'creators', 'customers'],
+  temu: ['analytics', 'goods', 'inventory', 'orders', 'shipping', 'after-sales', 'price-reviews', 'promotions', 'ads', 'customers'],
+}
+for (const key of Object.keys(SECTIONS)) {
+  test(`every missing seller endpoint has a gap note (${key})`, () => {
+    const { shopCoverage } = require('../scripts/apiCoverage/compare')
+    const gaps = JSON.parse(fs.readFileSync(path.join(ROOT, '..', 'docs', 'api-coverage', 'gaps', `${key}.json`), 'utf8'))
+    const missing = shopCoverage(key).filter((r) => r.status === 'missing')
+    assert.ok(missing.length > 0)
+    for (const r of missing) {
+      const note = gaps[r.id]
+      assert.ok(note, `gap note for ${r.id}`)
+      assert.ok(['small', 'medium', 'large'].includes(note.size), `${r.id} size`)
+      assert.ok(['high', 'medium', 'low'].includes(note.priority), `${r.id} priority`)
+      assert.ok(SECTIONS[key].includes(note.section) || /^new: \S/.test(note.section), `${r.id} section ${note.section}`)
+      assert.ok(typeof note.value === 'string' && note.value.length > 10, `${r.id} value`)
+    }
+    for (const id of Object.keys(gaps)) assert.ok(missing.some((r) => r.id === id), `gap note ${id} is for a missing endpoint`)
   })
 }

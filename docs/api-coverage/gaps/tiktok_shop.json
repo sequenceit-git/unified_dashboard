@@ -1,0 +1,1604 @@
+{
+  "DELETE /affiliate_seller/202409/open_collaborations/products/{product_id}": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "DELETE /affiliate_seller/202409/target_collaborations/{target_collaboration_id}": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "DELETE /event/202309/webhooks": {
+    "section": "new: notifications",
+    "size": "small",
+    "priority": "low",
+    "value": "Remove a webhook subscription (create and list are used)."
+  },
+  "DELETE /product/202309/global_products": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "DELETE /promotion/202309/activities/{activity_id}/products": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "medium",
+    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
+  },
+  "DELETE /seller/202611/materials": {
+    "section": "new: shop materials",
+    "size": "small",
+    "priority": "low",
+    "value": "Shop materials: upload and manage shop images and carousel content."
+  },
+  "GET /affiliate_seller/202409/open_collaboration_settings": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "GET /affiliate_seller/202410/open_collaborations/sample_rules": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "GET /affiliate_seller/202412/conversation/{conversation_id}/messages": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "GET /affiliate_seller/202412/conversations": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "GET /affiliate_seller/202412/conversations/messages/list/newest": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "GET /affiliate_seller/202508/open_collaborations/creator_content_details": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "GET /affiliate_seller/202508/target_collaborations/{target_collaboration_id}": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "GET /affiliate_seller/202512/sample_applications/deeplink": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
+  },
+  "GET /affiliate_seller/202603/compass/offline_tasks": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /affiliate_seller/202603/compass/offline_tasks/{task_id}/file": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /affiliate_seller/202607/creator_outreach/quota": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /affiliate_seller/202608/conversations/group_counts": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "GET /affiliate_seller/202608/marketplace_creators/{creator_user_id}": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /affiliate_seller/202611/partner_campaigns": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/candidate_products": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/products": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "GET /analytics/202403/videos/performances": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
+  },
+  "GET /analytics/202502/live_rooms/{live_room_id}/core_stats": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202502/live_rooms/{live_room_id}/gmv_trend_performances": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202502/live_rooms/{live_room_id}/interactive_trend_performances": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202502/live_rooms/{live_room_id}/product_stats": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202502/live_rooms/{live_room_id}/traffic_performances": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202502/live_rooms/{live_room_id}/user_portraits": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202502/live_rooms/{live_room_id}/view_trend_performances": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202509/shop_products/{product_id}/performance": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source."
+  },
+  "GET /analytics/202509/shop_skus/{sku_id}/performance": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source."
+  },
+  "GET /analytics/202509/shop_skus/performance": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source."
+  },
+  "GET /analytics/202509/shop_videos/{video_id}/performance": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
+  },
+  "GET /analytics/202509/shop_videos/{video_id}/products/performance": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
+  },
+  "GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202510/shop/performance/{date}/performance_per_hour": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
+  },
+  "GET /analytics/202511/creators/bestselling": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "medium",
+    "value": "Market best sellers: top products, videos, LIVEs and creators in your categories."
+  },
+  "GET /analytics/202511/lives/bestselling": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "medium",
+    "value": "Market best sellers: top products, videos, LIVEs and creators in your categories."
+  },
+  "GET /analytics/202511/products/bestselling": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "medium",
+    "value": "Market best sellers: top products, videos, LIVEs and creators in your categories."
+  },
+  "GET /analytics/202511/videos/bestselling": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
+  },
+  "GET /analytics/202512/shop/{live_id}/products_performance": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202606/shop_performances/metrics": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
+  },
+  "GET /analytics/202606/shop_performances/metrics/{metric_code}/diagnosis": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
+  },
+  "GET /analytics/202606/shop_performances/metrics/{metric_code}/problem_details": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
+  },
+  "GET /analytics/202606/shop_performances/metrics/{metric_code}/top_items": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
+  },
+  "GET /analytics/202609/shop_lives/overview_performance": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "medium",
+    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
+  },
+  "GET /analytics/202609/shop_videos/batch_performance": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
+  },
+  "GET /analytics/202609/shop_videos/overview_performance": {
+    "section": "videos-live",
+    "size": "small",
+    "priority": "high",
+    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
+  },
+  "GET /analytics/202610/acc/brands": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
+  },
+  "GET /analytics/202610/acc/overview": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
+  },
+  "GET /analytics/202610/acc/penetration": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
+  },
+  "GET /analytics/202610/acc/preferences": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
+  },
+  "GET /analytics/202610/acc/preferences/live/factors": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
+  },
+  "GET /analytics/202610/acc/preferences/product/categories": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
+  },
+  "GET /analytics/202610/acc/preferences/summary": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
+  },
+  "GET /analytics/202610/off_site/details": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "low",
+    "value": "Off-site traffic (ads and pixels) overview and details."
+  },
+  "GET /analytics/202610/off_site/insights": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "low",
+    "value": "Off-site traffic (ads and pixels) overview and details."
+  },
+  "GET /analytics/202610/off_site/overview": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "low",
+    "value": "Off-site traffic (ads and pixels) overview and details."
+  },
+  "GET /analytics/202610/off_site/pixels": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "low",
+    "value": "Off-site traffic (ads and pixels) overview and details."
+  },
+  "GET /analytics/202610/shop_performances/benefits": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
+  },
+  "GET /analytics/202610/shop_performances/overview": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "high",
+    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
+  },
+  "GET /analytics/202611/ai_report/campaigns": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Custom AI report builder: query configurable dimensions and metrics."
+  },
+  "GET /analytics/202611/ai_report/catalog": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Custom AI report builder: query configurable dimensions and metrics."
+  },
+  "GET /analytics/202611/ai_report/rules": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Custom AI report builder: query configurable dimensions and metrics."
+  },
+  "GET /authorization/202405/category_assets": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Categories the shop is authorised to sell in."
+  },
+  "GET /customer_engagement/202412/message_templates": {
+    "section": "customers",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
+  },
+  "GET /customer_engagement/202502/permissions": {
+    "section": "customers",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
+  },
+  "GET /customer_service/202309/agents/settings": {
+    "section": "customer-service",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "GET /customer_service/202407/performance": {
+    "section": "analytics",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer-service performance: response rate and response time."
+  },
+  "GET /customer_service/202601/conversations/{conversation_id}": {
+    "section": "customer-service",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "GET /fbt/202408/warehouses": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "GET /fbt/202409/merchants/onboarded_regions": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "GET /fbt/202601/mcf_outbound_orders": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "GET /fbt/202601/merchants/mcf_status": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "GET /fbt/202602/inbound_orders": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "GET /finance/202501/orders/{order_id}/statement_transactions": {
+    "section": "finance",
+    "size": "small",
+    "priority": "high",
+    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
+  },
+  "GET /finance/202501/statements/{statement_id}/statement_transactions": {
+    "section": "finance",
+    "size": "small",
+    "priority": "high",
+    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
+  },
+  "GET /finance/202507/orders/unsettled": {
+    "section": "finance",
+    "size": "small",
+    "priority": "high",
+    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
+  },
+  "GET /finance/202609/account_balances": {
+    "section": "finance",
+    "size": "small",
+    "priority": "high",
+    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
+  },
+  "GET /finance/202609/account_transactions": {
+    "section": "finance",
+    "size": "small",
+    "priority": "high",
+    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
+  },
+  "GET /fulfillment/202309/combinable_packages/search": {
+    "section": "packages",
+    "size": "medium",
+    "priority": "high",
+    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
+  },
+  "GET /fulfillment/202309/orders/{order_id}/tracking": {
+    "section": "packages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Package detail, handover time slots and order tracking."
+  },
+  "GET /fulfillment/202309/orders/split_attributes": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "GET /fulfillment/202309/packages/{package_id}": {
+    "section": "packages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Package detail, handover time slots and order tracking."
+  },
+  "GET /fulfillment/202309/packages/{package_id}/handover_time_slots": {
+    "section": "packages",
+    "size": "small",
+    "priority": "medium",
+    "value": "Package detail, handover time slots and order tracking."
+  },
+  "GET /fulfillment/202508/tts_tracking_validation": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "GET /logistics/202309/global_warehouses": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Logistics: global warehouses, shipping templates and order tracking."
+  },
+  "GET /logistics/202510/seller_templates": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Logistics: global warehouses, shipping templates and order tracking."
+  },
+  "GET /logistics/202604/orders/{order_id}/tracking": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Logistics: global warehouses, shipping templates and order tracking."
+  },
+  "GET /logistics/202606/seller_template/template_exist": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Logistics: global warehouses, shipping templates and order tracking."
+  },
+  "GET /order/202406/orders/{order_id}/external_orders": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "External orders link, proof-of-delivery and blind-box results."
+  },
+  "GET /order/202407/orders/{order_id}/price_detail": {
+    "section": "orders",
+    "size": "small",
+    "priority": "high",
+    "value": "Order price breakdown: seller and platform discounts, shipping fee, taxes."
+  },
+  "GET /product/202309/categories/{category_id}/global_attributes": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "GET /product/202309/categories/{category_id}/global_rules": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "GET /product/202309/global_categories": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "GET /product/202309/global_products/{global_product_id}": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "GET /product/202312/prerequisites": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "GET /product/202405/products/diagnoses": {
+    "section": "products",
+    "size": "small",
+    "priority": "high",
+    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
+  },
+  "GET /product/202405/products/seo_words": {
+    "section": "products",
+    "size": "small",
+    "priority": "high",
+    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
+  },
+  "GET /product/202405/products/suggestions": {
+    "section": "products",
+    "size": "small",
+    "priority": "high",
+    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
+  },
+  "GET /product/202506/images/translation_tasks": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "GET /product/202507/global_listing_rules": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "GET /product/202507/products/{product_id}/replicated_products": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "GET /product/202604/opportunities/{opportunity_id}": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
+  },
+  "GET /product/202604/opportunities/submissions": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
+  },
+  "GET /product/202606/skpps/{product_id}": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "GET /product/202606/skpps/sum": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "GET /product/202610/property_recommendation_tasks/{task_id}": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "GET /product/202611/search_videos": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "GET /product/202611/search_videos/{video_id}": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "GET /product/202611/search_videos/{video_id}/comments": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "GET /product/202611/search_videos/{video_id}/keywords": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "GET /product/202611/search_videos/{video_id}/products": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "GET /promotion/202309/activities/{activity_id}": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "medium",
+    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
+  },
+  "GET /promotion/202406/coupons/{coupon_id}": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "medium",
+    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
+  },
+  "GET /promotion/202611/campaign_groups": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/campaign_groups/{campaign_group_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/campaigns": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/livestream_campaigns/{livestream_campaign_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/product_campaigns/{product_campaign_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/registered_campaigns": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/registered_campaigns/counts": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/shop_campaigns/{shop_campaign_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /promotion/202611/short_video_campaigns/{short_video_campaign_id}": {
+    "section": "promotions",
+    "size": "medium",
+    "priority": "medium",
+    "value": "TikTok platform campaigns: browse campaigns and see registrations."
+  },
+  "GET /return_refund/202309/reject_reasons": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "GET /return_refund/202309/returns/{return_id}/records": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "GET /return_refund/202601/decision_eligibility": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "GET /return_refund/202602/orders/{order_id}/aftersale_eligibility": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "GET /return_refund/202606/review_decision": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "GET /seller/202309/permissions": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Seller account: permissions, shop list and shop groups."
+  },
+  "GET /seller/202309/shops": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Seller account: permissions, shop list and shop groups."
+  },
+  "GET /seller/202601/shop_groups": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Seller account: permissions, shop list and shop groups."
+  },
+  "GET /seller/202611/carousel_permission": {
+    "section": "new: shop materials",
+    "size": "small",
+    "priority": "low",
+    "value": "Shop materials: upload and manage shop images and carousel content."
+  },
+  "GET /seller/202611/material_statuses": {
+    "section": "new: shop materials",
+    "size": "small",
+    "priority": "low",
+    "value": "Shop materials: upload and manage shop images and carousel content."
+  },
+  "GET /seller/202611/materials": {
+    "section": "new: shop materials",
+    "size": "small",
+    "priority": "low",
+    "value": "Shop materials: upload and manage shop images and carousel content."
+  },
+  "POST /affiliate_seller/202405/open_collaboration_settings": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202405/open_collaborations/products/search": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202409/sample_applications/{application_id}/fulfillments/search": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
+  },
+  "POST /affiliate_seller/202410/open_collaborations/sample_rules": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202410/orders/search": {
+    "section": "creators",
+    "size": "small",
+    "priority": "high",
+    "value": "Affiliate orders: which creator sold what, and the commission owed."
+  },
+  "POST /affiliate_seller/202412/conversations/{conversation_id}/messages": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "POST /affiliate_seller/202412/conversatons/read": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "POST /affiliate_seller/202412/open_collaborations": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202412/open_collaborations/search": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202507/sample_applications/{application_id}/review": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
+  },
+  "POST /affiliate_seller/202508/conversations": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "POST /affiliate_seller/202508/open_collaborations/{open_collaboration_id}/remove_creator": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202508/sample_applications/search": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
+  },
+  "POST /affiliate_seller/202508/target_collaborations": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202508/target_collaborations/search": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202509/target_collaboration/{target_collaboration_id}/link": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202511/images/upload": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /affiliate_seller/202603/compass/offline_task": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /affiliate_seller/202605/target_collaborations/conflicts/check": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202605/target_collaborations/conflicts/resolve": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202608/conversations/{conversation_id}/status": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Chat with creators: conversations, messages, read state."
+  },
+  "POST /affiliate_seller/202608/creator_outreach/records/query": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /affiliate_seller/202608/marketplace_creators/search/filter": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /affiliate_seller/202608/media/upload": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /affiliate_seller/202608/target_collaborations/creator_promotion_details/query": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "POST /affiliate_seller/202610/creator_outreach/eligibility/check": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /affiliate_seller/202611/partner_campaigns/{campaign_id}/products": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /analytics/202611/ai_report/data/query": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Custom AI report builder: query configurable dimensions and metrics."
+  },
+  "POST /analytics/202611/ai_report/dimension_options/search": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Custom AI report builder: query configurable dimensions and metrics."
+  },
+  "POST /analytics/202611/ai_report/query_config/validate": {
+    "section": "analytics",
+    "size": "medium",
+    "priority": "low",
+    "value": "Custom AI report builder: query configurable dimensions and metrics."
+  },
+  "POST /customer_engagement/202412/engagement_tasks": {
+    "section": "customers",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
+  },
+  "POST /customer_engagement/202412/messages": {
+    "section": "customers",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
+  },
+  "POST /customer_engagement/202412/performances": {
+    "section": "customers",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
+  },
+  "POST /customer_engagement/202502/engagement_tasks/custom": {
+    "section": "customers",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
+  },
+  "POST /customer_service/202309/conversations": {
+    "section": "customer-service",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "POST /customer_service/202309/images/upload": {
+    "section": "customer-service",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "POST /customer_service/202602/sessions/search": {
+    "section": "customer-service",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "POST /customer_service/202605/conversations/{conversation_id}/sessions/{session_id}/end": {
+    "section": "customer-service",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "POST /fbt/202408/inventory/search": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202410/inventory_records/search": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202601/mcf_outbound_orders/cancel": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202601/mcf/goods/inventory/search": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202602/create_update_inbound_plan": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202602/inbound_method_detail": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202602/inbound_orders/cancel": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202602/inbound_orders/label_print": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202602/inbound_orders/tracking_update": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202602/list_available_inbound_method": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202603/confirm_inbound_method": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202603/goods/hazmat_and_expiration_info/search": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202603/goods/update_goods_sku_relation": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202603/ship_inbound_order": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202607/goods/create_goods": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202607/goods/search": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202607/goods/update_goods_info": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fbt/202607/mcf_outbound_orders": {
+    "section": "new: fulfilled by TikTok",
+    "size": "large",
+    "priority": "medium",
+    "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
+  },
+  "POST /fulfillment/202309/files/upload": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202309/images/upload": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202309/orders/{order_id}/split": {
+    "section": "packages",
+    "size": "medium",
+    "priority": "high",
+    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
+  },
+  "POST /fulfillment/202309/packages/{package_id}/uncombine": {
+    "section": "packages",
+    "size": "medium",
+    "priority": "high",
+    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
+  },
+  "POST /fulfillment/202309/packages/combine": {
+    "section": "packages",
+    "size": "medium",
+    "priority": "high",
+    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
+  },
+  "POST /fulfillment/202309/packages/deliver": {
+    "section": "packages",
+    "size": "medium",
+    "priority": "high",
+    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
+  },
+  "POST /fulfillment/202309/packages/ship": {
+    "section": "packages",
+    "size": "medium",
+    "priority": "high",
+    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
+  },
+  "POST /fulfillment/202407/bundles": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202502/invoice/upload": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202510/first_mile_bundle": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202512/packages": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202601/redeem_info/callback": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202606/pod_details/get": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202607/orders/customs_info/query": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202607/orders/customs_info/submit": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202609/order/sof/track/update": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /fulfillment/202610/packages/{package_id}/shipping_info/update": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
+  },
+  "POST /open/202512/file/init": {
+    "section": "new: account",
+    "size": "small",
+    "priority": "low",
+    "value": "Developer tools endpoint (file upload initialisation)."
+  },
+  "POST /order/202406/orders/external_order_search": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "External orders link, proof-of-delivery and blind-box results."
+  },
+  "POST /order/202406/orders/external_orders": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "External orders link, proof-of-delivery and blind-box results."
+  },
+  "POST /order/202605/orders/blind_box_result/callback": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "External orders link, proof-of-delivery and blind-box results."
+  },
+  "POST /order/202606/pod_details/search": {
+    "section": "orders",
+    "size": "small",
+    "priority": "low",
+    "value": "External orders link, proof-of-delivery and blind-box results."
+  },
+  "POST /product/202309/brands": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202309/global_categories/recommend": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "POST /product/202309/global_products": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "POST /product/202309/global_products/{global_product_id}/inventory/update": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "POST /product/202309/global_products/{global_product_id}/publish": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "POST /product/202309/inventory/search": {
+    "section": "inventory",
+    "size": "small",
+    "priority": "high",
+    "value": "Stock per SKU and per warehouse for many products at once (check that stock sync is right)."
+  },
+  "POST /product/202309/products/listing_check": {
+    "section": "products",
+    "size": "small",
+    "priority": "medium",
+    "value": "Pre-check a listing for problems before publishing it."
+  },
+  "POST /product/202312/global_products/search": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "POST /product/202404/images/optimize": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202407/products/category_upgrade_task": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202409/compliance/manufacturers": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
+  },
+  "POST /product/202409/compliance/manufacturers/{manufacturer_id}/partial_edit": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
+  },
+  "POST /product/202409/compliance/responsible_persons": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
+  },
+  "POST /product/202409/compliance/responsible_persons/{responsible_person_id}/partial_edit": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
+  },
+  "POST /product/202411/products/diagnose_optimize": {
+    "section": "products",
+    "size": "small",
+    "priority": "high",
+    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
+  },
+  "POST /product/202501/compliance/manufacturers/search": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
+  },
+  "POST /product/202501/compliance/responsible_persons/search": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
+  },
+  "POST /product/202505/images/translation_tasks": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202507/products/{product_id}/global_replicate": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202601/compliance/auditing/research": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
+  },
+  "POST /product/202602/packages/recommend": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202604/appeals/submit": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202604/opportunities/{opportunity_id}/submit": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
+  },
+  "POST /product/202604/opportunities/query": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
+  },
+  "POST /product/202604/products/gpa_upgrade_task": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202606/skpps/search": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202608/inventory/operation/settings": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202609/brands/suggest": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202609/products/{product_id}/strikethrough_price/submit": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "medium",
+    "value": "Set a strikethrough (was) price on a product."
+  },
+  "POST /product/202609/products/package/predict": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202609/products/properties/recommend": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202610/image_listing_tasks": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202610/size_charts": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202610/size_charts/edit": {
+    "section": "products",
+    "size": "small",
+    "priority": "low",
+    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
+  },
+  "POST /product/202611/search_videos/{video_id}/comments": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "POST /product/202611/search_videos/{video_id}/products": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "POST /promotion/202607/activities/{activity_id}/republish": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "medium",
+    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
+  },
+  "POST /return_refund/202405/returns/shipping_documents": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "POST /return_refund/202602/refunds/calculate": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "POST /return_refund/202603/aftersales/search": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "POST /return_refund/202604/rma/search": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "POST /return_refund/202609/aftersales/review": {
+    "section": "returns-cancellations",
+    "size": "small",
+    "priority": "medium",
+    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
+  },
+  "POST /seller/202611/images/upload": {
+    "section": "new: shop materials",
+    "size": "small",
+    "priority": "low",
+    "value": "Shop materials: upload and manage shop images and carousel content."
+  },
+  "POST /seller/202611/materials/upload": {
+    "section": "new: shop materials",
+    "size": "small",
+    "priority": "low",
+    "value": "Shop materials: upload and manage shop images and carousel content."
+  },
+  "POST /supply_chain/202309/packages/sync": {
+    "section": "packages",
+    "size": "small",
+    "priority": "low",
+    "value": "Sync package status from a third-party warehouse system."
+  },
+  "PUT /affiliate_seller/202508/target_collaborations/{target_collaboration_id}": {
+    "section": "creators",
+    "size": "medium",
+    "priority": "high",
+    "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
+  },
+  "PUT /customer_service/202309/agents/settings": {
+    "section": "customer-service",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "PUT /product/202309/global_products/{global_product_id}": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "PUT /product/202509/global_products/{global_product_id}/partial_edit": {
+    "section": "new: global products",
+    "size": "large",
+    "priority": "low",
+    "value": "Global (cross-border) products: one product published to several regional shops."
+  },
+  "PUT /product/202509/products/{product_id}": {
+    "section": "products",
+    "size": "medium",
+    "priority": "medium",
+    "value": "Full product edit (the partial edit is already used)."
+  },
+  "PUT /product/202611/search_videos/{video_id}/keywords": {
+    "section": "videos-live",
+    "size": "medium",
+    "priority": "low",
+    "value": "Search videos: link products, keywords and comments to search-result videos."
+  },
+  "PUT /promotion/202309/activities/{activity_id}": {
+    "section": "promotions",
+    "size": "small",
+    "priority": "medium",
+    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
+  }
+}
