@@ -26,14 +26,11 @@
 | 6a services/core | done | de2bf2a |
 | 6b–6f domain services (catalog, sales, research, auth, analytics + shops) | done | 9884b53, 2b5650b, 1b16771, fb68870, d7c7c97 |
 | 7 Frontend registry + section files | done | 3a42a95 |
-| 8 Listing forms | partly: rules, shop fields and field-set flags moved; per-shop `Fields` JSX not yet extracted | 1f62b37 |
-| 8a Big pages | partly: sub-admin management page split; others capped by test | 269c7db |
+| 8 Listing forms | done: shop parts in `listing/{listFields,productFields,draftFields}`, dialog logic in hooks | 1f62b37, 9b19e45 |
+| 8a Big pages | done: every page component under 500 lines | 269c7db, 9b19e45 |
 | 9 Docs and paths | done | (this commit) |
 
-**Still to do (needs a UI test pass with a running backend):** move the shop-specific JSX out of
-`ListModal`, `DirectListModal` and `ProductModal` into `src/marketplaces/<key>/listing/Fields.jsx`;
-split `SubAdminFormPage`, `ProductDiscoveryPage` and `ShopSectionPage` into components + hooks;
-turn the TikTok-only performance path in `services/analytics/reports.js` into a TikTok adapter hook.
+**Follow-ups done 2026-11-24:** TikTok analytics became `hooks.analytics` (9db4eba); two regressions found by the final review fixed (8ad47ea); a customer-drawer crash from Task 7 fixed (448167d); the listing dialogs and big pages finished (9b19e45), checked by rendering 29 screens before and after on a local test database (identical HTML); an older Temu Direct listing crash fixed (19c2bca).
 
 ## Decisions (the spec)
 

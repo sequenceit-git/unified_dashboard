@@ -32,7 +32,9 @@ Optional, read by the core only when present:
 - `webhooks` — `{ handle, enable }`; `enable(shop)` turns live updates on (daily `live` job).
 - `hooks` — `fetchOrders`, `fetchListings`, `listingImages`, `listingVariants`,
   `shippingLineItems`, `orderAppToken`, `orderItemImages`, `promotionTargets`,
-  `autoConnectFromEnv`. Each replaces the default step for that shop.
+  `autoConnectFromEnv`, and `analytics` ({ salesIntervals, productPerformance }: the shop's own
+  figures for Analytics, used instead of order totals when only that shop is selected).
+  Each replaces the default step for that shop.
 - `capabilities` — flags: `inbox`, `inboxNeedsAccountUsername`, `refreshToken`,
   `tracksOrdersSyncedAt`, `syncsVariants`, `relistOnRestock`, `productKeyListings`,
   `listingFetchLimit` (number), `listingNoun` (string).
