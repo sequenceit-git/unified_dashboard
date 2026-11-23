@@ -24,7 +24,7 @@ function autoSync(name) {
 const manager = () => require('./marketplace')
 
 const LIVE_UPDATES = {
-  ebay: './ebayNotifications',
+  ebay: '../marketplaces/ebay/webhooks',
   tiktok_shop: '../marketplaces/tiktok_shop/webhooks',
   temu: '../marketplaces/temu/webhooks',
 }

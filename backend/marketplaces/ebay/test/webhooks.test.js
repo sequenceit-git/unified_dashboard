@@ -1,7 +1,7 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const crypto = require('crypto')
-const { stubModules, freshRequire } = require('./helpers/stub')
+const { stubModules, freshRequire } = require('../../../test/helpers/stub')
 
 process.env.EBAY_DEV_ID = 'dev'
 process.env.EBAY_CLIENT_ID = 'app'
@@ -11,9 +11,9 @@ function load() {
   const queued = []
   const restore = stubModules({
     '/models/Shop': { findOne: () => ({ select: async () => ({ _id: 'shopE', name: 'eBay A', marketplace: 'ebay' }) }), find: () => ({ select: () => ({ limit: async () => [] }) }), updateOne: async () => ({}) },
-    './syncQueue': { enqueue: async (kind, id) => { queued.push(`${kind}:${id}`) } },
+    '/syncQueue': { enqueue: async (kind, id) => { queued.push(`${kind}:${id}`) } },
   })
-  return { n: freshRequire('services/ebayNotifications.js'), queued, restore }
+  return { n: freshRequire('marketplaces/ebay/webhooks.js'), queued, restore }
 }
 
 function soap(event, { timestamp = new Date().toISOString(), signature } = {}) {

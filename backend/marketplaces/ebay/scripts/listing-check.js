@@ -6,17 +6,17 @@
  * prints eBay's own status, quantity and sold count. Nothing is written anywhere.
  */
 const path = require('path')
-const root = path.join(__dirname, '..', '..')
+const root = path.join(__dirname, '..', '..', '..', '..')
 require('dotenv').config({ path: path.join(root, '.env.local') })
 require('dotenv').config({ path: path.join(root, '.env') })
 
 const mongoose = require('mongoose')
-const connectDB = require('../config/db')
-const Shop = require('../models/Shop')
-const Listing = require('../models/Listing')
-require('../models/Product')
-const manager = require('../services/marketplace')
-const trading = require('../services/marketplace/ebayTrading')
+const connectDB = require('../../../config/db')
+const Shop = require('../../../models/Shop')
+const Listing = require('../../../models/Listing')
+require('../../../models/Product')
+const manager = require('../../../services/marketplace')
+const trading = require('../trading')
 
 const numericId = (id) => String(id || '').replace(/^(ebay-)?item-/, '')
 

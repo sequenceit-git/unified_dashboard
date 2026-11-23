@@ -8,18 +8,18 @@
  * `docker compose exec backend node scripts/fix-ebay-products.js [--apply]`
  */
 const path = require('path')
-const root = path.join(__dirname, '..', '..')
+const root = path.join(__dirname, '..', '..', '..', '..')
 require('dotenv').config({ path: path.join(root, '.env.local'), quiet: true })
 require('dotenv').config({ path: path.join(root, '.env'), quiet: true })
 
 const mongoose = require('mongoose')
-const connectDB = require('../config/db')
-const Shop = require('../models/Shop')
-const Listing = require('../models/Listing')
-const Product = require('../models/Product')
-const manager = require('../services/marketplace')
-const trading = require('../services/marketplace/ebayTrading')
-const { ebaySku, isMachineSku } = require('../utils/sku')
+const connectDB = require('../../../config/db')
+const Shop = require('../../../models/Shop')
+const Listing = require('../../../models/Listing')
+const Product = require('../../../models/Product')
+const manager = require('../../../services/marketplace')
+const trading = require('../trading')
+const { ebaySku, isMachineSku } = require('../../../utils/sku')
 
 const APPLY = process.argv.includes('--apply')
 const MAX_IMAGE_LOOKUPS = 100

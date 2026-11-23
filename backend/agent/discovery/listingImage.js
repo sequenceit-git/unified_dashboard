@@ -1,4 +1,4 @@
-const ebay = require('../../services/marketplace/ebay')
+const ebay = require('../../marketplaces/ebay/service')
 const { upgradeImageUrlToHighRes } = require('../../utils/imageResolution')
 
 const LISTING_HOST = /(^|\.)(ebay\.com|amazon\.com|walmart\.com|temu\.com|tiktok\.com)$/i

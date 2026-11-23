@@ -4,7 +4,7 @@
  */
 
 const { XMLParser } = require('fast-xml-parser')
-const config = require('../../config/marketplaces').ebay
+const config = require('./config')
 const { filterEbayCompliantImages } = require('../../utils/imageResolution')
 
 const LIST_TAGS = new Set([

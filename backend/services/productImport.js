@@ -5,7 +5,7 @@
  */
 
 const OpenAI = require('openai')
-const ebay = require('./marketplace/ebay')
+const ebay = require('../marketplaces/ebay/service')
 const { getAiConfig } = require('./aiSettings')
 const { checkUrl, safeFetch } = require('../utils/safeUrl')
 

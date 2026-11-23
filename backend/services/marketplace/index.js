@@ -3,7 +3,7 @@
  * Single interface for eBay, TikTok Shop, and Temu operations
  */
 
-const ebay = require('./ebay')
+const ebay = require('../../marketplaces/ebay/service')
 const tiktokShop = require('../../marketplaces/tiktok_shop/service')
 const temu = require('../../marketplaces/temu/service')
 const profiles = require('./profiles')

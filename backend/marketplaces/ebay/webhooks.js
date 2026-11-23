@@ -9,8 +9,8 @@
 
 const crypto = require('crypto')
 const { XMLParser } = require('fast-xml-parser')
-const config = require('../config/marketplaces').ebay
-const Shop = require('../models/Shop')
+const config = require('./config')
+const Shop = require('../../models/Shop')
 
 /** Which sync each eBay event starts. */
 const JOB_FOR_EVENT = {
@@ -140,7 +140,7 @@ async function handle(xml, soapAction) {
   const shop = await findShop(note.recipient)
   if (!shop) return { status: 200, message: `No connected eBay shop for ${note.recipient || 'unknown seller'}` }
 
-  await require('./syncQueue').enqueue(kind, shop._id, { push: true })
+  await require('../../services/syncQueue').enqueue(kind, shop._id, { push: true })
   return { status: 200, message: `${note.event}: queued ${kind} sync for ${shop.name}`, job: kind }
 }
 
@@ -150,8 +150,8 @@ async function handle(xml, soapAction) {
  * belongs to (notifications name the seller, not the shop).
  */
 async function enable(shop) {
-  const manager = require('./marketplace')
-  const trading = require('./marketplace/ebayTrading')
+  const manager = require('../../services/marketplace')
+  const trading = require('./trading')
   const problem = setupProblem()
   const events = eventNames()
   let liveUpdates

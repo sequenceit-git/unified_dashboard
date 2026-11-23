@@ -8,10 +8,10 @@
     "dev": "nodemon server.js",
     "seed": "node seed/seed.js",
     "encrypt-recipient-pii": "node scripts/encrypt-recipient-pii.js",
-    "smoke:ebay": "node scripts/ebay-smoke.js",
+    "smoke:ebay": "node marketplaces/ebay/scripts/smoke.js",
     "smoke:temu": "node marketplaces/temu/scripts/smoke.js",
     "smoke:tiktok": "node marketplaces/tiktok_shop/scripts/smoke.js",
-    "cleanup:ebay": "node scripts/cleanup-ebay-placeholders.js",
+    "cleanup:ebay": "node marketplaces/ebay/scripts/cleanup-placeholders.js",
     "cleanup:temu": "node marketplaces/temu/scripts/cleanup-duplicates.js",
     "test": "node --test \"test/**/*.test.js\" \"marketplaces/**/*.test.js\""
   },

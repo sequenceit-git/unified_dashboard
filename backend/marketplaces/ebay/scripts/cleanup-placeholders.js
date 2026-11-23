@@ -9,16 +9,16 @@
  * re-reads each shipped order's shipment record and replaces them (40 orders per run).
  */
 const path = require('path')
-const root = path.join(__dirname, '..', '..')
+const root = path.join(__dirname, '..', '..', '..', '..')
 require('dotenv').config({ path: path.join(root, '.env.local') })
 require('dotenv').config({ path: path.join(root, '.env') })
 
 const mongoose = require('mongoose')
-const connectDB = require('../config/db')
-const Customer = require('../models/Customer')
-const Order = require('../models/Order')
-const Product = require('../models/Product')
-const Listing = require('../models/Listing')
+const connectDB = require('../../../config/db')
+const Customer = require('../../../models/Customer')
+const Order = require('../../../models/Order')
+const Product = require('../../../models/Product')
+const Listing = require('../../../models/Listing')
 
 const apply = process.argv.includes('--apply')
 const FAKE_EMAIL = /@members\.ebay\.com$/i

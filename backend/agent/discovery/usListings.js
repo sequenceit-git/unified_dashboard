@@ -1,4 +1,4 @@
-const ebay = require('../../services/marketplace/ebay')
+const ebay = require('../../marketplaces/ebay/service')
 
 const US_PLACES = [
   { id: 'ebay', label: 'eBay' },

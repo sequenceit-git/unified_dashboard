@@ -3,12 +3,12 @@
  * Verifies eBay's signature, then anonymises the deleted eBay user's personal data.
  */
 const crypto = require('crypto')
-const config = require('../config/marketplaces').ebay
-const ebay = require('./marketplace/ebay')
-const Customer = require('../models/Customer')
-const Order = require('../models/Order')
-const Conversation = require('../models/Conversation')
-const Message = require('../models/Message')
+const config = require('./config')
+const ebay = require('./service')
+const Customer = require('../../models/Customer')
+const Order = require('../../models/Order')
+const Conversation = require('../../models/Conversation')
+const Message = require('../../models/Message')
 
 const keyCache = new Map()
 

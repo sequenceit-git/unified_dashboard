@@ -3,8 +3,8 @@ const express = require('express')
 const router = express.Router()
 
 const crypto = require('crypto')
-const ebayDeletion = require('../../services/ebayAccountDeletion')
-const ebayNotifications = require('../../services/ebayNotifications')
+const ebayDeletion = require('../../marketplaces/ebay/accountDeletion')
+const ebayNotifications = require('../../marketplaces/ebay/webhooks')
 const tiktokNotifications = require('../../marketplaces/tiktok_shop/webhooks')
 const temuNotifications = require('../../marketplaces/temu/webhooks')
 
