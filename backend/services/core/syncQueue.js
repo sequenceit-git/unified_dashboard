@@ -36,7 +36,7 @@ const paused = () => process.env.SYNC_PAUSED === 'true'
 const KINDS = {
   inbox: {
     every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 2) : 0),
-    applies: (shop) => typeof shopAdapter(shop)?.app?.sync?.inbox === 'function' && shop.apiAccess?.inbox?.ok !== false,
+    applies: (shop) => typeof shopAdapter(shop)?.app?.sync?.inbox === 'function' && shop.apiAccess?.[shopAdapter(shop)?.renamedSections?.inbox || 'inbox']?.ok !== false,
     run: (shop) => shopAdapter(shop).app.sync.inbox(shop),
     clears: () => ['resp:dashboard:'],
   },

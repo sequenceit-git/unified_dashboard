@@ -4,7 +4,8 @@ const { planRename, run } = require('../scripts/renameSections')
 
 test('stored permissions follow the rename', () => {
   const plan = planRename({ users: [{ _id: 'u1', allowedSections: ['ebay:products', 'temu:fulfillment', 'orders', 'returns'] }], shops: [] })
-  assert.deepEqual(plan.users, [['u1', ['ebay:listings', 'temu:shipping', 'orders', 'returns', 'ebay:returns-cases', 'tiktok_shop:returns-cancellations', 'temu:after-sales']]])
+  // A bare id gains the bare new names (each is unique to one shop), never a shop the user didn't have.
+  assert.deepEqual(plan.users, [['u1', ['ebay:listings', 'temu:shipping', 'orders', 'returns', 'returns-cases', 'returns-cancellations', 'after-sales']]])
 })
 
 test('shop access keys follow the rename', () => {
@@ -13,7 +14,7 @@ test('shop access keys follow the rename', () => {
 })
 
 test('a second run changes nothing', () => {
-  const users = [{ _id: 'u1', allowedSections: ['ebay:listings', 'temu:shipping', 'orders', 'returns', 'ebay:returns-cases', 'tiktok_shop:returns-cancellations', 'temu:after-sales'] }]
+  const users = [{ _id: 'u1', allowedSections: ['ebay:listings', 'temu:shipping', 'orders', 'returns', 'returns-cases', 'returns-cancellations', 'after-sales'] }]
   const shops = [{ _id: 's1', marketplace: 'temu', apiAccess: { goods: { ok: true } } }]
   assert.deepEqual(planRename({ users, shops }), { users: [], shops: [] })
 })
@@ -31,4 +32,11 @@ test('the runner writes only with --apply, after a backup', async () => {
   assert.deepEqual(dry, { users: 1, shops: 0, applied: false })
   await run({ apply: true, db, log: () => {} })
   assert.deepEqual(calls, ['backup', 'users:1', 'shops:0'])
+})
+
+test("a single-shop sub-admin gets no other shop's entries", () => {
+  const plan = planRename({ users: [{ _id: 'u2', allowedSections: ['tiktok_shop:products', 'products', 'tiktok_shop:returns', 'returns'] }], shops: [] })
+  const after = plan.users[0][1]
+  assert.ok(!after.some((entry) => /^(ebay|temu):/.test(entry)), JSON.stringify(after))
+  assert.ok(after.includes('tiktok_shop:returns-cancellations'))
 })

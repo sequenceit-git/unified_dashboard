@@ -41,6 +41,8 @@ Overview (it sums per shop), notifications, sync intervals.
 6. Rename stored section ids to the shops' own names (sub-admin permissions, shop access keys):
    `docker compose exec backend npm run rename-sections` (dry run), then with `-- --apply`, and
    copy its backup out the same way.
+   Sub-admin permissions are cached for a few minutes; step 8 restarts the backend, which picks
+   up the renamed permissions at once.
 7. Run the split dry run again: it must report 0 products, 0 copies and 0 listings attached to another
    shop's product. If `--apply` stopped midway (connection drop), just run it again: it reuses the
    copies already made and finishes.

@@ -7,8 +7,8 @@ const registry = require('../marketplaces')
 const renames = () => Object.fromEntries(registry.KEYS.map((key) => [key, registry.get(key).renamedSections || {}]))
 
 /**
- * Sub-admin permissions: `shop:old` → `shop:new`; a bare `old` (any shop) stays for shops that kept
- * that name and gains `shop:new` for each shop that renamed it. Shop API-access keys are renamed.
+ * Sub-admin permissions: `shop:old` → `shop:new`; a bare `old` (any shop) stays and gains the bare
+ * new names of the shops that renamed it. Shop API-access keys are renamed.
  * @returns {{ users: [any, string[]][], shops: [any, object][] }}
  */
 function planRename({ users, shops }) {
@@ -23,8 +23,10 @@ function planRename({ users, shops }) {
       if (key) add(`${key}:${map[key]?.[id] || id}`)
       else add(entry)
     }
+    // A bare id (any shop) gains the bare new names: each is unique to one shop, so this grants
+    // nothing new and never adds a shop the user doesn't have.
     for (const entry of before.filter((e) => !e.includes(':'))) {
-      for (const key of registry.KEYS) if (map[key][entry]) add(`${key}:${map[key][entry]}`)
+      for (const key of registry.KEYS) if (map[key][entry]) add(map[key][entry])
     }
     if (JSON.stringify(after) !== JSON.stringify(before)) plan.users.push([user._id, after])
   }

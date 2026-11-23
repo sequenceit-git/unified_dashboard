@@ -38,3 +38,19 @@ test('SYNC_PAUSED=true skips every sync job, including webhook pushes', async ()
     restore()
   }
 })
+
+test("the inbox job checks the shop's own access key for its messages section", async () => {
+  const shop = { _id: 'E1', name: 'eBay store', marketplace: 'ebay', status: 'connected', apiAccess: { messages: { ok: false } } }
+  const ran = []
+  const restore = stubModules({
+    '/models/Shop': modelStub(() => shop),
+    '/notify': { fromSync: async () => {} },
+    '../../marketplaces': { get: () => ({ renamedSections: { inbox: 'messages' }, app: { sync: { inbox: async () => { ran.push('inbox') } } } }), KEYS: ['ebay'], canonical: (k) => k },
+  })
+  try {
+    const { runJob } = freshRequire('services/core/syncQueue.js')
+    const out = await runJob('inbox', 'E1')
+    assert.ok(out.skipped, 'skipped: the shop has no message access')
+    assert.deepEqual(ran, [])
+  } finally { restore() }
+})

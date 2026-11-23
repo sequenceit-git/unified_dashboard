@@ -1,28 +1,8 @@
+import { SECTION_ICONS } from './sectionIcons'
 import { useState } from 'react'
 import { SHOPS } from '../../marketplaces'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import {
-  FiChevronDown,
-  FiSettings,
-  FiCompass,
-  FiHome,
-  FiBarChart2,
-  FiInbox,
-  FiPackage,
-  FiLayers,
-  FiShoppingCart,
-  FiUsers,
-  FiShield,
-  FiTruck,
-  FiRotateCcw,
-  FiMessageCircle,
-  FiPercent,
-  FiDollarSign,
-  FiVideo,
-  FiStar,
-  FiTrendingUp,
-  FiLock,
-} from 'react-icons/fi'
+import { FiChevronDown, FiSettings, FiCompass, FiHome, FiPackage, FiShield, FiLock } from 'react-icons/fi'
 import { useAuth } from '../../auth/AuthContext'
 import { allowedShopSections } from '../../hooks/useShopSection'
 import { useShopProfiles } from '../../hooks/useShopProfiles'
@@ -41,24 +21,6 @@ const SHOP_SECTIONS = SHOPS.map((shop) => ({
   storageKey: `sidebar-${shop.urlId}-open`,
   defaultOpen: false,
 }))
-
-const SECTION_ICONS = {
-  analytics: FiBarChart2,
-  inbox: FiInbox,
-  products: FiPackage,
-  inventory: FiLayers,
-  orders: FiShoppingCart,
-  customers: FiUsers,
-  fulfillment: FiTruck,
-  returns: FiRotateCcw,
-  offers: FiMessageCircle,
-  promotions: FiPercent,
-  finances: FiDollarSign,
-  prices: FiDollarSign,
-  content: FiVideo,
-  creators: FiStar,
-  ads: FiTrendingUp,
-}
 
 function readOpen(storageKey, defaultOpen) {
   try {

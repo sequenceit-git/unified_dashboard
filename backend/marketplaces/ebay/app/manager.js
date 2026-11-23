@@ -1012,7 +1012,7 @@ class Manager {
     let inboxResult = null
     let newMessages = 0
     let updatedThreads = 0
-    if (shop.apiAccess?.inbox?.ok !== false) {
+    if (shop.apiAccess?.['messages']?.ok !== false) {
       inboxResult = await require('./services/inbox').syncAndReply(shop).catch((err) => ({ error: err.message }))
       newMessages = inboxResult?.newMessages || 0
       updatedThreads = inboxResult?.updatedThreads || 0

@@ -110,3 +110,10 @@ test("the same section on another shop uses that shop's name for it", async () =
   assert.equal(sameSectionOn('temu', 'goods', 'tiktok'), 'products')
   assert.equal(sameSectionOn('ebay', 'orders', 'temu'), 'orders')
 })
+
+test('every shop section has a sidebar icon (not the generic fallback)', async () => {
+  const { SECTION_ICONS } = await load('/src/components/layout/sectionIcons.js')
+  const { SHOPS } = await load('/src/marketplaces/index.js')
+  const missing = SHOPS.flatMap((shop) => shop.subsections.filter((s) => !SECTION_ICONS[s.id]).map((s) => `${shop.key}:${s.id}`))
+  assert.deepEqual(missing, [])
+})
