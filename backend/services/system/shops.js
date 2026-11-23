@@ -8,8 +8,11 @@ const sections = require('../../services/marketplace/sections')
 const syncQueue = require('../../services/core/syncQueue')
 const cache = require('../../services/core/cache')
 const { HttpError } = require('../../utils/httpError')
-const { canAccessShop, canUseSection } = require('../../middleware/auth')
-const { assertProductAccess } = require('../productAccess')
+const { canAccessShop, canUseSection, verifyOAuthState } = require('../../middleware/auth')
+
+const { canonical: canonicalMarketplace } = registry
+/** Default shop for the package routes: the first one whose API can fetch shipping documents. */
+const PACKAGE_SHOP = registry.all().find((a) => typeof a.service.getShippingDocument === 'function')?.key
 
 /**
  * Exchanges an OAuth code and saves the shop as connected. A reconnect updates the existing

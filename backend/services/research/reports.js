@@ -299,15 +299,6 @@ async function generate(ctx) {
       startedAt: new Date(),
     })
 
-    // Respond immediately so the UI can start polling
-    return {
-      _id: report._id,
-      status: 'queued',
-      message: 'Research job queued. Poll /api/research/status/:id for updates.',
-      params: report.params,
-      createdAt: report.createdAt,
-    }
-
     // Run the agent asynchronously
     setImmediate(() => {
       runDiscoveryAgent({
@@ -321,6 +312,16 @@ async function generate(ctx) {
         console.error('[research route] Agent run failed:', err.message)
       })
     })
+
+    // Answer at once so the UI can start polling; the agent runs after this returns.
+    return {
+      _id: report._id,
+      status: 'queued',
+      message: 'Research job queued. Poll /api/research/status/:id for updates.',
+      params: report.params,
+      createdAt: report.createdAt,
+    }
+
 }
 
 /** POST /relist */

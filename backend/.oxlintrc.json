@@ -1,0 +1,6 @@
+{
+  "$schema": "../frontend/node_modules/oxlint/configuration_schema.json",
+  "env": { "node": true, "es2024": true },
+  "rules": { "no-undef": "error", "no-unreachable": "error" },
+  "ignorePatterns": ["node_modules", "uploads"]
+}

@@ -65,3 +65,25 @@ test('export builds a CSV with formula-safe cells and download headers', async (
     await assert.rejects(service.exportReport({ ...admin, params: { reportId: 'bad' }, query: {} }), (e) => e.status === 400)
   } finally { restore() }
 })
+
+test('generate queues the report and starts the discovery agent', async () => {
+  const runs = []
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean', 'populate']) p[m] = () => p; return p }
+  const report = { _id: ID, status: 'queued', progress: 0, save: async () => {} }
+  const restore = stubModules({
+    '/models/ResearchReport': Object.assign(function ResearchReport() { return report }, { findOne: () => chain(null), create: async () => report, find: () => chain([]) }),
+    '/models/Product': {}, '/models/Shop': {}, '/models/Listing': {},
+    '../../services/marketplace': {},
+    '/agent/discovery/discoveryAgent': { runDiscoveryAgent: async (...args) => { runs.push(args) } },
+    '/agent/discovery/listingImage': { productImages: async () => [] },
+    '/system/aiSettings': { getAiConfig: async () => ({ apiKey: 'k', model: 'm' }) },
+  })
+  try {
+    const service = freshRequire('services/research/reports.js')
+    const out = await service.generate({ ...admin, body: { categories: ['Home'] } })
+    assert.equal(out.status, 'queued')
+    await new Promise((r) => setImmediate(r))
+    await new Promise((r) => setImmediate(r))
+    assert.equal(runs.length, 1, 'runDiscoveryAgent was not started')
+  } finally { restore() }
+})
