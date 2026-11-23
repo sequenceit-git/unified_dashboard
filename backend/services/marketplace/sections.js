@@ -4,8 +4,10 @@
  * so one page can render any shop's section. Column types: text, money, date, number, status, link.
  */
 
+const registry = require('../../marketplaces')
 
-const LOADERS = { ebay: require('../../marketplaces/ebay/sections'), tiktok_shop: require('../../marketplaces/tiktok_shop/sections'), temu: require('../../marketplaces/temu/sections') }
+/** Every shop's section loaders, from its folder (marketplaces/<key>/sections/). */
+const LOADERS = Object.fromEntries(registry.all().map((adapter) => [adapter.key, adapter.sections]))
 
 function hasLoader(marketplace, sectionId) {
   return typeof LOADERS[marketplace]?.[sectionId] === 'function'

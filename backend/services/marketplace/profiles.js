@@ -4,13 +4,10 @@
  * only shows sections its token can actually reach (see `checkAccess`).
  */
 
-const PROFILES = {
-  ebay: require('../../marketplaces/ebay/profile'),
+const registry = require('../../marketplaces')
 
-  tiktok_shop: require('../../marketplaces/tiktok_shop/profile'),
-
-  temu: require('../../marketplaces/temu/profile'),
-}
+/** Every shop's profile, from its folder (marketplaces/<key>/profile.js). */
+const PROFILES = Object.fromEntries(registry.all().map((adapter) => [adapter.key, adapter.profile]))
 
 const ACCESS_TTL_MS = 12 * 60 * 60 * 1000
 

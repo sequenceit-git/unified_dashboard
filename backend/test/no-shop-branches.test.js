@@ -18,7 +18,9 @@ test('core files have no shop-name literals', () => {
   for (const file of CORE_FILES) {
     const lines = fs.readFileSync(path.join(__dirname, '..', file), 'utf8').split('\n')
     lines.forEach((line, i) => {
-      if (/['"`](ebay|tiktok_shop|temu)['"`]/.test(line) && !line.includes('// shop-literal-ok:')) hits.push(`${file}:${i + 1}: ${line.trim()}`)
+      const literal = /['"`](ebay|tiktok_shop|temu)['"`]/.test(line)
+      const shopFolder = /marketplaces\/(ebay|tiktok_shop|temu)\b/.test(line)
+      if ((literal || shopFolder) && !line.includes('// shop-literal-ok:')) hits.push(`${file}:${i + 1}: ${line.trim()}`)
     })
   }
   assert.deepEqual(hits, [])
