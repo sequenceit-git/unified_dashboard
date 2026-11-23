@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
-import { marketplaceLabel } from '../../lib/marketplaces'
+import { marketplaceLabel, getShop } from '../../marketplaces'
 import Badge, { statusColor } from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
@@ -95,7 +95,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
 
   const setStatus = (status) => {
     if (status === 'cancelled') return cancelOrder('BUYER_ASKED_CANCEL')
-    if (status === 'shipped' && ['ebay', 'tiktok_shop', 'temu'].includes(order.marketplace)) {
+    if (status === 'shipped' && getShop(order.marketplace)?.shipNeedsTracking) {
       if (tracking.trim()) return saveTracking()
       return setError(`Enter a carrier and tracking number above and click "Push tracking" to mark a ${marketplaceLabel(order.marketplace)} order shipped.`)
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import RequireShopSection from '../../components/RequireShopSection'
 import { useShopSection } from '../../hooks/useShopSection'
@@ -83,7 +84,7 @@ export default function CustomersPage() {
                   r.identities?.[0]?.externalBuyerId ||
                   (!r.name?.includes(' ') ? r.name : '')
                 const email =
-                  r.email || (marketplace === 'ebay' && username ? `${username.toLowerCase()}@members.ebay.com` : '')
+                  r.email || (getShop(marketplace)?.buyer?.email && username ? getShop(marketplace).buyer.email(username) : '')
                 const phone = r.phone
                 const location = [r.address?.city, r.address?.state].filter(Boolean).join(', ')
 

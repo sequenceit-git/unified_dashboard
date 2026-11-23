@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import Button from '../../components/ui/Button'
@@ -9,7 +10,7 @@ import { useLiveEvents } from '../../hooks/useLiveEvents'
 import { useShopProfiles } from '../../hooks/useShopProfiles'
 import { api } from '../../lib/api'
 import { SHOP_SECTIONS } from '../../lib/shops'
-import { marketplaceLabel } from '../../lib/marketplaces'
+import { marketplaceLabel } from '../../marketplaces'
 import AiAgentSettings from './AiAgentSettings'
 
 const CONNECTABLE = SHOP_SECTIONS.map((section) => ({ id: section.marketplace, label: section.label }))
@@ -208,12 +209,12 @@ export default function SettingsPage() {
                 </p>
               )}
 
-              {connected && ['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace) && (
+              {connected && getShop(shop.marketplace)?.liveUpdates && (
                 shop.liveUpdates?.enabled ? (
-                  <p className="mt-2 text-xs font-medium text-emerald-700">Live updates on: {shop.marketplace === 'temu' ? 'order changes' : 'sales and messages'} arrive within seconds.</p>
+                  <p className="mt-2 text-xs font-medium text-emerald-700">Live updates on: {getShop(shop.marketplace).liveUpdates.pushes} arrive within seconds.</p>
                 ) : (
                   <p className="mt-2 text-xs text-amber-700">
-                    Live updates off{shop.liveUpdates?.error ? `: ${shop.liveUpdates.error}` : '.'} New {shop.marketplace === 'temu' ? 'orders' : 'sales and messages'} arrive with the regular sync.
+                    Live updates off{shop.liveUpdates?.error ? `: ${shop.liveUpdates.error}` : '.'} New {getShop(shop.marketplace).liveUpdates.arrives} arrive with the regular sync.
                   </p>
                 )
               )}
@@ -258,7 +259,7 @@ export default function SettingsPage() {
                       <Button variant="secondary" onClick={() => handleCheckAccess(shop)} disabled={checkingAccessId === shop._id}>
                         {checkingAccessId === shop._id ? 'Checking…' : 'Check access'}
                       </Button>
-                      {['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace) && !shop.liveUpdates?.enabled && (
+                      {getShop(shop.marketplace)?.liveUpdates && !shop.liveUpdates?.enabled && (
                         <Button variant="secondary" onClick={() => handleLiveUpdates(shop)} disabled={liveId === shop._id}>
                           {liveId === shop._id ? 'Turning on…' : 'Turn on live updates'}
                         </Button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import RequireShopSection from '../../components/RequireShopSection'
@@ -134,6 +135,8 @@ function OfferModal({ item, onClose, onSuccess, token, marketplace }) {
 }
 
 function PromotionModal({ onClose, onSuccess, token, marketplace }) {
+  // Shop-specific promotion rules and wording (src/marketplaces/<key>/index.js).
+  const form = getShop(marketplace)?.promotions?.form || {}
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [discount, setDiscount] = useState('10')
@@ -190,7 +193,7 @@ function PromotionModal({ onClose, onSuccess, token, marketplace }) {
             </label>
             <input
               type="number"
-              min={marketplace === 'ebay' ? '5' : '1'}
+              min={form.minPercent || '1'}
               max="80"
               value={discount}
               onChange={(e) => setDiscount(e.target.value)}
@@ -216,18 +219,16 @@ function PromotionModal({ onClose, onSuccess, token, marketplace }) {
 
         <div>
           <label className="block text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5">
-            {marketplace === 'ebay' ? 'eBay item IDs' : 'Eligible Listing IDs (optional)'}
+            {form.idsLabel || 'Eligible Listing IDs (optional)'}
           </label>
           <input
             value={listingIds}
             onChange={(e) => setListingIds(e.target.value)}
-            placeholder={marketplace === 'ebay' ? 'Leave blank for all live listings, or comma-separated eBay item IDs' : 'Leave blank for entire inventory, or comma-separated item IDs'}
+            placeholder={form.idsPlaceholder || 'Leave blank for entire inventory, or comma-separated item IDs'}
             className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
           />
           <p className="text-xs text-gray-500 mt-1">
-            {marketplace === 'ebay'
-              ? 'eBay sale (markdown): 5–80% off, at least 24 hours. Leave blank to include all live eBay listings (up to 500).'
-              : 'Specify item IDs to limit the sale to specific products.'}
+            {form.idsHint || 'Specify item IDs to limit the sale to specific products.'}
           </p>
         </div>
 
@@ -254,122 +255,13 @@ function SectionTable({ table, sectionId, marketplace, onAction, canAct = true }
     render: (row) => formatCell(column.type, row[column.key]),
   }))
 
-  if (canAct) {
-    if (sectionId === 'offers' && table.id === 'eligible' && marketplace === 'ebay') {
-      columns = [
-        ...columns,
-        {
-          key: '_action',
-          label: 'Action',
-          render: (row) => (
-            <Button size="sm" onClick={() => onAction('offer', row)}>
-              Send offer
-            </Button>
-          ),
-        },
-      ]
-    } else if (sectionId === 'returns' && table.id === 'cancellations') {
-      columns = [
-        ...columns,
-        {
-          key: '_action',
-          label: 'Action',
-          render: (row) => {
-            const status = String(row.status || '')
-            const isOpen = /pending|requested|open|waiting/i.test(status)
-            const closed = !isOpen && /closed|complete|finish|reject|declined|approved|cancel|success|refunded/i.test(status)
-            if (closed) return <span className="text-xs text-gray-400">Processed</span>
-            return (
-              <div className="flex items-center gap-1.5">
-                <Button size="sm" onClick={() => onAction('cancel-approve', row)}>
-                  Approve
-                </Button>
-                {marketplace !== 'temu' && (
-                  <Button size="sm" variant="secondary" onClick={() => onAction('cancel-reject', row)}>
-                    Reject
-                  </Button>
-                )}
-              </div>
-            )
-          },
-        },
-      ]
-    } else if (sectionId === 'returns' && table.id === 'returns') {
-      columns = [
-        ...columns,
-        {
-          key: '_action',
-          label: 'Action',
-          render: (row) => {
-            const status = String(row.status || '')
-            if (marketplace === 'temu' && /platform reviewing/i.test(status)) return <span className="text-xs text-gray-400">Temu reviewing</span>
-            const isActionable = /pending|requested|open|buyer shipped|package shipped/i.test(status)
-            const closed = !isActionable && /closed|complete|finish|reject|declined|approved|refund|awaiting buyer|cancel|success/i.test(status)
-            if (closed) return <span className="text-xs text-gray-400">Processed</span>
-            return (
-              <div className="flex items-center gap-1.5">
-                <Button size="sm" onClick={() => onAction('return-approve', row)}>
-                  {marketplace === 'temu' ? 'Approve & refund' : 'Approve'}
-                </Button>
-                {marketplace !== 'temu' && (
-                  <Button size="sm" variant="secondary" onClick={() => onAction('return-decline', row)}>
-                    Decline
-                  </Button>
-                )}
-              </div>
-            )
-          },
-        },
-      ]
-    } else if (sectionId === 'promotions' && (table.id === 'promotions' || table.id === 'activities')) {
-      columns = [
-        ...columns,
-        {
-          key: '_action',
-          label: 'Action',
-          render: (row) => {
-            if (!row.promotionId) return null
-            if (/ended|cancel|finish|expired/i.test(String(row.status || ''))) return null
-            // eBay can only pause/resume threshold discounts; markdown sales have no pause.
-            if (marketplace === 'ebay' && /markdown|item price/i.test(String(row.type || ''))) return null
-            const isPaused = /pause|deactivate/i.test(String(row.status || ''))
-            if (marketplace === 'tiktok_shop' && isPaused) return null
-            return (
-              <Button
-                size="sm"
-                variant={isPaused ? 'primary' : 'secondary'}
-                onClick={() => onAction(isPaused ? 'promo-resume' : 'promo-pause', row)}
-              >
-                {isPaused ? 'Resume' : marketplace === 'tiktok_shop' ? 'Deactivate' : 'Pause'}
-              </Button>
-            )
-          },
-        },
-      ]
-    } else if (sectionId === 'fulfillment' && table.id === 'packages' && marketplace === 'tiktok_shop') {
-      columns = [
-        ...columns,
-        {
-          key: '_action',
-          label: 'Action',
-          render: (row) => {
-            const canShip = /awaiting_shipment|processing|packed/i.test(String(row.rawStatus || row.status || ''))
-            return (
-              <div className="flex items-center gap-1.5">
-                {canShip && (
-                  <Button size="sm" onClick={() => onAction('fulfillment-ship', row)}>
-                    Ship package
-                  </Button>
-                )}
-                <Button size="sm" variant="secondary" onClick={() => onAction('fulfillment-label', row)}>
-                  Get label
-                </Button>
-              </div>
-            )
-          },
-        },
-      ]
-    }
+  // The shop's section file decides which tables get an Action column (src/marketplaces/<key>/sections/).
+  const tableActions = getShop(marketplace)?.sections?.[sectionId]?.tableActions?.[table.id]
+  if (canAct && tableActions) {
+    columns = [
+      ...columns,
+      { key: '_action', label: 'Action', render: (row) => tableActions(row, { onAction, marketplace }) },
+    ]
   }
 
   return (
@@ -439,7 +331,7 @@ export default function ShopSectionPage() {
     }
     if (type === 'promo-pause') {
       const title = row.title || row.name || 'this promotion'
-      if (!window.confirm(`${shopSection.marketplace === 'tiktok_shop' ? 'Deactivate' : 'Pause'} promotion "${title}"?`)) return
+      if (!window.confirm(`${getShop(shopSection.marketplace)?.promotions?.pauseVerb || 'Pause'} promotion "${title}"?`)) return
       setLoading(true)
       try {
         await api.post(`/api/shops/sections/promotions/${row.promotionId}/pause`, { marketplace: shopSection.marketplace }, token)
@@ -510,7 +402,7 @@ export default function ShopSectionPage() {
     }
     if (type === 'cancel-reject') {
       let trackingNumber
-      if (shopSection.marketplace === 'ebay') {
+      if (getShop(shopSection.marketplace)?.cancellations?.rejectNeedsTracking) {
         const tracking = window.prompt(
           `Reject cancellation for Order ${row.orderId || row.cancelId}? Enter the shipment tracking number (required by eBay if already shipped):`,
           '',
@@ -605,7 +497,7 @@ export default function ShopSectionPage() {
         <h1 className="text-xl sm:text-2xl font-bold">{profile.label} {section.label.toLowerCase()}</h1>
         <div className="flex items-center gap-3">
           {data?.loadedAt && <span className="text-xs text-gray-500">Updated {new Date(data.loadedAt).toLocaleTimeString()}</span>}
-          {(isAdmin || isAllowed) && (shopSection.marketplace === 'ebay' || shopSection.marketplace === 'tiktok_shop') && sectionId === 'promotions' && (
+          {(isAdmin || isAllowed) && getShop(shopSection.marketplace)?.promotions?.canCreate && sectionId === 'promotions' && (
             <Button size="sm" onClick={() => setShowCreatePromo(true)}>+ Create promotion</Button>
           )}
           <Button variant="secondary" size="sm" onClick={() => load({ refresh: true })} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>

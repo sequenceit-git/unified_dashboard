@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FiExternalLink } from 'react-icons/fi'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
-import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
+import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../marketplaces'
 
 function money(value) {
   const amount = Number(value)

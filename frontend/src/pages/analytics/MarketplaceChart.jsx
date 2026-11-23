@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { marketplaceLabel } from '../../lib/marketplaces'
+import { marketplaceLabel } from '../../marketplaces'
 import Card from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/Feedback'
 

@@ -8,7 +8,7 @@ import {
 import { TbBrandOpenai } from 'react-icons/tb'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
-import { marketplaceLabel } from '../../lib/marketplaces'
+import { marketplaceLabel } from '../../marketplaces'
 import Button from '../../components/ui/Button'
 import { Spinner, EmptyState } from '../../components/ui/Feedback'
 import DiscoveryOverview from './DiscoveryOverview'

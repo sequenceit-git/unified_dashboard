@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { allowedShopSections } from '../../hooks/useShopSection'
 import Badge from '../../components/ui/Badge'
-import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../lib/marketplaces'
+import { EVIDENCE_LABELS, marketplaceBadgeColor, marketplaceLabel } from '../../marketplaces'
 import { productFacts } from './ProductDetailModal'
 import { FiExternalLink, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi'
 

@@ -1,13 +1,11 @@
 import { useState } from 'react'
+import { SHOPS } from '../../marketplaces'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   FiChevronDown,
   FiSettings,
   FiCompass,
   FiHome,
-  FiShoppingBag,
-  FiMusic,
-  FiTag,
   FiBarChart2,
   FiInbox,
   FiPackage,
@@ -35,29 +33,14 @@ const TOP_LINKS = [
   { to: '/', label: 'Overview', route: 'dashboard', end: true, icon: FiHome },
 ]
 
-const SHOP_SECTIONS = [
-  {
-    id: 'ebay',
-    label: 'eBay',
-    icon: FiShoppingBag,
-    storageKey: 'sidebar-ebay-open',
-    defaultOpen: false,
-  },
-  {
-    id: 'tiktok',
-    label: 'TikTok Shop',
-    icon: FiMusic,
-    storageKey: 'sidebar-tiktok-open',
-    defaultOpen: false,
-  },
-  {
-    id: 'temu',
-    label: 'Temu Shop',
-    icon: FiTag,
-    storageKey: 'sidebar-temu-open',
-    defaultOpen: false,
-  },
-]
+/** One collapsible sidebar group per shop, from the marketplace registry (src/marketplaces/<key>/index.js). */
+const SHOP_SECTIONS = SHOPS.map((shop) => ({
+  id: shop.urlId,
+  label: shop.label,
+  icon: shop.icon,
+  storageKey: `sidebar-${shop.urlId}-open`,
+  defaultOpen: false,
+}))
 
 const SECTION_ICONS = {
   analytics: FiBarChart2,

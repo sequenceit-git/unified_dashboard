@@ -1,21 +1,15 @@
+import { getShop } from '../../marketplaces'
+
 function MarketplaceText({ id, label }) {
-  if (id === 'ebay')
-    return (
-      <span className="text-lg font-bold tracking-tight">
-        <span className="text-[#E53238]">e</span>
-        <span className="text-[#0064D2]">B</span>
-        <span className="text-[#F5AF02]">a</span>
-        <span className="text-[#86B817]">y</span>
-      </span>
-    )
-  return label
+  const Wordmark = getShop(id)?.Wordmark
+  return Wordmark ? <Wordmark /> : label
 }
 
 export default function Tabs({ tabs, active, onChange }) {
   return (
     <div className="flex gap-1 overflow-x-auto border-b border-gray-200">
       {tabs.map((t) => {
-        const isMarketplace = t.id === 'ebay'
+        const isMarketplace = Boolean(getShop(t.id)?.Wordmark)
         const isActive = active === t.id
         return (
           <button

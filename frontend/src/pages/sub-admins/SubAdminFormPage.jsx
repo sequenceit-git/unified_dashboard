@@ -10,48 +10,17 @@ import { api } from '../../lib/api'
 import { useApi } from '../../hooks/useApi'
 import { PLATFORM_ROUTES, MARKETPLACE_SUBSECTIONS } from '../../lib/access'
 import { SHOP_SECTIONS } from '../../lib/shops'
+import { SHOPS as REGISTRY_SHOPS, KEYS } from '../../marketplaces'
 
-const SHOPS = [
-  {
-    id: 'ebay',
-    marketplace: 'ebay',
-    label: 'eBay Sub-Admin',
-    shopName: 'eBay Store',
-    desc: 'Manage listings, buyer offers, orders, disputes, cases, payouts & messaging.',
-    theme: {
-      border: 'border-blue-500',
-      bgActive: 'bg-blue-50/80 dark:bg-blue-950/30',
-      badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
-      indicator: 'bg-blue-500',
-    },
-  },
-  {
-    id: 'tiktok_shop',
-    marketplace: 'tiktok_shop',
-    label: 'TikTok Shop Sub-Admin',
-    shopName: 'TikTok Shop (Scentro)',
-    desc: 'Manage live products, package fulfillment, creator affiliates, video analytics & finance.',
-    theme: {
-      border: 'border-rose-500',
-      bgActive: 'bg-rose-50/80 dark:bg-rose-950/30',
-      badge: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
-      indicator: 'bg-rose-500',
-    },
-  },
-  {
-    id: 'temu',
-    marketplace: 'temu',
-    label: 'Temu Shop Sub-Admin',
-    shopName: 'Temu Store',
-    desc: 'Manage seller goods, inventory, warehouse shipping, price reviews & return claims.',
-    theme: {
-      border: 'border-amber-500',
-      bgActive: 'bg-amber-50/80 dark:bg-amber-950/30',
-      badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
-      indicator: 'bg-amber-500',
-    },
-  },
-]
+/** Shop cards for the form, from the marketplace registry (src/marketplaces/<key>/index.js). */
+const SHOPS = REGISTRY_SHOPS.map((shop) => ({
+  id: shop.key,
+  marketplace: shop.key,
+  label: shop.theme.subAdminLabel,
+  shopName: shop.theme.shopName,
+  desc: shop.theme.desc,
+  theme: { border: shop.theme.border, bgActive: shop.theme.bgActive, badge: shop.theme.badge, indicator: shop.theme.indicator },
+}))
 
 export default function SubAdminFormPage() {
   const { token } = useAuth()
@@ -64,12 +33,10 @@ export default function SubAdminFormPage() {
   const existing = editing ? usersRes.data?.find((user) => user._id === id) : null
   const connectedShops = Array.isArray(shopsRes.data) ? shopsRes.data : []
 
-  const [activeShop, setActiveShop] = useState('ebay')
-  const [sectionsByShop, setSectionsByShop] = useState({
-    ebay: (MARKETPLACE_SUBSECTIONS.ebay || []).map((s) => s.id),
-    tiktok_shop: [],
-    temu: [],
-  })
+  const [activeShop, setActiveShop] = useState(KEYS[0])
+  const [sectionsByShop, setSectionsByShop] = useState(() => Object.fromEntries(
+    KEYS.map((key, i) => [key, i === 0 ? (MARKETPLACE_SUBSECTIONS[key] || []).map((s) => s.id) : []]),
+  ))
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -108,17 +75,17 @@ export default function SubAdminFormPage() {
 
       const existingMarkets = Array.isArray(existing.marketplaces) && existing.marketplaces.length > 0
         ? existing.marketplaces
-        : [existing.marketplace || 'ebay']
-      setActiveShop(existingMarkets[0] || 'ebay')
+        : [existing.marketplace || KEYS[0]]
+      setActiveShop(existingMarkets[0] || KEYS[0])
 
       const userMainRoutes = Array.isArray(existing.mainRoutes) ? existing.mainRoutes : []
       setMainRoutes(userMainRoutes)
 
       const rawAllowed = Array.isArray(existing.allowedSections) ? existing.allowedSections : []
-      const byShop = { ebay: [], tiktok_shop: [], temu: [] }
+      const byShop = Object.fromEntries(KEYS.map((key) => [key, []]))
       const hasScoped = rawAllowed.some((entry) => entry.includes(':'))
 
-      for (const market of ['ebay', 'tiktok_shop', 'temu']) {
+      for (const market of KEYS) {
         const native = MARKETPLACE_SUBSECTIONS[market] || []
         const nativeIds = native.map((s) => s.id)
 
@@ -141,7 +108,7 @@ export default function SubAdminFormPage() {
         tiktok_shop: [],
         temu: [],
       })
-      setActiveShop('ebay')
+      setActiveShop(KEYS[0])
     }
   }, [existing])
 

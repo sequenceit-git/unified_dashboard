@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getShop } from '../../marketplaces'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import Badge, { statusColor } from '../../components/ui/Badge'
@@ -8,10 +9,10 @@ import Modal from '../../components/ui/Modal'
 
 export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const { token } = useAuth()
-  const ebayIdentity = (customer.identities || []).find((i) => i.marketplace === 'ebay')
+  const buyerIdentity = (customer.identities || []).find((i) => getShop(i.marketplace)?.buyer?.email)
   const [name, setName] = useState(customer.name || '')
   const [email, setEmail] = useState(customer.email || '')
-  const displayEmail = email || (ebayIdentity?.username ? `${ebayIdentity.username.toLowerCase()}@members.ebay.com` : '')
+  const displayEmail = email || (buyerIdentity?.username ? getShop(buyerIdentity.marketplace).buyer.email(buyerIdentity.username) : '')
   const [phone, setPhone] = useState(customer.phone || '')
   const [street, setStreet] = useState(customer.address?.street || '')
   const [city, setCity] = useState(customer.address?.city || '')
@@ -114,9 +115,9 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
             {(customer.identities || []).map((idn, i) => (
               <li key={i} className="flex justify-between items-center rounded bg-gray-50 px-2.5 py-1.5">
                 <span className="font-medium">{idn.marketplace} · @{idn.username}</span>
-                {idn.marketplace === 'ebay' && (
+                {getShop(idn.marketplace)?.buyer?.profileUrl && (
                   <a
-                    href={`https://www.ebay.com/usr/${encodeURIComponent(idn.username)}`}
+                    href={getShop(idn.marketplace).buyer.profileUrl(idn.username)}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-blue-600 hover:underline"

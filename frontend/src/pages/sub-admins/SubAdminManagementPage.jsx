@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { SHOPS, KEYS, getShop } from '../../marketplaces'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
@@ -11,26 +12,14 @@ import { useApi } from '../../hooks/useApi'
 import { PLATFORM_ROUTES, ROUTE_LABELS, MARKETPLACE_SUBSECTIONS, SUBSECTION_LABELS } from '../../lib/access'
 import { SHOP_SECTIONS, shopSectionFromMarketplace } from '../../lib/shops'
 
-const SHOP_THEMES = {
-  ebay: {
-    label: 'eBay Sub-Admin',
-    shortLabel: 'eBay',
-    badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
-    indicator: 'bg-blue-500',
-  },
-  tiktok_shop: {
-    label: 'TikTok Shop Sub-Admin',
-    shortLabel: 'TikTok Shop',
-    badge: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
-    indicator: 'bg-rose-500',
-  },
-  temu: {
-    label: 'Temu Shop Sub-Admin',
-    shortLabel: 'Temu Shop',
-    badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
-    indicator: 'bg-amber-500',
-  },
-}
+/** Per-shop labels and colours, from the marketplace registry (src/marketplaces/<key>/index.js). */
+const SHOP_THEMES = Object.fromEntries(SHOPS.map((shop) => [shop.key, {
+  label: shop.theme.subAdminLabel,
+  shortLabel: shop.shortLabel,
+  badge: shop.theme.badge,
+  indicator: shop.theme.indicator,
+}]))
+const DEFAULT_THEME = SHOP_THEMES[KEYS[0]]
 
 function formatDateSafe(val) {
   if (!val) return '—'
@@ -47,12 +36,12 @@ function formatDateTimeSafe(val) {
 function marketsOf(user) {
   const explicit = Array.isArray(user?.marketplaces) && user.marketplaces.length > 0
     ? user.marketplaces
-    : (user?.marketplace ? [user.marketplace] : ['ebay'])
+    : (user?.marketplace ? [user.marketplace] : [KEYS[0]])
   const rawAllowed = Array.isArray(user?.allowedSections) ? user.allowedSections : []
   const scoped = rawAllowed
     .filter((x) => typeof x === 'string' && x.includes(':'))
     .map((x) => x.split(':')[0])
-  return [...new Set([...explicit, ...scoped])].filter((m) => ['ebay', 'tiktok_shop', 'temu'].includes(m))
+  return [...new Set([...explicit, ...scoped])].filter((m) => KEYS.includes(m))
 }
 
 function AccessPill({ children, variant = 'indigo' }) {
@@ -82,16 +71,16 @@ function choiceCardClass(on) {
 function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
   const existingMarkets = Array.isArray(user?.marketplaces) && user.marketplaces.length > 0
     ? user.marketplaces
-    : [user?.marketplace || 'ebay']
-  const [activeShop, setActiveShop] = useState(existingMarkets[0] || 'ebay')
+    : [user?.marketplace || KEYS[0]]
+  const [activeShop, setActiveShop] = useState(existingMarkets[0] || KEYS[0])
   const [mainRoutes, setMainRoutes] = useState(() => (Array.isArray(user?.mainRoutes) ? user.mainRoutes : []))
 
   const [sectionsByShop, setSectionsByShop] = useState(() => {
     const rawAllowed = Array.isArray(user?.allowedSections) ? user.allowedSections : []
-    const byShop = { ebay: [], tiktok_shop: [], temu: [] }
+    const byShop = Object.fromEntries(KEYS.map((key) => [key, []]))
     const hasScoped = rawAllowed.some((x) => x.includes(':'))
 
-    for (const market of ['ebay', 'tiktok_shop', 'temu']) {
+    for (const market of KEYS) {
       const native = MARKETPLACE_SUBSECTIONS[market] || []
       const nativeIds = native.map((s) => s.id)
 
@@ -111,7 +100,7 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const theme = SHOP_THEMES[activeShop] || SHOP_THEMES.ebay
+  const theme = SHOP_THEMES[activeShop] || DEFAULT_THEME
   const nativeSubsections = MARKETPLACE_SUBSECTIONS[activeShop] || []
   const currentShopSections = sectionsByShop[activeShop] || []
 
@@ -265,11 +254,7 @@ function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
               Assigned Marketplace Shop
             </p>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-              {[
-                { id: 'ebay', label: 'eBay Store' },
-                { id: 'tiktok_shop', label: 'TikTok Shop' },
-                { id: 'temu', label: 'Temu Shop' },
-              ].map((shop) => {
+              {SHOPS.map((registryShop) => ({ id: registryShop.key, label: registryShop.theme.storeLabel })).map((shop) => {
                 const isSelected = activeShop === shop.id
                 const count = (sectionsByShop[shop.id] || []).length
                 const total = (MARKETPLACE_SUBSECTIONS[shop.id] || []).length
@@ -552,12 +537,10 @@ export default function SubAdminManagementPage() {
 
   // Aggregate counts per shop & status
   const counts = useMemo(() => {
-    if (!Array.isArray(users)) return { total: 0, active: 0, suspended: 0, ebay: 0, tiktok: 0, temu: 0 }
+    const byShop = Object.fromEntries(KEYS.map((key) => [key, 0]))
+    if (!Array.isArray(users)) return { total: 0, active: 0, suspended: 0, byShop }
     let active = 0
     let suspended = 0
-    let ebay = 0
-    let tiktok = 0
-    let temu = 0
 
     users.forEach((u) => {
       const isAct = (u?.status || 'active') === 'active'
@@ -565,13 +548,11 @@ export default function SubAdminManagementPage() {
       else suspended += 1
 
       for (const market of marketsOf(u)) {
-        if (market === 'ebay') ebay += 1
-        else if (market === 'tiktok_shop') tiktok += 1
-        else if (market === 'temu') temu += 1
+        if (market in byShop) byShop[market] += 1
       }
     })
 
-    return { total: users.length, active, suspended, ebay, tiktok, temu }
+    return { total: users.length, active, suspended, byShop }
   }, [users])
 
   if (usersRes.loading) return <Spinner />
@@ -638,56 +619,25 @@ export default function SubAdminManagementPage() {
           <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{counts.total}</p>
         </div>
 
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setShopFilter('ebay')}
-          className={`cursor-pointer rounded-xl border p-4 transition-all ${
-            shopFilter === 'ebay'
-              ? 'border-blue-500 bg-blue-50/60 shadow-xs dark:bg-blue-950/30'
-              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
-          }`}
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-blue-500" />
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">eBay Admins</p>
+        {SHOPS.map((shop) => (
+          <div
+            key={shop.key}
+            role="button"
+            tabIndex={0}
+            onClick={() => setShopFilter(shop.key)}
+            className={`cursor-pointer rounded-xl border p-4 transition-all ${
+              shopFilter === shop.key
+                ? shop.theme.card
+                : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-full ${shop.theme.indicator}`} />
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{shop.theme.adminsLabel}</p>
+            </div>
+            <p className={`mt-1 text-2xl font-bold ${shop.theme.count}`}>{counts.byShop[shop.key]}</p>
           </div>
-          <p className="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">{counts.ebay}</p>
-        </div>
-
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setShopFilter('tiktok_shop')}
-          className={`cursor-pointer rounded-xl border p-4 transition-all ${
-            shopFilter === 'tiktok_shop'
-              ? 'border-rose-500 bg-rose-50/60 shadow-xs dark:bg-rose-950/30'
-              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
-          }`}
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-rose-500" />
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">TikTok Shop</p>
-          </div>
-          <p className="mt-1 text-2xl font-bold text-rose-600 dark:text-rose-400">{counts.tiktok}</p>
-        </div>
-
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setShopFilter('temu')}
-          className={`cursor-pointer rounded-xl border p-4 transition-all ${
-            shopFilter === 'temu'
-              ? 'border-amber-500 bg-amber-50/60 shadow-xs dark:bg-amber-950/30'
-              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
-          }`}
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-amber-500" />
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Temu Shop</p>
-          </div>
-          <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{counts.temu}</p>
-        </div>
+        ))}
       </div>
 
       {/* Filter and Search Bar */}
@@ -715,39 +665,20 @@ export default function SubAdminManagementPage() {
               >
                 All Shops ({counts.total})
               </button>
-              <button
-                type="button"
-                onClick={() => setShopFilter('ebay')}
-                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                  shopFilter === 'ebay'
-                    ? 'bg-white text-blue-700 shadow-xs dark:bg-slate-800 dark:text-blue-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                }`}
-              >
-                eBay ({counts.ebay})
-              </button>
-              <button
-                type="button"
-                onClick={() => setShopFilter('tiktok_shop')}
-                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                  shopFilter === 'tiktok_shop'
-                    ? 'bg-white text-rose-700 shadow-xs dark:bg-slate-800 dark:text-rose-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                }`}
-              >
-                TikTok ({counts.tiktok})
-              </button>
-              <button
-                type="button"
-                onClick={() => setShopFilter('temu')}
-                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                  shopFilter === 'temu'
-                    ? 'bg-white text-amber-700 shadow-xs dark:bg-slate-800 dark:text-amber-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                }`}
-              >
-                Temu ({counts.temu})
-              </button>
+              {SHOPS.map((shop) => (
+                <button
+                  key={shop.key}
+                  type="button"
+                  onClick={() => setShopFilter(shop.key)}
+                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                    shopFilter === shop.key
+                      ? shop.theme.tab
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                >
+                  {shop.theme.tabLabel} ({counts.byShop[shop.key]})
+                </button>
+              ))}
             </div>
 
             {/* Status tabs */}
@@ -804,15 +735,15 @@ export default function SubAdminManagementPage() {
           {filteredUsers.map((user) => {
             const explicitMarkets = Array.isArray(user.marketplaces) && user.marketplaces.length > 0
               ? user.marketplaces
-              : [user.marketplace || 'ebay']
+              : [user.marketplace || KEYS[0]]
             const rawAllowed = Array.isArray(user.allowedSections) ? user.allowedSections : []
             const scopedMarkets = rawAllowed
               .filter((x) => typeof x === 'string' && x.includes(':'))
               .map((x) => x.split(':')[0])
             const userMarkets = [...new Set([...explicitMarkets, ...scopedMarkets])].filter((m) =>
-              ['ebay', 'tiktok_shop', 'temu'].includes(m)
+              KEYS.includes(m)
             )
-            const theme = SHOP_THEMES[userMarkets[0]] || SHOP_THEMES.ebay
+            const theme = SHOP_THEMES[userMarkets[0]] || DEFAULT_THEME
             const isActive = (user.status || 'active') === 'active'
             const isToggling = togglingId === user._id
 
@@ -857,7 +788,7 @@ export default function SubAdminManagementPage() {
                             {user.name}
                           </h2>
                           {userMarkets.map((m) => {
-                            const mTheme = SHOP_THEMES[m] || SHOP_THEMES.ebay
+                            const mTheme = SHOP_THEMES[m] || DEFAULT_THEME
                             return (
                               <span key={m} className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${mTheme.badge}`}>
                                 {mTheme.shortLabel}
@@ -922,7 +853,7 @@ export default function SubAdminManagementPage() {
                         activeSubs.map((sub, idx) => (
                           <AccessPill
                             key={`${sub.market || 'm'}-${sub.id}-${idx}`}
-                            variant={sub.market === 'ebay' ? 'blue' : sub.market === 'tiktok_shop' ? 'rose' : 'amber'}
+                            variant={getShop(sub.market)?.theme.pill || 'amber'}
                           >
                             {userMarkets.length > 1 ? `${SHOP_THEMES[sub.market]?.shortLabel || ''}: ${sub.label}` : sub.label}
                           </AccessPill>
@@ -996,7 +927,7 @@ export default function SubAdminManagementPage() {
                     Are you sure you want to delete <span className="font-bold underline">{deletingUser.name}</span> (<span className="font-mono">{deletingUser.username || deletingUser.email}</span>)?
                   </p>
                   <p className="text-xs text-red-700 dark:text-red-400 mt-2">
-                    All shop permissions for <span className="font-semibold">{SHOP_THEMES[deletingUser.marketplace || deletingUser.marketplaces?.[0] || 'ebay']?.label || 'Marketplace'}</span> will be permanently revoked, and this account will be removed immediately.
+                    All shop permissions for <span className="font-semibold">{SHOP_THEMES[deletingUser.marketplace || deletingUser.marketplaces?.[0] || KEYS[0]]?.label || 'Marketplace'}</span> will be permanently revoked, and this account will be removed immediately.
                   </p>
                 </div>
               </div>

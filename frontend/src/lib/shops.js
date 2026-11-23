@@ -1,8 +1,6 @@
-export const SHOP_SECTIONS = [
-  { id: 'ebay', marketplace: 'ebay', label: 'eBay' },
-  { id: 'tiktok', marketplace: 'tiktok_shop', label: 'TikTok Shop' },
-  { id: 'temu', marketplace: 'temu', label: 'Temu Shop' },
-]
+import { SHOPS, KEYS } from '../marketplaces'
+
+export const SHOP_SECTIONS = SHOPS.map((shop) => ({ id: shop.urlId, marketplace: shop.key, label: shop.label }))
 
 export function shopSectionFromId(id) {
   return SHOP_SECTIONS.find((section) => section.id === id) || null
@@ -14,6 +12,6 @@ export function shopSectionFromMarketplace(marketplace) {
 
 export function canonicalShopMarketplace(value) {
   if (value === 'tiktok') return 'tiktok_shop'
-  if (value === 'ebay' || value === 'tiktok_shop' || value === 'temu') return value
-  return 'ebay'
+  if (KEYS.includes(value)) return value
+  return KEYS[0]
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getShop } from '../marketplaces'
 import { useAuth } from '../auth/AuthContext'
 import { api } from '../lib/api'
 
@@ -190,12 +191,14 @@ export function listingFormFor(marketplace, profile, caps = {}) {
     : caps.packageDetails
       ? fallback.package
       : fallback.package
+  // Shop defaults for features the API profile doesn't state (src/marketplaces/<key>/index.js).
+  const defaults = getShop(marketplace)?.listingDefaults || {}
   return {
     titleMax: form.titleMax || caps.titleMax || fallback.titleMax,
     subtitleMax: form.subtitleMax || caps.subtitleMax || fallback.subtitleMax || 0,
     maxImages: form.maxImages || caps.maxImages || fallback.maxImages,
     condition: form.condition ?? caps.condition ?? fallback.condition,
-    conditionDescription: Boolean(form.conditionDescription ?? caps.conditionDescription ?? marketplace === 'ebay'),
+    conditionDescription: Boolean(form.conditionDescription ?? caps.conditionDescription ?? defaults.conditionDescription),
     specifics: form.specifics === null ? null : (form.specifics || fallback.specifics),
     package: packageMode,
     packageNote: form.packageDetails?.note || fallback.packageNote,
@@ -206,17 +209,17 @@ export function listingFormFor(marketplace, profile, caps = {}) {
         : caps.categoryAutoPick
           ? 'auto'
           : fallback.category,
-    variants: Boolean(form.variants ?? caps.variants ?? ['tiktok_shop', 'ebay'].includes(marketplace)),
-    brands: Boolean(caps.brands ?? marketplace === 'tiktok_shop'),
-    sizeChart: Boolean(caps.sizeChart ?? marketplace === 'tiktok_shop'),
-    identifierCode: Boolean(caps.identifierCode ?? ['tiktok_shop', 'ebay'].includes(marketplace)),
-    listPrice: Boolean(caps.listPrice ?? marketplace === 'tiktok_shop'),
-    bestOffer: Boolean(form.bestOffer ?? caps.bestOffer ?? marketplace === 'ebay'),
-    dispatchTime: Boolean(form.dispatchTime ?? caps.dispatchTime ?? marketplace === 'ebay'),
-    mpn: Boolean(form.mpn ?? caps.mpn ?? marketplace === 'ebay'),
-    saveModes: caps.saveModes || (marketplace === 'tiktok_shop' ? ['LISTING', 'AS_DRAFT'] : []),
-    canList: caps.canList !== false && marketplace !== 'temu',
-    listAction: form.listAction || (marketplace === 'tiktok_shop' ? 'Publish to TikTok Shop' : `List on ${profile?.label || 'shop'}`),
+    variants: Boolean(form.variants ?? caps.variants ?? defaults.variants),
+    brands: Boolean(caps.brands ?? defaults.brands),
+    sizeChart: Boolean(caps.sizeChart ?? defaults.sizeChart),
+    identifierCode: Boolean(caps.identifierCode ?? defaults.identifierCode),
+    listPrice: Boolean(caps.listPrice ?? defaults.listPrice),
+    bestOffer: Boolean(form.bestOffer ?? caps.bestOffer ?? defaults.bestOffer),
+    dispatchTime: Boolean(form.dispatchTime ?? caps.dispatchTime ?? defaults.dispatchTime),
+    mpn: Boolean(form.mpn ?? caps.mpn ?? defaults.mpn),
+    saveModes: caps.saveModes || defaults.saveModes || [],
+    canList: caps.canList !== false && defaults.canList !== false,
+    listAction: form.listAction || defaults.listAction || `List on ${profile?.label || 'shop'}`,
     apiName: caps.apiName || '',
     note: caps.note || '',
     intro: fallback.intro,
