@@ -6,6 +6,7 @@ const crypto = require('crypto')
 const ebayDeletion = require('../../services/ebayAccountDeletion')
 const ebayNotifications = require('../../services/ebayNotifications')
 const tiktokNotifications = require('../../services/tiktokNotifications')
+const temuNotifications = require('../../services/temuNotifications')
 
 router.get('/health', (req, res) => {
   res.json({ message: 'OK — backend is running' })
@@ -83,5 +84,22 @@ router.post('/tiktok/webhooks', async (req, res) => {
     res.status(500).json({ error: 'Could not process webhook' })
   }
 })
+
+// POST /api/temu/webhooks — Temu webhook events (callback URL set in the Temu Partner Platform).
+// Matches the shop by mallId and queues an orders sync; the data itself is fetched from Temu.
+router.post(
+  '/temu/webhooks',
+  express.text({ type: () => true, limit: '1mb' }),
+  async (req, res) => {
+    try {
+      const result = await temuNotifications.handle(req.body, req.headers)
+      if (result.status !== 200) console.warn(`[temu-webhook] ${result.message}`)
+      res.status(result.status).json({ success: result.status === 200, message: result.message })
+    } catch (err) {
+      console.error('[temu-webhook] failed:', err.message)
+      res.status(500).json({ success: false, error: 'Could not process webhook' })
+    }
+  },
+)
 
 module.exports = router

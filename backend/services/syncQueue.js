@@ -23,6 +23,12 @@ function autoSync(name) {
 
 const manager = () => require('./marketplace')
 
+const LIVE_UPDATES = {
+  ebay: './ebayNotifications',
+  tiktok_shop: './tiktokNotifications',
+  temu: './temuNotifications',
+}
+
 /**
  * `every` is the schedule in minutes (0 = manual only). `clears` are cache prefixes made stale.
  * `applies` skips shops whose API can't do the job, so the logs stay quiet.
@@ -52,11 +58,11 @@ const KINDS = {
     run: (shop) => manager().checkShopAccess(shop),
     clears: () => [],
   },
-  // Re-subscribes eBay and TikTok Shop stores to push notifications/webhooks once a day (and on connect).
+  // Re-subscribes eBay, TikTok Shop and Temu stores to push notifications/webhooks once a day (and on connect).
   live: {
     every: () => (autoSync('ACCESS_AUTO_CHECK') ? 24 * 60 : 0),
-    applies: (shop) => ['ebay', 'tiktok_shop'].includes(shop.marketplace),
-    run: (shop) => (shop.marketplace === 'tiktok_shop' ? require('./tiktokNotifications') : require('./ebayNotifications')).enable(shop),
+    applies: (shop) => ['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace),
+    run: (shop) => require(LIVE_UPDATES[shop.marketplace]).enable(shop),
     clears: () => [],
   },
   full: {
@@ -117,6 +123,9 @@ const BACKUP_MINUTES = {
 
 async function dueForSchedule(kind, shop) {
   if (!BACKUP_MINUTES[kind] || !shop.liveUpdates?.enabled) return true
+  // Some marketplaces push only some kinds (Temu: orders); the rest keep their normal schedule.
+  const covers = shop.liveUpdates.covers
+  if (Array.isArray(covers) && !covers.includes(kind)) return true
   return cache.claim(`backup-sync:${kind}:${shop._id}`, BACKUP_MINUTES[kind]() * 60)
 }
 

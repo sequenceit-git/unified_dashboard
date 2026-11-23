@@ -208,12 +208,12 @@ export default function SettingsPage() {
                 </p>
               )}
 
-              {connected && ['ebay', 'tiktok_shop'].includes(shop.marketplace) && (
+              {connected && ['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace) && (
                 shop.liveUpdates?.enabled ? (
-                  <p className="mt-2 text-xs font-medium text-emerald-700">Live updates on: sales and messages arrive within seconds.</p>
+                  <p className="mt-2 text-xs font-medium text-emerald-700">Live updates on: {shop.marketplace === 'temu' ? 'order changes' : 'sales and messages'} arrive within seconds.</p>
                 ) : (
                   <p className="mt-2 text-xs text-amber-700">
-                    Live updates off{shop.liveUpdates?.error ? `: ${shop.liveUpdates.error}` : '.'} New sales and messages arrive with the regular sync.
+                    Live updates off{shop.liveUpdates?.error ? `: ${shop.liveUpdates.error}` : '.'} New {shop.marketplace === 'temu' ? 'orders' : 'sales and messages'} arrive with the regular sync.
                   </p>
                 )
               )}
@@ -258,7 +258,7 @@ export default function SettingsPage() {
                       <Button variant="secondary" onClick={() => handleCheckAccess(shop)} disabled={checkingAccessId === shop._id}>
                         {checkingAccessId === shop._id ? 'Checking…' : 'Check access'}
                       </Button>
-                      {['ebay', 'tiktok_shop'].includes(shop.marketplace) && !shop.liveUpdates?.enabled && (
+                      {['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace) && !shop.liveUpdates?.enabled && (
                         <Button variant="secondary" onClick={() => handleLiveUpdates(shop)} disabled={liveId === shop._id}>
                           {liveId === shop._id ? 'Turning on…' : 'Turn on live updates'}
                         </Button>

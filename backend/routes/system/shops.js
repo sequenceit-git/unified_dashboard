@@ -644,13 +644,13 @@ router.post('/sync-all', async (req, res) => {
   }
 })
 
-// POST /api/shops/:id/live-updates — (re)subscribe an eBay or TikTok Shop store to push webhooks
+// POST /api/shops/:id/live-updates — (re)subscribe an eBay, TikTok Shop or Temu store to push webhooks
 router.post('/:id/live-updates', requireRole('super_admin'), async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id).select('_id marketplace')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
-    if (!['ebay', 'tiktok_shop'].includes(shop.marketplace)) {
-      return res.status(400).json({ error: 'Live updates are only available for eBay and TikTok Shop' })
+    if (!['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace)) {
+      return res.status(400).json({ error: 'Live updates are only available for eBay, TikTok Shop and Temu' })
     }
     const result = await syncQueue.enqueue('live', shop._id, { wait: true, timeoutMs: 20000 })
     res.json({ success: true, result })
