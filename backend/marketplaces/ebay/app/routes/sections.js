@@ -63,7 +63,7 @@ function sectionsRoutes(shopKey) {
   })
 
   // POST /api/<shop>/sections/returns/decide — approve or decline buyer return on eBay
-  router.post('/returns/decide', sectionGuard('returns'), async (req, res) => {
+  router.post('/returns-cases/decide', sectionGuard('returns-cases'), async (req, res) => {
     try {
       res.json(await service.decideReturn(ctxOf(req)))
     } catch (err) {
@@ -73,7 +73,7 @@ function sectionsRoutes(shopKey) {
   })
 
   // POST /api/<shop>/sections/cancellations/decide — approve or reject cancellation request on eBay/TikTok
-  router.post('/cancellations/decide', sectionGuard('returns'), async (req, res) => {
+  router.post('/cancellations/decide', sectionGuard('returns-cases'), async (req, res) => {
     try {
       res.json(await service.decideCancellation(ctxOf(req)))
     } catch (err) {

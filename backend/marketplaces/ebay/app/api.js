@@ -5,11 +5,11 @@
 const express = require('express')
 
 const GROUPS = {
-  products: require('./routes/products'),
+  listings: require('./routes/products'),
   inventory: require('./routes/inventory'),
   orders: require('./routes/orders'),
-  customers: require('./routes/customers'),
-  inbox: require('./routes/inbox'),
+  buyers: require('./routes/customers'),
+  messages: require('./routes/inbox'),
   analytics: require('./routes/analytics'),
   sections: require('./routes/sections'),
   shops: require('./routes/shopTools'),

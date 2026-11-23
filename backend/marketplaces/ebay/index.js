@@ -19,6 +19,8 @@ module.exports = {
   hooks: require('./hooks'),
   routes: require('./routes'),
   /** The shop's app: dashboard API, sync jobs, listing pushes (loaded on first use, after every adapter). */
+  /** Section ids renamed to this shop's own API names (old → new): old URLs and stored ids follow it. */
+  renamedSections: { products: 'listings', finances: 'payouts', customers: 'buyers', returns: 'returns-cases', inbox: 'messages' },
   get app() { return require('./app') },
   aiHint: 'This listing is for eBay. Fill item specifics buyers filter by (Brand, Type, Color, Size, Material, Model, Capacity). Every value must be a string.',
   importer: require('./importItem'),

@@ -63,7 +63,7 @@ function sectionsRoutes(shopKey) {
   })
 
   // POST /api/<shop>/sections/returns/decide — approve or decline buyer return on eBay
-  router.post('/returns/decide', sectionGuard('returns'), async (req, res) => {
+  router.post('/returns-cancellations/decide', sectionGuard('returns-cancellations'), async (req, res) => {
     try {
       res.json(await service.decideReturn(ctxOf(req)))
     } catch (err) {
@@ -73,7 +73,7 @@ function sectionsRoutes(shopKey) {
   })
 
   // POST /api/<shop>/sections/cancellations/decide — approve or reject cancellation request on eBay/TikTok
-  router.post('/cancellations/decide', sectionGuard('returns'), async (req, res) => {
+  router.post('/cancellations/decide', sectionGuard('returns-cancellations'), async (req, res) => {
     try {
       res.json(await service.decideCancellation(ctxOf(req)))
     } catch (err) {
@@ -113,7 +113,7 @@ function sectionsRoutes(shopKey) {
   })
 
   // GET /api/<shop>/sections/fulfillment/:packageId/label — fetch package shipping document from TikTok Shop
-  router.get('/fulfillment/:packageId/label', sectionGuard('fulfillment'), async (req, res) => {
+  router.get('/packages/:packageId/label', sectionGuard('packages'), async (req, res) => {
     try {
       const marketplace = 'tiktok_shop'
       const shop = await findConnectedShop(req, res, marketplace)
@@ -134,7 +134,7 @@ function sectionsRoutes(shopKey) {
   })
 
   // POST /api/<shop>/sections/fulfillment/:packageId/ship — ship a TikTok Shipping package (handover method)
-  router.post('/fulfillment/:packageId/ship', sectionGuard('fulfillment'), async (req, res) => {
+  router.post('/packages/:packageId/ship', sectionGuard('packages'), async (req, res) => {
     try {
       res.json(await service.shipPackage(ctxOf(req)))
     } catch (err) {

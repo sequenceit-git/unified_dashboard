@@ -5,70 +5,70 @@
       {
         "id": "analytics",
         "label": "Analytics",
-        "path": "/analytics",
+        "path": "/ebay/analytics",
         "route": "analytics",
         "needs": "Sell Fulfillment API"
       },
       {
-        "id": "inbox",
+        "id": "messages",
         "label": "Inbox",
-        "path": "/inbox",
+        "path": "/ebay/messages",
         "route": "inbox",
         "needs": "commerce.message scope"
       },
       {
-        "id": "products",
+        "id": "listings",
         "label": "Listings",
-        "path": "/products",
+        "path": "/ebay/listings",
         "route": "products",
         "needs": "Trading API"
       },
       {
         "id": "inventory",
         "label": "Inventory",
-        "path": "/inventory",
+        "path": "/ebay/inventory",
         "route": "inventory",
         "needs": "Trading API"
       },
       {
         "id": "orders",
         "label": "Orders",
-        "path": "/orders",
+        "path": "/ebay/orders",
         "route": "orders",
         "needs": "sell.fulfillment scope"
       },
       {
-        "id": "returns",
+        "id": "returns-cases",
         "label": "Returns & cases",
-        "path": "/shop/returns",
+        "path": "/ebay/returns-cases",
         "route": "orders",
         "needs": "Post-Order API"
       },
       {
         "id": "offers",
         "label": "Best offers",
-        "path": "/shop/offers",
+        "path": "/ebay/offers",
         "route": "products",
         "needs": "Negotiation API"
       },
       {
         "id": "promotions",
         "label": "Promotions",
-        "path": "/shop/promotions",
+        "path": "/ebay/promotions",
         "route": "products",
         "needs": "sell.marketing scope"
       },
       {
-        "id": "finances",
+        "id": "payouts",
         "label": "Payouts",
-        "path": "/shop/finances",
+        "path": "/ebay/payouts",
         "route": "analytics",
         "needs": "sell.finances scope"
       },
       {
-        "id": "customers",
+        "id": "buyers",
         "label": "Buyers",
-        "path": "/customers",
+        "path": "/ebay/buyers",
         "route": "customers",
         "needs": "sell.fulfillment scope"
       }
@@ -133,84 +133,84 @@
       {
         "id": "analytics",
         "label": "Analytics",
-        "path": "/analytics",
+        "path": "/tiktok/analytics",
         "route": "analytics",
         "needs": "Data Analytics API"
       },
       {
-        "id": "inbox",
+        "id": "customer-service",
         "label": "Inbox",
-        "path": "/inbox",
+        "path": "/tiktok/customer-service",
         "route": "inbox",
         "needs": "Customer Service scope"
       },
       {
         "id": "products",
         "label": "Products",
-        "path": "/products",
+        "path": "/tiktok/products",
         "route": "products",
         "needs": "Product API"
       },
       {
         "id": "inventory",
         "label": "Inventory",
-        "path": "/inventory",
+        "path": "/tiktok/inventory",
         "route": "inventory",
         "needs": "Product API"
       },
       {
         "id": "orders",
         "label": "Orders",
-        "path": "/orders",
+        "path": "/tiktok/orders",
         "route": "orders",
         "needs": "Order API"
       },
       {
-        "id": "fulfillment",
+        "id": "packages",
         "label": "Packages",
-        "path": "/shop/fulfillment",
+        "path": "/tiktok/packages",
         "route": "orders",
         "needs": "Fulfillment API"
       },
       {
-        "id": "returns",
+        "id": "returns-cancellations",
         "label": "Returns & cancellations",
-        "path": "/shop/returns",
+        "path": "/tiktok/returns-cancellations",
         "route": "orders",
         "needs": "Return and Refund API"
       },
       {
         "id": "promotions",
         "label": "Promotions",
-        "path": "/shop/promotions",
+        "path": "/tiktok/promotions",
         "route": "products",
         "needs": "Promotion API"
       },
       {
-        "id": "finances",
+        "id": "finance",
         "label": "Finance",
-        "path": "/shop/finances",
+        "path": "/tiktok/finance",
         "route": "analytics",
         "needs": "Finance API"
       },
       {
-        "id": "content",
+        "id": "videos-live",
         "label": "Videos & LIVE",
-        "path": "/shop/content",
+        "path": "/tiktok/videos-live",
         "route": "analytics",
         "needs": "Data Analytics API"
       },
       {
         "id": "creators",
         "label": "Creators",
-        "path": "/shop/creators",
+        "path": "/tiktok/creators",
         "route": "products",
         "needs": "Affiliate Seller scope"
       },
       {
         "id": "customers",
         "label": "Customers",
-        "path": "/customers",
+        "path": "/tiktok/customers",
         "route": "customers",
         "needs": "Order API"
       }
@@ -303,70 +303,70 @@
       {
         "id": "analytics",
         "label": "Analytics",
-        "path": "/analytics",
+        "path": "/temu/analytics",
         "route": "analytics",
         "needs": "Order Management"
       },
       {
-        "id": "products",
+        "id": "goods",
         "label": "Goods",
-        "path": "/products",
+        "path": "/temu/goods",
         "route": "products",
         "needs": "Product Management"
       },
       {
         "id": "inventory",
         "label": "Inventory",
-        "path": "/inventory",
+        "path": "/temu/inventory",
         "route": "inventory",
         "needs": "Product Management"
       },
       {
         "id": "orders",
         "label": "Orders",
-        "path": "/orders",
+        "path": "/temu/orders",
         "route": "orders",
         "needs": "bg.order.list.v2.get"
       },
       {
-        "id": "fulfillment",
+        "id": "shipping",
         "label": "Shipping",
-        "path": "/shop/fulfillment",
+        "path": "/temu/shipping",
         "route": "orders",
         "needs": "bg.logistics.warehouse.list.get"
       },
       {
-        "id": "returns",
+        "id": "after-sales",
         "label": "Returns & refunds",
-        "path": "/shop/returns",
+        "path": "/temu/after-sales",
         "route": "orders",
         "needs": "bg.aftersales.parentaftersales.list.get"
       },
       {
-        "id": "prices",
+        "id": "price-reviews",
         "label": "Price reviews",
-        "path": "/shop/prices",
+        "path": "/temu/price-reviews",
         "route": "products",
         "needs": "bg.local.goods.priceorder.query"
       },
       {
         "id": "promotions",
         "label": "Promotions",
-        "path": "/shop/promotions",
+        "path": "/temu/promotions",
         "route": "products",
         "needs": "bg.promotion.activity.query"
       },
       {
         "id": "ads",
         "label": "Ads",
-        "path": "/shop/ads",
+        "path": "/temu/ads",
         "route": "analytics",
         "needs": "temu.searchrec.ad.reports.mall.query"
       },
       {
         "id": "customers",
         "label": "Customers",
-        "path": "/customers",
+        "path": "/temu/customers",
         "route": "customers",
         "needs": "bg.order.list.v2.get"
       }

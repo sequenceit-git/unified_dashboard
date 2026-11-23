@@ -16,6 +16,8 @@ module.exports = {
   listingUrl: require('./listingUrl').listingUrl,
   routes: require('./routes'),
   /** The shop's app: dashboard API, sync jobs, listing pushes (loaded on first use, after every adapter). */
+  /** Section ids renamed to this shop's own API names (old → new): old URLs and stored ids follow it. */
+  renamedSections: { products: 'goods', fulfillment: 'shipping', prices: 'price-reviews', returns: 'after-sales' },
   get app() { return require('./app') },
   aiHint: 'This listing is for Temu. Keep attributes to the few facts printed on the page. Every value must be a string.',
   skuPrefix: 'TEMU',

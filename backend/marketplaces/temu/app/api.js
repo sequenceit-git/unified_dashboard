@@ -5,7 +5,7 @@
 const express = require('express')
 
 const GROUPS = {
-  products: require('./routes/products'),
+  goods: require('./routes/products'),
   inventory: require('./routes/inventory'),
   orders: require('./routes/orders'),
   customers: require('./routes/customers'),

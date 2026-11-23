@@ -8,7 +8,7 @@ const { onlyShop } = require('../../../../middleware/shopScope')
 /** /api/<shop>/customers for one shop (its key is fixed by the URL). */
 function customersRoutes(shopKey) {
   const router = express.Router()
-  router.use(requireAuth, loadAccess, onlyShop(shopKey), requireMainRoute('customers'), limitToSection('customers'))
+  router.use(requireAuth, loadAccess, onlyShop(shopKey), requireMainRoute('customers'), limitToSection('buyers'))
 
   // GET /api/<shop>/customers?q=&sort=&page=&limit=
   router.get('/', async (req, res) => {

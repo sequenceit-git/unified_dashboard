@@ -1,9 +1,9 @@
 /** tiktok_shop section id → loader `(token, shop) => { summary, tables }`. One file per sidebar section. */
 module.exports = {
-  fulfillment: require('./fulfillment'),
-  returns: require('./returns'),
+  packages: require('./packages'),
+  'returns-cancellations': require('./returns-cancellations'),
   promotions: require('./promotions'),
-  finances: require('./finances'),
-  content: require('./content'),
+  finance: require('./finance'),
+  'videos-live': require('./videos-live'),
   creators: require('./creators'),
 }

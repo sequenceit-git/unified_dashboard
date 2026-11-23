@@ -118,7 +118,7 @@ test('sections: promotions, ads (seconds fallback) and returns with cancellation
 
     responses['bg.aftersales.parentaftersales.list.get'] = { data: [] }
     responses['bg.aftersales.cancel.list.get'] = { data: [{ parentAfterSalesSn: 'PA-C', parentAfterSalesStatus: 1, afterSalesInfoList: [{ parentOrderSn: 'PO-C', applyGoodsNumber: 2, createAtMillis: 1700000000000 }] }] }
-    s = await sections.load('temu', 'returns', 'tok')
+    s = await sections.load('temu', 'after-sales', 'tok')
     assert.deepEqual(s.tables[1].rows[0], { cancelId: 'PA-C', orderId: 'PO-C', status: 'Pending', items: 2, opened: new Date(1700000000000).toISOString() })
     assert.equal(s.summary[2].value, 1)
   } finally { restore() }

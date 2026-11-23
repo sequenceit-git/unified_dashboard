@@ -18,7 +18,11 @@ function shopLabel(marketplace) {
 
 /** Link to a shop page: /<shop>/<section> (e.g. /tiktok/orders); without a shop the old path redirects. */
 function shopPath(path, marketplace) {
-  return registry.KEYS.includes(marketplace) ? `/${registry.urlId(marketplace)}${path}` : path
+  if (!registry.KEYS.includes(marketplace)) return path
+  // A shop names some sections after its own API (eBay listings, Temu goods): follow its map.
+  const section = path.replace(/^\//, '')
+  const id = registry.get(marketplace).renamedSections?.[section] || section
+  return `/${registry.urlId(marketplace)}/${id}`
 }
 
 async function raise({ type, shopId = null, refId = null, key, title, message = '', href = '' }) {
@@ -220,6 +224,7 @@ async function reportFinished(report, { ok, count = 0, error = '' } = {}) {
 }
 
 module.exports = {
+  shopPath,
   raise,
   resolve,
   stockChanged,

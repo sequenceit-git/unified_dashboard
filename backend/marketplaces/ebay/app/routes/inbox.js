@@ -15,7 +15,7 @@ const { onlyShop, belongsToShop } = require('../../../../middleware/shopScope')
 function inboxRoutes(shopKey) {
   const router = express.Router()
   router.param('id', belongsToShop(() => require('../../../../models/Conversation'), shopKey, 'Conversation'))
-  router.use(requireAuth, loadAccess, onlyShop(shopKey), requireMainRoute('inbox'), limitToSection('inbox'))
+  router.use(requireAuth, loadAccess, onlyShop(shopKey), requireMainRoute('inbox'), limitToSection('messages'))
 
   // GET /api/<shop>/inbox/conversations?shopId=&status=&page=&limit=
   router.get('/conversations', async (req, res) => {

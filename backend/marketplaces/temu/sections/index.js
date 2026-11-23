@@ -2,7 +2,7 @@
 module.exports = {
   promotions: require('./promotions'),
   ads: require('./ads'),
-  returns: require('./returns'),
-  prices: require('./prices'),
-  fulfillment: require('./fulfillment'),
+  'after-sales': require('./after-sales'),
+  'price-reviews': require('./price-reviews'),
+  shipping: require('./shipping'),
 }

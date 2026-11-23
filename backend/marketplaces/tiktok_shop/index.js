@@ -18,6 +18,8 @@ module.exports = {
   hooks: require('./hooks'),
   routes: require('./routes'),
   /** The shop's app: dashboard API, sync jobs, listing pushes (loaded on first use, after every adapter). */
+  /** Section ids renamed to this shop's own API names (old → new): old URLs and stored ids follow it. */
+  renamedSections: { fulfillment: 'packages', finances: 'finance', content: 'videos-live', returns: 'returns-cancellations', inbox: 'customer-service' },
   get app() { return require('./app') },
   aiHint: 'This listing is for TikTok Shop. Fill product attributes (Brand, Color, Model, Capacity, Material, Number of cups or pieces). Every value must be a string.',
   skuPrefix: 'TTS',

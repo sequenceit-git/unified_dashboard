@@ -10,7 +10,7 @@ function productsRoutes(shopKey) {
   const router = express.Router()
 
   router.param('id', belongsToShop(() => require('../../../../models/Product'), shopKey, 'Product'))
-  router.use(requireAuth, loadAccess, onlyShop(shopKey), requireMainRoute('products'), limitToSection('products'))
+  router.use(requireAuth, loadAccess, onlyShop(shopKey), requireMainRoute('products'), limitToSection('goods'))
 
   // GET /api/<shop>/products?q=&status=&category=&stock=low|out&shop=&sort=&page=&limit=
   router.get('/', async (req, res) => {
