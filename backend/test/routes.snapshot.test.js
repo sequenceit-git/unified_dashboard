@@ -14,7 +14,7 @@ test('routes match snapshot', () => {
     const shops = freshRequire('routes/system/shops.js')
     const api = freshRequire('routes/system/api.js')
     // Each shop's own API (/api/<urlId>/…), from marketplaces/<key>/api.js.
-    const perShop = Object.fromEntries(['ebay', 'tiktok_shop', 'temu'].map((key) => [key, freshRequire(`marketplaces/${key}/api.js`).routeList]))
+    const perShop = Object.fromEntries(['ebay', 'tiktok_shop', 'temu'].map((key) => [key, freshRequire(`marketplaces/${key}/index.js`).app.api.routeList]))
     matchSnapshot('routes', { shops: routesOf(shops), api: routesOf(api), perShop })
   } finally {
     restore()

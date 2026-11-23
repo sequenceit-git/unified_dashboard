@@ -43,7 +43,7 @@ function belongsToShopOk(Model, key, id) {
 }
 
 test('each shop exposes only its own route groups (Temu has no inbox)', () => {
-  const groups = (key) => [...new Set(require(`../marketplaces/${key}/api`).routeList.map((r) => r.split(' ')[1].split('/')[1]))].sort()
+  const groups = (key) => [...new Set(require(`../marketplaces/${key}`).app.api.routeList.map((r) => r.split(' ')[1].split('/')[1]))].sort()
   assert.deepEqual(groups('temu'), ['analytics', 'customers', 'inventory', 'orders', 'products', 'sections', 'shops'])
   assert.ok(groups('ebay').includes('inbox'))
   assert.ok(groups('tiktok_shop').includes('inbox'))
