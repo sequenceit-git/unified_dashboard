@@ -22,12 +22,10 @@ function autoSync(name) {
 }
 
 const manager = () => require('./marketplace')
+const registry = require('../marketplaces')
+/** The shop's marketplace adapter, or null for an unknown marketplace. */
+const shopAdapter = (shop) => (registry.KEYS.includes(shop?.marketplace) ? registry.get(shop.marketplace) : null)
 
-const LIVE_UPDATES = {
-  ebay: '../marketplaces/ebay/webhooks',
-  tiktok_shop: '../marketplaces/tiktok_shop/webhooks',
-  temu: '../marketplaces/temu/webhooks',
-}
 
 /**
  * `every` is the schedule in minutes (0 = manual only). `clears` are cache prefixes made stale.
@@ -36,7 +34,7 @@ const LIVE_UPDATES = {
 const KINDS = {
   inbox: {
     every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 2) : 0),
-    applies: (shop) => ['ebay', 'tiktok_shop'].includes(shop.marketplace) && shop.apiAccess?.inbox?.ok !== false,
+    applies: (shop) => Boolean(shopAdapter(shop)?.capabilities?.inbox) && shop.apiAccess?.inbox?.ok !== false,
     run: (shop) => require('./inboxBot').syncAndReply(shop),
     clears: () => ['resp:dashboard:'],
   },
@@ -61,8 +59,8 @@ const KINDS = {
   // Re-subscribes eBay, TikTok Shop and Temu stores to push notifications/webhooks once a day (and on connect).
   live: {
     every: () => (autoSync('ACCESS_AUTO_CHECK') ? 24 * 60 : 0),
-    applies: (shop) => ['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace),
-    run: (shop) => require(LIVE_UPDATES[shop.marketplace]).enable(shop),
+    applies: (shop) => typeof shopAdapter(shop)?.webhooks?.enable === 'function',
+    run: (shop) => shopAdapter(shop).webhooks.enable(shop),
     clears: () => [],
   },
   full: {

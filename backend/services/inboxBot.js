@@ -11,6 +11,7 @@ const Conversation = require('../models/Conversation')
 const Message = require('../models/Message')
 const Listing = require('../models/Listing')
 const marketplaceManager = require('./marketplace')
+const registry = require('../marketplaces')
 const { getAiConfig } = require('./aiSettings')
 
 const HANDOFF = 'HANDOFF'
@@ -107,7 +108,7 @@ async function replyToMessage(shop, conversationId, messageId) {
   const convo = await Conversation.findById(conversationId)
   if (!convo || !convo.aiEnabled || convo.status !== 'open' || convo.replyable === false) return
   if (Date.now() - new Date(claimed.sentAt).getTime() > MAX_MESSAGE_AGE_MS) return
-  if (shop.marketplace === 'ebay' && !shop.accountUsername) {
+  if (registry.get(shop.marketplace).capabilities?.inboxNeedsAccountUsername && !shop.accountUsername) {
     return failConversation(convo, 'Auto-reply is waiting until the inbox has messages from at least two buyers, so it can tell your messages from theirs.')
   }
 

@@ -14,5 +14,16 @@ module.exports = {
   profile: require('./profile'),
   sections: require('./sections'),
   webhooks: require('./webhooks'),
+  listingUrl: require('./listingUrl').listingUrl,
   trading: require('./trading'),
+  hooks: require('./hooks'),
+  capabilities: {
+    inbox: true,
+    inboxNeedsAccountUsername: true,
+    refreshToken: true,
+    tracksOrdersSyncedAt: true,
+    syncsVariants: true,
+    relistOnRestock: true,
+    listingNoun: 'eBay',
+  },
 }

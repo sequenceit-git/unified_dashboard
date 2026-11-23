@@ -36,3 +36,14 @@ test('each adapter loads in a fresh process', () => {
     execFileSync(process.execPath, ['-e', `const a=require('./marketplaces').get('${key}'); const s=a.service; if(typeof s.getOrders!=='function') process.exit(1)`], { cwd: BACKEND, stdio: 'pipe' })
   }
 })
+
+test('canonical maps all/empty/null to null, tiktok to tiktok_shop, unknown to null', () => {
+  assert.equal(registry.canonical('all'), null)
+  assert.equal(registry.canonical(''), null)
+  assert.equal(registry.canonical(null), null)
+  assert.equal(registry.canonical('tiktok'), 'tiktok_shop')
+  assert.equal(registry.canonical('tiktok_shop'), 'tiktok_shop')
+  assert.equal(registry.canonical('ebay'), 'ebay')
+  assert.equal(registry.canonical('temu'), 'temu')
+  assert.equal(registry.canonical('foo'), null)
+})

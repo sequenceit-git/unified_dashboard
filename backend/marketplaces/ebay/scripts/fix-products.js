@@ -19,7 +19,8 @@ const Listing = require('../../../models/Listing')
 const Product = require('../../../models/Product')
 const manager = require('../../../services/marketplace')
 const trading = require('../trading')
-const { ebaySku, isMachineSku } = require('../../../utils/sku')
+const { isMachineSku } = require('../../../utils/sku')
+const { ebaySku } = require('../sku')
 
 const APPLY = process.argv.includes('--apply')
 const MAX_IMAGE_LOOKUPS = 100

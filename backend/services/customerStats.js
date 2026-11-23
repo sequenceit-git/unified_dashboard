@@ -1,6 +1,6 @@
 const Customer = require('../models/Customer')
 const Order = require('../models/Order')
-const { canonicalMarketplace } = require('../utils/marketplace')
+const { canonical: canonicalMarketplace } = require('../marketplaces')
 
 function buyerKeys(customer) {
   const keys = new Set()

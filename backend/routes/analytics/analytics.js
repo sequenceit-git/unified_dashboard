@@ -7,7 +7,7 @@ const Listing = require('../../models/Listing')
 const Shop = require('../../models/Shop')
 const tiktok = require('../../marketplaces/tiktok_shop/service')
 const marketplaceManager = require('../../services/marketplace')
-const { canonicalMarketplace } = require('../../utils/marketplace')
+const { canonical: canonicalMarketplace } = require('../../marketplaces')
 const { cachedResponse } = require('../../services/cache')
 
 const router = express.Router()

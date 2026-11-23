@@ -7,9 +7,9 @@ const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
 const ResearchReport = require('../../models/ResearchReport')
 const marketplaceManager = require('../../services/marketplace')
-const { canonicalMarketplace } = require('../../utils/marketplace')
+const { canonical: canonicalMarketplace } = require('../../marketplaces')
 const { importProductFromUrl, fillShopAttributes } = require('../../services/productImport')
-const { listingUrl } = require('../../utils/listingUrl')
+const { listingUrl } = require('../../marketplaces')
 
 const router = express.Router()
 

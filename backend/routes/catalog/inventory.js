@@ -6,7 +6,7 @@ const InventoryLog = require('../../models/InventoryLog')
 const Product = require('../../models/Product')
 const Listing = require('../../models/Listing')
 const marketplaceManager = require('../../services/marketplace')
-const { canonicalMarketplace } = require('../../utils/marketplace')
+const { canonical: canonicalMarketplace } = require('../../marketplaces')
 const events = require('../../services/events')
 
 const router = express.Router()

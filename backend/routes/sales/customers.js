@@ -4,7 +4,7 @@ const { paging, sortOf } = require('../../utils/query')
 const Conversation = require('../../models/Conversation')
 const Customer = require('../../models/Customer')
 const Order = require('../../models/Order')
-const { canonicalMarketplace } = require('../../utils/marketplace')
+const { canonical: canonicalMarketplace } = require('../../marketplaces')
 const { findCustomerOrders, withOrderStats } = require('../../services/customerStats')
 
 const router = express.Router()

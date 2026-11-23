@@ -29,6 +29,32 @@ function labels() {
   return Object.fromEntries(all().map((adapter) => [adapter.key, adapter.label]))
 }
 
+/** Accepted spellings of a marketplace in URLs and query strings. */
+const ALIASES = { tiktok: 'tiktok_shop' }
+
+/**
+ * Normalises a marketplace value from a request: 'all', empty and unknown values give null.
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+function canonical(value) {
+  if (!value || value === 'all') return null
+  const key = ALIASES[/** @type {string} */ (value)] || /** @type {string} */ (value)
+  return KEYS.includes(key) ? key : null
+}
+
+/**
+ * Public page (or Seller Center page) of a listing, built by the shop's adapter.
+ * @param {string} marketplace
+ * @param {string} externalListingId
+ * @param {string | null | undefined} saved  URL stored earlier, if any
+ * @param {{ status?: string }} [options]
+ */
+function listingUrl(marketplace, externalListingId, saved, options = {}) {
+  if (!KEYS.includes(marketplace)) return saved || ''
+  return get(marketplace).listingUrl(String(externalListingId || '').trim(), saved, options)
+}
+
 /** Throws when a shop's adapter is missing a required member. Called once at server start. */
 function assertAdapters() {
   for (const key of KEYS) {
@@ -37,4 +63,4 @@ function assertAdapters() {
   }
 }
 
-module.exports = { KEYS, get, all, labels, assertAdapters }
+module.exports = { KEYS, get, all, labels, canonical, listingUrl, assertAdapters }

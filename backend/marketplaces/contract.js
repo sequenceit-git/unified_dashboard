@@ -12,7 +12,10 @@
  * @property {Record<string, (token: string, shop?: Object) => Promise<Object>>} sections  Section id → loader
  * @property {Object} [webhooks]      Optional: { handle, enable, ... } for push notifications
  * @property {Object} [hooks]         Optional: shop-specific steps inside the shared sync
- * @property {Object} [capabilities]  Optional: feature flags read by the shared core
+ * @property {Object} [capabilities]  Optional flags read by the shared core:
+ *   inbox, inboxNeedsAccountUsername, refreshToken, tracksOrdersSyncedAt, syncsVariants,
+ *   relistOnRestock, productKeyListings, listingFetchLimit (number), listingNoun (string)
+ * @property {(id: string, saved?: string | null, options?: { status?: string }) => string} [listingUrl]
  */
 
 /** Members every adapter must have. */

@@ -6,7 +6,7 @@ const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
 const Listing = require('../../models/Listing')
 const marketplaceManager = require('../../services/marketplace')
-const { canonicalMarketplace } = require('../../utils/marketplace')
+const { canonical: canonicalMarketplace } = require('../../marketplaces')
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 const { productImages } = require('../../agent/discovery/listingImage')
 const { generateRecommendationsExcel, verifiedLinks } = require('../../services/excelExport')
@@ -499,7 +499,7 @@ router.post('/relist', async (req, res) => {
     }
 
     const result = await marketplaceManager.applyListingAction(shop, listing, 'relist', { quantity })
-    const { listingUrl } = require('../../utils/listingUrl')
+    const { listingUrl } = require('../../marketplaces')
     listing.status = result.status || 'live'
     if (result.marketplaceStatus) listing.marketplaceStatus = result.marketplaceStatus
     if (result.externalListingId) listing.externalListingId = result.externalListingId

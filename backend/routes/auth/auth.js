@@ -5,7 +5,7 @@ const UserShopAccess = require('../../models/UserShopAccess')
 const Shop = require('../../models/Shop')
 const { MAIN_ROUTES } = require('../../config/access')
 const User = require('../../models/User')
-const { canonicalMarketplace } = require('../../utils/marketplace')
+const { canonical: canonicalMarketplace } = require('../../marketplaces')
 
 const SHOP_MARKETS = ['ebay', 'tiktok_shop', 'temu']
 const STORED_ROUTES = new Set([...MAIN_ROUTES, 'discovery'])

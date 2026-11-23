@@ -3,7 +3,10 @@ const { requireAuth, loadAccess, requireRole, canUseSection, canAccessShop, sign
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const config = require('../../config/marketplaces')
-const { canonicalMarketplace } = require('../../utils/marketplace')
+const registry = require('../../marketplaces')
+const { canonical: canonicalMarketplace } = registry
+/** Default shop for the package-label routes: the first one whose API can fetch shipping documents. */
+const PACKAGE_SHOP = registry.all().find((a) => typeof a.service.getShippingDocument === 'function')?.key
 const profiles = require('../../services/marketplace/profiles')
 const sections = require('../../services/marketplace/sections')
 const syncQueue = require('../../services/syncQueue')
@@ -114,7 +117,7 @@ router.use(requireAuth, loadAccess)
  * Guards a shop-section write: the user needs the section's main route and, when they have a
  * restricted `allowedSections` list, the section itself on that marketplace.
  */
-function sectionGuard(sectionId, defaultMarketplace = 'ebay') {
+function sectionGuard(sectionId, defaultMarketplace = registry.KEYS[0]) {
   return (req, res, next) => {
     const marketplace = canonicalMarketplace(req.body?.marketplace || req.query.marketplace || defaultMarketplace)
     const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === sectionId)
@@ -203,7 +206,7 @@ router.get('/sections/:sectionId', async (req, res) => {
 // POST /api/shops/sections/offers/send — send discount offer to interested buyers on eBay
 router.post('/sections/offers/send', sectionGuard('offers'), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || registry.KEYS[0])
     const { listingId, discountPercentage = 10, message, allowCounterOffer = false } = req.body
     if (!listingId) return res.status(400).json({ error: 'listingId is required' })
 
@@ -229,7 +232,7 @@ router.post('/sections/offers/send', sectionGuard('offers'), async (req, res) =>
 // POST /api/shops/sections/returns/decide — approve or decline buyer return on eBay
 router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || registry.KEYS[0])
     const { returnId, decision = 'APPROVE', comments, returnType, rawStatus, orderId } = req.body
     if (!returnId) return res.status(400).json({ error: 'returnId is required' })
 
@@ -257,7 +260,7 @@ router.post('/sections/returns/decide', sectionGuard('returns'), async (req, res
 // POST /api/shops/sections/cancellations/decide — approve or reject cancellation request on eBay/TikTok
 router.post('/sections/cancellations/decide', sectionGuard('returns'), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || registry.KEYS[0])
     const { cancelId, action = 'approve', trackingNumber, shipmentDate, orderId } = req.body
     if (!cancelId) return res.status(400).json({ error: 'cancelId is required' })
 
@@ -298,7 +301,7 @@ router.post('/sections/cancellations/decide', sectionGuard('returns'), async (re
 // POST /api/shops/sections/promotions/create — create promotional campaign on eBay/TikTok
 router.post('/sections/promotions/create', sectionGuard('promotions'), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || registry.KEYS[0])
     const { name, description, percentageOff, listingIds, startDate, endDate } = req.body
 
     const shop = await findConnectedShop(req, res, marketplace)
@@ -310,49 +313,9 @@ router.post('/sections/promotions/create', sectionGuard('promotions'), async (re
     }
 
     let finalListingIds = Array.isArray(listingIds) ? listingIds.map((id) => String(id).trim()).filter(Boolean) : []
-    // eBay sales need a picture and at least one listing ID.
     let imageUrl
-    if (marketplace === 'ebay') {
-      const Listing = require('../../models/Listing')
-      const pickHttpsImage = (rows) => {
-        for (const row of rows) {
-          const hit = marketplaceManager.publicImageUrls(row?.productId?.images || []).find((u) => /^https:\/\//i.test(u))
-          if (hit) return hit
-        }
-        return undefined
-      }
-      if (!finalListingIds.length) {
-        const liveListings = await Listing.find({
-          shopId: shop._id,
-          status: 'live',
-          externalListingId: { $exists: true, $nin: ['', null] },
-        }).select('externalListingId productId').populate('productId', 'images').limit(500).lean()
-        finalListingIds = liveListings
-          .map((row) => String(row.externalListingId || '').replace(/^(ebay-)?item-/, ''))
-          .filter(Boolean)
-        imageUrl = pickHttpsImage(liveListings)
-      } else {
-        const aliasIds = finalListingIds.flatMap((id) => [id, `item-${id}`, `ebay-item-${id}`])
-        const matchedListings = await Listing.find({ shopId: shop._id, externalListingId: { $in: aliasIds } })
-          .populate('productId', 'images').lean()
-        imageUrl = pickHttpsImage(matchedListings)
-        if (!imageUrl) {
-          const fallbackListings = await Listing.find({ shopId: shop._id, status: 'live' })
-            .populate('productId', 'images').limit(20).lean()
-          imageUrl = pickHttpsImage(fallbackListings)
-        }
-      }
-    } else if (marketplace === 'tiktok_shop' && !finalListingIds.length) {
-      const Listing = require('../../models/Listing')
-      const liveListings = await Listing.find({
-        shopId: shop._id,
-        status: 'live',
-        externalListingId: { $exists: true, $nin: ['', null] },
-      }).select('externalListingId').limit(300).lean()
-      finalListingIds = [...new Set(
-        liveListings.map((row) => String(row.externalListingId || '').split(':')[0]).filter(Boolean),
-      )].slice(0, 300)
-    }
+    const targets = registry.get(marketplace).hooks?.promotionTargets
+    if (targets) ({ listingIds: finalListingIds, imageUrl } = await targets(marketplaceManager, shop, finalListingIds))
 
     const result = await marketplaceManager.withShopToken(shop, (token) =>
       service.createPromotion(token, { name, description, percentageOff, listingIds: finalListingIds, startDate, endDate, imageUrl, shop })
@@ -368,7 +331,7 @@ router.post('/sections/promotions/create', sectionGuard('promotions'), async (re
 // POST /api/shops/sections/promotions/:id/pause — pause active promotion
 router.post('/sections/promotions/:id/pause', sectionGuard('promotions'), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || registry.KEYS[0])
     const shop = await findConnectedShop(req, res, marketplace)
     if (!shop) return
 
@@ -391,7 +354,7 @@ router.post('/sections/promotions/:id/pause', sectionGuard('promotions'), async 
 // POST /api/shops/sections/promotions/:id/resume — resume paused promotion
 router.post('/sections/promotions/:id/resume', sectionGuard('promotions'), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || 'ebay')
+    const marketplace = canonicalMarketplace(req.body.marketplace || req.query.marketplace || registry.KEYS[0])
     const shop = await findConnectedShop(req, res, marketplace)
     if (!shop) return
 
@@ -412,9 +375,9 @@ router.post('/sections/promotions/:id/resume', sectionGuard('promotions'), async
 })
 
 // GET /api/shops/sections/fulfillment/:packageId/label — fetch package shipping document from TikTok Shop
-router.get('/sections/fulfillment/:packageId/label', sectionGuard('fulfillment', 'tiktok_shop'), async (req, res) => {
+router.get('/sections/fulfillment/:packageId/label', sectionGuard('fulfillment', PACKAGE_SHOP), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.query.marketplace || 'tiktok_shop')
+    const marketplace = canonicalMarketplace(req.query.marketplace || PACKAGE_SHOP)
     const shop = await findConnectedShop(req, res, marketplace)
     if (!shop) return
 
@@ -433,9 +396,9 @@ router.get('/sections/fulfillment/:packageId/label', sectionGuard('fulfillment',
 })
 
 // POST /api/shops/sections/fulfillment/:packageId/ship — ship a TikTok Shipping package (handover method)
-router.post('/sections/fulfillment/:packageId/ship', sectionGuard('fulfillment', 'tiktok_shop'), async (req, res) => {
+router.post('/sections/fulfillment/:packageId/ship', sectionGuard('fulfillment', PACKAGE_SHOP), async (req, res) => {
   try {
-    const marketplace = canonicalMarketplace(req.body?.marketplace || req.query.marketplace || 'tiktok_shop')
+    const marketplace = canonicalMarketplace(req.body?.marketplace || req.query.marketplace || PACKAGE_SHOP)
     const shop = await findConnectedShop(req, res, marketplace)
     if (!shop) return
 
@@ -649,7 +612,7 @@ router.post('/:id/live-updates', requireRole('super_admin'), async (req, res) =>
   try {
     const shop = await Shop.findById(req.params.id).select('_id marketplace')
     if (!shop) return res.status(404).json({ error: 'Shop not found' })
-    if (!['ebay', 'tiktok_shop', 'temu'].includes(shop.marketplace)) {
+    if (!registry.KEYS.includes(shop.marketplace) || !registry.get(shop.marketplace).webhooks) {
       return res.status(400).json({ error: 'Live updates are only available for eBay, TikTok Shop and Temu' })
     }
     const result = await syncQueue.enqueue('live', shop._id, { wait: true, timeoutMs: 20000 })

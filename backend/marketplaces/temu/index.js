@@ -13,4 +13,6 @@ module.exports = {
   profile: require('./profile'),
   sections: require('./sections'),
   webhooks: require('./webhooks'),
+  listingUrl: require('./listingUrl').listingUrl,
+  capabilities: {},
 }

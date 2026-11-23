@@ -14,4 +14,14 @@ module.exports = {
   profile: require('./profile'),
   sections: require('./sections'),
   webhooks: require('./webhooks'),
+  listingUrl: require('./listingUrl').listingUrl,
+  hooks: require('./hooks'),
+  capabilities: {
+    inbox: true,
+    refreshToken: true,
+    tracksOrdersSyncedAt: true,
+    syncsVariants: true,
+    productKeyListings: true,
+    listingFetchLimit: 2000,
+  },
 }
