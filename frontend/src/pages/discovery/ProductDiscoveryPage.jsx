@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+import { getShop } from '../../marketplaces'
 import { useDiscovery } from './hooks/useDiscovery'
 import { FiTrendingUp, FiCheckCircle, FiDownload, FiAlertTriangle } from 'react-icons/fi'
 import { TbBrandOpenai } from 'react-icons/tb'
@@ -9,7 +11,6 @@ import OpportunityCard from './OpportunityCard'
 import ProductDetailModal from './ProductDetailModal'
 import NewRunModal from './NewRunModal'
 import AgentProgressBar from './AgentProgressBar'
-import ListModal from '../products/ListModal'
 
 
 export default function ProductDiscoveryPage() {
@@ -50,6 +51,9 @@ export default function ProductDiscoveryPage() {
     runInProgress,
     hasResults,
   } = useDiscovery()
+  // Each shop has its own List dialog (src/marketplaces/<key>/sections/products/ListModal.jsx).
+  const ShopListModal = listing ? getShop(listing.marketplace)?.ListModal : null
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -220,13 +224,15 @@ export default function ProductDiscoveryPage() {
         <ProductDetailModal opportunity={selectedProduct} onClose={() => setSelectedProduct(null)} />
       )}
 
-      {listing && (
-        <ListModal
-          product={listing.product}
-          marketplace={listing.marketplace}
-          onClose={() => setListing(null)}
-          onSaved={listed}
-        />
+      {ShopListModal && (
+        <Suspense fallback={null}>
+          <ShopListModal
+            product={listing.product}
+            marketplace={listing.marketplace}
+            onClose={() => setListing(null)}
+            onSaved={listed}
+          />
+        </Suspense>
       )}
 
       <NewRunModal

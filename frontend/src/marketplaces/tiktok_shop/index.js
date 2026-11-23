@@ -1,19 +1,8 @@
 /**
- * TikTok Shop in the dashboard: sidebar subsections, section actions, colours and the
- * shop-specific choices shared pages make (promotions, listing defaults).
+ * TikTok Shop in the dashboard: its pages (sections/<section>/), sidebar subsections, colours and
+ * the settings its pages and the shared screens read (promotions, live updates, listing defaults).
  */
-import returns from './sections/returns'
-import DraftFields from './listing/draftFields/Fields'
-import ProductListPrice from './listing/productFields/ListPrice'
-import ProductIdentifier from './listing/productFields/Identifier'
-import ListCategory from './listing/listFields/Category'
-import ListDetails from './listing/listFields/Details'
-import ListSizeChart from './listing/listFields/SizeChart'
-import ListCertifications from './listing/listFields/Certifications'
-import ListSaveMode from './listing/listFields/SaveMode'
-import { validateVariantsForTikTok } from './listing/rules'
-import promotions from './sections/promotions'
-import fulfillment from './sections/fulfillment'
+import { lazy } from 'react'
 import { FiMusic } from 'react-icons/fi'
 
 export default {
@@ -26,6 +15,23 @@ export default {
   /** Name on the Product Discovery run form. */
   researchLabel: 'TikTok Shop',
   badgeColor: 'purple',
+  /** This shop's pages, by section id (loaded on first visit): routes are /<urlId>/<section>. */
+  pages: {
+    analytics: lazy(() => import('./sections/analytics/AnalyticsPage')),
+    inbox: lazy(() => import('./sections/inbox/InboxPage')),
+    products: lazy(() => import('./sections/products/ProductsPage')),
+    inventory: lazy(() => import('./sections/inventory/InventoryPage')),
+    orders: lazy(() => import('./sections/orders/OrdersPage')),
+    fulfillment: lazy(() => import('./sections/fulfillment/FulfillmentPage')),
+    returns: lazy(() => import('./sections/returns/ReturnsPage')),
+    promotions: lazy(() => import('./sections/promotions/PromotionsPage')),
+    finances: lazy(() => import('./sections/finances/FinancesPage')),
+    content: lazy(() => import('./sections/content/ContentPage')),
+    creators: lazy(() => import('./sections/creators/CreatorsPage')),
+    customers: lazy(() => import('./sections/customers/CustomersPage')),
+  },
+  /** List dialog, also opened from Market research. */
+  ListModal: lazy(() => import('./sections/products/ListModal')),
   subsections: [
     { id: 'products', route: 'products', label: 'Products', desc: 'Live product catalog, review status, and direct listing' },
     { id: 'inventory', route: 'inventory', label: 'Inventory', desc: 'Real-time SKU stock levels and multi-warehouse inventory' },
@@ -40,7 +46,6 @@ export default {
     { id: 'inbox', route: 'inbox', label: 'Unified Inbox', desc: 'Customer service chat, buyer messaging, and rapid responses' },
     { id: 'analytics', route: 'analytics', label: 'Analytics', desc: 'Shop performance, video metrics, revenue analysis, and conversions' },
   ],
-  sections: { returns, promotions, fulfillment },
   theme: {
     storeLabel: 'TikTok Shop',
     shopName: 'TikTok Shop (Scentro)',
@@ -60,8 +65,6 @@ export default {
   promotions: { canCreate: true, pauseVerb: 'Deactivate' },
   liveUpdates: { pushes: 'sales and messages', arrives: 'sales and messages' },
   shipNeedsTracking: true,
-  /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
-  listing: { tiktokFields: true, validateVariants: validateVariantsForTikTok, listFields: { category: ListCategory, extraFields: ListDetails, sizeChart: ListSizeChart, certifications: ListCertifications, saveMode: ListSaveMode }, skuPrefix: 'TTS', productFields: { listPrice: ProductListPrice, identifier: ProductIdentifier }, draftFields: { fields: DraftFields } },
   listingDefaults: {
     variants: true,
     brands: true,

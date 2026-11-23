@@ -1,22 +1,9 @@
 /**
- * eBay in the dashboard: sidebar subsections, section actions, colours and the shop-specific
- * choices shared pages make (promotion form, cancellation rules, listing defaults, buyer links).
+ * eBay in the dashboard: its pages (sections/<section>/), sidebar subsections, colours and
+ * the settings its pages and the shared screens read (promotions, live updates, listing defaults).
  */
 import Wordmark from './Wordmark'
-import DraftFields from './listing/draftFields/Fields'
-import ProductSubtitle from './listing/productFields/Subtitle'
-import ProductMpn from './listing/productFields/Mpn'
-import ProductConditionDescription from './listing/productFields/ConditionDescription'
-import ProductIdentifier from './listing/productFields/Identifier'
-import ProductPricingExtras from './listing/productFields/PricingExtras'
-import ListSubtitle from './listing/listFields/Subtitle'
-import ListCategory from './listing/listFields/Category'
-import ListDetails from './listing/listFields/Details'
-import ListImageNote from './listing/listFields/ImageNote'
-import { validateVariantsForEbay } from './listing/rules'
-import returns from './sections/returns'
-import offers from './sections/offers'
-import promotions from './sections/promotions'
+import { lazy } from 'react'
 import { FiShoppingBag } from 'react-icons/fi'
 
 export default {
@@ -30,6 +17,21 @@ export default {
   researchLabel: 'eBay',
   badgeColor: 'blue',
   Wordmark,
+  /** This shop's pages, by section id (loaded on first visit): routes are /<urlId>/<section>. */
+  pages: {
+    analytics: lazy(() => import('./sections/analytics/AnalyticsPage')),
+    inbox: lazy(() => import('./sections/inbox/InboxPage')),
+    products: lazy(() => import('./sections/products/ProductsPage')),
+    inventory: lazy(() => import('./sections/inventory/InventoryPage')),
+    orders: lazy(() => import('./sections/orders/OrdersPage')),
+    returns: lazy(() => import('./sections/returns/ReturnsPage')),
+    offers: lazy(() => import('./sections/offers/OffersPage')),
+    promotions: lazy(() => import('./sections/promotions/PromotionsPage')),
+    finances: lazy(() => import('./sections/finances/FinancesPage')),
+    customers: lazy(() => import('./sections/customers/CustomersPage')),
+  },
+  /** List dialog, also opened from Market research. */
+  ListModal: lazy(() => import('./sections/products/ListModal')),
   subsections: [
     { id: 'products', route: 'products', label: 'Listings', desc: 'Product listings, item specifics, and price management' },
     { id: 'inventory', route: 'inventory', label: 'Inventory', desc: 'Warehouse stock levels and stock adjustments' },
@@ -42,7 +44,6 @@ export default {
     { id: 'inbox', route: 'inbox', label: 'Unified Inbox', desc: 'Member-to-member messages and conversation history' },
     { id: 'analytics', route: 'analytics', label: 'Analytics', desc: 'Sales analytics, traffic metrics, and listing performance' },
   ],
-  sections: { returns, offers, promotions },
   theme: {
     storeLabel: 'eBay Store',
     shopName: 'eBay Store',
@@ -72,8 +73,6 @@ export default {
   cancellations: { rejectNeedsTracking: true },
   liveUpdates: { pushes: 'sales and messages', arrives: 'sales and messages' },
   shipNeedsTracking: true,
-  /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
-  listing: { ebayFields: true, validateVariants: validateVariantsForEbay, listFields: { subtitle: ListSubtitle, category: ListCategory, mainFields: ListDetails, imageNote: ListImageNote }, skuPrefix: 'EBAY', productFields: { subtitle: ProductSubtitle, mpn: ProductMpn, conditionDescription: ProductConditionDescription, identifier: ProductIdentifier, pricingExtras: ProductPricingExtras }, draftFields: { fields: DraftFields } },
   listingDefaults: {
     conditionDescription: true,
     variants: true,

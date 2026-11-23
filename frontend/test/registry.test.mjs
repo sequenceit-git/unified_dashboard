@@ -29,33 +29,34 @@ test('sidebar subsections are unchanged', async () => {
   assert.deepEqual(MARKETPLACE_SUBSECTIONS.temu.map((s) => s.id), ['products', 'inventory', 'orders', 'fulfillment', 'returns', 'prices', 'promotions', 'ads', 'customers', 'analytics'])
 })
 
+/** A section's action columns (src/marketplaces/<key>/sections/<id>/tableActions.jsx). */
+const actions = async (key, id) => (await load(`/src/marketplaces/${key}/sections/${id}/tableActions.jsx`)).default.tableActions
+const SECTIONS_WITH_ACTIONS = { ebay: ['returns', 'offers', 'promotions'], tiktok_shop: ['returns', 'promotions', 'fulfillment'], temu: ['returns'] }
+
 test('section tables with actions per shop', async () => {
-  const { getShop } = await load('/src/marketplaces/index.js')
-  const wired = (key) => Object.fromEntries(Object.entries(getShop(key).sections).map(([id, s]) => [id, Object.keys(s.tableActions).sort()]))
-  assert.deepEqual(wired('ebay'), { returns: ['cancellations', 'returns'], offers: ['eligible'], promotions: ['activities', 'promotions'] })
-  assert.deepEqual(wired('tiktok_shop'), { returns: ['cancellations', 'returns'], promotions: ['activities', 'promotions'], fulfillment: ['packages'] })
-  assert.deepEqual(wired('temu'), { returns: ['cancellations', 'returns'] })
+  const wired = async (key) => Object.fromEntries(await Promise.all(SECTIONS_WITH_ACTIONS[key].map(async (id) => [id, Object.keys(await actions(key, id)).sort()])))
+  assert.deepEqual(await wired('ebay'), { returns: ['cancellations', 'returns'], offers: ['eligible'], promotions: ['activities', 'promotions'] })
+  assert.deepEqual(await wired('tiktok_shop'), { returns: ['cancellations', 'returns'], promotions: ['activities', 'promotions'], fulfillment: ['packages'] })
+  assert.deepEqual(await wired('temu'), { returns: ['cancellations', 'returns'] })
 })
 
 test('Temu returns: approve & refund only, reviewing label; eBay: approve and decline', async () => {
-  const { getShop } = await load('/src/marketplaces/index.js')
   const ctx = { onAction: () => {} }
-  const temu = getShop('temu').sections.returns.tableActions
+  const temu = await actions('temu', 'returns')
   assert.deepEqual(texts(temu.returns({ status: 'Pending' }, ctx)), ['Approve & refund'])
   assert.deepEqual(texts(temu.returns({ status: 'Platform reviewing' }, ctx)), ['Temu reviewing'])
   assert.deepEqual(texts(temu.cancellations({ status: 'Pending' }, ctx)), ['Approve'])
-  const ebay = getShop('ebay').sections.returns.tableActions
+  const ebay = await actions('ebay', 'returns')
   assert.deepEqual(texts(ebay.returns({ status: 'Requested' }, ctx)), ['Approve', 'Decline'])
   assert.deepEqual(texts(ebay.cancellations({ status: 'Closed' }, ctx)), ['Processed'])
 })
 
 test('promotions: eBay hides markdown sales, TikTok deactivates and cannot resume', async () => {
-  const { getShop } = await load('/src/marketplaces/index.js')
   const ctx = { onAction: () => {} }
-  const ebay = getShop('ebay').sections.promotions.tableActions.promotions
+  const ebay = (await actions('ebay', 'promotions')).promotions
   assert.deepEqual(texts(ebay({ promotionId: 1, status: 'Running', type: 'Markdown sale' }, ctx)), [])
   assert.deepEqual(texts(ebay({ promotionId: 1, status: 'Paused', type: 'Order discount' }, ctx)), ['Resume'])
-  const tt = getShop('tiktok_shop').sections.promotions.tableActions.promotions
+  const tt = (await actions('tiktok_shop', 'promotions')).promotions
   assert.deepEqual(texts(tt({ promotionId: 1, status: 'Ongoing' }, ctx)), ['Deactivate'])
   assert.deepEqual(texts(tt({ promotionId: 1, status: 'Deactivated' }, ctx)), [])
 })

@@ -7,8 +7,8 @@ const server = await createServer({ logLevel: 'silent', server: { middlewareMode
 const load = (path) => server.ssrLoadModule(path)
 test.after(() => server.close())
 
-test('eBay listing validators give the same messages after moving into marketplaces/ebay', async () => {
-  const rules = await load('/src/marketplaces/ebay/listing/rules.js')
+test('eBay listing validators give the same messages after moving into the eBay products section', async () => {
+  const rules = await load('/src/marketplaces/ebay/sections/products/listing/rules.js')
   for (const [variants, strict, loose] of frozen.ebay) {
     assert.deepEqual(rules.validateVariantsForEbay(variants), strict)
     assert.deepEqual(rules.validateVariantsForEbay(variants, { requireStock: false }), loose)
@@ -17,8 +17,8 @@ test('eBay listing validators give the same messages after moving into marketpla
   for (const [id, expected] of frozen.ebayId) assert.deepEqual(rules.validateEbayIdentifierCode(id), expected)
 })
 
-test('TikTok listing validators give the same messages after moving into marketplaces/tiktok_shop', async () => {
-  const rules = await load('/src/marketplaces/tiktok_shop/listing/rules.js')
+test('TikTok listing validators give the same messages after moving into the TikTok Shop products section', async () => {
+  const rules = await load('/src/marketplaces/tiktok_shop/sections/products/listing/rules.js')
   for (const [variants, strict, loose] of frozen.tiktok) {
     assert.deepEqual(rules.validateVariantsForTikTok(variants), strict)
     assert.deepEqual(rules.validateVariantsForTikTok(variants, { requireStock: false }), loose)
@@ -26,13 +26,10 @@ test('TikTok listing validators give the same messages after moving into marketp
   for (const [id, expected] of frozen.ttId) assert.deepEqual(rules.validateIdentifierCode(id), expected)
 })
 
-test('each shop declares its listing field set and validator', async () => {
-  const { getShop } = await load('/src/marketplaces/index.js')
-  const ebayRules = await load('/src/marketplaces/ebay/listing/rules.js')
-  const ttRules = await load('/src/marketplaces/tiktok_shop/listing/rules.js')
-  assert.equal(getShop('ebay').listing.ebayFields, true)
-  assert.equal(getShop('ebay').listing.validateVariants, ebayRules.validateVariantsForEbay)
-  assert.equal(getShop('tiktok_shop').listing.tiktokFields, true)
-  assert.equal(getShop('tiktok_shop').listing.validateVariants, ttRules.validateVariantsForTikTok)
-  assert.equal(getShop('temu').listing.temuFields, true)
+test('each shop registers a page for every section in its sidebar, and its own List dialog', async () => {
+  const { SHOPS } = await load('/src/marketplaces/index.js')
+  for (const shop of SHOPS) {
+    assert.deepEqual(Object.keys(shop.pages).sort(), shop.subsections.map((section) => section.id).sort(), shop.key)
+    assert.ok(shop.ListModal, `${shop.key} has a List dialog`)
+  }
 })

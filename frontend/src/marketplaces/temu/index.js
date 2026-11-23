@@ -1,9 +1,8 @@
 /**
- * Temu in the dashboard: sidebar subsections, section actions, colours and the shop-specific
- * choices shared pages make (approve-only returns, no listing from the dashboard).
+ * Temu in the dashboard: its pages (sections/<section>/), sidebar subsections, colours and
+ * the settings its pages and the shared screens read (promotions, live updates, listing defaults).
  */
-import returns from './sections/returns'
-import DraftFields from './listing/draftFields/Fields'
+import { lazy } from 'react'
 import { FiTag } from 'react-icons/fi'
 
 export default {
@@ -16,6 +15,21 @@ export default {
   /** Name on the Product Discovery run form. */
   researchLabel: 'Temu',
   badgeColor: 'yellow',
+  /** This shop's pages, by section id (loaded on first visit): routes are /<urlId>/<section>. */
+  pages: {
+    analytics: lazy(() => import('./sections/analytics/AnalyticsPage')),
+    products: lazy(() => import('./sections/products/ProductsPage')),
+    inventory: lazy(() => import('./sections/inventory/InventoryPage')),
+    orders: lazy(() => import('./sections/orders/OrdersPage')),
+    fulfillment: lazy(() => import('./sections/fulfillment/FulfillmentPage')),
+    returns: lazy(() => import('./sections/returns/ReturnsPage')),
+    prices: lazy(() => import('./sections/prices/PricesPage')),
+    promotions: lazy(() => import('./sections/promotions/PromotionsPage')),
+    ads: lazy(() => import('./sections/ads/AdsPage')),
+    customers: lazy(() => import('./sections/customers/CustomersPage')),
+  },
+  /** List dialog, also opened from Market research. */
+  ListModal: lazy(() => import('./sections/products/ListModal')),
   subsections: [
     { id: 'products', route: 'products', label: 'Goods', desc: 'Goods catalog, Temu seller center sync, and listing status' },
     { id: 'inventory', route: 'inventory', label: 'Inventory', desc: 'Warehouse inventory and stock level tracking' },
@@ -28,7 +42,6 @@ export default {
     { id: 'customers', route: 'customers', label: 'Customers', desc: 'Buyer order records and customer transaction details' },
     { id: 'analytics', route: 'analytics', label: 'Analytics', desc: 'Order analytics, revenue volume, and store sales trends' },
   ],
-  sections: { returns },
   theme: {
     storeLabel: 'Temu Shop',
     shopName: 'Temu Store',
@@ -47,7 +60,5 @@ export default {
   },
   liveUpdates: { pushes: 'order changes', arrives: 'orders' },
   shipNeedsTracking: true,
-  /** Listing form: which field set the shared listing dialogs show, and this shop's validators. */
-  listing: { temuFields: true, draftFields: { fields: DraftFields } },
   listingDefaults: { canList: false },
 }

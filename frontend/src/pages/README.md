@@ -1,20 +1,19 @@
 # `src/pages` — File Structure
 
-One folder per app section. Each folder owns its route page plus every
-component only that section uses (tabs, drawers, modals, charts).
+Pages that are not about one shop (login, overview, market research, settings, sub-admins).
+Each folder owns its route page plus every component only that page uses.
+
+Shop pages (analytics, products, inventory, orders, customers, inbox, returns, …) are not here:
+each shop has its own copies in `src/marketplaces/<key>/sections/<section>/`, served at
+`/<shop>/<section>` (see `src/marketplaces/README.md`).
 
 ```
 pages/
 ├── README.md
 ├── auth/            # Public. Login.jsx (route: /login)
 ├── dashboard/       # Overview.jsx (route: /, route key: dashboard)
-├── analytics/       # AnalyticsPage.jsx + RevenueChart, MarketplaceChart, TopProducts
-├── market-research/ # MarketResearchPage.jsx (route: /market-research, route key: market-research)
-├── products/        # ProductsPage.jsx + CatalogTab, ProductModal, DirectListModal, ListModal
-├── inventory/       # InventoryPage.jsx + StockTab, HistoryTab, LowStockTab, AdjustModal
-├── orders/          # OrdersPage.jsx + OrderDrawer.jsx
-├── customers/       # CustomersPage.jsx + CustomerDrawer.jsx
-├── inbox/           # InboxPage.jsx + ConversationList.jsx, ThreadView.jsx
+├── discovery/       # ProductDiscoveryPage.jsx (route: /market-research, route key: market-research)
+├── settings/        # SettingsPage.jsx (route: /settings)
 └── sub-admins/      # Super-admin only. SubAdminManagementPage.jsx, SubAdminFormPage.jsx
                      # (routes: /sub-admins, /sub-admins/new, /sub-admins/:id/edit)
 ```
@@ -34,8 +33,8 @@ public (logged-out) pages rendered outside `DashboardLayout`.
   `src/components/ui/` — do not duplicate it inside a section folder.
 - **Shared logic**: API client `src/lib/api.js`, data hook `src/hooks/useApi.js`,
   marketplace registry `src/marketplaces/` (see its README), auth `src/auth/AuthContext.jsx`.
-- **Shop-specific UI** (section buttons, listing fields, shop colours) lives in
-  `src/marketplaces/<key>/`, never as `marketplace === '...'` checks in pages.
+- **Shop pages and everything they use** live in `src/marketplaces/<key>/`, never here and
+  never as `marketplace === '...'` checks.
 - Imports inside a section use `../../auth|components|hooks|lib/...`.
 - No cross-section imports: if two sections need it, promote it to
   `src/components/`.

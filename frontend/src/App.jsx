@@ -1,34 +1,23 @@
+import { Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ShopSectionGate from './components/ShopSectionGate'
+import { Spinner } from './components/ui/Feedback'
 import LegacyShopRedirect from './components/LegacyShopRedirect'
 import { SHOPS } from './marketplaces'
-import ShopSectionPage from './pages/shop/ShopSectionPage'
-import AnalyticsPage from './pages/analytics/AnalyticsPage'
-import CustomersPage from './pages/customers/CustomersPage'
-import InboxPage from './pages/inbox/InboxPage'
-import InventoryPage from './pages/inventory/InventoryPage'
 import Login from './pages/auth/Login'
-import OrdersPage from './pages/orders/OrdersPage'
 import Overview from './pages/dashboard/Overview'
 import ProductDiscoveryPage from './pages/discovery/ProductDiscoveryPage'
-import ProductsPage from './pages/products/ProductsPage'
 import OAuthCallback from './pages/auth/OAuthCallback'
 import SettingsPage from './pages/settings/SettingsPage'
 import SubAdminFormPage from './pages/sub-admins/SubAdminFormPage'
 import SubAdminManagementPage from './pages/sub-admins/SubAdminManagementPage'
 
-/** Shop pages with their own route; other sections render through ShopSectionPage. */
-const SHOP_PAGES = {
-  analytics: AnalyticsPage,
-  products: ProductsPage,
-  inventory: InventoryPage,
-  orders: OrdersPage,
-  customers: CustomersPage,
-  inbox: InboxPage,
-}
-const LEGACY_SHOP_PATHS = [...Object.keys(SHOP_PAGES).map((id) => `/${id}`), '/shop/:sectionId']
+/** Shop sections behind a main-route permission (the others check access on their own page). */
+const GATED_SECTIONS = ['analytics', 'products', 'inventory', 'orders', 'customers', 'inbox']
+/** Old shop URLs: /orders?shop=ebay, /shop/returns?shop=tiktok → /<shop>/<section>. */
+const LEGACY_SHOP_PATHS = [...GATED_SECTIONS.map((id) => `/${id}`), '/shop/:sectionId']
 
 function PublicOnly({ children }) {
   const { token } = useAuth()
@@ -62,10 +51,13 @@ export default function App() {
         {LEGACY_SHOP_PATHS.map((path) => <Route key={path} path={path} element={<LegacyShopRedirect />} />)}
         {SHOPS.map((shop) => (
           <Route key={shop.key} path={`/${shop.urlId}`}>
-            {Object.entries(SHOP_PAGES).map(([id, Page]) => (
-              <Route key={id} path={id} element={<RouteAccess route={id}><ShopSectionGate sectionId={id}><Page /></ShopSectionGate></RouteAccess>} />
+            {Object.entries(shop.pages).map(([id, Page]) => (
+              <Route
+                key={id}
+                path={id}
+                element={<Suspense fallback={<Spinner />}>{GATED_SECTIONS.includes(id) ? <RouteAccess route={id}><ShopSectionGate sectionId={id}><Page /></ShopSectionGate></RouteAccess> : <Page />}</Suspense>}
+              />
             ))}
-            <Route path=":sectionId" element={<ShopSectionPage />} />
           </Route>
         ))}
         <Route path="/settings" element={<SettingsPage />} />

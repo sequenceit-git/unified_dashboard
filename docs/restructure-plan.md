@@ -32,6 +32,8 @@
 
 **Follow-ups done 2026-11-24:** TikTok analytics became `hooks.analytics` (9db4eba); two regressions found by the final review fixed (8ad47ea); a customer-drawer crash from Task 7 fixed (448167d); the listing dialogs and big pages finished (9b19e45), checked by rendering 29 screens before and after on a local test database (identical HTML); an older Temu Direct listing crash fixed (19c2bca). Clean-up afterwards: dead files (ListingsTab, evidence memory, retry helper, agent/index), the unused Vercel entry points and the already-run one-off repair scripts were deleted; the `cleanup:ebay` / `cleanup:temu` npm scripts went with them (git history keeps them).
 
+**Shops fully separate (2026-11-24):** shop pages moved from shared `pages/` into `frontend/src/marketplaces/<key>/sections/<section>/` — one copy per shop, trimmed to that shop's code (no `isEbay`/`isTikTok` branches, no listing slots); routes `/<shop>/<section>` with redirects from the old `?shop=` URLs; guard tests stop one shop's folder from importing or naming another. Backend API routes stay shared for now.
+
 ## Decisions (the spec)
 
 1. One folder per shop on a shared core, backend and frontend. Not three apps.
