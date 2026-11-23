@@ -133,6 +133,8 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
 // Local dev: `node server.js` listens. On Vercel the exported app is run by
 // the serverless function in api/index.js — do NOT listen there.
 if (require.main === module) {
+  // Fails fast if a shop folder is missing a required adapter member.
+  require('./marketplaces').assertAdapters()
   app.listen(PORT, () => console.log(`Backend running on port ${PORT}`))
 }
 

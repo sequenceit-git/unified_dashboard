@@ -778,4 +778,4 @@ function load(marketplace, sectionId, token, shop) {
   return LOADERS[marketplace][sectionId](token, shop)
 }
 
-module.exports = { hasLoader, load }
+module.exports = { hasLoader, load, LOADERS }
