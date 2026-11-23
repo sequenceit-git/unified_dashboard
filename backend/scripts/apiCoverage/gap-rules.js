@@ -166,6 +166,7 @@ const temu = [
   R(/^(bg\.logistics\.shipment\.v2\.get|bg\.logistics\.shipment\.sub\.confirm|bg\.logistics\.shipped\.package\.confirm|temu\.track\.trackinginfo\.get)$/, 'shipping', 'small', 'medium', 'Shipment information, extra tracking numbers, confirm shipped packages, tracking events.'),
   R(/^temu\.logistics\./, 'shipping', 'small', 'low', 'Carrier pickup reservations, label list and shipping logistics types.'),
   R(/^bg\.cooperativewarehouse\./, 'new: cooperative warehouse', 'large', 'low', "Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment."),
+  R(/^bg\.open\.accesstoken\.info\.get$/, 'new: account', 'small', 'medium', "Check the access token: the store it belongs to, its expiry and the API scopes granted (spot a missing permission before a call fails)."),
   R(/^temu\.local\.mall\.tags\.get$/, 'new: account', 'small', 'low', 'Store tags (store type and programs).'),
 ]
 

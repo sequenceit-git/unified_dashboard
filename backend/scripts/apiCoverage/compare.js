@@ -22,13 +22,16 @@ function coverage(catalog, used, app) {
   const granted = app ? new Set(app.scopes) : null
   const endpoints = catalog.endpoints
   const callsFor = new Map(endpoints.map((e) => [e.id, []]))
+  const unmatched = []
   for (const call of used) {
     // Method + path first; the extractor guesses GET where the call site doesn't show the method,
     // so a call with no same-method match covers every endpoint at that path.
     let hits = endpoints.filter((e) => versionless(e.id) === versionless(call.id))
     if (!hits.length) hits = endpoints.filter((e) => pathOnly(e.id) === pathOnly(call.id))
+    if (!hits.length) unmatched.push(call.id)
     for (const e of hits) callsFor.get(e.id).push(call)
   }
+  if (unmatched.length) throw new Error(`calls not in the catalog (add them to it): ${unmatched.join(', ')}`)
   return endpoints.map((e) => {
     const calls = callsFor.get(e.id)
     const files = [...new Set(calls.flatMap((c) => c.files))].sort()

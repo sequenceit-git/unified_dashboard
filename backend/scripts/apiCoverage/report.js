@@ -28,6 +28,7 @@ function reportData() {
 
 const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim()
 const code = (s) => `\`${s}\``
+const scopeCell = (r) => cell(String(r.scope || '').replace(/https:\/\/api\.ebay\.com\/oauth\/api_scope\/?/g, '').replace(/^$/, 'basic (api_scope)')) || '—'
 const accessCell = (r) => (r.access === 'needs-scope' ? `needs scope: ${cell(r.scope)}` : r.access === 'granted' ? 'available now' : '—')
 const ACCESS = { granted: 0, undefined: 0, 'needs-scope': 1 }
 const byRank = (a, b) => ACCESS[a.access] - ACCESS[b.access] || RANK[a.gap.priority] - RANK[b.gap.priority] || RANK[a.gap.size] - RANK[b.gap.size] || a.id.localeCompare(b.id)
@@ -70,9 +71,9 @@ function buildReport(data = reportData()) {
       line()
       line(`#### ${section} (${rows.length})`)
       line()
-      line('| Access | Priority | Size | Endpoint | Name | What it gives the seller |')
-      line('|---|---|---|---|---|---|')
-      for (const r of rows) line(`| ${accessCell(r)} | ${r.gap.priority} | ${r.gap.size} | ${code(r.id)}${r.confirmed ? '' : ' (confirm in partner account)'} | ${cell(r.name)} | ${cell(r.gap.value)} |`)
+      line('| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |')
+      line('|---|---|---|---|---|---|---|')
+      for (const r of rows) line(`| ${accessCell(r)} | ${r.gap.priority} | ${r.gap.size} | ${code(r.id)}${r.confirmed ? '' : ' (confirm in partner account)'} | ${r.scope ? scopeCell(r) : '—'} | ${cell(r.name)} | ${cell(r.gap.value)} |`)
     }
     line()
     line(`### ${s.label} — full catalog`)

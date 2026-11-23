@@ -152,7 +152,7 @@ function renderSummary() {
     const pct = seller ? Math.round((done / seller) * 100) : 0
     const high = s.rows.filter((r) => r.gap && r.gap.priority === 'high').length
     const seg = (st, v) => `<span style="width:${(n(st) / s.rows.length) * 100}%;background:var(${v})" title="${STATUS_LABEL[st]}: ${n(st)}"></span>`
-    return `<button type="button" class="shopcard" data-shop="${s.key}" aria-pressed="${s.key === state.shop}">
+    return `<button type="button" class="shopcard" data-shop="${esc(s.key)}" aria-pressed="${s.key === state.shop}">
       <div class="top"><span class="name">${esc(s.label)}</span><span class="pct">${pct}% of seller endpoints used</span></div>
       <div class="bar">${seg('covered', '--covered')}${seg('covered-older', '--older')}${seg('missing', '--missing')}${seg('not-for-sellers', '--notseller')}</div>
       <div class="counts"><span><b>${s.rows.length}</b> endpoints</span><span><b>${done}</b> used</span><span><b>${n('missing')}</b> missing</span><span><b>${high}</b> high priority</span>${s.app ? `<span><b>${s.rows.filter((r) => r.status === 'missing' && r.access === 'granted').length}</b> callable now</span>` : ''}</div>
@@ -169,7 +169,7 @@ function fillSections(shop) {
 
 function endpointCell(r) {
   const id = esc(r.id)
-  const link = r.docs ? `<a href="${esc(r.docs)}" target="_blank" rel="noopener">${id}</a>` : id
+  const link = /^https:\/\//.test(r.docs || '') ? `<a href="${esc(r.docs)}" target="_blank" rel="noopener">${id}</a>` : id
   return `<td class="ep mono">${link}${r.confirmed ? '' : '<div class="unconfirmed">confirm in partner account</div>'}${r.retired ? '<div class="unconfirmed">retired, still called</div>' : ''}</td>`
 }
 
@@ -196,7 +196,7 @@ function render() {
     for (const sec of sections) {
       const list = rows.filter((r) => r.gap.section === sec).sort((a, b) => (ACCESS[a.access] || 0) - (ACCESS[b.access] || 0) || RANK[a.gap.priority] - RANK[b.gap.priority] || RANK[a.gap.size] - RANK[b.gap.size] || a.id.localeCompare(b.id))
       html += `<tr class="sectionrow"><td colspan="${shop.app ? 5 : 4}">${esc(sec.startsWith('new: ') ? 'New section: ' + sec.slice(5) : sec)}<span class="n">${list.length}</span></td></tr>`
-      for (const r of list) html += `<tr>${accessCell(r)}<td><span class="pill p-${r.gap.priority}">${r.gap.priority}</span></td><td class="size">${r.gap.size}</td>${endpointCell(r)}<td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.gap.value)}</div></td></tr>`
+      for (const r of list) html += `<tr>${accessCell(r)}<td><span class="pill p-${r.gap.priority}">${r.gap.priority}</span></td><td class="size">${r.gap.size}</td>${endpointCell(r)}<td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.gap.value)}</div>${r.scope ? `<div class="sub mono">Scope: ${esc(String(r.scope).replace(/https:\/\/api\.ebay\.com\/oauth\/api_scope\/?/g, '') || 'api_scope')}</div>` : ''}</td></tr>`
     }
   } else {
     $('thead').innerHTML = '<tr><th>Status</th><th>Group</th><th>Endpoint</th><th>Name and summary</th><th>Called from</th></tr>'

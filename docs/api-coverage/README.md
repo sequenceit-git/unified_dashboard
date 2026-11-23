@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 42 | 0 | 378 | 9 | 102 | — |
 | TikTok Shop | 365 | 44 | 13 | 267 | 41 | 53 | 137 |
-| Temu | 133 | 22 | 0 | 111 | 0 | 30 | — |
+| Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
 
@@ -22,461 +22,461 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 
 #### analytics (7)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `GET /sell/analytics/v1/seller_standards_profile` | findSellerStandardsProfiles | Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected. |
-| — | high | small | `GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}` | getSellerStandardsProfile | Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected. |
-| — | high | small | `GET /sell/analytics/v1/traffic_report` | getTrafficReport | Listing-level traffic: impressions, page views, click-through rate, sales conversion rate and quantity sold per listing and per day (eBay Seller Hub "Traffic" report). |
-| — | medium | small | `GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}` | getCustomerServiceMetric | Item-not-received and not-as-described rates benchmarked against peer sellers in the same categories. |
-| — | low | medium | `GET /sell/feed/v1/customer_service_metric_task` | getCustomerServiceMetricTasks | Download the customer-service metric report as a file. |
-| — | low | medium | `GET /sell/feed/v1/customer_service_metric_task/{task_id}` | getCustomerServiceMetricTask | Download the customer-service metric report as a file. |
-| — | low | medium | `POST /sell/feed/v1/customer_service_metric_task` | createCustomerServiceMetricTask | Download the customer-service metric report as a file. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `GET /sell/analytics/v1/seller_standards_profile` | sell.analytics.readonly | findSellerStandardsProfiles | Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected. |
+| — | high | small | `GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}` | sell.analytics.readonly | getSellerStandardsProfile | Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected. |
+| — | high | small | `GET /sell/analytics/v1/traffic_report` | sell.analytics.readonly | getTrafficReport | Listing-level traffic: impressions, page views, click-through rate, sales conversion rate and quantity sold per listing and per day (eBay Seller Hub "Traffic" report). |
+| — | medium | small | `GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}` | sell.analytics.readonly | getCustomerServiceMetric | Item-not-received and not-as-described rates benchmarked against peer sellers in the same categories. |
+| — | low | medium | `GET /sell/feed/v1/customer_service_metric_task` | sell.analytics.readonly | getCustomerServiceMetricTasks | Download the customer-service metric report as a file. |
+| — | low | medium | `GET /sell/feed/v1/customer_service_metric_task/{task_id}` | sell.analytics.readonly | getCustomerServiceMetricTask | Download the customer-service metric report as a file. |
+| — | low | medium | `POST /sell/feed/v1/customer_service_metric_task` | sell.analytics.readonly | createCustomerServiceMetricTask | Download the customer-service metric report as a file. |
 
 #### buyers (17)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | medium | `GET /commerce/feedback/v1/awaiting_feedback` | getItemsAwaitingFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
-| — | high | medium | `GET /commerce/feedback/v1/feedback` | getFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
-| — | high | medium | `GET /commerce/feedback/v1/feedback_rating_summary` | getFeedbackRatingSummary | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
-| — | high | medium | `POST /commerce/feedback/v1/feedback` | leaveFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
-| — | high | medium | `POST /commerce/feedback/v1/respond_to_feedback` | respondToFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
-| — | medium | small | `Trading:GetFeedback` | GetFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
-| — | medium | small | `Trading:GetItemsAwaitingFeedback` | GetItemsAwaitingFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
-| — | medium | small | `Trading:LeaveFeedback` | LeaveFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
-| — | medium | small | `Trading:RespondToFeedback` | RespondToFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
-| — | low | medium | `DELETE /sell/marketing/v1/email_campaign/{email_campaign_id}` | deleteEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
-| — | low | medium | `GET /sell/marketing/v1/email_campaign` | getEmailCampaigns | Email campaigns to store followers: create, preview, send and see results. |
-| — | low | medium | `GET /sell/marketing/v1/email_campaign/{email_campaign_id}` | getEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
-| — | low | medium | `GET /sell/marketing/v1/email_campaign/{email_campaign_id}/email_preview` | getEmailPreview | Email campaigns to store followers: create, preview, send and see results. |
-| — | low | medium | `GET /sell/marketing/v1/email_campaign/audience` | getAudiences | Email campaigns to store followers: create, preview, send and see results. |
-| — | low | medium | `GET /sell/marketing/v1/email_campaign/report` | getEmailReport | Email campaigns to store followers: create, preview, send and see results. |
-| — | low | medium | `POST /sell/marketing/v1/email_campaign` | createEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
-| — | low | medium | `PUT /sell/marketing/v1/email_campaign/{email_campaign_id}` | updateEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | medium | `GET /commerce/feedback/v1/awaiting_feedback` | commerce.feedback | getItemsAwaitingFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
+| — | high | medium | `GET /commerce/feedback/v1/feedback` | commerce.feedback | getFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
+| — | high | medium | `GET /commerce/feedback/v1/feedback_rating_summary` | commerce.feedback | getFeedbackRatingSummary | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
+| — | high | medium | `POST /commerce/feedback/v1/feedback` | commerce.feedback | leaveFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
+| — | high | medium | `POST /commerce/feedback/v1/respond_to_feedback` | commerce.feedback | respondToFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
+| — | medium | small | `Trading:GetFeedback` | — | GetFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
+| — | medium | small | `Trading:GetItemsAwaitingFeedback` | — | GetItemsAwaitingFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
+| — | medium | small | `Trading:LeaveFeedback` | — | LeaveFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
+| — | medium | small | `Trading:RespondToFeedback` | — | RespondToFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
+| — | low | medium | `DELETE /sell/marketing/v1/email_campaign/{email_campaign_id}` | sell.marketing | deleteEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
+| — | low | medium | `GET /sell/marketing/v1/email_campaign` | sell.marketing | getEmailCampaigns | Email campaigns to store followers: create, preview, send and see results. |
+| — | low | medium | `GET /sell/marketing/v1/email_campaign/{email_campaign_id}` | sell.marketing | getEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
+| — | low | medium | `GET /sell/marketing/v1/email_campaign/{email_campaign_id}/email_preview` | sell.marketing | getEmailPreview | Email campaigns to store followers: create, preview, send and see results. |
+| — | low | medium | `GET /sell/marketing/v1/email_campaign/audience` | sell.marketing | getAudiences | Email campaigns to store followers: create, preview, send and see results. |
+| — | low | medium | `GET /sell/marketing/v1/email_campaign/report` | sell.marketing | getEmailReport | Email campaigns to store followers: create, preview, send and see results. |
+| — | low | medium | `POST /sell/marketing/v1/email_campaign` | sell.marketing | createEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
+| — | low | medium | `PUT /sell/marketing/v1/email_campaign/{email_campaign_id}` | sell.marketing | updateEmailCampaign | Email campaigns to store followers: create, preview, send and see results. |
 
 #### inventory (8)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | medium | small | `POST /sell/inventory/v1/bulk_update_price_quantity` | bulkUpdatePriceQuantity | Change price and quantity of up to 25 SKUs in one call (Inventory API listings only). |
-| — | low | small | `DELETE /sell/inventory/v1/location/{merchantLocationKey}` | deleteInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
-| — | low | small | `GET /sell/inventory/v1/location` | getInventoryLocations | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
-| — | low | small | `GET /sell/inventory/v1/location/{merchantLocationKey}` | getInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
-| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}` | createInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
-| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}/disable` | disableInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
-| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}/enable` | enableInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
-| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}/update_location_details` | updateInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | small | `POST /sell/inventory/v1/bulk_update_price_quantity` | sell.inventory | bulkUpdatePriceQuantity | Change price and quantity of up to 25 SKUs in one call (Inventory API listings only). |
+| — | low | small | `DELETE /sell/inventory/v1/location/{merchantLocationKey}` | sell.inventory | deleteInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
+| — | low | small | `GET /sell/inventory/v1/location` | sell.inventory.readonly | getInventoryLocations | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
+| — | low | small | `GET /sell/inventory/v1/location/{merchantLocationKey}` | sell.inventory.readonly | getInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
+| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}` | sell.inventory | createInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
+| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}/disable` | sell.inventory | disableInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
+| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}/enable` | sell.inventory | enableInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
+| — | low | small | `POST /sell/inventory/v1/location/{merchantLocationKey}/update_location_details` | sell.inventory | updateInventoryLocation | Warehouse and store locations: create, edit, enable/disable; needed for multi-warehouse stock and in-store pickup. |
 
 #### listings (90)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `POST /sell/inventory/v1/offer/get_listing_fees` | getListingFees | Show the listing fees eBay will charge before publishing an offer. |
-| — | high | small | `POST /sell/recommendation/v1/find` | findListingRecommendations | eBay's own per-listing recommendations (e.g. suggested Promoted Listings ad rate). |
-| — | medium | small | `GET /commerce/catalog/v1_beta/product_summary/search` | search | Find an eBay catalog product (ePID) to pre-fill title, aspects and photos when listing. |
-| — | medium | small | `GET /commerce/catalog/v1_beta/product/{epid}` | getProduct | Find an eBay catalog product (ePID) to pre-fill title, aspects and photos when listing. |
-| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}` | getCategoryTree | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
-| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/fetch_item_aspects` | fetchItemAspects | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
-| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_category_subtree` | getCategorySubtree | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
-| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_properties` | getCompatibilityProperties | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
-| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_property_values` | getCompatibilityPropertyValues | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
-| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_expired_categories` | getExpiredCategories | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
-| — | medium | small | `GET /commerce/taxonomy/v1/get_default_category_tree_id` | getDefaultCategoryTreeId | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
-| — | medium | medium | `DELETE /sell/inventory/v1/inventory_item/{sku}/product_compatibility` | deleteProductCompatibility | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | medium | medium | `GET /commerce/media/v1_beta/document/{document_id}` | getDocument | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `GET /commerce/media/v1_beta/image/{image_id}` | getImage | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `GET /commerce/media/v1_beta/video/{video_id}` | getVideo | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `GET /sell/inventory/v1/inventory_item/{sku}/product_compatibility` | getProductCompatibility | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | medium | medium | `POST /commerce/media/v1_beta/document` | createDocument | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `POST /commerce/media/v1_beta/document/{document_id}/upload` | uploadDocument | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `POST /commerce/media/v1_beta/document/create_document_from_url` | createDocumentFromUrl | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `POST /commerce/media/v1_beta/image/create_image_from_file` | createImageFromFile | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `POST /commerce/media/v1_beta/image/create_image_from_url` | createImageFromUrl | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `POST /commerce/media/v1_beta/video` | createVideo | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `POST /commerce/media/v1_beta/video/{video_id}/upload` | uploadVideo | Upload listing images, videos and documents (manuals, certificates) to eBay. |
-| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_compatibilities_by_specification` | getCompatibilitiesBySpecification | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_compatibility_property_names` | getCompatibilityPropertyNames | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_compatibility_property_values` | getCompatibilityPropertyValues | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_multi_compatibility_property_values` | getMultiCompatibilityPropertyValues | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_product_compatibilities` | getProductCompatibilities | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | medium | medium | `PUT /sell/inventory/v1/inventory_item/{sku}/product_compatibility` | createOrReplaceProductCompatibility | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
-| — | low | small | `GET /commerce/charity/v1/charity_org` | getCharityOrgs | Charities a listing can donate to (eBay for Charity). |
-| — | low | small | `GET /commerce/charity/v1/charity_org/{charity_org_id}` | getCharityOrg | Charities a listing can donate to (eBay for Charity). |
-| — | low | small | `GET /sell/metadata/v1/country/{countryCode}/sales_tax_jurisdiction` | getSalesTaxJurisdictions | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_automotive_parts_compatibility_policies` | getAutomotivePartsCompatibilityPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_category_policies` | getCategoryPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_classified_ad_policies` | getClassifiedAdPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_currencies` | getCurrencies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_extended_producer_responsibility_policies` | getExtendedProducerResponsibilityPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_hazardous_materials_labels` | getHazardousMaterialsLabels | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_item_condition_policies` | getItemConditionPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_structure_policies` | getListingStructurePolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_type_policies` | getListingTypePolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_motors_listing_policies` | getMotorsListingPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_negotiated_price_policies` | getNegotiatedPricePolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_product_safety_labels` | getProductSafetyLabels | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_regulatory_policies` | getRegulatoryPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_return_policies` | getReturnPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_shipping_policies` | getShippingPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_site_visibility_policies` | getSiteVisibilityPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_exclude_shipping_locations` | getExcludeShippingLocations | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_handling_times` | getHandlingTimes | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_carriers` | getShippingCarriers | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_locations` | getShippingLocations | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_services` | getShippingServices | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
-| — | low | small | `POST /commerce/translation/v1_beta/translate` | translate | Translate listing titles and descriptions for other eBay sites. |
-| — | low | small | `Trading:AddItem` | AddItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:AddItems` | AddItems | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:AddToItemDescription` | AddToItemDescription | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:EndItem` | EndItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:EndItems` | EndItems | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:GetDescriptionTemplates` | GetDescriptionTemplates | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:GeteBayDetails` | GeteBayDetails | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:GetItemShipping` | GetItemShipping | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:GetSellerEvents` | GetSellerEvents | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:GetSellerList` | GetSellerList | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:RelistItem` | RelistItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:ReviseItem` | ReviseItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:VerifyAddItem` | VerifyAddItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | small | `Trading:VerifyRelistItem` | VerifyRelistItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
-| — | low | medium | `DELETE /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}` | deleteInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `DELETE /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations` | deleteSkuLocationMapping | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `DELETE /sell/inventory/v1/offer/{offerId}` | deleteOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `GET /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}` | getInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `GET /sell/inventory/v1/inventory_item/{sku}` | getInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `GET /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations` | getSkuLocationMapping | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `GET /sell/inventory/v1/offer` | getOffers | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `GET /sell/inventory/v1/offer/{offerId}` | getOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/bulk_create_offer` | bulkCreateOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/bulk_create_or_replace_inventory_item` | bulkCreateOrReplaceInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/bulk_get_inventory_item` | bulkGetInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/bulk_publish_offer` | bulkPublishOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/offer` | createOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/offer/{offerId}/publish` | publishOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/offer/{offerId}/withdraw` | withdrawOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/offer/publish_by_inventory_item_group` | publishOfferByInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `POST /sell/inventory/v1/offer/withdraw_by_inventory_item_group` | withdrawOfferByInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `PUT /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}` | createOrReplaceInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `PUT /sell/inventory/v1/inventory_item/{sku}` | createOrReplaceInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `PUT /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations` | createOrReplaceSkuLocationMapping | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | medium | `PUT /sell/inventory/v1/offer/{offerId}` | updateOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
-| — | low | large | `POST /sell/inventory/v1/bulk_migrate_listing` | bulkMigrateListing | Move existing Trading API listings into the Inventory API (SKU-based) model. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `POST /sell/inventory/v1/offer/get_listing_fees` | sell.inventory.readonly | getListingFees | Show the listing fees eBay will charge before publishing an offer. |
+| — | high | small | `POST /sell/recommendation/v1/find` | sell.inventory | findListingRecommendations | eBay's own per-listing recommendations (e.g. suggested Promoted Listings ad rate). |
+| — | medium | small | `GET /commerce/catalog/v1_beta/product_summary/search` | sell.inventory | search | Find an eBay catalog product (ePID) to pre-fill title, aspects and photos when listing. |
+| — | medium | small | `GET /commerce/catalog/v1_beta/product/{epid}` | sell.inventory | getProduct | Find an eBay catalog product (ePID) to pre-fill title, aspects and photos when listing. |
+| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}` | basic (api_scope) | getCategoryTree | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
+| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/fetch_item_aspects` | basic (api_scope) | fetchItemAspects | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
+| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_category_subtree` | basic (api_scope) | getCategorySubtree | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
+| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_properties` | basic (api_scope) | getCompatibilityProperties | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
+| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_compatibility_property_values` | basic (api_scope) | getCompatibilityPropertyValues | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
+| — | medium | small | `GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_expired_categories` | basic (api_scope) | getExpiredCategories | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
+| — | medium | small | `GET /commerce/taxonomy/v1/get_default_category_tree_id` | basic (api_scope) | getDefaultCategoryTreeId | Category tree, required/recommended item specifics, compatibility properties and expired categories. |
+| — | medium | medium | `DELETE /sell/inventory/v1/inventory_item/{sku}/product_compatibility` | sell.inventory | deleteProductCompatibility | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | medium | medium | `GET /commerce/media/v1_beta/document/{document_id}` | sell.inventory | getDocument | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `GET /commerce/media/v1_beta/image/{image_id}` | sell.inventory | getImage | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `GET /commerce/media/v1_beta/video/{video_id}` | sell.inventory | getVideo | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `GET /sell/inventory/v1/inventory_item/{sku}/product_compatibility` | sell.inventory.readonly | getProductCompatibility | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | medium | medium | `POST /commerce/media/v1_beta/document` | sell.inventory | createDocument | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `POST /commerce/media/v1_beta/document/{document_id}/upload` | sell.inventory | uploadDocument | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `POST /commerce/media/v1_beta/document/create_document_from_url` | sell.inventory | createDocumentFromUrl | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `POST /commerce/media/v1_beta/image/create_image_from_file` | sell.inventory | createImageFromFile | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `POST /commerce/media/v1_beta/image/create_image_from_url` | sell.inventory | createImageFromUrl | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `POST /commerce/media/v1_beta/video` | sell.inventory | createVideo | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `POST /commerce/media/v1_beta/video/{video_id}/upload` | sell.inventory | uploadVideo | Upload listing images, videos and documents (manuals, certificates) to eBay. |
+| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_compatibilities_by_specification` | basic (api_scope) | getCompatibilitiesBySpecification | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_compatibility_property_names` | basic (api_scope) | getCompatibilityPropertyNames | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_compatibility_property_values` | basic (api_scope) | getCompatibilityPropertyValues | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_multi_compatibility_property_values` | basic (api_scope) | getMultiCompatibilityPropertyValues | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | medium | medium | `POST /sell/metadata/v1/compatibilities/get_product_compatibilities` | basic (api_scope) | getProductCompatibilities | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | medium | medium | `PUT /sell/inventory/v1/inventory_item/{sku}/product_compatibility` | sell.inventory | createOrReplaceProductCompatibility | Parts fitment: which vehicles a part fits (compatibility lists on motors listings). |
+| — | low | small | `GET /commerce/charity/v1/charity_org` | basic (api_scope) | getCharityOrgs | Charities a listing can donate to (eBay for Charity). |
+| — | low | small | `GET /commerce/charity/v1/charity_org/{charity_org_id}` | basic (api_scope) | getCharityOrg | Charities a listing can donate to (eBay for Charity). |
+| — | low | small | `GET /sell/metadata/v1/country/{countryCode}/sales_tax_jurisdiction` | basic (api_scope) | getSalesTaxJurisdictions | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_automotive_parts_compatibility_policies` | basic (api_scope) | getAutomotivePartsCompatibilityPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_category_policies` | basic (api_scope) | getCategoryPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_classified_ad_policies` | basic (api_scope) | getClassifiedAdPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_currencies` | basic (api_scope) | getCurrencies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_extended_producer_responsibility_policies` | basic (api_scope) | getExtendedProducerResponsibilityPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_hazardous_materials_labels` | basic (api_scope) | getHazardousMaterialsLabels | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_item_condition_policies` | basic (api_scope) | getItemConditionPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_structure_policies` | basic (api_scope) | getListingStructurePolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_listing_type_policies` | basic (api_scope) | getListingTypePolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_motors_listing_policies` | basic (api_scope) | getMotorsListingPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_negotiated_price_policies` | basic (api_scope) | getNegotiatedPricePolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_product_safety_labels` | basic (api_scope) | getProductSafetyLabels | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_regulatory_policies` | basic (api_scope) | getRegulatoryPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_return_policies` | basic (api_scope) | getReturnPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_shipping_policies` | basic (api_scope) | getShippingPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/marketplace/{marketplace_id}/get_site_visibility_policies` | basic (api_scope) | getSiteVisibilityPolicies | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_exclude_shipping_locations` | basic (api_scope) | getExcludeShippingLocations | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_handling_times` | basic (api_scope) | getHandlingTimes | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_carriers` | basic (api_scope) | getShippingCarriers | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_locations` | basic (api_scope) | getShippingLocations | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `GET /sell/metadata/v1/shipping/marketplace/{marketplace_id}/get_shipping_services` | basic (api_scope) | getShippingServices | Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers. |
+| — | low | small | `POST /commerce/translation/v1_beta/translate` | basic (api_scope) | translate | Translate listing titles and descriptions for other eBay sites. |
+| — | low | small | `Trading:AddItem` | — | AddItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:AddItems` | — | AddItems | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:AddToItemDescription` | — | AddToItemDescription | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:EndItem` | — | EndItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:EndItems` | — | EndItems | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:GetDescriptionTemplates` | — | GetDescriptionTemplates | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:GeteBayDetails` | — | GeteBayDetails | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:GetItemShipping` | — | GetItemShipping | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:GetSellerEvents` | — | GetSellerEvents | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:GetSellerList` | — | GetSellerList | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:RelistItem` | — | RelistItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:ReviseItem` | — | ReviseItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:VerifyAddItem` | — | VerifyAddItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | small | `Trading:VerifyRelistItem` | — | VerifyRelistItem | Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used. |
+| — | low | medium | `DELETE /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}` | sell.inventory | deleteInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `DELETE /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations` | sell.inventory | deleteSkuLocationMapping | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `DELETE /sell/inventory/v1/offer/{offerId}` | sell.inventory | deleteOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `GET /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}` | sell.inventory.readonly | getInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `GET /sell/inventory/v1/inventory_item/{sku}` | sell.inventory.readonly | getInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `GET /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations` | sell.inventory | getSkuLocationMapping | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `GET /sell/inventory/v1/offer` | sell.inventory.readonly | getOffers | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `GET /sell/inventory/v1/offer/{offerId}` | sell.inventory.readonly | getOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/bulk_create_offer` | sell.inventory | bulkCreateOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/bulk_create_or_replace_inventory_item` | sell.inventory | bulkCreateOrReplaceInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/bulk_get_inventory_item` | sell.inventory.readonly | bulkGetInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/bulk_publish_offer` | sell.inventory | bulkPublishOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/offer` | sell.inventory | createOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/offer/{offerId}/publish` | sell.inventory | publishOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/offer/{offerId}/withdraw` | sell.inventory | withdrawOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/offer/publish_by_inventory_item_group` | sell.inventory | publishOfferByInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `POST /sell/inventory/v1/offer/withdraw_by_inventory_item_group` | sell.inventory | withdrawOfferByInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `PUT /sell/inventory/v1/inventory_item_group/{inventoryItemGroupKey}` | sell.inventory | createOrReplaceInventoryItemGroup | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `PUT /sell/inventory/v1/inventory_item/{sku}` | sell.inventory | createOrReplaceInventoryItem | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `PUT /sell/inventory/v1/listing/{listingId}/sku/{sku}/locations` | sell.inventory | createOrReplaceSkuLocationMapping | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | medium | `PUT /sell/inventory/v1/offer/{offerId}` | sell.inventory | updateOffer | Inventory API (SKU-based) listing model: inventory items, item groups and offers. The dashboard lists through the Trading API, so this only matters when moving to the Inventory API. |
+| — | low | large | `POST /sell/inventory/v1/bulk_migrate_listing` | sell.inventory | bulkMigrateListing | Move existing Trading API listings into the Inventory API (SKU-based) model. |
 
 #### messages (12)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | medium | small | `POST /commerce/message/v1/bulk_update_conversation` | bulkUpdateConversation | Mark conversations read or archived, one at a time or in bulk. |
-| — | medium | small | `POST /commerce/message/v1/update_conversation` | updateConversation | Mark conversations read or archived, one at a time or in bulk. |
-| — | medium | small | `Trading:AddMemberMessageAAQToPartner` | AddMemberMessageAAQToPartner | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:AddMemberMessageRTQ` | AddMemberMessageRTQ | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:AddMemberMessagesAAQToBidder` | AddMemberMessagesAAQToBidder | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:DeleteMyMessages` | DeleteMyMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:GetMemberMessages` | GetMemberMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:GetMessagePreferences` | GetMessagePreferences | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:GetMyMessages` | GetMyMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:ReviseMyMessages` | ReviseMyMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:ReviseMyMessagesFolders` | ReviseMyMessagesFolders | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
-| — | medium | small | `Trading:SetMessagePreferences` | SetMessagePreferences | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | small | `POST /commerce/message/v1/bulk_update_conversation` | commerce.message | bulkUpdateConversation | Mark conversations read or archived, one at a time or in bulk. |
+| — | medium | small | `POST /commerce/message/v1/update_conversation` | commerce.message | updateConversation | Mark conversations read or archived, one at a time or in bulk. |
+| — | medium | small | `Trading:AddMemberMessageAAQToPartner` | — | AddMemberMessageAAQToPartner | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:AddMemberMessageRTQ` | — | AddMemberMessageRTQ | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:AddMemberMessagesAAQToBidder` | — | AddMemberMessagesAAQToBidder | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:DeleteMyMessages` | — | DeleteMyMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:GetMemberMessages` | — | GetMemberMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:GetMessagePreferences` | — | GetMessagePreferences | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:GetMyMessages` | — | GetMyMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:ReviseMyMessages` | — | ReviseMyMessages | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:ReviseMyMessagesFolders` | — | ReviseMyMessagesFolders | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
+| — | medium | small | `Trading:SetMessagePreferences` | — | SetMessagePreferences | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
 
 #### offers (5)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `Trading:GetBestOffers` | GetBestOffers | Best Offers buyers sent on listings: see them and accept, decline or counter. |
-| — | high | small | `Trading:RespondToBestOffer` | RespondToBestOffer | Best Offers buyers sent on listings: see them and accept, decline or counter. |
-| — | low | small | `Trading:AddSecondChanceItem` | AddSecondChanceItem | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
-| — | low | small | `Trading:GetAllBidders` | GetAllBidders | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
-| — | low | small | `Trading:VerifyAddSecondChanceItem` | VerifyAddSecondChanceItem | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `Trading:GetBestOffers` | — | GetBestOffers | Best Offers buyers sent on listings: see them and accept, decline or counter. |
+| — | high | small | `Trading:RespondToBestOffer` | — | RespondToBestOffer | Best Offers buyers sent on listings: see them and accept, decline or counter. |
+| — | low | small | `Trading:AddSecondChanceItem` | — | AddSecondChanceItem | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
+| — | low | small | `Trading:GetAllBidders` | — | GetAllBidders | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
+| — | low | small | `Trading:VerifyAddSecondChanceItem` | — | VerifyAddSecondChanceItem | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
 
 #### orders (14)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | medium | large | `GET /sell/logistics/v1_beta/shipment/{shipmentId}` | getShipment | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
-| — | medium | large | `GET /sell/logistics/v1_beta/shipment/{shipmentId}/download_label_file` | downloadLabelFile | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
-| — | medium | large | `GET /sell/logistics/v1_beta/shipping_quote/{shippingQuoteId}` | getShippingQuote | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
-| — | medium | large | `POST /sell/logistics/v1_beta/shipment/{shipmentId}/cancel` | cancelShipment | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
-| — | medium | large | `POST /sell/logistics/v1_beta/shipment/create_from_shipping_quote` | createFromShippingQuote | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
-| — | medium | large | `POST /sell/logistics/v1_beta/shipping_quote` | createShippingQuote | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
-| — | low | small | `GET /post-order/v2/cancellation/{cancelId}` | getCancellation | Read one cancellation request (search and actions are already used). |
-| — | low | small | `GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment/{fulfillmentId}` | getShippingFulfillment | Read one shipment (tracking number, carrier, line items) of an order; the list call is already used. |
-| — | low | small | `Trading:AddOrder` | AddOrder | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
-| — | low | small | `Trading:CompleteSale` | CompleteSale | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
-| — | low | small | `Trading:GetItemTransactions` | GetItemTransactions | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
-| — | low | small | `Trading:GetOrders` | GetOrders | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
-| — | low | small | `Trading:GetSellerTransactions` | GetSellerTransactions | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
-| — | low | small | `Trading:SendInvoice` | SendInvoice | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | large | `GET /sell/logistics/v1_beta/shipment/{shipmentId}` | sell.logistics | getShipment | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
+| — | medium | large | `GET /sell/logistics/v1_beta/shipment/{shipmentId}/download_label_file` | sell.logistics | downloadLabelFile | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
+| — | medium | large | `GET /sell/logistics/v1_beta/shipping_quote/{shippingQuoteId}` | sell.logistics | getShippingQuote | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
+| — | medium | large | `POST /sell/logistics/v1_beta/shipment/{shipmentId}/cancel` | sell.logistics | cancelShipment | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
+| — | medium | large | `POST /sell/logistics/v1_beta/shipment/create_from_shipping_quote` | sell.logistics | createFromShippingQuote | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
+| — | medium | large | `POST /sell/logistics/v1_beta/shipping_quote` | sell.logistics | createShippingQuote | Buy eBay shipping labels: live rate quotes, buy a label, download it, cancel a shipment (eBay Labels; limited marketplaces). |
+| — | low | small | `GET /post-order/v2/cancellation/{cancelId}` | — | getCancellation | Read one cancellation request (search and actions are already used). |
+| — | low | small | `GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment/{fulfillmentId}` | sell.fulfillment | getShippingFulfillment | Read one shipment (tracking number, carrier, line items) of an order; the list call is already used. |
+| — | low | small | `Trading:AddOrder` | — | AddOrder | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
+| — | low | small | `Trading:CompleteSale` | — | CompleteSale | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
+| — | low | small | `Trading:GetItemTransactions` | — | GetItemTransactions | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
+| — | low | small | `Trading:GetOrders` | — | GetOrders | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
+| — | low | small | `Trading:GetSellerTransactions` | — | GetSellerTransactions | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
+| — | low | small | `Trading:SendInvoice` | — | SendInvoice | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
 
 #### payouts (9)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `GET /sell/finances/v1/order_earnings` | getOrderEarnings | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
-| — | high | small | `GET /sell/finances/v1/order_earnings_summary` | getOrderEarningsSummary | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
-| — | high | small | `GET /sell/finances/v1/order_earnings/{order_id}` | getOrderEarningsById | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
-| — | high | small | `GET /sell/finances/v1/seller_funds_summary` | getSellerFundsSummary | Money not yet paid out: available, processing and on-hold funds right now. |
-| — | medium | small | `GET /sell/finances/v1/billing_activity` | getBillingActivities | Itemised eBay bill: insertion fees, final value fees, ad fees, store subscription and other charges. |
-| — | medium | small | `GET /sell/finances/v1/payout/{payout_Id}` | getPayout | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
-| — | medium | small | `GET /sell/finances/v1/transaction_summary` | getTransactionSummary | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
-| — | medium | small | `GET /sell/finances/v1/transfer/{transfer_Id}` | getTransfer | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
-| — | low | small | `Trading:GetAccount` | GetAccount | Legacy eBay invoice/account statement (the Finances API covers fees better). |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `GET /sell/finances/v1/order_earnings` | sell.finances.earnings.read | getOrderEarnings | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
+| — | high | small | `GET /sell/finances/v1/order_earnings_summary` | sell.finances.earnings.read | getOrderEarningsSummary | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
+| — | high | small | `GET /sell/finances/v1/order_earnings/{order_id}` | sell.finances.earnings.read | getOrderEarningsById | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
+| — | high | small | `GET /sell/finances/v1/seller_funds_summary` | sell.finances | getSellerFundsSummary | Money not yet paid out: available, processing and on-hold funds right now. |
+| — | medium | small | `GET /sell/finances/v1/billing_activity` | sell.finances | getBillingActivities | Itemised eBay bill: insertion fees, final value fees, ad fees, store subscription and other charges. |
+| — | medium | small | `GET /sell/finances/v1/payout/{payout_Id}` | sell.finances | getPayout | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
+| — | medium | small | `GET /sell/finances/v1/transaction_summary` | sell.finances | getTransactionSummary | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
+| — | medium | small | `GET /sell/finances/v1/transfer/{transfer_Id}` | sell.finances | getTransfer | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
+| — | low | small | `Trading:GetAccount` | — | GetAccount | Legacy eBay invoice/account statement (the Finances API covers fees better). |
 
 #### promotions (10)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `GET /sell/marketing/v1/promotion_report` | getPromotionReports | Promotion results: sales, units, buyers and discount given per promotion. |
-| — | high | small | `GET /sell/marketing/v1/promotion_summary_report` | getPromotionSummaryReport | Promotion results: sales, units, buyers and discount given per promotion. |
-| — | medium | medium | `DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}` | deleteItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `DELETE /sell/marketing/v1/item_promotion/{promotion_id}` | deleteItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | getItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | getItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set` | getListingSet | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `POST /sell/marketing/v1/item_promotion` | createItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `PUT /sell/marketing/v1/item_price_markdown/{promotion_id}` | updateItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `PUT /sell/marketing/v1/item_promotion/{promotion_id}` | updateItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `GET /sell/marketing/v1/promotion_report` | sell.marketing.readonly | getPromotionReports | Promotion results: sales, units, buyers and discount given per promotion. |
+| — | high | small | `GET /sell/marketing/v1/promotion_summary_report` | sell.marketing.readonly | getPromotionSummaryReport | Promotion results: sales, units, buyers and discount given per promotion. |
+| — | medium | medium | `DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | deleteItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `DELETE /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | deleteItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | getItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing.readonly | getItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set` | sell.marketing | getListingSet | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `POST /sell/marketing/v1/item_promotion` | sell.marketing | createItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `PUT /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | updateItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `PUT /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | updateItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 
 #### returns-cases (32)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | medium | `GET /post-order/v2/casemanagement/{caseId}` | getCase | eBay Money Back Guarantee cases: view case details and appeal decisions. |
-| — | high | medium | `GET /post-order/v2/inquiry/{inquiryId}` | getInquiry | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `GET /post-order/v2/inquiry/search` | searchInquiries | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `GET /post-order/v2/return/{returnId}` | getReturn | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `GET /post-order/v2/return/{returnId}/files` | getReturnFiles | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `GET /post-order/v2/return/{returnId}/tracking` | getShipmentTrackingInfo | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute_summary` | getPaymentDisputeSummaries | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}` | getPaymentDispute | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity` | getActivities | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content` | fetchEvidenceContent | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /post-order/v2/casemanagement/{caseId}/appeal` | appealCaseDecision | eBay Money Back Guarantee cases: view case details and appeal decisions. |
-| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/escalate` | escalateInquiry | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/issue_refund` | issueInquiryRefund | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/provide_shipment_info` | provideInquiryShipmentInfo | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/send_message` | sendInquiryMessage | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/add_shipping_label` | addShippingLabelInfo | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/escalate` | escalateReturn | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/file/upload` | uploadReturnFile | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/issue_refund` | issueReturnRefund | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/mark_as_received` | markReturnReceived | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/send_message` | sendReturnMessage | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept` | acceptPaymentDispute | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence` | addEvidence | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest` | contestPaymentDispute | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence` | updateEvidence | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file` | uploadEvidenceFile | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | low | small | `DELETE /commerce/media/v1_beta/post_order/document/{document_id}` | removePostOrderDocument | Upload and manage documents attached to returns and cases. |
-| — | low | small | `GET /commerce/media/v1_beta/post_order/document/{document_id}` | downloadPostOrderDocument | Upload and manage documents attached to returns and cases. |
-| — | low | small | `GET /post-order/v2/return/preference` | getReturnPreferences | Read and set return preferences (automatic return rules). |
-| — | low | small | `POST /commerce/media/v1_beta/post_order/document` | uploadPostOrderDocument | Upload and manage documents attached to returns and cases. |
-| — | low | small | `POST /post-order/v2/return` | createReturnRequest | Opens a return on the buyer side; sellers normally never call it. |
-| — | low | small | `POST /post-order/v2/return/preference` | setReturnPreferences | Read and set return preferences (automatic return rules). |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | medium | `GET /post-order/v2/casemanagement/{caseId}` | — | getCase | eBay Money Back Guarantee cases: view case details and appeal decisions. |
+| — | high | medium | `GET /post-order/v2/inquiry/{inquiryId}` | — | getInquiry | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
+| — | high | medium | `GET /post-order/v2/inquiry/search` | — | searchInquiries | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
+| — | high | medium | `GET /post-order/v2/return/{returnId}` | — | getReturn | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `GET /post-order/v2/return/{returnId}/files` | — | getReturnFiles | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `GET /post-order/v2/return/{returnId}/tracking` | — | getShipmentTrackingInfo | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute_summary` | sell.payment.dispute | getPaymentDisputeSummaries | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}` | sell.payment.dispute | getPaymentDispute | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity` | sell.payment.dispute | getActivities | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content` | sell.payment.dispute | fetchEvidenceContent | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `POST /post-order/v2/casemanagement/{caseId}/appeal` | — | appealCaseDecision | eBay Money Back Guarantee cases: view case details and appeal decisions. |
+| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/escalate` | — | escalateInquiry | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
+| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/issue_refund` | — | issueInquiryRefund | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
+| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/provide_shipment_info` | — | provideInquiryShipmentInfo | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
+| — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/send_message` | — | sendInquiryMessage | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
+| — | high | medium | `POST /post-order/v2/return/{returnId}/add_shipping_label` | — | addShippingLabelInfo | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `POST /post-order/v2/return/{returnId}/escalate` | — | escalateReturn | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `POST /post-order/v2/return/{returnId}/file/upload` | — | uploadReturnFile | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `POST /post-order/v2/return/{returnId}/issue_refund` | — | issueReturnRefund | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `POST /post-order/v2/return/{returnId}/mark_as_received` | — | markReturnReceived | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `POST /post-order/v2/return/{returnId}/send_message` | — | sendReturnMessage | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
+| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept` | sell.payment.dispute | acceptPaymentDispute | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence` | sell.payment.dispute | addEvidence | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest` | sell.payment.dispute | contestPaymentDispute | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence` | sell.payment.dispute | updateEvidence | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file` | sell.payment.dispute | uploadEvidenceFile | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
+| — | low | small | `DELETE /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | removePostOrderDocument | Upload and manage documents attached to returns and cases. |
+| — | low | small | `GET /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | downloadPostOrderDocument | Upload and manage documents attached to returns and cases. |
+| — | low | small | `GET /post-order/v2/return/preference` | — | getReturnPreferences | Read and set return preferences (automatic return rules). |
+| — | low | small | `POST /commerce/media/v1_beta/post_order/document` | commerce.post_order.document | uploadPostOrderDocument | Upload and manage documents attached to returns and cases. |
+| — | low | small | `POST /post-order/v2/return` | — | createReturnRequest | Opens a return on the buyer side; sellers normally never call it. |
+| — | low | small | `POST /post-order/v2/return/preference` | — | setReturnPreferences | Read and set return preferences (automatic return rules). |
 
 #### new: account (43)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | medium | small | `GET /sell/account/v1/kyc` | getKYC | Outstanding identity-verification (KYC) checks that can hold payouts. |
-| — | low | small | `DELETE /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}` | deleteSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `GET /commerce/identity/v1/user` | getUser | The connected account's eBay user profile (username, account type, registration info). |
-| — | low | small | `GET /sell/account/v1/advertising_eligibility` | getAdvertisingEligibility | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}` | getPaymentsProgram | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}/onboarding` | getPaymentsProgramOnboarding | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `GET /sell/account/v1/privilege` | getPrivileges | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `GET /sell/account/v1/program/get_opted_in_programs` | getOptedInPrograms | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `GET /sell/account/v1/rate_table` | getRateTables | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `GET /sell/account/v1/sales_tax` | getSalesTaxes | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `GET /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}` | getSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `GET /sell/account/v1/subscription` | getSubscription | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `GET /sell/account/v2/combined_shipping_rules` | getCombinedShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `GET /sell/account/v2/payout_settings` | getPayoutSettings | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `GET /sell/account/v2/rate_table/{rate_table_id}` | getRateTable | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `GET /sell/account/v2/user_preferences` | getUserPreferences | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `PATCH /sell/account/v2/user_preferences` | setUserPreferences | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v1/bulk_create_or_replace_sales_tax` | bulkCreateOrReplaceSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v1/program/opt_in` | optInToProgram | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `POST /sell/account/v1/program/opt_out` | optOutOfProgram | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
-| — | low | small | `POST /sell/account/v2/combined_shipping_rules/create_calculated_shipping_rules` | createCalculatedShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/combined_shipping_rules/create_flat_shipping_rules` | createFlatShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/combined_shipping_rules/create_promotional_shipping_rule` | createPromotionalShippingRule | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_calculated_shipping_rules` | updateCalculatedShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_combined_payments` | updateCombinedPayments | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_flat_shipping_rules` | updateFlatShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_promotional_shipping_rule` | updatePromotionalShippingRule | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/payout_settings/update_percentage` | updatePayoutPercentage | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `POST /sell/account/v2/rate_table/{rate_table_id}/update_shipping_cost` | updateShippingCost | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `PUT /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}` | createOrReplaceSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
-| — | low | small | `Trading:ConfirmIdentity` | ConfirmIdentity | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
-| — | low | small | `Trading:FetchToken` | FetchToken | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
-| — | low | small | `Trading:GetNotificationPreferences` | GetNotificationPreferences | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
-| — | low | small | `Trading:GetNotificationsUsage` | GetNotificationsUsage | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
-| — | low | small | `Trading:GetSessionID` | GetSessionID | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
-| — | low | small | `Trading:GetShippingDiscountProfiles` | GetShippingDiscountProfiles | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
-| — | low | small | `Trading:GetTaxTable` | GetTaxTable | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
-| — | low | small | `Trading:GetTokenStatus` | GetTokenStatus | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
-| — | low | small | `Trading:GetUserPreferences` | GetUserPreferences | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
-| — | low | small | `Trading:RevokeToken` | RevokeToken | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
-| — | low | small | `Trading:SetShippingDiscountProfiles` | SetShippingDiscountProfiles | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
-| — | low | small | `Trading:SetTaxTable` | SetTaxTable | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
-| — | low | small | `Trading:SetUserPreferences` | SetUserPreferences | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | small | `GET /sell/account/v1/kyc` | sell.account | getKYC | Outstanding identity-verification (KYC) checks that can hold payouts. |
+| — | low | small | `DELETE /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}` | sell.account | deleteSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `GET /commerce/identity/v1/user` | commerce.identity.readonly | getUser | The connected account's eBay user profile (username, account type, registration info). |
+| — | low | small | `GET /sell/account/v1/advertising_eligibility` | sell.account | getAdvertisingEligibility | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}` | sell.account | getPaymentsProgram | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `GET /sell/account/v1/payments_program/{marketplace_id}/{payments_program_type}/onboarding` | sell.account | getPaymentsProgramOnboarding | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `GET /sell/account/v1/privilege` | sell.account | getPrivileges | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `GET /sell/account/v1/program/get_opted_in_programs` | sell.account | getOptedInPrograms | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `GET /sell/account/v1/rate_table` | sell.account | getRateTables | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `GET /sell/account/v1/sales_tax` | sell.account | getSalesTaxes | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `GET /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}` | sell.account | getSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `GET /sell/account/v1/subscription` | sell.account | getSubscription | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `GET /sell/account/v2/combined_shipping_rules` | sell.account.readonly | getCombinedShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `GET /sell/account/v2/payout_settings` | sell.finances | getPayoutSettings | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `GET /sell/account/v2/rate_table/{rate_table_id}` | sell.account | getRateTable | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `GET /sell/account/v2/user_preferences` | sell.account.readonly | getUserPreferences | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `PATCH /sell/account/v2/user_preferences` | sell.account | setUserPreferences | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v1/bulk_create_or_replace_sales_tax` | sell.account | bulkCreateOrReplaceSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v1/program/opt_in` | sell.account | optInToProgram | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `POST /sell/account/v1/program/opt_out` | sell.account | optOutOfProgram | Account status: selling limits, store subscription, Promoted Listings eligibility and program opt-ins. |
+| — | low | small | `POST /sell/account/v2/combined_shipping_rules/create_calculated_shipping_rules` | sell.account | createCalculatedShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/combined_shipping_rules/create_flat_shipping_rules` | sell.account | createFlatShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/combined_shipping_rules/create_promotional_shipping_rule` | sell.account | createPromotionalShippingRule | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_calculated_shipping_rules` | sell.account | updateCalculatedShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_combined_payments` | sell.account | updateCombinedPayments | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_flat_shipping_rules` | sell.account | updateFlatShippingRules | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/combined_shipping_rules/update_promotional_shipping_rule` | sell.account | updatePromotionalShippingRule | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/payout_settings/update_percentage` | sell.finances | updatePayoutPercentage | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `POST /sell/account/v2/rate_table/{rate_table_id}/update_shipping_cost` | sell.account | updateShippingCost | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `PUT /sell/account/v1/sales_tax/{countryCode}/{jurisdictionId}` | sell.account | createOrReplaceSalesTax | Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences. |
+| — | low | small | `Trading:ConfirmIdentity` | — | ConfirmIdentity | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
+| — | low | small | `Trading:FetchToken` | — | FetchToken | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
+| — | low | small | `Trading:GetNotificationPreferences` | — | GetNotificationPreferences | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| — | low | small | `Trading:GetNotificationsUsage` | — | GetNotificationsUsage | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| — | low | small | `Trading:GetSessionID` | — | GetSessionID | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
+| — | low | small | `Trading:GetShippingDiscountProfiles` | — | GetShippingDiscountProfiles | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| — | low | small | `Trading:GetTaxTable` | — | GetTaxTable | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| — | low | small | `Trading:GetTokenStatus` | — | GetTokenStatus | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
+| — | low | small | `Trading:GetUserPreferences` | — | GetUserPreferences | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| — | low | small | `Trading:RevokeToken` | — | RevokeToken | Legacy Auth'n'Auth tokens; the dashboard already uses OAuth, so not needed. |
+| — | low | small | `Trading:SetShippingDiscountProfiles` | — | SetShippingDiscountProfiles | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| — | low | small | `Trading:SetTaxTable` | — | SetTaxTable | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
+| — | low | small | `Trading:SetUserPreferences` | — | SetUserPreferences | Account settings through the Trading API: tax table, shipping discounts, preferences, platform notification settings. |
 
 #### new: bulk feeds (20)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | medium | large | `DELETE /sell/feed/v1/schedule/{schedule_id}` | deleteSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/inventory_task` | getInventoryTasks | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/inventory_task/{task_id}` | getInventoryTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/order_task` | getOrderTasks | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/order_task/{task_id}` | getOrderTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/schedule` | getSchedules | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/schedule_template` | getScheduleTemplates | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/schedule_template/{schedule_template_id}` | getScheduleTemplate | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/schedule/{schedule_id}` | getSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/schedule/{schedule_id}/download_result_file` | getLatestResultFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/task` | getTasks | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/task/{task_id}` | getTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/task/{task_id}/download_input_file` | getInputFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `GET /sell/feed/v1/task/{task_id}/download_result_file` | getResultFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `POST /sell/feed/v1/inventory_task` | createInventoryTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `POST /sell/feed/v1/order_task` | createOrderTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `POST /sell/feed/v1/schedule` | createSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `POST /sell/feed/v1/task` | createTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `POST /sell/feed/v1/task/{task_id}/upload_file` | uploadFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
-| — | medium | large | `PUT /sell/feed/v1/schedule/{schedule_id}` | updateSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | large | `DELETE /sell/feed/v1/schedule/{schedule_id}` | sell.inventory | deleteSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/inventory_task` | sell.inventory | getInventoryTasks | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/inventory_task/{task_id}` | sell.inventory | getInventoryTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/order_task` | sell.fulfillment | getOrderTasks | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/order_task/{task_id}` | sell.fulfillment | getOrderTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/schedule` | sell.inventory | getSchedules | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/schedule_template` | sell.inventory | getScheduleTemplates | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/schedule_template/{schedule_template_id}` | sell.inventory | getScheduleTemplate | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/schedule/{schedule_id}` | sell.inventory | getSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/schedule/{schedule_id}/download_result_file` | sell.inventory | getLatestResultFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/task` | sell.inventory | getTasks | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/task/{task_id}` | sell.inventory | getTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/task/{task_id}/download_input_file` | sell.inventory | getInputFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `GET /sell/feed/v1/task/{task_id}/download_result_file` | sell.inventory | getResultFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `POST /sell/feed/v1/inventory_task` | sell.inventory | createInventoryTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `POST /sell/feed/v1/order_task` | sell.fulfillment | createOrderTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `POST /sell/feed/v1/schedule` | sell.inventory | createSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `POST /sell/feed/v1/task` | sell.inventory | createTask | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `POST /sell/feed/v1/task/{task_id}/upload_file` | sell.inventory | uploadFile | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
+| — | medium | large | `PUT /sell/feed/v1/schedule/{schedule_id}` | sell.inventory | updateSchedule | Bulk files: download order and active-inventory reports, upload bulk listing/price/stock files, and schedule recurring reports. |
 
 #### new: business policies (22)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | medium | medium | `DELETE /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}` | deleteFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `DELETE /sell/account/v1/payment_policy/{payment_policy_id}` | deletePaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `DELETE /sell/account/v1/return_policy/{return_policy_id}` | deleteReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/custom_policy` | getCustomPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/custom_policy/{custom_policy_id}` | getCustomPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/fulfillment_policy` | getFulfillmentPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}` | getFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/fulfillment_policy/get_by_policy_name` | getFulfillmentPolicyByName | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/payment_policy` | getPaymentPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/payment_policy/{payment_policy_id}` | getPaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/payment_policy/get_by_policy_name` | getPaymentPolicyByName | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/return_policy` | getReturnPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/return_policy/{return_policy_id}` | getReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `GET /sell/account/v1/return_policy/get_by_policy_name` | getReturnPolicyByName | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `POST /sell/account/v1/custom_policy` | createCustomPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `POST /sell/account/v1/fulfillment_policy` | createFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `POST /sell/account/v1/payment_policy` | createPaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `POST /sell/account/v1/return_policy` | createReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `PUT /sell/account/v1/custom_policy/{custom_policy_id}` | updateCustomPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `PUT /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}` | updateFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `PUT /sell/account/v1/payment_policy/{payment_policy_id}` | updatePaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
-| — | medium | medium | `PUT /sell/account/v1/return_policy/{return_policy_id}` | updateReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | medium | `DELETE /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}` | sell.account | deleteFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `DELETE /sell/account/v1/payment_policy/{payment_policy_id}` | sell.account | deletePaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `DELETE /sell/account/v1/return_policy/{return_policy_id}` | sell.account | deleteReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/custom_policy` | sell.account | getCustomPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/custom_policy/{custom_policy_id}` | sell.account | getCustomPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/fulfillment_policy` | sell.account | getFulfillmentPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}` | sell.account | getFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/fulfillment_policy/get_by_policy_name` | sell.account | getFulfillmentPolicyByName | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/payment_policy` | sell.account | getPaymentPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/payment_policy/{payment_policy_id}` | sell.account | getPaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/payment_policy/get_by_policy_name` | sell.account | getPaymentPolicyByName | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/return_policy` | sell.account | getReturnPolicies | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/return_policy/{return_policy_id}` | sell.account | getReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `GET /sell/account/v1/return_policy/get_by_policy_name` | sell.account | getReturnPolicyByName | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `POST /sell/account/v1/custom_policy` | sell.account | createCustomPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `POST /sell/account/v1/fulfillment_policy` | sell.account | createFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `POST /sell/account/v1/payment_policy` | sell.account | createPaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `POST /sell/account/v1/return_policy` | sell.account | createReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `PUT /sell/account/v1/custom_policy/{custom_policy_id}` | sell.account | updateCustomPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `PUT /sell/account/v1/fulfillment_policy/{fulfillmentPolicyId}` | sell.account | updateFulfillmentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `PUT /sell/account/v1/payment_policy/{payment_policy_id}` | sell.account | updatePaymentPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
+| — | medium | medium | `PUT /sell/account/v1/return_policy/{return_policy_id}` | sell.account | updateReturnPolicy | Create, edit and delete the shipping, payment, return and custom policies listings point to. |
 
 #### new: notifications (20)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | medium | medium | `DELETE /commerce/notification/v1/destination/{destination_id}` | deleteDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `DELETE /commerce/notification/v1/subscription/{subscription_id}` | deleteSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `DELETE /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}` | deleteSubscriptionFilter | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/config` | getConfig | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/destination` | getDestinations | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/destination/{destination_id}` | getDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/subscription` | getSubscriptions | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/subscription/{subscription_id}` | getSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}` | getSubscriptionFilter | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/topic` | getTopics | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `GET /commerce/notification/v1/topic/{topic_id}` | getTopic | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `POST /commerce/notification/v1/destination` | createDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `POST /commerce/notification/v1/subscription` | createSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/disable` | disableSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/enable` | enableSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/filter` | createSubscriptionFilter | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/test` | testSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `PUT /commerce/notification/v1/config` | updateConfig | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `PUT /commerce/notification/v1/destination/{destination_id}` | updateDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
-| — | medium | medium | `PUT /commerce/notification/v1/subscription/{subscription_id}` | updateSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | medium | `DELETE /commerce/notification/v1/destination/{destination_id}` | basic (api_scope) | deleteDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `DELETE /commerce/notification/v1/subscription/{subscription_id}` | basic (api_scope) | deleteSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `DELETE /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}` | basic (api_scope) | deleteSubscriptionFilter | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/config` | basic (api_scope) | getConfig | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/destination` | basic (api_scope) | getDestinations | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/destination/{destination_id}` | basic (api_scope) | getDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/subscription` | basic (api_scope) | getSubscriptions | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/subscription/{subscription_id}` | basic (api_scope) | getSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/subscription/{subscription_id}/filter/{filter_id}` | basic (api_scope) | getSubscriptionFilter | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/topic` | basic (api_scope) | getTopics | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `GET /commerce/notification/v1/topic/{topic_id}` | basic (api_scope) | getTopic | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `POST /commerce/notification/v1/destination` | basic (api_scope) | createDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `POST /commerce/notification/v1/subscription` | basic (api_scope) | createSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/disable` | basic (api_scope) | disableSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/enable` | basic (api_scope) | enableSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/filter` | basic (api_scope) | createSubscriptionFilter | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `POST /commerce/notification/v1/subscription/{subscription_id}/test` | basic (api_scope) | testSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `PUT /commerce/notification/v1/config` | basic (api_scope) | updateConfig | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `PUT /commerce/notification/v1/destination/{destination_id}` | basic (api_scope) | updateDestination | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
+| — | medium | medium | `PUT /commerce/notification/v1/subscription/{subscription_id}` | basic (api_scope) | updateSubscription | Subscribe to eBay push notifications (topics, destinations, filters) instead of polling; only the public key check is used today. |
 
 #### new: promoted listings (58)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | medium | `DELETE /sell/marketing/v1/ad_report_task/{report_task_id}` | deleteReportTask | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
-| — | high | medium | `GET /sell/marketing/v1/ad_report_metadata` | getReportMetadata | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
-| — | high | medium | `GET /sell/marketing/v1/ad_report_metadata/{report_type}` | getReportMetadataForReportType | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
-| — | high | medium | `GET /sell/marketing/v1/ad_report_task` | getReportTasks | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
-| — | high | medium | `GET /sell/marketing/v1/ad_report_task/{report_task_id}` | getReportTask | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
-| — | high | medium | `GET /sell/marketing/v1/ad_report/{report_id}` | getReport | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
-| — | high | medium | `POST /sell/marketing/v1/ad_report_task` | createReportTask | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
-| — | high | large | `DELETE /sell/marketing/v1/ad_campaign/{campaign_id}` | deleteCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `DELETE /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}` | deleteAd | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign` | getCampaigns | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}` | getCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | getAds | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group` | getAdGroups | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}` | getAdGroup | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}` | getAd | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/get_ads_by_inventory_reference` | getAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword` | getKeywords | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}` | getKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/suggest_items` | suggestItems | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/find_campaign_by_ad_reference` | findCampaignByAdReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/get_campaign_by_name` | getCampaignByName | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/ad_campaign/suggest_budget` | suggestBudget | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/negative_keyword` | getNegativeKeywords | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `GET /sell/marketing/v1/negative_keyword/{negative_keyword_id}` | getNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign` | createCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | createAdByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group` | createAdGroup | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_bids` | suggestBids | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_keywords` | suggestKeywords | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}/update_bid` | updateBid | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_inventory_reference` | bulkCreateAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_listing_id` | bulkCreateAdsByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_keyword` | bulkCreateKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_inventory_reference` | bulkDeleteAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_listing_id` | bulkDeleteAdsByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_inventory_reference` | bulkUpdateAdsBidByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_listing_id` | bulkUpdateAdsBidByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status` | bulkUpdateAdsStatus | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status_by_listing_id` | bulkUpdateAdsStatusByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_keyword` | bulkUpdateKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/clone` | cloneCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/create_ads_by_inventory_reference` | createAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/delete_ads_by_inventory_reference` | deleteAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/end` | endCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/keyword` | createKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/pause` | pauseCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/resume` | resumeCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_ad_rate_strategy` | updateAdRateStrategy | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_bidding_strategy` | updateBiddingStrategy | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_budget` | updateCampaignBudget | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_identification` | updateCampaignIdentification | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/ad_campaign/suggest_max_cpc` | suggestMaxCpc | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/bulk_create_negative_keyword` | bulkCreateNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/bulk_update_negative_keyword` | bulkUpdateNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `POST /sell/marketing/v1/negative_keyword` | createNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `PUT /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}` | updateAdGroup | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `PUT /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}` | updateKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
-| — | high | large | `PUT /sell/marketing/v1/negative_keyword/{negative_keyword_id}` | updateNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | medium | `DELETE /sell/marketing/v1/ad_report_task/{report_task_id}` | sell.marketing | deleteReportTask | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
+| — | high | medium | `GET /sell/marketing/v1/ad_report_metadata` | basic (api_scope) | getReportMetadata | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
+| — | high | medium | `GET /sell/marketing/v1/ad_report_metadata/{report_type}` | basic (api_scope) | getReportMetadataForReportType | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
+| — | high | medium | `GET /sell/marketing/v1/ad_report_task` | sell.marketing | getReportTasks | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
+| — | high | medium | `GET /sell/marketing/v1/ad_report_task/{report_task_id}` | sell.marketing | getReportTask | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
+| — | high | medium | `GET /sell/marketing/v1/ad_report/{report_id}` | sell.marketing | getReport | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
+| — | high | medium | `POST /sell/marketing/v1/ad_report_task` | sell.marketing | createReportTask | Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing. |
+| — | high | large | `DELETE /sell/marketing/v1/ad_campaign/{campaign_id}` | sell.marketing | deleteCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `DELETE /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}` | sell.marketing | deleteAd | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign` | sell.marketing.readonly | getCampaigns | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}` | sell.marketing.readonly | getCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | sell.marketing.readonly | getAds | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group` | sell.marketing.readonly | getAdGroups | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}` | sell.marketing.readonly | getAdGroup | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}` | sell.marketing.readonly | getAd | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/get_ads_by_inventory_reference` | sell.marketing.readonly | getAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword` | sell.marketing.readonly | getKeywords | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}` | sell.marketing.readonly | getKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/suggest_items` | sell.marketing | suggestItems | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/find_campaign_by_ad_reference` | sell.marketing.readonly | findCampaignByAdReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/get_campaign_by_name` | sell.marketing.readonly | getCampaignByName | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/ad_campaign/suggest_budget` | sell.marketing | suggestBudget | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/negative_keyword` | sell.marketing.readonly | getNegativeKeywords | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `GET /sell/marketing/v1/negative_keyword/{negative_keyword_id}` | sell.marketing.readonly | getNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign` | sell.marketing | createCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | sell.marketing | createAdByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group` | sell.marketing | createAdGroup | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_bids` | sell.marketing | suggestBids | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_keywords` | sell.marketing | suggestKeywords | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}/update_bid` | sell.marketing | updateBid | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_inventory_reference` | sell.marketing | bulkCreateAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_listing_id` | sell.marketing | bulkCreateAdsByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_keyword` | sell.marketing | bulkCreateKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_inventory_reference` | sell.marketing | bulkDeleteAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_listing_id` | sell.marketing | bulkDeleteAdsByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_inventory_reference` | sell.marketing | bulkUpdateAdsBidByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_listing_id` | sell.marketing | bulkUpdateAdsBidByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status` | sell.marketing | bulkUpdateAdsStatus | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status_by_listing_id` | sell.marketing | bulkUpdateAdsStatusByListingId | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_keyword` | sell.marketing | bulkUpdateKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/clone` | sell.marketing | cloneCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/create_ads_by_inventory_reference` | sell.marketing | createAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/delete_ads_by_inventory_reference` | sell.marketing | deleteAdsByInventoryReference | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/end` | sell.marketing | endCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/keyword` | sell.marketing | createKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/pause` | sell.marketing | pauseCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/resume` | sell.marketing | resumeCampaign | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_ad_rate_strategy` | sell.marketing | updateAdRateStrategy | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_bidding_strategy` | sell.marketing | updateBiddingStrategy | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_budget` | sell.marketing | updateCampaignBudget | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/update_campaign_identification` | sell.marketing | updateCampaignIdentification | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/ad_campaign/suggest_max_cpc` | sell.marketing | suggestMaxCpc | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/bulk_create_negative_keyword` | sell.marketing | bulkCreateNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/bulk_update_negative_keyword` | sell.marketing | bulkUpdateNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `POST /sell/marketing/v1/negative_keyword` | sell.marketing | createNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `PUT /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}` | sell.marketing | updateAdGroup | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `PUT /sell/marketing/v1/ad_campaign/{campaign_id}/keyword/{keyword_id}` | sell.marketing | updateKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
+| — | high | large | `PUT /sell/marketing/v1/negative_keyword/{negative_keyword_id}` | sell.marketing | updateNegativeKeyword | Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates. |
 
 #### new: store (11)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | low | small | `Trading:GetStore` | GetStore | eBay Store and its categories through the Trading API. |
-| — | low | small | `Trading:GetStoreCategoryUpdateStatus` | GetStoreCategoryUpdateStatus | eBay Store and its categories through the Trading API. |
-| — | low | small | `Trading:SetStoreCategories` | SetStoreCategories | eBay Store and its categories through the Trading API. |
-| — | low | medium | `DELETE /sell/stores/v1/store/categories/{category_id}` | deleteStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
-| — | low | medium | `GET /sell/stores/v1/store` | getStore | eBay Store details and store categories: add, rename, move and delete categories. |
-| — | low | medium | `GET /sell/stores/v1/store/categories` | getStoreCategories | eBay Store details and store categories: add, rename, move and delete categories. |
-| — | low | medium | `GET /sell/stores/v1/store/tasks` | getStoreTasks | eBay Store details and store categories: add, rename, move and delete categories. |
-| — | low | medium | `GET /sell/stores/v1/store/tasks/{task_id}` | getStoreTask | eBay Store details and store categories: add, rename, move and delete categories. |
-| — | low | medium | `POST /sell/stores/v1/store/categories` | addStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
-| — | low | medium | `POST /sell/stores/v1/store/categories/move_category` | moveStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
-| — | low | medium | `PUT /sell/stores/v1/store/categories/{category_id}` | renameStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | low | small | `Trading:GetStore` | — | GetStore | eBay Store and its categories through the Trading API. |
+| — | low | small | `Trading:GetStoreCategoryUpdateStatus` | — | GetStoreCategoryUpdateStatus | eBay Store and its categories through the Trading API. |
+| — | low | small | `Trading:SetStoreCategories` | — | SetStoreCategories | eBay Store and its categories through the Trading API. |
+| — | low | medium | `DELETE /sell/stores/v1/store/categories/{category_id}` | sell.stores | deleteStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
+| — | low | medium | `GET /sell/stores/v1/store` | sell.stores | getStore | eBay Store details and store categories: add, rename, move and delete categories. |
+| — | low | medium | `GET /sell/stores/v1/store/categories` | sell.stores | getStoreCategories | eBay Store details and store categories: add, rename, move and delete categories. |
+| — | low | medium | `GET /sell/stores/v1/store/tasks` | sell.stores | getStoreTasks | eBay Store details and store categories: add, rename, move and delete categories. |
+| — | low | medium | `GET /sell/stores/v1/store/tasks/{task_id}` | sell.stores | getStoreTask | eBay Store details and store categories: add, rename, move and delete categories. |
+| — | low | medium | `POST /sell/stores/v1/store/categories` | sell.stores | addStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
+| — | low | medium | `POST /sell/stores/v1/store/categories/move_category` | sell.stores | moveStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
+| — | low | medium | `PUT /sell/stores/v1/store/categories/{category_id}` | sell.stores | renameStoreCategory | eBay Store details and store categories: add, rename, move and delete categories. |
 
 ### eBay — full catalog
 
@@ -584,7 +584,7 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Finances API | `GET /sell/finances/v1/seller_funds_summary` | getSellerFundsSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
 | missing | Finances API | `GET /sell/finances/v1/transaction_summary` | getTransactionSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
 | missing | Finances API | `GET /sell/finances/v1/transfer/{transfer_Id}` | getTransfer | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
-| covered | Fulfillment API | `GET /sell/fulfillment/v1/order` | getOrders | Use this method to search for and retrieve one or more orders based on their creation date, last modification date, or fulfillment status using the filter parameter. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/profile.js`, `marketplaces/ebay/scripts/smoke.js` |
+| covered | Fulfillment API | `GET /sell/fulfillment/v1/order` | getOrders | Use this method to search for and retrieve one or more orders based on their creation date, last modification date, or fulfillment status using the filter parameter. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/profile.js` |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}` | getOrder | Use this call to retrieve the contents of an order based on its unique identifier, orderId. | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment` | getShippingFulfillments | Use this call to retrieve the contents of all fulfillments currently defined for a specified order based on the order's unique identifier, orderId. | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/order/{order_id}/issue_refund` | issueRefund | Issue Refund | `marketplaces/ebay/orders.js` |
@@ -792,7 +792,7 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Notification API | `PUT /commerce/notification/v1/subscription/{subscription_id}` | updateSubscription | This method allows applications to update a subscription. |  |
 | covered | OAuth | `POST /identity/v1/oauth2/token` | getToken | Mints application and user access tokens and refreshes them. | `marketplaces/ebay/config.js` |
 | covered | Post-Order API | `GET /post-order/v2/cancellation/search` | searchCancellations | Searches cancellations. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/sections/returns-cases.js` |
-| covered | Post-Order API | `GET /post-order/v2/casemanagement/search` | searchCases | Searches cases. | `marketplaces/ebay/scripts/smoke.js`, `marketplaces/ebay/sections/returns-cases.js` |
+| covered | Post-Order API | `GET /post-order/v2/casemanagement/search` | searchCases | Searches cases. | `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Post-Order API | `GET /post-order/v2/return/search` | searchReturns | Searches return requests. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Post-Order API | `POST /post-order/v2/cancellation` | createCancellation | Requests or performs an order cancellation. | `marketplaces/ebay/orders.js` |
 | covered | Post-Order API | `POST /post-order/v2/cancellation/{cancelId}/approve` | approveCancellationRequest | Seller agrees to a buyer cancellation request. | `marketplaces/ebay/orders.js` |
@@ -931,355 +931,355 @@ Seeded with the scopes behind endpoints the dashboard already calls successfully
 
 #### analytics (31)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | high | small | `GET /analytics/202509/shop_products/{product_id}/performance` | Get Shop Product Performance Detail | Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source. |
-| available now | high | small | `GET /analytics/202509/shop_skus/{sku_id}/performance` | Get Shop SKU Performance Detail | Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source. |
-| available now | high | small | `GET /analytics/202509/shop_skus/performance` | Get Shop SKU Performance List | Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source. |
-| available now | high | small | `GET /analytics/202510/shop/performance/{date}/performance_per_hour` | Get Shop Performance Per Hour | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
-| available now | high | small | `GET /analytics/202606/shop_performances/metrics` | Get SPS Metrics | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
-| available now | high | small | `GET /analytics/202606/shop_performances/metrics/{metric_code}/diagnosis` | Get SPS Metric Diagnosis | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
-| available now | high | small | `GET /analytics/202606/shop_performances/metrics/{metric_code}/problem_details` | Get SPS Metric Problem Details | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
-| available now | high | small | `GET /analytics/202606/shop_performances/metrics/{metric_code}/top_items` | Get SPS Metric Top Items | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
-| available now | high | small | `GET /analytics/202610/shop_performances/benefits` | Get SPS Benefits | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
-| available now | high | small | `GET /analytics/202610/shop_performances/overview` | Get SPS Overview | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
-| available now | medium | small | `GET /customer_service/202407/performance` | Get Customer Service Performance | Customer-service performance: response rate and response time. |
-| available now | low | small | `GET /analytics/202610/off_site/details` | Get Off Site Performance Details | Off-site traffic (ads and pixels) overview and details. |
-| available now | low | small | `GET /analytics/202610/off_site/insights` | Get Off Site Audience Insights | Off-site traffic (ads and pixels) overview and details. |
-| available now | low | small | `GET /analytics/202610/off_site/overview` | Get Off Site Performance Overview | Off-site traffic (ads and pixels) overview and details. |
-| available now | low | small | `GET /analytics/202610/off_site/pixels` | Get Shop Off Site Pixels | Off-site traffic (ads and pixels) overview and details. |
-| available now | low | medium | `GET /analytics/202610/acc/brands` | Get ACC Brands | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
-| available now | low | medium | `GET /analytics/202610/acc/overview` | Get ACC Audience Overview | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
-| available now | low | medium | `GET /analytics/202610/acc/penetration` | Get ACC Audience Penetration | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
-| available now | low | medium | `GET /analytics/202610/acc/preferences` | Get ACC Audience Preference List | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
-| available now | low | medium | `GET /analytics/202610/acc/preferences/live/factors` | Get ACC LIVE Sales Factors | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
-| available now | low | medium | `GET /analytics/202610/acc/preferences/product/categories` | Get ACC Top Sales Categories | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
-| available now | low | medium | `GET /analytics/202610/acc/preferences/summary` | Get ACC Audience Preference Summary | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
-| available now | low | medium | `GET /analytics/202611/ai_report/campaigns` | Get AI Report Campaign Periods | Custom AI report builder: query configurable dimensions and metrics. |
-| available now | low | medium | `GET /analytics/202611/ai_report/catalog` | Get AI Report Catalog | Custom AI report builder: query configurable dimensions and metrics. |
-| available now | low | medium | `GET /analytics/202611/ai_report/rules` | Get AI Report Query Rules | Custom AI report builder: query configurable dimensions and metrics. |
-| available now | low | medium | `POST /analytics/202611/ai_report/data/query` | Query AI Report Data | Custom AI report builder: query configurable dimensions and metrics. |
-| available now | low | medium | `POST /analytics/202611/ai_report/dimension_options/search` | Search AI Report Dimension Options | Custom AI report builder: query configurable dimensions and metrics. |
-| available now | low | medium | `POST /analytics/202611/ai_report/query_config/validate` | Validate AI Report Query Configuration | Custom AI report builder: query configurable dimensions and metrics. |
-| needs scope: Bestsellers | medium | small | `GET /analytics/202511/creators/bestselling` | Get Bestselling Creators | Market best sellers: top products, videos, LIVEs and creators in your categories. |
-| needs scope: Bestsellers | medium | small | `GET /analytics/202511/lives/bestselling` | Get Bestselling LIVE Sessions | Market best sellers: top products, videos, LIVEs and creators in your categories. |
-| needs scope: Bestsellers | medium | small | `GET /analytics/202511/products/bestselling` | Get Bestselling Products | Market best sellers: top products, videos, LIVEs and creators in your categories. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | high | small | `GET /analytics/202509/shop_products/{product_id}/performance` | TikTok Shop Analytics | Get Shop Product Performance Detail | Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source. |
+| available now | high | small | `GET /analytics/202509/shop_skus/{sku_id}/performance` | TikTok Shop Analytics | Get Shop SKU Performance Detail | Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source. |
+| available now | high | small | `GET /analytics/202509/shop_skus/performance` | TikTok Shop Analytics | Get Shop SKU Performance List | Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source. |
+| available now | high | small | `GET /analytics/202510/shop/performance/{date}/performance_per_hour` | TikTok Shop Analytics | Get Shop Performance Per Hour | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
+| available now | high | small | `GET /analytics/202606/shop_performances/metrics` | TikTok Shop Analytics | Get SPS Metrics | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
+| available now | high | small | `GET /analytics/202606/shop_performances/metrics/{metric_code}/diagnosis` | TikTok Shop Analytics | Get SPS Metric Diagnosis | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
+| available now | high | small | `GET /analytics/202606/shop_performances/metrics/{metric_code}/problem_details` | TikTok Shop Analytics | Get SPS Metric Problem Details | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
+| available now | high | small | `GET /analytics/202606/shop_performances/metrics/{metric_code}/top_items` | TikTok Shop Analytics | Get SPS Metric Top Items | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
+| available now | high | small | `GET /analytics/202610/shop_performances/benefits` | TikTok Shop Analytics | Get SPS Benefits | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
+| available now | high | small | `GET /analytics/202610/shop_performances/overview` | TikTok Shop Analytics | Get SPS Overview | Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance. |
+| available now | medium | small | `GET /customer_service/202407/performance` | Customer Service | Get Customer Service Performance | Customer-service performance: response rate and response time. |
+| available now | low | small | `GET /analytics/202610/off_site/details` | TikTok Shop Analytics | Get Off Site Performance Details | Off-site traffic (ads and pixels) overview and details. |
+| available now | low | small | `GET /analytics/202610/off_site/insights` | TikTok Shop Analytics | Get Off Site Audience Insights | Off-site traffic (ads and pixels) overview and details. |
+| available now | low | small | `GET /analytics/202610/off_site/overview` | TikTok Shop Analytics | Get Off Site Performance Overview | Off-site traffic (ads and pixels) overview and details. |
+| available now | low | small | `GET /analytics/202610/off_site/pixels` | TikTok Shop Analytics | Get Shop Off Site Pixels | Off-site traffic (ads and pixels) overview and details. |
+| available now | low | medium | `GET /analytics/202610/acc/brands` | TikTok Shop Analytics | Get ACC Brands | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
+| available now | low | medium | `GET /analytics/202610/acc/overview` | TikTok Shop Analytics | Get ACC Audience Overview | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
+| available now | low | medium | `GET /analytics/202610/acc/penetration` | TikTok Shop Analytics | Get ACC Audience Penetration | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
+| available now | low | medium | `GET /analytics/202610/acc/preferences` | TikTok Shop Analytics | Get ACC Audience Preference List | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
+| available now | low | medium | `GET /analytics/202610/acc/preferences/live/factors` | TikTok Shop Analytics | Get ACC LIVE Sales Factors | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
+| available now | low | medium | `GET /analytics/202610/acc/preferences/product/categories` | TikTok Shop Analytics | Get ACC Top Sales Categories | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
+| available now | low | medium | `GET /analytics/202610/acc/preferences/summary` | TikTok Shop Analytics | Get ACC Audience Preference Summary | Audience insight: customer preferences, brands, penetration and LIVE/product preference factors. |
+| available now | low | medium | `GET /analytics/202611/ai_report/campaigns` | TikTok Shop Analytics | Get AI Report Campaign Periods | Custom AI report builder: query configurable dimensions and metrics. |
+| available now | low | medium | `GET /analytics/202611/ai_report/catalog` | TikTok Shop Analytics | Get AI Report Catalog | Custom AI report builder: query configurable dimensions and metrics. |
+| available now | low | medium | `GET /analytics/202611/ai_report/rules` | TikTok Shop Analytics | Get AI Report Query Rules | Custom AI report builder: query configurable dimensions and metrics. |
+| available now | low | medium | `POST /analytics/202611/ai_report/data/query` | TikTok Shop Analytics | Query AI Report Data | Custom AI report builder: query configurable dimensions and metrics. |
+| available now | low | medium | `POST /analytics/202611/ai_report/dimension_options/search` | TikTok Shop Analytics | Search AI Report Dimension Options | Custom AI report builder: query configurable dimensions and metrics. |
+| available now | low | medium | `POST /analytics/202611/ai_report/query_config/validate` | TikTok Shop Analytics | Validate AI Report Query Configuration | Custom AI report builder: query configurable dimensions and metrics. |
+| needs scope: Bestsellers | medium | small | `GET /analytics/202511/creators/bestselling` | Bestsellers | Get Bestselling Creators | Market best sellers: top products, videos, LIVEs and creators in your categories. |
+| needs scope: Bestsellers | medium | small | `GET /analytics/202511/lives/bestselling` | Bestsellers | Get Bestselling LIVE Sessions | Market best sellers: top products, videos, LIVEs and creators in your categories. |
+| needs scope: Bestsellers | medium | small | `GET /analytics/202511/products/bestselling` | Bestsellers | Get Bestselling Products | Market best sellers: top products, videos, LIVEs and creators in your categories. |
 
 #### creators (47)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | low | medium | `GET /affiliate_seller/202608/marketplace_creators/{creator_user_id}` | Get Marketplace Creator Performance | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| available now | low | medium | `POST /affiliate_seller/202608/marketplace_creators/search/filter` | Get Creator Marketplace Advanced Search Filters | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | high | small | `POST /affiliate_seller/202410/orders/search` | Search Seller Affiliate Orders | Affiliate orders: which creator sold what, and the commission owed. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `DELETE /affiliate_seller/202409/open_collaborations/products/{product_id}` | Remove Open Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `DELETE /affiliate_seller/202409/target_collaborations/{target_collaboration_id}` | Remove Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202409/open_collaboration_settings` | Get Open Collaboration Settings | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202410/open_collaborations/sample_rules` | Get Open Collaboration Sample Rules | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202508/open_collaborations/creator_content_details` | Get Open Collaboration Creator Content Details | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202508/target_collaborations/{target_collaboration_id}` | Query Target Collaboration Detail | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202405/open_collaboration_settings` | Edit Open Collaboration Settings | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202405/open_collaborations/products/search` | Seller Search Open Collaboration Products | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202410/open_collaborations/sample_rules` | Edit Open Collaboration Sample Rule | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202412/open_collaborations` | Create Open Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202412/open_collaborations/search` | Search Open Collaborations | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202508/open_collaborations/{open_collaboration_id}/remove_creator` | Remove Creator From Open Collaboration Product | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202508/target_collaborations` | Create Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202508/target_collaborations/search` | Search Target Collaborations | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202509/target_collaboration/{target_collaboration_id}/link` | Generate Target Collaboration Link | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202605/target_collaborations/conflicts/check` | Check Target Collaboration Conflicts | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202605/target_collaborations/conflicts/resolve` | Resolve Target Collaboration Conflicts | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202608/target_collaborations/creator_promotion_details/query` | Query Creator Promotion Details in Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Seller Affiliate Collaboration | high | medium | `PUT /affiliate_seller/202508/target_collaborations/{target_collaboration_id}` | Update Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
-| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202412/conversation/{conversation_id}/messages` | Get Creator Conversation Messages | Chat with creators: conversations, messages, read state. |
-| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202412/conversations` | Get Conversation List | Chat with creators: conversations, messages, read state. |
-| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202412/conversations/messages/list/newest` | Get Latest Unread Messages | Chat with creators: conversations, messages, read state. |
-| needs scope: Read Seller Affiliate Collaboration | medium | medium | `GET /affiliate_seller/202512/sample_applications/deeplink` | Seller Get Sample Request Deeplink | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
-| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202608/conversations/group_counts` | Get Inbox Category Counts | Chat with creators: conversations, messages, read state. |
-| needs scope: Read Seller Affiliate Collaboration | medium | medium | `POST /affiliate_seller/202409/sample_applications/{application_id}/fulfillments/search` | Search Sample Application Fulfillments | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
-| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202412/conversations/{conversation_id}/messages` | Send IM Message | Chat with creators: conversations, messages, read state. |
-| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202412/conversatons/read` | Mark Conversations as Read | Chat with creators: conversations, messages, read state. |
-| needs scope: Manage Seller Affiliate Collaboration | medium | medium | `POST /affiliate_seller/202507/sample_applications/{application_id}/review` | Review a Sample Application | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
-| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202508/conversations` | Get or Create Creator Conversation | Chat with creators: conversations, messages, read state. |
-| needs scope: Read Seller Affiliate Collaboration | medium | medium | `POST /affiliate_seller/202508/sample_applications/search` | Search Sample Applications | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
-| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202608/conversations/{conversation_id}/status` | Update Conversation Status | Chat with creators: conversations, messages, read state. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202603/compass/offline_tasks` | Get Compass Task List | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202603/compass/offline_tasks/{task_id}/file` | Download Compass Task File | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202607/creator_outreach/quota` | Get Weekly Creator Outreach Quota | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns` | Search Seller Partner Campaigns | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns/{campaign_id}` | Get Seller Partner Campaign Detail | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/candidate_products` | Get Seller Partner Campaign Candidate Products | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/products` | Get Seller Partner Campaign Registered Products | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Manage Affiliate Messages | low | medium | `POST /affiliate_seller/202511/images/upload` | Upload Message Image | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202603/compass/offline_task` | Create Compass Offline Export Task | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202608/creator_outreach/records/query` | Get Weekly Creator Outreach Records | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Manage Affiliate Messages | low | medium | `POST /affiliate_seller/202608/media/upload` | Upload Message Image V2 | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Read Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202610/creator_outreach/eligibility/check` | Check Creator Outreach Eligibility | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
-| needs scope: Manage Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202611/partner_campaigns/{campaign_id}/products` | Register Seller Partner Campaign Products | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | low | medium | `GET /affiliate_seller/202608/marketplace_creators/{creator_user_id}` | Read Creator Marketplace | Get Marketplace Creator Performance | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| available now | low | medium | `POST /affiliate_seller/202608/marketplace_creators/search/filter` | Read Creator Marketplace | Get Creator Marketplace Advanced Search Filters | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | high | small | `POST /affiliate_seller/202410/orders/search` | Read Seller Affiliate Collaboration | Search Seller Affiliate Orders | Affiliate orders: which creator sold what, and the commission owed. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `DELETE /affiliate_seller/202409/open_collaborations/products/{product_id}` | Manage Seller Affiliate Collaboration | Remove Open Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `DELETE /affiliate_seller/202409/target_collaborations/{target_collaboration_id}` | Manage Seller Affiliate Collaboration | Remove Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202409/open_collaboration_settings` | Read Seller Affiliate Collaboration | Get Open Collaboration Settings | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202410/open_collaborations/sample_rules` | Read Seller Affiliate Collaboration | Get Open Collaboration Sample Rules | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202508/open_collaborations/creator_content_details` | Read Seller Affiliate Collaboration | Get Open Collaboration Creator Content Details | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Read Seller Affiliate Collaboration | high | medium | `GET /affiliate_seller/202508/target_collaborations/{target_collaboration_id}` | Read Seller Affiliate Collaboration | Query Target Collaboration Detail | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202405/open_collaboration_settings` | Manage Seller Affiliate Collaboration | Edit Open Collaboration Settings | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202405/open_collaborations/products/search` | Read Seller Affiliate Collaboration | Seller Search Open Collaboration Products | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202410/open_collaborations/sample_rules` | Manage Seller Affiliate Collaboration | Edit Open Collaboration Sample Rule | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202412/open_collaborations` | Manage Seller Affiliate Collaboration | Create Open Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202412/open_collaborations/search` | Read Seller Affiliate Collaboration | Search Open Collaborations | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202508/open_collaborations/{open_collaboration_id}/remove_creator` | Manage Seller Affiliate Collaboration | Remove Creator From Open Collaboration Product | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202508/target_collaborations` | Manage Seller Affiliate Collaboration | Create Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202508/target_collaborations/search` | Read Seller Affiliate Collaboration | Search Target Collaborations | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202509/target_collaboration/{target_collaboration_id}/link` | Manage Seller Affiliate Collaboration | Generate Target Collaboration Link | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202605/target_collaborations/conflicts/check` | Manage Seller Affiliate Collaboration | Check Target Collaboration Conflicts | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202605/target_collaborations/conflicts/resolve` | Manage Seller Affiliate Collaboration | Resolve Target Collaboration Conflicts | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration | high | medium | `POST /affiliate_seller/202608/target_collaborations/creator_promotion_details/query` | Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration | Query Creator Promotion Details in Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Seller Affiliate Collaboration | high | medium | `PUT /affiliate_seller/202508/target_collaborations/{target_collaboration_id}` | Manage Seller Affiliate Collaboration | Update Target Collaboration | Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings. |
+| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202412/conversation/{conversation_id}/messages` | Manage Affiliate Messages | Get Creator Conversation Messages | Chat with creators: conversations, messages, read state. |
+| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202412/conversations` | Manage Affiliate Messages | Get Conversation List | Chat with creators: conversations, messages, read state. |
+| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202412/conversations/messages/list/newest` | Manage Affiliate Messages | Get Latest Unread Messages | Chat with creators: conversations, messages, read state. |
+| needs scope: Read Seller Affiliate Collaboration | medium | medium | `GET /affiliate_seller/202512/sample_applications/deeplink` | Read Seller Affiliate Collaboration | Seller Get Sample Request Deeplink | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
+| needs scope: Manage Affiliate Messages | medium | medium | `GET /affiliate_seller/202608/conversations/group_counts` | Manage Affiliate Messages | Get Inbox Category Counts | Chat with creators: conversations, messages, read state. |
+| needs scope: Read Seller Affiliate Collaboration | medium | medium | `POST /affiliate_seller/202409/sample_applications/{application_id}/fulfillments/search` | Read Seller Affiliate Collaboration | Search Sample Application Fulfillments | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
+| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202412/conversations/{conversation_id}/messages` | Manage Affiliate Messages | Send IM Message | Chat with creators: conversations, messages, read state. |
+| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202412/conversatons/read` | Manage Affiliate Messages | Mark Conversations as Read | Chat with creators: conversations, messages, read state. |
+| needs scope: Manage Seller Affiliate Collaboration | medium | medium | `POST /affiliate_seller/202507/sample_applications/{application_id}/review` | Manage Seller Affiliate Collaboration | Review a Sample Application | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
+| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202508/conversations` | Manage Affiliate Messages | Get or Create Creator Conversation | Chat with creators: conversations, messages, read state. |
+| needs scope: Read Seller Affiliate Collaboration | medium | medium | `POST /affiliate_seller/202508/sample_applications/search` | Read Seller Affiliate Collaboration | Search Sample Applications | Free samples: creators’ sample applications, approve or reject, and sample shipments. |
+| needs scope: Manage Affiliate Messages | medium | medium | `POST /affiliate_seller/202608/conversations/{conversation_id}/status` | Manage Affiliate Messages | Update Conversation Status | Chat with creators: conversations, messages, read state. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202603/compass/offline_tasks` | Read Seller Affiliate Collaboration | Get Compass Task List | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202603/compass/offline_tasks/{task_id}/file` | Read Seller Affiliate Collaboration | Download Compass Task File | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202607/creator_outreach/quota` | Read Seller Affiliate Collaboration | Get Weekly Creator Outreach Quota | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns` | Read Seller Affiliate Collaboration | Search Seller Partner Campaigns | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns/{campaign_id}` | Read Seller Affiliate Collaboration | Get Seller Partner Campaign Detail | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/candidate_products` | Read Seller Affiliate Collaboration | Get Seller Partner Campaign Candidate Products | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/products` | Read Seller Affiliate Collaboration | Get Seller Partner Campaign Registered Products | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Manage Affiliate Messages | low | medium | `POST /affiliate_seller/202511/images/upload` | Manage Affiliate Messages | Upload Message Image | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202603/compass/offline_task` | Read Seller Affiliate Collaboration | Create Compass Offline Export Task | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202608/creator_outreach/records/query` | Manage Seller Affiliate Collaboration, Read Seller Affiliate Collaboration | Get Weekly Creator Outreach Records | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Manage Affiliate Messages | low | medium | `POST /affiliate_seller/202608/media/upload` | Manage Affiliate Messages | Upload Message Image V2 | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Read Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202610/creator_outreach/eligibility/check` | Read Seller Affiliate Collaboration | Check Creator Outreach Eligibility | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
+| needs scope: Manage Seller Affiliate Collaboration | low | medium | `POST /affiliate_seller/202611/partner_campaigns/{campaign_id}/products` | Manage Seller Affiliate Collaboration | Register Seller Partner Campaign Products | Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks. |
 
 #### customer-service (7)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | medium | small | `GET /customer_service/202309/agents/settings` | Get Agent Settings | Customer service: open a conversation, agent settings, images, sessions. |
-| available now | medium | small | `GET /customer_service/202601/conversations/{conversation_id}` | Get Conversation | Customer service: open a conversation, agent settings, images, sessions. |
-| available now | medium | small | `POST /customer_service/202309/conversations` | Create Conversation | Customer service: open a conversation, agent settings, images, sessions. |
-| available now | medium | small | `POST /customer_service/202309/images/upload` | Upload Image for Buyer Messages | Customer service: open a conversation, agent settings, images, sessions. |
-| available now | medium | small | `POST /customer_service/202602/sessions/search` | Search Sessions | Customer service: open a conversation, agent settings, images, sessions. |
-| available now | medium | small | `POST /customer_service/202605/conversations/{conversation_id}/sessions/{session_id}/end` | End Session | Customer service: open a conversation, agent settings, images, sessions. |
-| available now | medium | small | `PUT /customer_service/202309/agents/settings` | Update Agent Settings | Customer service: open a conversation, agent settings, images, sessions. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | medium | small | `GET /customer_service/202309/agents/settings` | Customer Service | Get Agent Settings | Customer service: open a conversation, agent settings, images, sessions. |
+| available now | medium | small | `GET /customer_service/202601/conversations/{conversation_id}` | Customer Service | Get Conversation | Customer service: open a conversation, agent settings, images, sessions. |
+| available now | medium | small | `POST /customer_service/202309/conversations` | Customer Service | Create Conversation | Customer service: open a conversation, agent settings, images, sessions. |
+| available now | medium | small | `POST /customer_service/202309/images/upload` | Customer Service | Upload Image for Buyer Messages | Customer service: open a conversation, agent settings, images, sessions. |
+| available now | medium | small | `POST /customer_service/202602/sessions/search` | Customer Service | Search Sessions | Customer service: open a conversation, agent settings, images, sessions. |
+| available now | medium | small | `POST /customer_service/202605/conversations/{conversation_id}/sessions/{session_id}/end` | Customer Service | End Session | Customer service: open a conversation, agent settings, images, sessions. |
+| available now | medium | small | `PUT /customer_service/202309/agents/settings` | Customer Service | Update Agent Settings | Customer service: open a conversation, agent settings, images, sessions. |
 
 #### customers (6)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| needs scope: Customer Engagement - Read | medium | medium | `GET /customer_engagement/202412/message_templates` | Get Message Templates | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
-| needs scope: Customer Engagement - Read | medium | medium | `GET /customer_engagement/202502/permissions` | Get Engagement Feature Permissions | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
-| needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202412/engagement_tasks` | Create Engagement Task | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
-| needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202412/messages` | Send Engagement Message | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
-| needs scope: Customer Engagement - Read | medium | medium | `POST /customer_engagement/202412/performances` | Get Engagement Task Performances | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
-| needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202502/engagement_tasks/custom` | Create Custom Engagement Task | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| needs scope: Customer Engagement - Read | medium | medium | `GET /customer_engagement/202412/message_templates` | Customer Engagement - Read | Get Message Templates | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
+| needs scope: Customer Engagement - Read | medium | medium | `GET /customer_engagement/202502/permissions` | Customer Engagement - Read | Get Engagement Feature Permissions | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
+| needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202412/engagement_tasks` | Customer Engagement - Write | Create Engagement Task | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
+| needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202412/messages` | Customer Engagement - Write | Send Engagement Message | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
+| needs scope: Customer Engagement - Read | medium | medium | `POST /customer_engagement/202412/performances` | Customer Engagement - Read | Get Engagement Task Performances | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
+| needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202502/engagement_tasks/custom` | Customer Engagement - Write | Create Custom Engagement Task | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
 
 #### finance (5)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | high | small | `GET /finance/202501/orders/{order_id}/statement_transactions` | Get Transactions by Order | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202501/statements/{statement_id}/statement_transactions` | Get Transactions by Statement | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202507/orders/unsettled` | Get Unsettled Transactions | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202609/account_balances` | Get TradeIn Supplier Account Balance | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202609/account_transactions` | Get TradeIn Account Transactions | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | high | small | `GET /finance/202501/orders/{order_id}/statement_transactions` | Finance Information | Get Transactions by Order | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
+| available now | high | small | `GET /finance/202501/statements/{statement_id}/statement_transactions` | Finance Information | Get Transactions by Statement | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
+| available now | high | small | `GET /finance/202507/orders/unsettled` | Finance Information | Get Unsettled Transactions | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
+| available now | high | small | `GET /finance/202609/account_balances` | Finance Information | Get TradeIn Supplier Account Balance | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
+| available now | high | small | `GET /finance/202609/account_transactions` | Finance Information | Get TradeIn Account Transactions | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
 
 #### inventory (1)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | high | small | `POST /product/202309/inventory/search` | Inventory Search | Stock per SKU and per warehouse for many products at once (check that stock sync is right). |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | high | small | `POST /product/202309/inventory/search` | Product Basic | Inventory Search | Stock per SKU and per warehouse for many products at once (check that stock sync is right). |
 
 #### orders (6)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | high | small | `GET /order/202407/orders/{order_id}/price_detail` | Get Order Price Details | Order price breakdown: seller and platform discounts, shipping fee, taxes. |
-| available now | low | small | `POST /order/202605/orders/blind_box_result/callback` | Update The Blind Box Opening Results | External orders link, proof-of-delivery and blind-box results. |
-| available now | low | small | `POST /order/202606/pod_details/search` | Search POD Customization Details | External orders link, proof-of-delivery and blind-box results. |
-| needs scope: Read External Order References | low | small | `GET /order/202406/orders/{order_id}/external_orders` | Get External Order References | External orders link, proof-of-delivery and blind-box results. |
-| needs scope: Read External Order References | low | small | `POST /order/202406/orders/external_order_search` | Search Orders by External Order Reference | External orders link, proof-of-delivery and blind-box results. |
-| needs scope: Write External Order References | low | small | `POST /order/202406/orders/external_orders` | Add External Order References | External orders link, proof-of-delivery and blind-box results. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | high | small | `GET /order/202407/orders/{order_id}/price_detail` | Order Information | Get Order Price Details | Order price breakdown: seller and platform discounts, shipping fee, taxes. |
+| available now | low | small | `POST /order/202605/orders/blind_box_result/callback` | Order Information | Update The Blind Box Opening Results | External orders link, proof-of-delivery and blind-box results. |
+| available now | low | small | `POST /order/202606/pod_details/search` | Order Information | Search POD Customization Details | External orders link, proof-of-delivery and blind-box results. |
+| needs scope: Read External Order References | low | small | `GET /order/202406/orders/{order_id}/external_orders` | Read External Order References | Get External Order References | External orders link, proof-of-delivery and blind-box results. |
+| needs scope: Read External Order References | low | small | `POST /order/202406/orders/external_order_search` | Read External Order References | Search Orders by External Order Reference | External orders link, proof-of-delivery and blind-box results. |
+| needs scope: Write External Order References | low | small | `POST /order/202406/orders/external_orders` | Write External Order References | Add External Order References | External orders link, proof-of-delivery and blind-box results. |
 
 #### packages (28)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | high | medium | `POST /fulfillment/202309/orders/{order_id}/split` | Confirm Order Split | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| available now | high | medium | `POST /fulfillment/202309/packages/ship` | Batch Ship Packages | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| available now | medium | small | `GET /fulfillment/202309/orders/{order_id}/tracking` | Get Order Tracking | Package detail, handover time slots and order tracking. |
-| available now | medium | small | `GET /fulfillment/202309/packages/{package_id}` | Get Package Detail | Package detail, handover time slots and order tracking. |
-| available now | low | small | `GET /fulfillment/202309/orders/split_attributes` | Get Order Split Attributes | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `GET /fulfillment/202508/tts_tracking_validation` | Check TikTok Shipping and Collection by TikTok Coverage | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `GET /logistics/202510/seller_templates` | Get Shipping Template Availability | Logistics: global warehouses, shipping templates and order tracking. |
-| available now | low | small | `GET /logistics/202604/orders/{order_id}/tracking` | Get Logistics Tracking | Logistics: global warehouses, shipping templates and order tracking. |
-| available now | low | small | `GET /logistics/202606/seller_template/template_exist` | Check Shipping Template Existence | Logistics: global warehouses, shipping templates and order tracking. |
-| available now | low | small | `POST /fulfillment/202309/files/upload` | Upload Proof of Delivery File | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202309/images/upload` | Upload Proof of Delivery Image | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202407/bundles` | Create First Mile Bundle | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202502/invoice/upload` | Upload Invoice | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202510/first_mile_bundle` | Create First Mile Bundle(V2) | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202512/packages` | Create Packages | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202607/orders/customs_info/query` | Get Order Customs Requirements | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202607/orders/customs_info/submit` | Submit Customs Clearance Information | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202609/order/sof/track/update` | Tracking status update | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /fulfillment/202610/packages/{package_id}/shipping_info/update` | Update Package Shipping Info | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| available now | low | small | `POST /supply_chain/202309/packages/sync` | Confirm Package Shipment | Sync package status from a third-party warehouse system. |
-| needs scope: Package Split And Combine | high | medium | `GET /fulfillment/202309/combinable_packages/search` | Search Combinable Packages | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| needs scope: Package Split And Combine | high | medium | `POST /fulfillment/202309/packages/{package_id}/uncombine` | Uncombine Packages | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| needs scope: Package Split And Combine | high | medium | `POST /fulfillment/202309/packages/combine` | Combine Package | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| needs scope: Update Delivery Status | high | medium | `POST /fulfillment/202309/packages/deliver` | Update Package Delivery Status | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| needs scope: Package Split And Combine | medium | small | `GET /fulfillment/202309/packages/{package_id}/handover_time_slots` | Get Package Handover Time Slots | Package detail, handover time slots and order tracking. |
-| needs scope: Global Shop Information | low | small | `GET /logistics/202309/global_warehouses` | Get Global Seller Warehouses | Logistics: global warehouses, shipping templates and order tracking. |
-| needs scope: Manage Seller Redeem Info Callback | low | small | `POST /fulfillment/202601/redeem_info/callback` | Submit Redemption Information | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
-| needs scope: Manage Seller Redeem Info Callback | low | small | `POST /fulfillment/202606/pod_details/get` | Get POD Customization Details | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | high | medium | `POST /fulfillment/202309/orders/{order_id}/split` | FS Order&Fulfillment Management, Package Split And Combine | Confirm Order Split | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
+| available now | high | medium | `POST /fulfillment/202309/packages/ship` | FS Order&Fulfillment Management, Fulfillment Basic | Batch Ship Packages | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
+| available now | medium | small | `GET /fulfillment/202309/orders/{order_id}/tracking` | Logistics Basic | Get Order Tracking | Package detail, handover time slots and order tracking. |
+| available now | medium | small | `GET /fulfillment/202309/packages/{package_id}` | FS Order&Fulfillment Management, Fulfillment Basic | Get Package Detail | Package detail, handover time slots and order tracking. |
+| available now | low | small | `GET /fulfillment/202309/orders/split_attributes` | FS Order&Fulfillment Management, Package Split And Combine | Get Order Split Attributes | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `GET /fulfillment/202508/tts_tracking_validation` | Logistics Basic | Check TikTok Shipping and Collection by TikTok Coverage | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `GET /logistics/202510/seller_templates` | Logistics Basic | Get Shipping Template Availability | Logistics: global warehouses, shipping templates and order tracking. |
+| available now | low | small | `GET /logistics/202604/orders/{order_id}/tracking` | Logistics Basic | Get Logistics Tracking | Logistics: global warehouses, shipping templates and order tracking. |
+| available now | low | small | `GET /logistics/202606/seller_template/template_exist` | Logistics Basic | Check Shipping Template Existence | Logistics: global warehouses, shipping templates and order tracking. |
+| available now | low | small | `POST /fulfillment/202309/files/upload` | Fulfillment Basic | Upload Proof of Delivery File | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202309/images/upload` | Fulfillment Basic | Upload Proof of Delivery Image | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202407/bundles` | Fulfillment Basic | Create First Mile Bundle | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202502/invoice/upload` | Fulfillment Basic | Upload Invoice | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202510/first_mile_bundle` | Fulfillment Basic | Create First Mile Bundle(V2) | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202512/packages` | FS Order&Fulfillment Management, Fulfillment Basic | Create Packages | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202607/orders/customs_info/query` | Fulfillment Basic | Get Order Customs Requirements | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202607/orders/customs_info/submit` | Fulfillment Basic | Submit Customs Clearance Information | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202609/order/sof/track/update` | Fulfillment Basic | Tracking status update | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /fulfillment/202610/packages/{package_id}/shipping_info/update` | FS Order&Fulfillment Management, Fulfillment Basic | Update Package Shipping Info | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| available now | low | small | `POST /supply_chain/202309/packages/sync` | Fulfillment Basic | Confirm Package Shipment | Sync package status from a third-party warehouse system. |
+| needs scope: Package Split And Combine | high | medium | `GET /fulfillment/202309/combinable_packages/search` | Package Split And Combine | Search Combinable Packages | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
+| needs scope: Package Split And Combine | high | medium | `POST /fulfillment/202309/packages/{package_id}/uncombine` | Package Split And Combine | Uncombine Packages | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
+| needs scope: Package Split And Combine | high | medium | `POST /fulfillment/202309/packages/combine` | Package Split And Combine | Combine Package | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
+| needs scope: Update Delivery Status | high | medium | `POST /fulfillment/202309/packages/deliver` | Update Delivery Status | Update Package Delivery Status | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
+| needs scope: Package Split And Combine | medium | small | `GET /fulfillment/202309/packages/{package_id}/handover_time_slots` | Package Split And Combine | Get Package Handover Time Slots | Package detail, handover time slots and order tracking. |
+| needs scope: Global Shop Information | low | small | `GET /logistics/202309/global_warehouses` | Global Shop Information | Get Global Seller Warehouses | Logistics: global warehouses, shipping templates and order tracking. |
+| needs scope: Manage Seller Redeem Info Callback | low | small | `POST /fulfillment/202601/redeem_info/callback` | Manage Seller Redeem Info Callback | Submit Redemption Information | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
+| needs scope: Manage Seller Redeem Info Callback | low | small | `POST /fulfillment/202606/pod_details/get` | Manage Seller Redeem Info Callback | Get POD Customization Details | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
 
 #### products (40)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | high | small | `GET /product/202405/products/seo_words` | Get Products SEO Words | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
-| available now | medium | small | `POST /product/202309/products/listing_check` | Check Product Listing | Pre-check a listing for problems before publishing it. |
-| available now | medium | medium | `GET /product/202604/opportunities/{opportunity_id}` | Get Opportunity Detail | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
-| available now | medium | medium | `GET /product/202604/opportunities/submissions` | Get Submission Records | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
-| available now | medium | medium | `POST /product/202409/compliance/manufacturers` | Create Manufacturer | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
-| available now | medium | medium | `POST /product/202409/compliance/manufacturers/{manufacturer_id}/partial_edit` | Partial Edit Manufacturer | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
-| available now | medium | medium | `POST /product/202409/compliance/responsible_persons` | Create Responsible Person | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
-| available now | medium | medium | `POST /product/202409/compliance/responsible_persons/{responsible_person_id}/partial_edit` | Partial Edit Responsible Person | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
-| available now | medium | medium | `POST /product/202501/compliance/manufacturers/search` | Search Manufacturers | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
-| available now | medium | medium | `POST /product/202501/compliance/responsible_persons/search` | Search Responsible Persons | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
-| available now | medium | medium | `POST /product/202601/compliance/auditing/research` | Search Products for Compliance Auditing | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
-| available now | medium | medium | `POST /product/202604/opportunities/{opportunity_id}/submit` | Submit Product via Opportunity | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
-| available now | medium | medium | `POST /product/202604/opportunities/query` | List Opportunities | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
-| available now | medium | medium | `PUT /product/202509/products/{product_id}` | Edit Product | Full product edit (the partial edit is already used). |
-| available now | low | small | `GET /product/202312/prerequisites` | Check Listing Prerequisites | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `GET /product/202507/products/{product_id}/replicated_products` | Get Global Replicated Products | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `GET /product/202606/skpps/{product_id}` | Get Product SKPP Detail | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `GET /product/202606/skpps/sum` | Get Shop SKPP Summary | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `GET /product/202610/property_recommendation_tasks/{task_id}` | Get Product Property Recommendation Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202309/brands` | Create Custom Brands | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202404/images/optimize` | Optimize Images | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202407/products/category_upgrade_task` | Create Category Upgrade Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202507/products/{product_id}/global_replicate` | Replicate Product | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202602/packages/recommend` | Get Product Package Recommendations | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202604/appeals/submit` | Submit Size Chart Appeal | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202604/products/gpa_upgrade_task` | Create GPA Upgrade Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202606/skpps/search` | List Product SKPP Statuses | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202608/inventory/operation/settings` | Update Stock Operation Settings | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202609/brands/suggest` | Suggest Brands | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202609/products/package/predict` | Predict Product Package Dimensions and Weight | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202609/products/properties/recommend` | Recommend Required Product Properties | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202610/image_listing_tasks` | Create Image-based Product Listing Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202610/size_charts` | Create Size Chart V2 | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| available now | low | small | `POST /product/202610/size_charts/edit` | Edit Size Chart V2 | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| needs scope: Product Optimization | high | small | `GET /product/202405/products/diagnoses` | Get Product Diagnoses | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
-| needs scope: Product Optimization | high | small | `GET /product/202405/products/suggestions` | Get Recommended Product Title And Description | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
-| needs scope: Product Optimization | high | small | `POST /product/202411/products/diagnose_optimize` | Diagnose and Optimize Product | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
-| needs scope: Partner Authorized Information | low | small | `GET /authorization/202405/category_assets` | Get Authorized Category Assets | Categories the shop is authorised to sell in. |
-| needs scope: Product Optimization | low | small | `GET /product/202506/images/translation_tasks` | Get Image Translation Tasks | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
-| needs scope: Product Optimization | low | small | `POST /product/202505/images/translation_tasks` | Create Image Translation Tasks | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | high | small | `GET /product/202405/products/seo_words` | Product Basic | Get Products SEO Words | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
+| available now | medium | small | `POST /product/202309/products/listing_check` | Product Basic, Product Optimization | Check Product Listing | Pre-check a listing for problems before publishing it. |
+| available now | medium | medium | `GET /product/202604/opportunities/{opportunity_id}` | Product Basic | Get Opportunity Detail | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
+| available now | medium | medium | `GET /product/202604/opportunities/submissions` | Product Basic | Get Submission Records | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
+| available now | medium | medium | `POST /product/202409/compliance/manufacturers` | Product Basic | Create Manufacturer | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
+| available now | medium | medium | `POST /product/202409/compliance/manufacturers/{manufacturer_id}/partial_edit` | Product Basic | Partial Edit Manufacturer | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
+| available now | medium | medium | `POST /product/202409/compliance/responsible_persons` | Product Basic | Create Responsible Person | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
+| available now | medium | medium | `POST /product/202409/compliance/responsible_persons/{responsible_person_id}/partial_edit` | Product Basic | Partial Edit Responsible Person | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
+| available now | medium | medium | `POST /product/202501/compliance/manufacturers/search` | Product Basic | Search Manufacturers | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
+| available now | medium | medium | `POST /product/202501/compliance/responsible_persons/search` | Product Basic | Search Responsible Persons | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
+| available now | medium | medium | `POST /product/202601/compliance/auditing/research` | Product Basic | Search Products for Compliance Auditing | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
+| available now | medium | medium | `POST /product/202604/opportunities/{opportunity_id}/submit` | Product Basic | Submit Product via Opportunity | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
+| available now | medium | medium | `POST /product/202604/opportunities/query` | Product Basic | List Opportunities | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
+| available now | medium | medium | `PUT /product/202509/products/{product_id}` | Product Modify | Edit Product | Full product edit (the partial edit is already used). |
+| available now | low | small | `GET /product/202312/prerequisites` | Product Basic | Check Listing Prerequisites | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `GET /product/202507/products/{product_id}/replicated_products` | Product Basic | Get Global Replicated Products | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `GET /product/202606/skpps/{product_id}` | Product Basic | Get Product SKPP Detail | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `GET /product/202606/skpps/sum` | Product Basic | Get Shop SKPP Summary | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `GET /product/202610/property_recommendation_tasks/{task_id}` | Product Basic | Get Product Property Recommendation Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202309/brands` | Product Basic | Create Custom Brands | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202404/images/optimize` | Product Basic | Optimize Images | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202407/products/category_upgrade_task` | Product Basic | Create Category Upgrade Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202507/products/{product_id}/global_replicate` | Product Modify | Replicate Product | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202602/packages/recommend` | Product Basic | Get Product Package Recommendations | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202604/appeals/submit` | Product Basic | Submit Size Chart Appeal | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202604/products/gpa_upgrade_task` | Product Basic | Create GPA Upgrade Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202606/skpps/search` | Product Basic | List Product SKPP Statuses | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202608/inventory/operation/settings` | Product Basic | Update Stock Operation Settings | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202609/brands/suggest` | Product Basic | Suggest Brands | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202609/products/package/predict` | Product Basic | Predict Product Package Dimensions and Weight | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202609/products/properties/recommend` | Product Basic | Recommend Required Product Properties | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202610/image_listing_tasks` | Product Basic | Create Image-based Product Listing Task | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202610/size_charts` | Product Basic | Create Size Chart V2 | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| available now | low | small | `POST /product/202610/size_charts/edit` | Product Basic | Edit Size Chart V2 | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| needs scope: Product Optimization | high | small | `GET /product/202405/products/diagnoses` | Product Optimization | Get Product Diagnoses | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
+| needs scope: Product Optimization | high | small | `GET /product/202405/products/suggestions` | Product Optimization | Get Recommended Product Title And Description | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
+| needs scope: Product Optimization | high | small | `POST /product/202411/products/diagnose_optimize` | Product Optimization | Diagnose and Optimize Product | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
+| needs scope: Partner Authorized Information | low | small | `GET /authorization/202405/category_assets` | Partner Authorized Information | Get Authorized Category Assets | Categories the shop is authorised to sell in. |
+| needs scope: Product Optimization | low | small | `GET /product/202506/images/translation_tasks` | Product Optimization | Get Image Translation Tasks | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
+| needs scope: Product Optimization | low | small | `POST /product/202505/images/translation_tasks` | Product Optimization | Create Image Translation Tasks | Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing. |
 
 #### promotions (15)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | medium | small | `DELETE /promotion/202309/activities/{activity_id}/products` | Remove Promotion Activity Products | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
-| available now | medium | small | `GET /promotion/202309/activities/{activity_id}` | Get Activity | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
-| available now | medium | small | `GET /promotion/202406/coupons/{coupon_id}` | Get Coupon | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
-| available now | medium | small | `POST /product/202609/products/{product_id}/strikethrough_price/submit` | Submit Strikethrough Price | Set a strikethrough (was) price on a product. |
-| available now | medium | small | `POST /promotion/202607/activities/{activity_id}/republish` | Republish Activity | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
-| available now | medium | small | `PUT /promotion/202309/activities/{activity_id}` | Update Promotion Activity | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
-| available now | medium | medium | `GET /promotion/202611/campaign_groups` | List Campaign Group | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/campaign_groups/{campaign_group_id}` | Get Campaign Group | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/campaigns` | List Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/livestream_campaigns/{livestream_campaign_id}` | Get Livestream Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/product_campaigns/{product_campaign_id}` | Get Product Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/registered_campaigns` | List Registered Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/registered_campaigns/counts` | Get Registered Campaign Counts | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/shop_campaigns/{shop_campaign_id}` | Get Shop Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
-| available now | medium | medium | `GET /promotion/202611/short_video_campaigns/{short_video_campaign_id}` | Get Short Video Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | medium | small | `DELETE /promotion/202309/activities/{activity_id}/products` | Promotion Modify | Remove Promotion Activity Products | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
+| available now | medium | small | `GET /promotion/202309/activities/{activity_id}` | Promotion Information | Get Activity | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
+| available now | medium | small | `GET /promotion/202406/coupons/{coupon_id}` | Customer Service, Promotion Information | Get Coupon | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
+| available now | medium | small | `POST /product/202609/products/{product_id}/strikethrough_price/submit` | Product Basic | Submit Strikethrough Price | Set a strikethrough (was) price on a product. |
+| available now | medium | small | `POST /promotion/202607/activities/{activity_id}/republish` | Promotion Modify | Republish Activity | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
+| available now | medium | small | `PUT /promotion/202309/activities/{activity_id}` | Promotion Modify | Update Promotion Activity | Promotion details and edits: read one activity or coupon, update, republish and remove products. |
+| available now | medium | medium | `GET /promotion/202611/campaign_groups` | Promotion Information | List Campaign Group | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/campaign_groups/{campaign_group_id}` | Promotion Information | Get Campaign Group | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/campaigns` | Promotion Information | List Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/livestream_campaigns/{livestream_campaign_id}` | Promotion Information | Get Livestream Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/product_campaigns/{product_campaign_id}` | Promotion Information | Get Product Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/registered_campaigns` | Promotion Information | List Registered Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/registered_campaigns/counts` | Promotion Information | Get Registered Campaign Counts | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/shop_campaigns/{shop_campaign_id}` | Promotion Information | Get Shop Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
+| available now | medium | medium | `GET /promotion/202611/short_video_campaigns/{short_video_campaign_id}` | Promotion Information | Get Short Video Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
 
 #### returns-cancellations (10)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | medium | small | `GET /return_refund/202309/reject_reasons` | Get Reject Reasons | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `GET /return_refund/202309/returns/{return_id}/records` | Get Return Records | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `GET /return_refund/202601/decision_eligibility` | Get Decision Eligibility | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `GET /return_refund/202602/orders/{order_id}/aftersale_eligibility` | Get Aftersale Eligibility | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `GET /return_refund/202606/review_decision` | Get Available Review Decisions | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `POST /return_refund/202405/returns/shipping_documents` | Upload Return Shipping Information | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `POST /return_refund/202602/refunds/calculate` | Calculate Refund | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `POST /return_refund/202603/aftersales/search` | Search Aftersales Requests | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `POST /return_refund/202604/rma/search` | Search Return Merchandise Authorizations | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `POST /return_refund/202609/aftersales/review` | Review Aftersales Requests | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | medium | small | `GET /return_refund/202309/reject_reasons` | Return & Refund Basic | Get Reject Reasons | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `GET /return_refund/202309/returns/{return_id}/records` | Return & Refund Basic | Get Return Records | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `GET /return_refund/202601/decision_eligibility` | Return & Refund Basic | Get Decision Eligibility | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `GET /return_refund/202602/orders/{order_id}/aftersale_eligibility` | Return & Refund Basic | Get Aftersale Eligibility | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `GET /return_refund/202606/review_decision` | Return & Refund Basic | Get Available Review Decisions | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `POST /return_refund/202405/returns/shipping_documents` | Return & Refund Basic | Upload Return Shipping Information | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `POST /return_refund/202602/refunds/calculate` | Return & Refund Basic | Calculate Refund | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `POST /return_refund/202603/aftersales/search` | Return & Refund Basic | Search Aftersales Requests | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `POST /return_refund/202604/rma/search` | Return & Refund Basic | Search Return Merchandise Authorizations | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
+| available now | medium | small | `POST /return_refund/202609/aftersales/review` | Return & Refund Basic | Review Aftersales Requests | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
 
 #### videos-live (24)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | high | small | `GET /analytics/202509/shop_videos/{video_id}/performance` | Get Shop Video Performance Details | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | high | small | `GET /analytics/202509/shop_videos/{video_id}/products/performance` | Get Shop Video Product Performance List | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | high | small | `GET /analytics/202609/shop_videos/batch_performance` | Get Shop Videos Performance Details | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | high | small | `GET /analytics/202609/shop_videos/overview_performance` | Get Shop Video Performance Overview | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | medium | small | `GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes` | Get Shop LIVE Minute Performance | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| available now | medium | small | `GET /analytics/202512/shop/{live_id}/products_performance` | Get Shop LIVE Products Performance List | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| available now | medium | small | `GET /analytics/202609/shop_lives/overview_performance` | Get Shop LIVE Performance Overview | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Content Posting, Live Data | high | small | `GET /analytics/202403/videos/performances` | Get Video Performances | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| needs scope: Bestsellers | high | small | `GET /analytics/202511/videos/bestselling` | Get Bestselling Videos | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/core_stats` | Get Live Room Core Stats | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/gmv_trend_performances` | Get Live Room GMV and Order Trends | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/interactive_trend_performances` | Get Live Room Interactive Trends | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/product_stats` | Get Live Room Product Stats | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/traffic_performances` | Get Live Room Traffic Performance | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/user_portraits` | Get Live Room User Portraits | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/view_trend_performances` | Get Live Room View Trends | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos` | List Post-view Search Videos | Search videos: link products, keywords and comments to search-result videos. |
-| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}` | Get Post-view Search Video | Search videos: link products, keywords and comments to search-result videos. |
-| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}/comments` | Get Post-view Search Video Comments | Search videos: link products, keywords and comments to search-result videos. |
-| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}/keywords` | Get Post-view Search Video Keywords | Search videos: link products, keywords and comments to search-result videos. |
-| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}/products` | Get Post-view Search Video Products | Search videos: link products, keywords and comments to search-result videos. |
-| needs scope: Product Optimization | low | medium | `POST /product/202611/search_videos/{video_id}/comments` | Add Post-view Search Video Comment | Search videos: link products, keywords and comments to search-result videos. |
-| needs scope: Product Optimization | low | medium | `POST /product/202611/search_videos/{video_id}/products` | Change Post-view Search Video Products | Search videos: link products, keywords and comments to search-result videos. |
-| needs scope: Product Optimization | low | medium | `PUT /product/202611/search_videos/{video_id}/keywords` | Update Post-view Search Video Keywords | Search videos: link products, keywords and comments to search-result videos. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | high | small | `GET /analytics/202509/shop_videos/{video_id}/performance` | TikTok Shop Analytics | Get Shop Video Performance Details | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
+| available now | high | small | `GET /analytics/202509/shop_videos/{video_id}/products/performance` | TikTok Shop Analytics | Get Shop Video Product Performance List | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
+| available now | high | small | `GET /analytics/202609/shop_videos/batch_performance` | TikTok Shop Analytics | Get Shop Videos Performance Details | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
+| available now | high | small | `GET /analytics/202609/shop_videos/overview_performance` | TikTok Shop Analytics | Get Shop Video Performance Overview | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
+| available now | medium | small | `GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes` | TikTok Shop Analytics | Get Shop LIVE Minute Performance | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| available now | medium | small | `GET /analytics/202512/shop/{live_id}/products_performance` | TikTok Shop Analytics | Get Shop LIVE Products Performance List | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| available now | medium | small | `GET /analytics/202609/shop_lives/overview_performance` | TikTok Shop Analytics | Get Shop LIVE Performance Overview | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Content Posting, Live Data | high | small | `GET /analytics/202403/videos/performances` | Content Posting, Live Data | Get Video Performances | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
+| needs scope: Bestsellers | high | small | `GET /analytics/202511/videos/bestselling` | Bestsellers | Get Bestselling Videos | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
+| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/core_stats` | Live Data | Get Live Room Core Stats | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/gmv_trend_performances` | Live Data | Get Live Room GMV and Order Trends | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/interactive_trend_performances` | Live Data | Get Live Room Interactive Trends | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/product_stats` | Live Data | Get Live Room Product Stats | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/traffic_performances` | Live Data | Get Live Room Traffic Performance | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/user_portraits` | Live Data | Get Live Room User Portraits | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/view_trend_performances` | Live Data | Get Live Room View Trends | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
+| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos` | Product Optimization | List Post-view Search Videos | Search videos: link products, keywords and comments to search-result videos. |
+| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}` | Product Optimization | Get Post-view Search Video | Search videos: link products, keywords and comments to search-result videos. |
+| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}/comments` | Product Optimization | Get Post-view Search Video Comments | Search videos: link products, keywords and comments to search-result videos. |
+| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}/keywords` | Product Optimization | Get Post-view Search Video Keywords | Search videos: link products, keywords and comments to search-result videos. |
+| needs scope: Product Optimization | low | medium | `GET /product/202611/search_videos/{video_id}/products` | Product Optimization | Get Post-view Search Video Products | Search videos: link products, keywords and comments to search-result videos. |
+| needs scope: Product Optimization | low | medium | `POST /product/202611/search_videos/{video_id}/comments` | Product Optimization | Add Post-view Search Video Comment | Search videos: link products, keywords and comments to search-result videos. |
+| needs scope: Product Optimization | low | medium | `POST /product/202611/search_videos/{video_id}/products` | Product Optimization | Change Post-view Search Video Products | Search videos: link products, keywords and comments to search-result videos. |
+| needs scope: Product Optimization | low | medium | `PUT /product/202611/search_videos/{video_id}/keywords` | Product Optimization | Update Post-view Search Video Keywords | Search videos: link products, keywords and comments to search-result videos. |
 
 #### new: account (4)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | low | small | `GET /seller/202601/shop_groups` | Get Shop Group and Related Shops | Seller account: permissions, shop list and shop groups. |
-| available now | low | small | `POST /open/202512/file/init` | Upload File Init | Developer tools endpoint (file upload initialisation). |
-| needs scope: Global Shop Information | low | small | `GET /seller/202309/permissions` | Get Global Product Permission | Seller account: permissions, shop list and shop groups. |
-| needs scope: Global Shop Information | low | small | `GET /seller/202309/shops` | Get Active Shops | Seller account: permissions, shop list and shop groups. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | low | small | `GET /seller/202601/shop_groups` | Shop Authorized Information | Get Shop Group and Related Shops | Seller account: permissions, shop list and shop groups. |
+| available now | low | small | `POST /open/202512/file/init` | Content Posting, Customer Service | Upload File Init | Developer tools endpoint (file upload initialisation). |
+| needs scope: Global Shop Information | low | small | `GET /seller/202309/permissions` | Global Shop Information | Get Global Product Permission | Seller account: permissions, shop list and shop groups. |
+| needs scope: Global Shop Information | low | small | `GET /seller/202309/shops` | Global Shop Information | Get Active Shops | Seller account: permissions, shop list and shop groups. |
 
 #### new: fulfilled by TikTok (23)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202408/warehouses` | Get FBT Warehouse List | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202409/merchants/onboarded_regions` | Get FBT Merchant Onboarded Regions | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202601/mcf_outbound_orders` | Get FBT MCF Order Status | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202601/merchants/mcf_status` | Get FBT Merchant MCF Status | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202602/inbound_orders` | Get FBT Inbound Order Details | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202408/inventory/search` | Search FBT Inventory | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202410/inventory_records/search` | Search FBT Inventory Record | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202601/mcf_outbound_orders/cancel` | Cancel FBT MCF Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202601/mcf/goods/inventory/search` | Query Goods Inventory For MCF | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/create_update_inbound_plan` | Create or Update Inbound Plan | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_method_detail` | Get Inbound Method Detail | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_orders/cancel` | Cancel Inbound Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_orders/label_print` | Print Inbound Order Labels | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_orders/tracking_update` | Update Inbound Order Tracking | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/list_available_inbound_method` | List Available Inbound Methods | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/confirm_inbound_method` | Confirm Inbound Method | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/goods/hazmat_and_expiration_info/search` | Search Goods Hazmat And Expiration Info | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/goods/update_goods_sku_relation` | Update Goods-SKU Relations | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/ship_inbound_order` | Ship Inbound Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/goods/create_goods` | Create FBT Goods | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/goods/search` | Search Goods Info | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/goods/update_goods_info` | Update FBT Goods Info | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
-| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/mcf_outbound_orders` | Create FBT MCF Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202408/warehouses` | Fulfilled by TikTok(FBT) Info | Get FBT Warehouse List | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202409/merchants/onboarded_regions` | Fulfilled by TikTok(FBT) Info | Get FBT Merchant Onboarded Regions | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202601/mcf_outbound_orders` | Fulfilled by TikTok(FBT) Info | Get FBT MCF Order Status | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202601/merchants/mcf_status` | Fulfilled by TikTok(FBT) Info | Get FBT Merchant MCF Status | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `GET /fbt/202602/inbound_orders` | Fulfilled by TikTok(FBT) Info | Get FBT Inbound Order Details | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202408/inventory/search` | Fulfilled by TikTok(FBT) Info | Search FBT Inventory | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202410/inventory_records/search` | Fulfilled by TikTok(FBT) Info | Search FBT Inventory Record | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202601/mcf_outbound_orders/cancel` | Fulfilled by TikTok(FBT) Info | Cancel FBT MCF Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202601/mcf/goods/inventory/search` | Fulfilled by TikTok(FBT) Info | Query Goods Inventory For MCF | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/create_update_inbound_plan` | Fulfilled by TikTok(FBT) Info | Create or Update Inbound Plan | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_method_detail` | Fulfilled by TikTok(FBT) Info | Get Inbound Method Detail | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_orders/cancel` | Fulfilled by TikTok(FBT) Info | Cancel Inbound Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_orders/label_print` | Fulfilled by TikTok(FBT) Info | Print Inbound Order Labels | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/inbound_orders/tracking_update` | Fulfilled by TikTok(FBT) Info | Update Inbound Order Tracking | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202602/list_available_inbound_method` | Fulfilled by TikTok(FBT) Info | List Available Inbound Methods | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/confirm_inbound_method` | Fulfilled by TikTok(FBT) Info | Confirm Inbound Method | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/goods/hazmat_and_expiration_info/search` | Fulfilled by TikTok(FBT) Info | Search Goods Hazmat And Expiration Info | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/goods/update_goods_sku_relation` | Fulfilled by TikTok(FBT) Info | Update Goods-SKU Relations | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202603/ship_inbound_order` | Fulfilled by TikTok(FBT) Info | Ship Inbound Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/goods/create_goods` | Fulfilled by TikTok(FBT) Info | Create FBT Goods | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/goods/search` | Fulfilled by TikTok(FBT) Info | Search Goods Info | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/goods/update_goods_info` | Fulfilled by TikTok(FBT) Info | Update FBT Goods Info | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
+| needs scope: Fulfilled by TikTok(FBT) Info | medium | large | `POST /fbt/202607/mcf_outbound_orders` | Fulfilled by TikTok(FBT) Info | Create FBT MCF Order | Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders. |
 
 #### new: global products (13)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | low | large | `GET /product/202507/global_listing_rules` | Get Global Listing Rules | Global (cross-border) products: one product published to several regional shops. |
-| available now | low | large | `PUT /product/202509/global_products/{global_product_id}/partial_edit` | Partial Edit Global Product | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Product Delete | low | large | `DELETE /product/202309/global_products` | Delete Global Products | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Category Infomation | low | large | `GET /product/202309/categories/{category_id}/global_attributes` | Get Global Attributes | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Category Infomation | low | large | `GET /product/202309/categories/{category_id}/global_rules` | Get Global Category Rules | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Category Infomation | low | large | `GET /product/202309/global_categories` | Get Global Categories | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Product Information | low | large | `GET /product/202309/global_products/{global_product_id}` | Get Global Product | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Category Infomation | low | large | `POST /product/202309/global_categories/recommend` | Recommend Global Categories | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Product Modify | low | large | `POST /product/202309/global_products` | Create Global Product | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Product Modify | low | large | `POST /product/202309/global_products/{global_product_id}/inventory/update` | Update Global Inventory | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Product Modify | low | large | `POST /product/202309/global_products/{global_product_id}/publish` | Publish Global Product | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Product Information | low | large | `POST /product/202312/global_products/search` | Search Global Products | Global (cross-border) products: one product published to several regional shops. |
-| needs scope: Global Product Modify | low | large | `PUT /product/202309/global_products/{global_product_id}` | Edit Global Product | Global (cross-border) products: one product published to several regional shops. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | low | large | `GET /product/202507/global_listing_rules` | Product Basic | Get Global Listing Rules | Global (cross-border) products: one product published to several regional shops. |
+| available now | low | large | `PUT /product/202509/global_products/{global_product_id}/partial_edit` | Product Basic | Partial Edit Global Product | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Product Delete | low | large | `DELETE /product/202309/global_products` | Global Product Delete | Delete Global Products | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Category Infomation | low | large | `GET /product/202309/categories/{category_id}/global_attributes` | Global Category Infomation | Get Global Attributes | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Category Infomation | low | large | `GET /product/202309/categories/{category_id}/global_rules` | Global Category Infomation | Get Global Category Rules | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Category Infomation | low | large | `GET /product/202309/global_categories` | Global Category Infomation | Get Global Categories | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Product Information | low | large | `GET /product/202309/global_products/{global_product_id}` | Global Product Information | Get Global Product | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Category Infomation | low | large | `POST /product/202309/global_categories/recommend` | Global Category Infomation | Recommend Global Categories | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Product Modify | low | large | `POST /product/202309/global_products` | Global Product Modify | Create Global Product | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Product Modify | low | large | `POST /product/202309/global_products/{global_product_id}/inventory/update` | Global Product Modify | Update Global Inventory | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Product Modify | low | large | `POST /product/202309/global_products/{global_product_id}/publish` | Global Product Modify | Publish Global Product | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Product Information | low | large | `POST /product/202312/global_products/search` | Global Product Information | Search Global Products | Global (cross-border) products: one product published to several regional shops. |
+| needs scope: Global Product Modify | low | large | `PUT /product/202309/global_products/{global_product_id}` | Global Product Modify | Edit Global Product | Global (cross-border) products: one product published to several regional shops. |
 
 #### new: notifications (1)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| available now | low | small | `DELETE /event/202309/webhooks` | Delete Webhook for an Event | Remove a webhook subscription (create and list are used). |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| available now | low | small | `DELETE /event/202309/webhooks` | Shop Authorized Information | Delete Webhook for an Event | Remove a webhook subscription (create and list are used). |
 
 #### new: shop materials (6)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| needs scope: Product Optimization | low | small | `DELETE /seller/202611/materials` | Delete Shop Material | Shop materials: upload and manage shop images and carousel content. |
-| needs scope: Product Optimization | low | small | `GET /seller/202611/carousel_permission` | Get Shop Carousel Permission | Shop materials: upload and manage shop images and carousel content. |
-| needs scope: Product Optimization | low | small | `GET /seller/202611/material_statuses` | Check Material Statuses | Shop materials: upload and manage shop images and carousel content. |
-| needs scope: Product Optimization | low | small | `GET /seller/202611/materials` | List Shop Materials | Shop materials: upload and manage shop images and carousel content. |
-| needs scope: Product Optimization | low | small | `POST /seller/202611/images/upload` | Upload Shop Image | Shop materials: upload and manage shop images and carousel content. |
-| needs scope: Product Optimization | low | small | `POST /seller/202611/materials/upload` | Upload Shop Materials | Shop materials: upload and manage shop images and carousel content. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| needs scope: Product Optimization | low | small | `DELETE /seller/202611/materials` | Product Optimization | Delete Shop Material | Shop materials: upload and manage shop images and carousel content. |
+| needs scope: Product Optimization | low | small | `GET /seller/202611/carousel_permission` | Product Optimization | Get Shop Carousel Permission | Shop materials: upload and manage shop images and carousel content. |
+| needs scope: Product Optimization | low | small | `GET /seller/202611/material_statuses` | Product Optimization | Check Material Statuses | Shop materials: upload and manage shop images and carousel content. |
+| needs scope: Product Optimization | low | small | `GET /seller/202611/materials` | Product Optimization | List Shop Materials | Shop materials: upload and manage shop images and carousel content. |
+| needs scope: Product Optimization | low | small | `POST /seller/202611/images/upload` | Product Optimization | Upload Shop Image | Shop materials: upload and manage shop images and carousel content. |
+| needs scope: Product Optimization | low | small | `POST /seller/202611/materials/upload` | Product Optimization | Upload Shop Materials | Shop materials: upload and manage shop images and carousel content. |
 
 ### TikTok Shop — full catalog
 
@@ -1426,7 +1426,7 @@ Seeded with the scopes behind endpoints the dashboard already calls successfully
 | missing | Analytics | `POST /analytics/202611/ai_report/data/query` | Query AI Report Data | Query grouped metric values and optional row details for one authorized shop. |  |
 | missing | Analytics | `POST /analytics/202611/ai_report/dimension_options/search` | Search AI Report Dimension Options | Find filter values for a dimension returned by the catalog. |  |
 | missing | Analytics | `POST /analytics/202611/ai_report/query_config/validate` | Validate AI Report Query Configuration | Validate the query configuration without fetching report rows. |  |
-| covered | Authorization | `GET /authorization/202309/shops` | Get Authorized Shops | Retrieves the list of shops that a seller has authorized for an app. | `marketplaces/tiktok_shop/client.js`, `marketplaces/tiktok_shop/scripts/smoke.js` |
+| covered | Authorization | `GET /authorization/202309/shops` | Get Authorized Shops | Retrieves the list of shops that a seller has authorized for an app. | `marketplaces/tiktok_shop/client.js` |
 | missing | Authorization | `GET /authorization/202405/category_assets` | Get Authorized Category Assets | Retrieves the list of business category assets authorized by a partner for an app. |  |
 | missing | Customer engagement | `GET /customer_engagement/202412/message_templates` | Get Message Templates | Get a library of customer engagement message templates predefined by TikTok Shop, which you can use directly in your customer engagement communications. |  |
 | missing | Customer engagement | `GET /customer_engagement/202502/permissions` | Get Engagement Feature Permissions | Retrieve the shop's authorization status for customer engagement features. |  |
@@ -1434,7 +1434,7 @@ Seeded with the scopes behind endpoints the dashboard already calls successfully
 | missing | Customer engagement | `POST /customer_engagement/202412/messages` | Send Engagement Message | Send messages to specific customers for a particular engagement task. |  |
 | missing | Customer engagement | `POST /customer_engagement/202412/performances` | Get Engagement Task Performances | Retrieve detailed performance metrics for a customer engagement task, including message reads, order conversions, and other key engagement statistics. |  |
 | missing | Customer engagement | `POST /customer_engagement/202502/engagement_tasks/custom` | Create Custom Engagement Task | Create an engagement task that uses a self-defined custom message instead of predefined message templates from TikTok Shop. |  |
-| covered | Customer service | `GET /customer_service/202309/conversations` | Get Conversations | Use this API to retrieve a shop's conversations with buyers. | `marketplaces/tiktok_shop/inbox.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/scripts/smoke.js` |
+| covered | Customer service | `GET /customer_service/202309/conversations` | Get Conversations | Use this API to retrieve a shop's conversations with buyers. | `marketplaces/tiktok_shop/inbox.js`, `marketplaces/tiktok_shop/profile.js` |
 | covered | Customer service | `GET /customer_service/202309/conversations/{conversation_id}/messages` | Get Conversation Messages | Use this API to retrieve a page of messages in a conversation between a buyer and a shop. | `marketplaces/tiktok_shop/inbox.js` |
 | covered | Customer service | `POST /customer_service/202309/conversations/{conversation_id}/messages/read` | Mark Buyer Messages as Read | Use this API to mark all messages sent by the buyer as read. | `marketplaces/tiktok_shop/inbox.js` |
 | covered (older version: `POST /customer_service/202309/conversations/{conversationId}/messages`) | Customer service | `POST /customer_service/202606/conversations/{conversation_id}/messages` | Send Message | Use this API to send a message to the buyer in a conversation. | `marketplaces/tiktok_shop/inbox.js` |
@@ -1446,7 +1446,7 @@ Seeded with the scopes behind endpoints the dashboard already calls successfully
 | missing | Customer service | `POST /customer_service/202602/sessions/search` | Search Sessions | Search customer service sessions by their start-time range and, optionally, the buyer's nickname. |  |
 | missing | Customer service | `POST /customer_service/202605/conversations/{conversation_id}/sessions/{session_id}/end` | End Session | Use this API to end an active customer service session assigned to an agent. |  |
 | missing | Customer service | `PUT /customer_service/202309/agents/settings` | Update Agent Settings | Use this API to set whether the shop owner's customer service account can accept auto-assigned chats. |  |
-| covered | Event | `GET /event/202309/webhooks` | Get Shop Webhooks | Retrieves the enabled webhooks configured for the shop and their corresponding webhook URLs. | `marketplaces/tiktok_shop/client.js`, `marketplaces/tiktok_shop/scripts/smoke.js` |
+| covered | Event | `GET /event/202309/webhooks` | Get Shop Webhooks | Retrieves the enabled webhooks configured for the shop and their corresponding webhook URLs. | `marketplaces/tiktok_shop/client.js` |
 | covered | Event | `PUT /event/202309/webhooks` | Update Shop Webhook | Updates the shop's webhook URL for a specific event topic. | `marketplaces/tiktok_shop/client.js` |
 | missing | Event | `DELETE /event/202309/webhooks` | Delete Webhook for an Event | Deletes the shop's webhook URL for the specified event topic. |  |
 | covered | Finance | `GET /finance/202309/statements` | Get Statements | Retrieves the statements generated for a shop and the key statement information based on a specified date range or their payment status. | `marketplaces/tiktok_shop/finance.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/sections/finance.js` |
@@ -1510,14 +1510,14 @@ Seeded with the scopes behind endpoints the dashboard already calls successfully
 | missing | Fulfillment | `POST /fulfillment/202609/order/sof/track/update` | Tracking status update | **This API is currently exclusive to the following markets: US, BR.** This API is suitable for merchants to deliver and carry orders by themselves, without shipping orders through third-party service providers, that is, |  |
 | missing | Fulfillment | `POST /fulfillment/202610/packages/{package_id}/shipping_info/update` | Update Package Shipping Info | If the seller entered an incorrect tracking number, this API allows the seller to update the tracking number and shipping provider for a package that has already been shipped. |  |
 | covered | Logistics | `GET /logistics/202309/delivery_options/{delivery_option_id}/shipping_providers` | Get Shipping Providers | Returns the shipping providers available for the specified delivery option. | `marketplaces/tiktok_shop/orders.js` |
-| covered | Logistics | `GET /logistics/202309/warehouses` | Get Warehouse List | Retrieves warehouses associated with the seller, including names, effective statuses, types, default designations, and available address information. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/scripts/smoke.js` |
+| covered | Logistics | `GET /logistics/202309/warehouses` | Get Warehouse List | Retrieves warehouses associated with the seller, including names, effective statuses, types, default designations, and available address information. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Logistics | `GET /logistics/202309/warehouses/{warehouse_id}/delivery_options` | Get Warehouse Delivery Options | This API is used to obtain a list of delivery options available through the seller's designated warehouse. | `marketplaces/tiktok_shop/orders.js` |
 | missing | Logistics | `GET /logistics/202309/global_warehouses` | Get Global Seller Warehouses | This API retrieves global warehouses associated with the seller, including each warehouse's global warehouse ID, name, and ownership. |  |
 | missing | Logistics | `GET /logistics/202510/seller_templates` | Get Shipping Template Availability | get seller's available shipping template and return the reason why the template is not available，this api is now only available for JP and UK market |  |
 | missing | Logistics | `GET /logistics/202604/orders/{order_id}/tracking` | Get Logistics Tracking | Use this API to retrieve detailed logistics tracking information for an order. |  |
 | missing | Logistics | `GET /logistics/202606/seller_template/template_exist` | Check Shipping Template Existence | Checks whether the authenticated shop has a shipping template for the specified business warehouse. |  |
 | covered | Orders | `GET /order/202507/orders` | Get Order Detail | Get detailed information for up to 50 TikTok Shop orders specified by their IDs, including order status, payment details, price and tax information, package information, and shipping address information when available. | `marketplaces/tiktok_shop/orders.js` |
-| covered | Orders | `POST /order/202309/orders/search` | Get Order List | Returns a list of orders created or updated during the timeframe indicated by the specified parameters. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/scripts/smoke.js` |
+| covered | Orders | `POST /order/202309/orders/search` | Get Order List | Returns a list of orders created or updated during the timeframe indicated by the specified parameters. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/profile.js` |
 | missing | Orders | `GET /order/202406/orders/{order_id}/external_orders` | Get External Order References | If you have used the `Add External Order References` API, use this API to retrieve the external order references associated with a TikTok Shop order for the specified external order management system (OMS) platform. |  |
 | missing | Orders | `GET /order/202407/orders/{order_id}/price_detail` | Get Order Price Details | Get the detailed pricing calculation information of an order or a line item, including vouchers, tax, etc. |  |
 | missing | Orders | `POST /order/202406/orders/external_order_search` | Search Orders by External Order Reference | If you have used the `Add External Order References` API to sync information from your external order management system (OMS) to corresponding orders in TikTok Shop, you may call this API to search for order information |  |
@@ -1540,7 +1540,7 @@ Seeded with the scopes behind endpoints the dashboard already calls successfully
 | covered | Products | `POST /product/202309/products/deactivate` | Deactivate Products | Deactivate products that are in the `Activate` status and hide them from buyers. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/products/recover` | Recover Products | Recover products that are in the `Deleted` status. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202407/sizecharts/search` | Search Size Charts | Retrieve size charts that a seller has created. | `marketplaces/tiktok_shop/listings.js` |
-| covered | Products | `POST /product/202502/products/search` | Search Products | Retrieve a list of products that meet the specified conditions. | `marketplaces/tiktok_shop/listings.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/scripts/smoke.js` |
+| covered | Products | `POST /product/202502/products/search` | Search Products | Retrieve a list of products that meet the specified conditions. | `marketplaces/tiktok_shop/listings.js`, `marketplaces/tiktok_shop/profile.js` |
 | covered | Products | `POST /product/202509/products/{product_id}/partial_edit` | Partial Edit Product | Edit some properties (e.g. | `marketplaces/tiktok_shop/listings.js` |
 | missing | Products | `DELETE /product/202309/global_products` | Delete Global Products | Delete global products that you no longer need. |  |
 | missing | Products | `GET /product/202309/categories/{category_id}/global_attributes` | Get Global Attributes | Retrieve the standard built-in product and sales attributes for listing a global product in a particular category across the seller's markets. |  |
@@ -1627,9 +1627,9 @@ Seeded with the scopes behind endpoints the dashboard already calls successfully
 | covered | Return and refund | `POST /return_refund/202309/cancellations/{cancel_id}/reject` | Reject Cancellation | Use this API to reject a buyer's cancellation request for the specified cancel_id. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Return and refund | `POST /return_refund/202309/returns/{return_id}/approve` | Approve Return | Use this API to approve a buyer's return request. | `marketplaces/tiktok_shop/orders.js` |
 | covered (older version: `POST /return_refund/202309/cancellations`) | Return and refund | `POST /return_refund/202602/cancellations` | Cancel Order | Use this API to cancel an order on behalf of a seller. | `marketplaces/tiktok_shop/orders.js` |
-| covered (older version: `GET /return_refund/202309/cancellations/search`) | Return and refund | `POST /return_refund/202602/cancellations/search` | Search Cancellations | Use this API to search and retrieve one or more order cancellations. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/scripts/smoke.js`, `marketplaces/tiktok_shop/sections/returns-cancellations.js` |
+| covered (older version: `GET /return_refund/202309/cancellations/search`) | Return and refund | `POST /return_refund/202602/cancellations/search` | Search Cancellations | Use this API to search and retrieve one or more order cancellations. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/sections/returns-cancellations.js` |
 | covered (older version: `POST /return_refund/202309/returns`) | Return and refund | `POST /return_refund/202602/returns` | Create Return | Use this API to create a seller-initiated aftersales request for an order on behalf of the buyer. | `marketplaces/tiktok_shop/orders.js` |
-| covered (older version: `GET /return_refund/202309/returns/search`) | Return and refund | `POST /return_refund/202602/returns/search` | Search Returns | Use this API to search returns by return ID, order ID, buyer, return type, return status, arbitration status, or create/update time window. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/scripts/smoke.js`, `marketplaces/tiktok_shop/sections/returns-cancellations.js` |
+| covered (older version: `GET /return_refund/202309/returns/search`) | Return and refund | `POST /return_refund/202602/returns/search` | Search Returns | Use this API to search returns by return ID, order ID, buyer, return type, return status, arbitration status, or create/update time window. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/sections/returns-cancellations.js` |
 | covered (older version: `POST /return_refund/202309/returns/{returnId}/reject`) | Return and refund | `POST /return_refund/202606/returns/{return_id}/reject` | Reject Return | Use this API to reject a buyer's refund-only, return-and-refund, or replacement request, or to offer a partial refund after the package is received. | `marketplaces/tiktok_shop/orders.js` |
 | missing | Return and refund | `GET /return_refund/202309/reject_reasons` | Get Reject Reasons | Use this API to retrieve the seller reject-reason options currently applicable to the specified aftersales request. |  |
 | missing | Return and refund | `GET /return_refund/202309/returns/{return_id}/records` | Get Return Records | Use this API to retrieve the record entries for a specific return request. |  |
@@ -1665,164 +1665,165 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 
 #### ads (7)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `temu.searchrec.ad.reports.goods.query` | Advertisement goods data report (goods dimension) interface | Per-product ad report: spend, impressions, clicks, orders and ROAS for each advertised item. |
-| — | medium | medium | `temu.searchrec.ad.create` | Advertisement creation interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
-| — | medium | medium | `temu.searchrec.ad.detail.query` | Advertising campaign details query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
-| — | medium | medium | `temu.searchrec.ad.goods.create.query` | Advertising goods can create query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
-| — | medium | medium | `temu.searchrec.ad.log.query` | Advertisement log query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
-| — | medium | medium | `temu.searchrec.ad.modify` | Advertisement modify interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
-| — | medium | medium | `temu.searchrec.ad.roas.pred` | Advertising roas prediction interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `temu.searchrec.ad.reports.goods.query` | — | Advertisement goods data report (goods dimension) interface | Per-product ad report: spend, impressions, clicks, orders and ROAS for each advertised item. |
+| — | medium | medium | `temu.searchrec.ad.create` | — | Advertisement creation interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
+| — | medium | medium | `temu.searchrec.ad.detail.query` | — | Advertising campaign details query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
+| — | medium | medium | `temu.searchrec.ad.goods.create.query` | — | Advertising goods can create query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
+| — | medium | medium | `temu.searchrec.ad.log.query` | — | Advertisement log query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
+| — | medium | medium | `temu.searchrec.ad.modify` | — | Advertisement modify interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
+| — | medium | medium | `temu.searchrec.ad.roas.pred` | — | Advertising roas prediction interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
 
 #### after-sales (8)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `bg.aftersales.aftersales.list.get` | Query sub after-sales order information | After-sales detail: each return/refund line and its full record. |
-| — | high | small | `temu.aftersales.parentaftersales.detail.get` | query aftersales detail | After-sales detail: each return/refund line and its full record. |
-| — | medium | medium | `bg.aftersales.parentreturnorder.get` | Query after-sales reverse logistics information. | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.carrier.get` | Query return carrier information | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.returnaddress.get` | Get Return Order Buyer Address Information | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.returnlabel.prepare.get` | Query return label preparation information | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.signature.get` | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.upload.returnlabel` | Upload return label | Return logistics: return label, return address, carriers, reverse-shipment info. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `bg.aftersales.aftersales.list.get` | — | Query sub after-sales order information | After-sales detail: each return/refund line and its full record. |
+| — | high | small | `temu.aftersales.parentaftersales.detail.get` | — | query aftersales detail | After-sales detail: each return/refund line and its full record. |
+| — | medium | medium | `bg.aftersales.parentreturnorder.get` | — | Query after-sales reverse logistics information. | Return logistics: return label, return address, carriers, reverse-shipment info. |
+| — | medium | medium | `temu.aftersales.carrier.get` | — | Query return carrier information | Return logistics: return label, return address, carriers, reverse-shipment info. |
+| — | medium | medium | `temu.aftersales.returnaddress.get` | — | Get Return Order Buyer Address Information | Return logistics: return label, return address, carriers, reverse-shipment info. |
+| — | medium | medium | `temu.aftersales.returnlabel.prepare.get` | — | Query return label preparation information | Return logistics: return label, return address, carriers, reverse-shipment info. |
+| — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
+| — | medium | medium | `temu.aftersales.upload.returnlabel` | — | Upload return label | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
 #### goods (56)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `bg.local.goods.detail.query` | Query local goods detail | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
-| — | high | small | `bg.local.goods.sku.list.query` | Get sku list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
-| — | high | small | `temu.local.goods.list.retrieve` | Product list Retrieve | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
-| — | high | small | `temu.local.sku.list.retrieve` | Get SKU list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
-| — | high | large | `bg.local.goods.add` | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | high | large | `bg.local.goods.partial.update` | Partial Edit Product | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | high | large | `bg.local.goods.update` | Update Goods Draft On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | high | large | `temu.local.goods.attributes.edit` | temu.local.goods.attributes.edit | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | high | large | `temu.local.goods.delete` | Product deletion | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | high | large | `temu.local.goods.v2.add` | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | high | large | `temu.local.goods.v3.add` | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | medium | small | `bg.local.goods.out.sn.check` | Check if contribution ID for goods is repeated | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
-| — | medium | small | `bg.local.goods.out.sn.set` | Set contribution ID for goods | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
-| — | medium | small | `bg.local.goods.publish.status.get` | Batch Query Product Publication Status | Publication status of goods (live, under review, rejected). |
-| — | medium | small | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
-| — | medium | small | `bg.local.goods.sku.out.sn.set` | Set contribution ID for SKU | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
-| — | medium | medium | `bg.arbok.open.cert.queryNeedUploadItems` | bg.arbok.open.cert.queryNeedUploadItems | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.arbok.open.product.cert.query` | query product cert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.arbok.open.upload.uploadFile` | bg.arbok.open.upload.uploadFile | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.compliance.edit` | edit_compliance | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.compliance.metadata.get` | query_compliance_metadata | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.compliance.goods.list.query` | Product compliance list query | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.goods.compliance.edit` | Edit product qualification information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.goods.compliance.extra.template.get` | Inquire Required Compliance Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.goods.compliance.info.fill.list.query` | Query compliance information fill in the drop-down list | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.goods.compliance.property.check` | Verify Product Attribute Settings | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.goods.compliance.rules.get` | Query Mandatory Qualification Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `temu.local.goods.compliance.v2.edit` | edit goods compliance interface v2 version | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | low | small | `bg.flash.open.upload.real.image` | Kaiping real shot picture upload | Upload real product photos (real-shot images). |
-| — | low | small | `bg.flash.open.upload.recognize` | Kaiping real-time image acquisition test result interface | Upload real product photos (real-shot images). |
-| — | low | medium | `bg.local.goods.category.check` | goods category precheck | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.category.recommend` | Query Recommended Category by Product Name | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.cats.get` | Query Categories | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.gallery.signature.get` | Get Signature | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.image.upload` | Image material processing | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.property.get` | Get temu attributes | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.property.relations` | Query relation-property data of the product | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.property.relations.level.template` | Query dependency and level in relation-property database | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.property.relations.template` | Query property data in relation- property database | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.size.element.get` | Query Size Chart Element Information | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.spec.id.get` | Search And Generate Merchant-Customized Specifications | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.tax.code.get` | Get ITC list | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.template.get` | Query Product Attributes Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.videocoverimage.get` | Get video cover | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.brand.trademark.V2.get` | Query trademarks and properties | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.cats.rules.get` | Query the rules for posting products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.illegal.vocabulary.check` | check illeagl vocabulary | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.image.v2.upload` | Image material processing | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.missing.attributes.get` | temu.local.goods.missing.attributes.get | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.pre.sale.status.edit` | Temu Pre-sale Bulk Enable/Disable API | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.spec.info.get` | Query specification information | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.product.attributes.get` | Query Attribute Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.product.variation.get` | Query Mandatory And Optional Variations Of Products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `bg.local.goods.detail.query` | — | Query local goods detail | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
+| — | high | small | `bg.local.goods.sku.list.query` | — | Get sku list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
+| — | high | small | `temu.local.goods.list.retrieve` | — | Product list Retrieve | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
+| — | high | small | `temu.local.sku.list.retrieve` | — | Get SKU list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
+| — | high | large | `bg.local.goods.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
+| — | high | large | `bg.local.goods.partial.update` | — | Partial Edit Product | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
+| — | high | large | `bg.local.goods.update` | — | Update Goods Draft On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
+| — | high | large | `temu.local.goods.attributes.edit` | — | temu.local.goods.attributes.edit | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
+| — | high | large | `temu.local.goods.delete` | — | Product deletion | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
+| — | high | large | `temu.local.goods.v2.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
+| — | high | large | `temu.local.goods.v3.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
+| — | medium | small | `bg.local.goods.out.sn.check` | — | Check if contribution ID for goods is repeated | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
+| — | medium | small | `bg.local.goods.out.sn.set` | — | Set contribution ID for goods | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
+| — | medium | small | `bg.local.goods.publish.status.get` | — | Batch Query Product Publication Status | Publication status of goods (live, under review, rejected). |
+| — | medium | small | `bg.local.goods.sku.out.sn.check` | — | Check if contribution ID for SKU is repeated | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
+| — | medium | small | `bg.local.goods.sku.out.sn.set` | — | Set contribution ID for SKU | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
+| — | medium | medium | `bg.arbok.open.cert.queryNeedUploadItems` | — | bg.arbok.open.cert.queryNeedUploadItems | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.arbok.open.cert.uploadProductCert` | — | bg.arbok.open.cert.uploadProductCert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.arbok.open.product.cert.query` | — | query product cert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.arbok.open.upload.uploadFile` | — | bg.arbok.open.upload.uploadFile | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.compliance.edit` | — | edit_compliance | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.compliance.metadata.get` | — | query_compliance_metadata | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.goods.compliancelabel.get` | — | bg.goods.compliancelabel.get | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.local.compliance.goods.list.query` | — | Product compliance list query | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.local.goods.compliance.edit` | — | Edit product qualification information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.local.goods.compliance.extra.template.get` | — | Inquire Required Compliance Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.local.goods.compliance.info.fill.list.query` | — | Query compliance information fill in the drop-down list | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.local.goods.compliance.property.check` | — | Verify Product Attribute Settings | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `bg.local.goods.compliance.rules.get` | — | Query Mandatory Qualification Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | medium | medium | `temu.local.goods.compliance.v2.edit` | — | edit goods compliance interface v2 version | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
+| — | low | small | `bg.flash.open.upload.real.image` | — | Kaiping real shot picture upload | Upload real product photos (real-shot images). |
+| — | low | small | `bg.flash.open.upload.recognize` | — | Kaiping real-time image acquisition test result interface | Upload real product photos (real-shot images). |
+| — | low | medium | `bg.local.goods.category.check` | — | goods category precheck | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.category.recommend` | — | Query Recommended Category by Product Name | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.cats.get` | — | Query Categories | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.gallery.signature.get` | — | Get Signature | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.image.upload` | — | Image material processing | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.property.get` | — | Get temu attributes | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.property.relations` | — | Query relation-property data of the product | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.property.relations.level.template` | — | Query dependency and level in relation-property database | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.property.relations.template` | — | Query property data in relation- property database | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.size.element.get` | — | Query Size Chart Element Information | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.spec.id.get` | — | Search And Generate Merchant-Customized Specifications | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.tax.code.get` | — | Get ITC list | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.template.get` | — | Query Product Attributes Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `bg.local.goods.videocoverimage.get` | — | Get video cover | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.brand.trademark.V2.get` | — | Query trademarks and properties | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.cats.rules.get` | — | Query the rules for posting products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.illegal.vocabulary.check` | — | check illeagl vocabulary | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.image.v2.upload` | — | Image material processing | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.missing.attributes.get` | — | temu.local.goods.missing.attributes.get | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.pre.sale.status.edit` | — | Temu Pre-sale Bulk Enable/Disable API | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.sku.net.content.unit.query` | — | Query the name of physical unit for Unit-count-field | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.goods.spec.info.get` | — | Query specification information | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.product.attributes.get` | — | Query Attribute Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
+| — | low | medium | `temu.local.product.variation.get` | — | Query Mandatory And Optional Variations Of Products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 
 #### inventory (1)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `temu.local.goods.sku.stock.query` | local goods query product stock | Read the current stock Temu holds per SKU (to check stock sync). |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `temu.local.goods.sku.stock.query` | — | local goods query product stock | Read the current stock Temu holds per SKU (to check stock sync). |
 
 #### orders (8)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `bg.order.detail.v2.get` | Get Order Detail information | Full order detail (items, prices, status) in one call. |
-| — | medium | small | `bg.order.decryptshippinginfo.get` | Get Order Buyer Sensitive Address Information | Buyer's full shipping address when it is masked in the order. |
-| — | medium | small | `temu.order.amount.v2.query` | Get order amount api | Newer order amount breakdown (the older amount call is used). |
-| — | medium | small | `temu.order.cancel.appeal.apply` | Merchant initiates order cancellation application interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
-| — | medium | small | `temu.order.cancel.appeal.result.get` | Merchant initiates order cancellation result query interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
-| — | medium | small | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
-| — | low | small | `bg.order.customization.get` | Query order customization information | Order customisation details and order verification uploads. |
-| — | low | small | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | Order customisation details and order verification uploads. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `bg.order.detail.v2.get` | — | Get Order Detail information | Full order detail (items, prices, status) in one call. |
+| — | medium | small | `bg.order.decryptshippinginfo.get` | — | Get Order Buyer Sensitive Address Information | Buyer's full shipping address when it is masked in the order. |
+| — | medium | small | `temu.order.amount.v2.query` | — | Get order amount api | Newer order amount breakdown (the older amount call is used). |
+| — | medium | small | `temu.order.cancel.appeal.apply` | — | Merchant initiates order cancellation application interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
+| — | medium | small | `temu.order.cancel.appeal.result.get` | — | Merchant initiates order cancellation result query interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
+| — | medium | small | `temu.order.cancel.outofstock.result.get` | — | Merchant order out of stock cancel result query | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
+| — | low | small | `bg.order.customization.get` | — | Query order customization information | Order customisation details and order verification uploads. |
+| — | low | small | `temu.local.order.verification.upload` | — | Merchants upload verification information before shipping. | Order customisation details and order verification uploads. |
 
 #### price-reviews (3)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | small | `bg.local.goods.sku.list.price.query` | Batch query latest supplier price of SKUs. | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
-| — | high | small | `temu.local.goods.baseprice.recommend` | recommend base price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
-| — | high | small | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | small | `bg.local.goods.sku.list.price.query` | — | Batch query latest supplier price of SKUs. | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
+| — | high | small | `temu.local.goods.baseprice.recommend` | — | recommend base price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
+| — | high | small | `temu.local.goods.recommendedprice.query` | — | Batch query recommended price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
 
 #### promotions (5)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | medium | `bg.promotion.activity.candidate.goods.query` | paged query for activity candidate products. | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
-| — | high | medium | `bg.promotion.activity.goods.enroll` | product Registration the activity | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
-| — | high | medium | `bg.promotion.activity.goods.operation.query` | querying the operation result of active goods. | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
-| — | high | medium | `bg.promotion.activity.goods.query` | paged query activity products | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
-| — | high | medium | `bg.promotion.activity.goods.update` | Update Activity Goods Information | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | medium | `bg.promotion.activity.candidate.goods.query` | — | paged query for activity candidate products. | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
+| — | high | medium | `bg.promotion.activity.goods.enroll` | — | product Registration the activity | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
+| — | high | medium | `bg.promotion.activity.goods.operation.query` | — | querying the operation result of active goods. | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
+| — | high | medium | `bg.promotion.activity.goods.query` | — | paged query activity products | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
+| — | high | medium | `bg.promotion.activity.goods.update` | — | Update Activity Goods Information | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
 
 #### shipping (17)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | high | large | `bg.logistics.shipment.create` | Buy shipping api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
-| — | high | large | `bg.logistics.shipment.document.get` | Print shipping label api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
-| — | high | large | `bg.logistics.shipment.result.get` | Get buy shipping detail api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
-| — | high | large | `bg.logistics.shipment.shippingtype.update` | Edit shipping information api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
-| — | high | large | `bg.logistics.shipment.update` | Try buy shipping again api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
-| — | high | large | `bg.logistics.shippingservices.get` | Get available shipping services api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
-| — | medium | small | `bg.logistics.shipment.sub.confirm` | Add additional tracking information in batch api | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
-| — | medium | small | `bg.logistics.shipment.v2.get` | Get Order Shipment Information | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
-| — | medium | small | `bg.logistics.shipped.package.confirm` | bg logistics shipped package confirm | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
-| — | medium | small | `bg.order.combinedshipment.list.get` | Combined Shipment Orders | Orders that can ship together and unshipped packages. |
-| — | medium | small | `bg.order.unshipped.package.get` | bg order unshipped package get | Orders that can ship together and unshipped packages. |
-| — | medium | small | `temu.track.trackinginfo.get` | temu.track.trackinginfo.get | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
-| — | low | small | `temu.logistics.label.list.get` | temu logistics label list get | Carrier pickup reservations, label list and shipping logistics types. |
-| — | low | small | `temu.logistics.shiplogisticstype.get` | Get all online ship logistics type | Carrier pickup reservations, label list and shipping logistics types. |
-| — | low | small | `temu.logistics.shipment.pickup.reservation.cancel` | Cancel reservationSn api | Carrier pickup reservations, label list and shipping logistics types. |
-| — | low | small | `temu.logistics.shipment.pickup.reservation.create` | Create package reservation api | Carrier pickup reservations, label list and shipping logistics types. |
-| — | low | small | `temu.logistics.shipment.pickup.reservation.result.get` | Get package reservation result api | Carrier pickup reservations, label list and shipping logistics types. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | high | large | `bg.logistics.shipment.create` | — | Buy shipping api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
+| — | high | large | `bg.logistics.shipment.document.get` | — | Print shipping label api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
+| — | high | large | `bg.logistics.shipment.result.get` | — | Get buy shipping detail api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
+| — | high | large | `bg.logistics.shipment.shippingtype.update` | — | Edit shipping information api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
+| — | high | large | `bg.logistics.shipment.update` | — | Try buy shipping again api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
+| — | high | large | `bg.logistics.shippingservices.get` | — | Get available shipping services api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
+| — | medium | small | `bg.logistics.shipment.sub.confirm` | — | Add additional tracking information in batch api | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
+| — | medium | small | `bg.logistics.shipment.v2.get` | — | Get Order Shipment Information | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
+| — | medium | small | `bg.logistics.shipped.package.confirm` | — | bg logistics shipped package confirm | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
+| — | medium | small | `bg.order.combinedshipment.list.get` | — | Combined Shipment Orders | Orders that can ship together and unshipped packages. |
+| — | medium | small | `bg.order.unshipped.package.get` | — | bg order unshipped package get | Orders that can ship together and unshipped packages. |
+| — | medium | small | `temu.track.trackinginfo.get` | — | temu.track.trackinginfo.get | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
+| — | low | small | `temu.logistics.label.list.get` | — | temu logistics label list get | Carrier pickup reservations, label list and shipping logistics types. |
+| — | low | small | `temu.logistics.shiplogisticstype.get` | — | Get all online ship logistics type | Carrier pickup reservations, label list and shipping logistics types. |
+| — | low | small | `temu.logistics.shipment.pickup.reservation.cancel` | — | Cancel reservationSn api | Carrier pickup reservations, label list and shipping logistics types. |
+| — | low | small | `temu.logistics.shipment.pickup.reservation.create` | — | Create package reservation api | Carrier pickup reservations, label list and shipping logistics types. |
+| — | low | small | `temu.logistics.shipment.pickup.reservation.result.get` | — | Get package reservation result api | Carrier pickup reservations, label list and shipping logistics types. |
 
-#### new: account (1)
+#### new: account (2)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | low | small | `temu.local.mall.tags.get` | get store tags | Store tags (store type and programs). |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | medium | small | `bg.open.accesstoken.info.get` | — | Get Accesstoken Detail Information | Check the access token: the store it belongs to, its expiry and the API scopes granted (spot a missing permission before a call fails). |
+| — | low | small | `temu.local.mall.tags.get` | — | get store tags | Store tags (store type and programs). |
 
 #### new: cooperative warehouse (5)
 
-| Access | Priority | Size | Endpoint | Name | What it gives the seller |
-|---|---|---|---|---|---|
-| — | low | large | `bg.cooperativewarehouse.fulfill.cancel` | Cooperative warehouse fulfill cancel | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
-| — | low | large | `bg.cooperativewarehouse.fulfill.query` | Cooperative warehouse fulfill query | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
-| — | low | large | `bg.cooperativewarehouse.fulfill.submit` | Cooperative warehouse fulfill submit | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
-| — | low | large | `bg.cooperativewarehouse.provider.list` | Cooperative warehouse provider list | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
-| — | low | large | `bg.cooperativewarehouse.token.authorization` | Cooperative warehouse token authorization | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
+| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
+|---|---|---|---|---|---|---|
+| — | low | large | `bg.cooperativewarehouse.fulfill.cancel` | — | Cooperative warehouse fulfill cancel | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
+| — | low | large | `bg.cooperativewarehouse.fulfill.query` | — | Cooperative warehouse fulfill query | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
+| — | low | large | `bg.cooperativewarehouse.fulfill.submit` | — | Cooperative warehouse fulfill submit | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
+| — | low | large | `bg.cooperativewarehouse.provider.list` | — | Cooperative warehouse provider list | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
+| — | low | large | `bg.cooperativewarehouse.token.authorization` | — | Cooperative warehouse token authorization | Fulfilment by Temu's partner warehouses: providers, authorise, submit and cancel fulfilment. |
 
 ### Temu — full catalog
 
@@ -1839,7 +1840,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Ads | `temu.searchrec.ad.reports.goods.query` | Advertisement goods data report (goods dimension) interface | Advertisement goods data report (goods dimension) |  |
 | missing | Ads | `temu.searchrec.ad.roas.pred` | Advertising roas prediction interface | Advertising roas prediction |  |
 | covered | Authorization | `bg.open.accesstoken.create` | Get Access Token | Temu's authorization callback interface allows developers to receive notifications when a user has successfully authorized their application. When after the user grants permission, Temu will redirect back to the develope | `marketplaces/temu/client.js` |
-| covered | Authorization | `bg.open.accesstoken.info.get` | Get Accesstoken Detail Information | This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints. | `marketplaces/temu/scripts/smoke.js` |
+| missing | Authorization | `bg.open.accesstoken.info.get` | Get Accesstoken Detail Information | This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints. |  |
 | missing | Authorization | `temu.local.mall.tags.get` | get store tags | This API allows sellers to retrieve the list of store tags currently assigned to their store. |  |
 | missing | Compliance | `bg.arbok.open.cert.queryNeedUploadItems` | bg.arbok.open.cert.queryNeedUploadItems | ￼External key customers have their own development capabilities and can call APIs to query the content to be uploaded |  |
 | missing | Compliance | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | External key customers have their own development capabilities and can call APIs to submit qualifications |  |
@@ -1850,10 +1851,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Compliance | `bg.local.compliance.goods.list.query` | Product compliance list query | Product management attribute list query |  |
 | missing | Flash (real images) | `bg.flash.open.upload.real.image` | Kaiping real shot picture upload | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
 | missing | Flash (real images) | `bg.flash.open.upload.recognize` | Kaiping real-time image acquisition test result interface | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
-| covered | Order | `bg.order.amount.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP | `marketplaces/temu/orders.js`, `marketplaces/temu/scripts/smoke.js` |
+| covered | Order | `bg.order.amount.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP | `marketplaces/temu/orders.js` |
 | covered | Order | `bg.order.list.v2.get` | Batch Get Order Information | The bg.order.list.v2.get interface is designed for support batch return of corresponding order lists based on filtering criteria. | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/shipping.js` |
-| covered | Order | `bg.order.shippinginfo.v2.get` | Get Order Buyer Address Information v2 | The bg.order.shippinginfo.get.V2 interface is designed to retrieve shipping address information for a specific order. This functionality is crucial for merchants and logistics providers to ensure that orders are shipped | `marketplaces/temu/orders.js`, `marketplaces/temu/scripts/smoke.js` |
-| covered | Order | `temu.order.cancel.outofstock.apply` | Merchant order out of stock cancel apply | The user takes the initiative to initiate a stock-out situation, which will be submitted to the risk control department for review. | `marketplaces/temu/orders.js`, `marketplaces/temu/scripts/smoke.js` |
+| covered | Order | `bg.order.shippinginfo.v2.get` | Get Order Buyer Address Information v2 | The bg.order.shippinginfo.get.V2 interface is designed to retrieve shipping address information for a specific order. This functionality is crucial for merchants and logistics providers to ensure that orders are shipped | `marketplaces/temu/orders.js` |
+| covered | Order | `temu.order.cancel.outofstock.apply` | Merchant order out of stock cancel apply | The user takes the initiative to initiate a stock-out situation, which will be submitted to the risk control department for review. | `marketplaces/temu/orders.js` |
 | missing | Order | `bg.order.combinedshipment.list.get` | Combined Shipment Orders | The bg.order.combinedshipment.list.get interface is designed for merchants to retrieve combined shipping groups including lists of parent orders that can be combined for shipping. |  |
 | missing | Order | `bg.order.customization.get` | Query order customization information | Self developed sellers and third-party ISVs obtain customized product content information in bulk through Open API |  |
 | missing | Order | `bg.order.decryptshippinginfo.get` | Get Order Buyer Sensitive Address Information | bg.order.decryptshippinginfo.get interface is designed to retrieve sensitive shipping address information for a specific order. |  |
@@ -1865,10 +1866,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface |  |
 | missing | Order verification | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods. |  |
 | covered | Product | `bg.local.goods.list.query` | Get product list | Get product list | `marketplaces/temu/listings.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
-| covered | Product | `bg.local.goods.priceorder.change.sku.price` | Batch change SKU base price | Support merchants within the white list to modify sku base prices in batches. | `marketplaces/temu/listings.js`, `marketplaces/temu/scripts/smoke.js` |
+| covered | Product | `bg.local.goods.priceorder.change.sku.price` | Batch change SKU base price | Support merchants within the white list to modify sku base prices in batches. | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.priceorder.query` | Query price offer Info | Support merchants within the white list to query the price offer list. | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
-| covered | Product | `bg.local.goods.sale.status.set` | Modify The Listing Status Of Products | Support goods/SKU dimension for listing and delisting operations | `marketplaces/temu/listings.js`, `marketplaces/temu/scripts/smoke.js` |
-| covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js`, `marketplaces/temu/scripts/smoke.js` |
+| covered | Product | `bg.local.goods.sale.status.set` | Modify The Listing Status Of Products | Support goods/SKU dimension for listing and delisting operations | `marketplaces/temu/listings.js` |
+| covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js` |
 | missing | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels |  |
 | missing | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu |  |
 | missing | Product | `bg.local.goods.category.check` | goods category precheck | precheck category misplacement |  |
@@ -1926,10 +1927,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Promotions | `bg.promotion.activity.goods.operation.query` | querying the operation result of active goods. | query the result of operation in the local to local activity |  |
 | missing | Promotions | `bg.promotion.activity.goods.query` | paged query activity products | query the local to local activity goods |  |
 | missing | Promotions | `bg.promotion.activity.goods.update` | Update Activity Goods Information | update activity goods information in the local to local activity |  |
-| covered | Returns and after-sales | `bg.aftersales.cancel.agree` | Agree cancel order | Agree cancel order | `marketplaces/temu/orders.js`, `marketplaces/temu/scripts/smoke.js` |
+| covered | Returns and after-sales | `bg.aftersales.cancel.agree` | Agree cancel order | Agree cancel order | `marketplaces/temu/orders.js` |
 | covered | Returns and after-sales | `bg.aftersales.cancel.list.get` | Query cancel order after-sales information | Query cancel order after-sales information | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `bg.aftersales.parentaftersales.list.get` | Query the information of parent after-sales orders | This interface is designed to provide real-time updates on the current after-sales status of an order within an e-commerce platform. It allows merchants and buyers to retrieve detailed information about the progress of a | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/after-sales.js` |
-| covered | Returns and after-sales | `temu.aftersales.refund.issue` | issue refund | This interface is designed to enable merchants to efficiently process refund requests within the e-commerce platform. | `marketplaces/temu/orders.js`, `marketplaces/temu/scripts/smoke.js` |
+| covered | Returns and after-sales | `temu.aftersales.refund.issue` | issue refund | This interface is designed to enable merchants to efficiently process refund requests within the e-commerce platform. | `marketplaces/temu/orders.js` |
 | missing | Returns and after-sales | `bg.aftersales.aftersales.list.get` | Query sub after-sales order information | This interface is designed for use in an e-commerce platform, specifically for handling after-sales service requests related to product returns and refunds. The interface allows merchants or administrators to retrieve a |  |
 | missing | Returns and after-sales | `bg.aftersales.parentreturnorder.get` | Query after-sales reverse logistics information. | This interface is designed to provide merchants or administrators within an e-commerce platform with detailed return logistics information for a set of after-sales service requests. |  |
 | missing | Returns and after-sales | `temu.aftersales.carrier.get` | Query return carrier information | This interface is designed to query return carrier information. |  |
@@ -1939,9 +1940,9 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Returns and after-sales | `temu.aftersales.signature.get` | Query signature information | This interface is designed to query signature information. |  |
 | missing | Returns and after-sales | `temu.aftersales.upload.returnlabel` | Upload return label | This interface is designed to upload return label. |  |
 | covered | Shipping | `bg.freight.template.list.query` | Query Freight Template List | query freight template list by Temu seller, use for claim that goods logistics fee rules when listing items | `marketplaces/temu/sections/shipping.js` |
-| covered | Shipping | `bg.logistics.companies.get` | get logistics companies | Obtain full logistics providers that support shipping at the corresponding regoin | `marketplaces/temu/orders.js`, `marketplaces/temu/scripts/smoke.js` |
-| covered | Shipping | `bg.logistics.shipment.v2.confirm` | Confirm Order Shipment | The bg.logistic.shipment.v2.confirm interface is designed to synchronize and return order fulfillment information through this interface. Switch the order status from pending shipment to shipped. | `marketplaces/temu/orders.js`, `marketplaces/temu/scripts/smoke.js` |
-| covered | Shipping | `bg.logistics.warehouse.list.get` | Get shipping address api | Sellers can use this API to obtain the shop's warehouse information. | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/scripts/smoke.js`, `marketplaces/temu/sections/shipping.js` |
+| covered | Shipping | `bg.logistics.companies.get` | get logistics companies | Obtain full logistics providers that support shipping at the corresponding regoin | `marketplaces/temu/orders.js` |
+| covered | Shipping | `bg.logistics.shipment.v2.confirm` | Confirm Order Shipment | The bg.logistic.shipment.v2.confirm interface is designed to synchronize and return order fulfillment information through this interface. Switch the order status from pending shipment to shipped. | `marketplaces/temu/orders.js` |
+| covered | Shipping | `bg.logistics.warehouse.list.get` | Get shipping address api | Sellers can use this API to obtain the shop's warehouse information. | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/shipping.js` |
 | missing | Shipping | `bg.logistics.shipment.create` | Buy shipping api | The bg.logistics.shipment.create interface is for sellers to place online logistics orders and receive package numbers, which enables to effortlessly place logistics orders with selected carriers online. |  |
 | missing | Shipping | `bg.logistics.shipment.document.get` | Print shipping label api | The bg.logistics.shipment.document.get interface is for sellers to obtain the express delivery waybill which has been fulfilled successfully by Temu-integrated channel so as to facilitate the printing of the express deli |  |
 | missing | Shipping | `bg.logistics.shipment.result.get` | Get buy shipping detail api | The bg.logistics.shipment.result.get interface is for sellers to query the result of placing online logistics orders, with the shipping label status including in-progress{0}, successful{1}, and failed{2}. |  |
@@ -1962,6 +1963,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Warehouse | `bg.cooperativewarehouse.fulfill.submit` | Cooperative warehouse fulfill submit | cooperativewarehouse_fulfill |  |
 | missing | Warehouse | `bg.cooperativewarehouse.provider.list` | Cooperative warehouse provider list | cooperate warehouse erp order |  |
 | missing | Warehouse | `bg.cooperativewarehouse.token.authorization` | Cooperative warehouse token authorization | Cooperative warehouse token authorization |  |
-| covered | Webhook | `bg.tmc.message.update` | Update Shop Webhook | This API updates the shop's webhook for specific event codes. | `marketplaces/temu/scripts/smoke.js`, `marketplaces/temu/webhooks.js` |
+| covered | Webhook | `bg.tmc.message.update` | Update Shop Webhook | This API updates the shop's webhook for specific event codes. | `marketplaces/temu/webhooks.js` |
 
 </details>

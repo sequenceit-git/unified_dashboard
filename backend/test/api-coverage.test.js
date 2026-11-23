@@ -163,3 +163,29 @@ test('the report shows which gaps the app can call now', () => {
   assert.match(md, new RegExp(`\\| TikTok Shop \\|[^\\n]*\\| ${now} \\|\\n`))
   assert.match(md, /\| needs scope: Live Data \|/)
 })
+
+// ---- Final review fixes
+test('the gap list shows the scope each endpoint needs', () => {
+  const md = require('../scripts/apiCoverage/report').buildReport()
+  assert.match(md, /`GET \/sell\/analytics\/v1\/traffic_report` \| sell\.analytics\.readonly \|/)
+})
+
+test('a call that matches no catalog endpoint fails the comparison', () => {
+  assert.throws(() => coverageOf()({ endpoints: [row({ id: 'GET /a/v1/b' })] }, [{ id: 'GET /a/v1/unknown', files: ['x.js'] }]), /not in the catalog.*GET \/a\/v1\/unknown/)
+})
+
+test('calls made only from dev scripts do not count as covered', () => {
+  for (const key of ['ebay', 'tiktok_shop', 'temu']) {
+    for (const e of usedEndpoints(key)) for (const f of e.files) assert.ok(!/\/scripts\//.test(f), `${key} ${e.id} from ${f}`)
+  }
+})
+
+test('report links only open https pages', () => {
+  const html = fs.readFileSync(path.join(ROOT, '..', 'docs', 'api-coverage', 'report.html'), 'utf8')
+  const pick = (re) => html.match(re)[0]
+  const src = [pick(/const esc = [^\n]+/), pick(/function endpointCell[\s\S]*?\n\}/)].join('\n')
+  const endpointCell = new Function(`${src}; return endpointCell`)()
+  const out = endpointCell({ id: 'GET /x', docs: 'javascript:alert(1)', confirmed: true })
+  assert.ok(!/href=/.test(out), out)
+  assert.match(endpointCell({ id: 'GET /x', docs: 'https://partner.tiktokshop.com/x', confirmed: true }), /href="https:/)
+})

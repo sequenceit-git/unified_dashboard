@@ -15,7 +15,8 @@ function files(key) {
   const walk = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name)
-      if (entry.isDirectory()) { if (entry.name !== 'test') walk(full) } else if (entry.name.endsWith('.js')) out.push(full)
+      // Tests and dev scripts (scripts/smoke.js …) don't count: "covered" means the product calls it.
+      if (entry.isDirectory()) { if (entry.name !== 'test' && entry.name !== 'scripts') walk(full) } else if (entry.name.endsWith('.js')) out.push(full)
     }
   }
   walk(path.join(BACKEND, 'marketplaces', key))
