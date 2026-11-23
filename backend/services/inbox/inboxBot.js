@@ -16,7 +16,6 @@ const { getAiConfig } = require('../system/aiSettings')
 
 const HANDOFF = 'HANDOFF'
 const MAX_MESSAGE_AGE_MS = 24 * 60 * 60 * 1000
-const MARKETPLACE_LABEL = { ebay: 'eBay', tiktok_shop: 'TikTok Shop' }
 
 async function productList(shop) {
   const listings = await Listing.find({ shopId: shop._id })
@@ -36,7 +35,7 @@ async function productList(shop) {
 
 function instructions(shop, products) {
   return [
-    `You answer buyer messages for "${shop.name}", a ${MARKETPLACE_LABEL[shop.marketplace] || shop.marketplace} shop in the United States.`,
+    `You answer buyer messages for "${shop.name}", a ${registry.labels()[shop.marketplace] || shop.marketplace} shop in the United States.`,
     "Reply in the buyer's language, politely and briefly (under 120 words), as plain text without markdown.",
     'Use only facts from the conversation and the product list. Never invent order status, tracking numbers, delivery dates or shop policies.',
     'Never promise refunds, returns, replacements, discounts or compensation, and never move the buyer off the marketplace.',

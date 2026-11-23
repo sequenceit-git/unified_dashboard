@@ -5,7 +5,7 @@
  */
 
 const OpenAI = require('openai')
-const ebay = require('../../marketplaces/ebay/service')
+const registry = require('../../marketplaces')
 const { getAiConfig } = require('../system/aiSettings')
 const { checkUrl, safeFetch } = require('../../utils/safeUrl')
 
@@ -180,32 +180,14 @@ function fromHtml(html, url) {
   }
 }
 
-async function fromEbayItem(url) {
-  const itemId = url.pathname.match(/\/itm\/(?:[^/]+\/)?(\d{9,})/)?.[1]
-  if (!itemId) return null
-  const token = await ebay.getApplicationToken().catch(() => null)
-  if (!token) return null
-  const res = await fetch(`https://api.ebay.com/buy/browse/v1/item/get_item_by_legacy_id?legacy_item_id=${itemId}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US' },
-  })
-  if (!res.ok) return null
-  const item = await res.json()
-  const attributes = normalizeAttributes(
-    (item.localizedAspects || []).map((aspect) => ({ name: aspect.name, value: aspect.value ?? aspect.values })),
-  )
-  return {
-    title: item.title || '',
-    description: pageText(item.description || item.shortDescription || ''),
-    brand: item.brand || attributes.Brand || '',
-    price: Number(item.price?.value) || null,
-    currency: item.price?.currency || 'USD',
-    images: [item.image?.imageUrl, ...(item.additionalImages || []).map((img) => img.imageUrl)].filter(Boolean),
-    sku: '',
-    gtin: item.gtin || '',
-    condition: /used/i.test(item.condition || '') ? 'USED_GOOD' : 'NEW',
-    category: item.categoryPath || '',
-    attributes,
-  }
+/** A shop's own API for its item pages (e.g. eBay's Browse API), when the URL belongs to that shop. */
+async function fromShopApi(url) {
+  const importer = registry.all().find((adapter) => adapter.importer?.matches(url))?.importer
+  if (!importer) return null
+  const item = await importer.readItem(url)
+  if (!item) return null
+  const attributes = normalizeAttributes(item.attributes || [])
+  return { ...item, description: pageText(item.description), brand: item.brand || attributes.Brand || '', attributes, source: importer.source }
 }
 
 async function download(url) {
@@ -235,9 +217,12 @@ async function download(url) {
   }
 }
 
+/** The shop's product-form rules (title limit, condition, ...); {} when no shop is chosen. */
+const productForm = (marketplace) => (registry.KEYS.includes(marketplace) ? registry.get(marketplace).profile.productForm || {} : {})
+
 function aiFields(marketplace) {
-  const titleMax = marketplace === 'ebay' ? 80 : marketplace === 'temu' ? 250 : 255
-  const condition = marketplace === 'ebay'
+  const titleMax = productForm(marketplace).titleMax || 255
+  const condition = productForm(marketplace).condition
     ? '\n  "condition": "NEW, LIKE_NEW, USED_GOOD or FOR_PARTS_OR_NOT_WORKING",'
     : ''
   return `{
@@ -263,11 +248,6 @@ function parseJson(text) {
 }
 
 /** Cleans up extracted details; with `searchWeb` it reads the product page through web search. */
-const SHOP_HINT = {
-  ebay: 'This listing is for eBay. Fill item specifics buyers filter by (Brand, Type, Color, Size, Material, Model, Capacity). Every value must be a string.',
-  tiktok_shop: 'This listing is for TikTok Shop. Fill product attributes (Brand, Color, Model, Capacity, Material, Number of cups or pieces). Every value must be a string.',
-  temu: 'This listing is for Temu. Keep attributes to the few facts printed on the page. Every value must be a string.',
-}
 
 async function aiDraft({ url, extracted, text, searchWeb, marketplace }) {
   const { apiKey, model } = await getAiConfig({ purpose: 'listing' })
@@ -279,7 +259,7 @@ async function aiDraft({ url, extracted, text, searchWeb, marketplace }) {
   const response = await client.responses.create({
     model,
     ...(searchWeb ? { tools: [{ type: 'web_search' }] } : {}),
-    instructions: `You prepare marketplace listings from a product page. Use only facts from the page; never invent specifications. Copy item specifics that already have values, and omit any you cannot read. ${SHOP_HINT[marketplace] || ''} Reply with JSON only.`,
+    instructions: `You prepare marketplace listings from a product page. Use only facts from the page; never invent specifications. Copy item specifics that already have values, and omit any you cannot read. ${registry.KEYS.includes(marketplace) ? registry.get(marketplace).aiHint || '' : ''} Reply with JSON only.`,
     input: `Product page: ${url}\n\n${facts}\n\nReturn this JSON:\n${aiFields(marketplace)}`,
   })
   return parseJson(response.output_text)
@@ -293,9 +273,11 @@ async function importProductFromUrl(rawUrl, { useAi = true, marketplace } = {}) 
   let text = ''
   let source = 'page'
 
-  if (/(^|\.)ebay\.[a-z.]+$/i.test(url.hostname)) {
-    extracted = await fromEbayItem(url).catch(() => null)
-    if (extracted) source = 'ebay_api'
+  const fromApi = await fromShopApi(url).catch(() => null)
+  if (fromApi) {
+    const { source: apiSource, ...details } = fromApi
+    extracted = details
+    source = apiSource
   }
   if (!extracted) {
     const page = await download(url)
@@ -336,7 +318,7 @@ async function importProductFromUrl(rawUrl, { useAi = true, marketplace } = {}) 
     sourceUrl: url.href,
     source,
     aiUsed: Boolean(ai),
-    title: String(ai?.title || base.title || '').slice(0, marketplace === 'ebay' ? 80 : marketplace === 'temu' ? 250 : 255),
+    title: String(ai?.title || base.title || '').slice(0, productForm(marketplace).titleMax || 255),
     description: String(ai?.description || base.description || '').trim(),
     brand,
     condition: ['NEW', 'LIKE_NEW', 'USED_GOOD', 'FOR_PARTS_OR_NOT_WORKING'].includes(ai?.condition) ? ai.condition : base.condition || 'NEW',

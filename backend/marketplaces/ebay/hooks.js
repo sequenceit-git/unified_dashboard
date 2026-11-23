@@ -462,7 +462,18 @@ async function promotionTargets(manager, shop, listingIds) {
   return { listingIds: finalListingIds, imageUrl }
 }
 
+/**
+ * After publishing: a product still on a draft SKU (BOT-, EP-, EBAY-yymmdd-xxxxxx) takes
+ * EBAY-<item ID>, the format every other eBay product uses. Returns the new SKU or null.
+ */
+function publishedSku(product, publishRes) {
+  const sku = product?.sku
+  const isDraft = sku && (sku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(sku) || sku.startsWith('EP-'))
+  return isDraft && publishRes?.externalListingId ? `EBAY-${publishRes.externalListingId}` : null
+}
+
 module.exports = {
+  publishedSku,
   promotionTargets,
   listingVariants,
   shippingLineItems,

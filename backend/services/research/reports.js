@@ -5,7 +5,9 @@ const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
 const Listing = require('../../models/Listing')
 const marketplaceManager = require('../../services/marketplace')
-const { canonical: canonicalMarketplace } = require('../../marketplaces')
+const registry = require('../../marketplaces')
+
+const { canonical: canonicalMarketplace } = registry
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 const { productImages } = require('../../agent/discovery/listingImage')
 const { getAiConfig } = require('../../services/system/aiSettings')
@@ -13,11 +15,7 @@ const { HttpError } = require('../../utils/httpError')
 const { generateRecommendationsExcel, verifiedLinks } = require('../catalog/excelExport')
 const { newSku } = require('../../utils/sku')
 
-const SHOP_LABELS = {
-  ebay: 'eBay',
-  tiktok_shop: 'TikTok Shop',
-  temu: 'Temu Shop',
-}
+const SHOP_LABELS = registry.labels()
 
 async function syncReportOpportunities(report) {
   if (!report || !Array.isArray(report.opportunities) || report.opportunities.length === 0) return false
@@ -248,10 +246,10 @@ async function deleteReport(ctx) {
 async function generate(ctx) {
     const { categories: rawCategories, category, niche, instructions, targetMarketplaces: rawTargetMarketplaces } = ctx.body
 
-    const validMarkets = ['ebay', 'tiktok', 'temu']
+    const validMarkets = registry.KEYS.map(registry.urlId)
     const targetMarketplaces = Array.isArray(rawTargetMarketplaces) && rawTargetMarketplaces.length
       ? rawTargetMarketplaces.map((m) => String(m).toLowerCase().trim()).filter((m) => validMarkets.includes(m))
-      : ['ebay']
+      : [validMarkets[0]]
 
     // Accept both { categories: [...] } and legacy { category: "..." }
     const categories = Array.isArray(rawCategories) && rawCategories.length
@@ -522,7 +520,7 @@ async function exportReport(ctx) {
       const score = r.opportunityScore ?? ''
 
       // Generate clean preview SKU using official marketplace format
-      const sku = newSku(r.targetMarketplace || 'ebay')
+      const sku = newSku(r.targetMarketplace || registry.KEYS[0])
 
       return [
         sanitizeCell(sku),

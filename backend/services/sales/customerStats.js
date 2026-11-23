@@ -1,6 +1,10 @@
 const Customer = require('../../models/Customer')
 const Order = require('../../models/Order')
-const { canonical: canonicalMarketplace } = require('../../marketplaces')
+const registry = require('../../marketplaces')
+
+const { canonical: canonicalMarketplace } = registry
+/** The shop's buyer relay-address maker (eBay: username@members.ebay.com), if it has one. */
+const buyerEmail = (key) => (registry.KEYS.includes(key) ? registry.get(key).buyer?.fallbackEmail : undefined)
 
 function buyerKeys(customer) {
   const keys = new Set()
@@ -99,15 +103,16 @@ async function withOrderStats(customers, marketplace) {
   }
 
   return list.map((customer) => {
+    // A shop that gives buyers a relay address (eBay: username@members.ebay.com) wins the username and email.
+    const emailShop = [marketplace, ...(customer.identities || []).map((i) => i.marketplace)].find((key) => buyerEmail(key))
     const row = stats.get(String(customer._id)) || { orderCount: 0, totalSpent: 0, lastOrderAt: null }
     const buyerUsername =
-      (customer.identities || []).find((i) => i.marketplace === 'ebay')?.username ||
+      (customer.identities || []).find((i) => buyerEmail(i.marketplace))?.username ||
       customer.identities?.[0]?.username ||
       customer.identities?.[0]?.externalBuyerId ||
       (!customer.name?.includes(' ') ? customer.name : '')
 
-    const isEbay = marketplace === 'ebay' || (customer.identities || []).some((i) => i.marketplace === 'ebay')
-    const fallbackEmail = isEbay && buyerUsername ? `${buyerUsername.toLowerCase()}@members.ebay.com` : null
+    const fallbackEmail = emailShop && buyerUsername ? buyerEmail(emailShop)(buyerUsername) : null
 
     const resolvedEmail = customer.email || row.email || fallbackEmail || ''
     const resolvedPhone = customer.phone || row.phone || ''

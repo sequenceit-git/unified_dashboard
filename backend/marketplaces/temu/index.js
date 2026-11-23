@@ -14,5 +14,12 @@ module.exports = {
   sections: require('./sections'),
   webhooks: require('./webhooks'),
   listingUrl: require('./listingUrl').listingUrl,
+  routes: require('./routes'),
+  aiHint: 'This listing is for Temu. Keep attributes to the few facts printed on the page. Every value must be a string.',
+  skuPrefix: 'TEMU',
+  configStatus: (config) => ({
+    configured: Boolean(config.appKey && config.appSecret),
+    environment: 'US',
+  }),
   capabilities: {},
 }

@@ -1,10 +1,11 @@
 const mongoose = require('mongoose')
+const { KEYS } = require('../marketplaces')
 const { encrypt, decrypt } = require('../utils/recipientPii')
 
 const shopSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    marketplace: { type: String, enum: ['ebay', 'temu', 'tiktok_shop'], required: true },
+    marketplace: { type: String, enum: KEYS, required: true },
     externalShopId: { type: String, required: true },
     shopCipher: { type: String },
     auth: {

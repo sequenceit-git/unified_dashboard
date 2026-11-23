@@ -17,7 +17,7 @@ const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 const { saveCustomerStats } = require('../sales/customerStats')
 const { listingUrl } = require('../../marketplaces')
-const { newSku, isMachineSku } = require('../../utils/sku')
+const { newSku, isMachineSku, skuPrefix } = require('../../utils/sku')
 const { productKey, escapeRegex, listingAliases, ignoreTokens } = require('./listingKeys')
 const registry = require('../../marketplaces')
 
@@ -289,7 +289,7 @@ class UnifiedMarketplaceManager {
           }
 
           if (!prod) {
-            const prefix = { ebay: 'EBAY', tiktok_shop: 'TTS', temu: 'TEMU' }[shop.marketplace] || 'EP'
+            const prefix = skuPrefix(shop.marketplace)
             prod = await Product.create({
               sku: item.sku || (item.externalListingId ? `${prefix}-${item.externalListingId}` : newSku(shop.marketplace)),
               title: item.title || `Item ${item.sku || item.externalListingId}`,

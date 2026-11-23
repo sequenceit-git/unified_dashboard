@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { KEYS } = require('../marketplaces')
 
 const opportunitySchema = new mongoose.Schema(
   {
@@ -23,7 +24,7 @@ const opportunitySchema = new mongoose.Schema(
     confidenceReason: { type: String, default: '' },
     linksVerified: { type: Boolean, default: false },
     scoreBreakdown: { type: mongoose.Schema.Types.Mixed },
-    listedShops: [{ type: String, enum: ['ebay', 'tiktok_shop', 'temu'] }],
+    listedShops: [{ type: String, enum: KEYS }],
     brand: { type: String, default: '' },
     sources: [{
       place: { type: String },

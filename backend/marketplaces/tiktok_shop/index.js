@@ -16,6 +16,13 @@ module.exports = {
   webhooks: require('./webhooks'),
   listingUrl: require('./listingUrl').listingUrl,
   hooks: require('./hooks'),
+  routes: require('./routes'),
+  aiHint: 'This listing is for TikTok Shop. Fill product attributes (Brand, Color, Model, Capacity, Material, Number of cups or pieces). Every value must be a string.',
+  skuPrefix: 'TTS',
+  configStatus: (config) => ({
+    configured: Boolean(config.appKey && config.appSecret && config.serviceId),
+    environment: 'US',
+  }),
   capabilities: {
     inbox: true,
     refreshToken: true,

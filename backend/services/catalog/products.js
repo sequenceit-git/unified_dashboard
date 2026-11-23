@@ -6,7 +6,9 @@ const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
 const ResearchReport = require('../../models/ResearchReport')
 const marketplaceManager = require('../../services/marketplace')
-const { canonical: canonicalMarketplace } = require('../../marketplaces')
+const registry = require('../../marketplaces')
+
+const { canonical: canonicalMarketplace } = registry
 const { importProductFromUrl, fillShopAttributes } = require('../../services/catalog/productImport')
 const { listingUrl } = require('../../marketplaces')
 const { HttpError } = require('../../utils/httpError')
@@ -354,11 +356,8 @@ async function listOnShop(ctx) {
       throw new HttpError(422, { error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [] })
     }
 
-    const isDraftProductSku = product.sku && (product.sku.startsWith('BOT-') || /^EBAY-\d{6}-[A-F0-9]{6}$/i.test(product.sku) || product.sku.startsWith('EP-'))
-    let finalSku = product.sku
-    if (shop.marketplace === 'ebay' && publishRes.externalListingId && isDraftProductSku) {
-      finalSku = `EBAY-${publishRes.externalListingId}`
-    }
+    // A shop may rename a draft SKU once the listing exists (eBay: EBAY-<item ID>).
+    const finalSku = registry.get(shop.marketplace).hooks?.publishedSku?.(product, publishRes) || product.sku
 
     const productUpdates = {
       stock,

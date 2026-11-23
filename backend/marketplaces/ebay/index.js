@@ -17,6 +17,16 @@ module.exports = {
   listingUrl: require('./listingUrl').listingUrl,
   trading: require('./trading'),
   hooks: require('./hooks'),
+  routes: require('./routes'),
+  aiHint: 'This listing is for eBay. Fill item specifics buyers filter by (Brand, Type, Color, Size, Material, Model, Capacity). Every value must be a string.',
+  importer: require('./importItem'),
+  skuPrefix: 'EBAY',
+  buyer: { fallbackEmail: (username) => `${String(username).toLowerCase()}@members.ebay.com` },
+  configStatus: (config) => ({
+    configured: Boolean(config.clientId && config.clientSecret),
+    environment: config.environment || 'PRODUCTION',
+    ruNameConfigured: Boolean(config.ruName),
+  }),
   capabilities: {
     inbox: true,
     inboxNeedsAccountUsername: true,

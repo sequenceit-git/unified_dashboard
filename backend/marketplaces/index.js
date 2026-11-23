@@ -32,6 +32,11 @@ function labels() {
 /** Accepted spellings of a marketplace in URLs and query strings. */
 const ALIASES = { tiktok: 'tiktok_shop' }
 
+/** The short id used in page links (?shop=…): the alias when the shop has one, else its key. */
+function urlId(key) {
+  return Object.keys(ALIASES).find((alias) => ALIASES[alias] === key) || key
+}
+
 /**
  * Normalises a marketplace value from a request: 'all', empty and unknown values give null.
  * @param {unknown} value
@@ -63,4 +68,4 @@ function assertAdapters() {
   }
 }
 
-module.exports = { KEYS, get, all, labels, canonical, listingUrl, assertAdapters }
+module.exports = { KEYS, get, all, labels, urlId, canonical, listingUrl, assertAdapters }

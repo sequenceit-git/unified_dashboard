@@ -1,6 +1,7 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
 const { cachedResponse } = require('../../services/core/cache')
+const { KEYS } = require('../../marketplaces')
 
 const resources = {
   users: require('../../models/User'),
@@ -83,8 +84,8 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
       db: 'unified_dashboard',
       counts,
       unified: {
-        connected: ['ebay', 'tiktok_shop', 'temu'].filter((id) => connectedMarkets.has(id)).length,
-        marketplaces: 3,
+        connected: KEYS.filter((id) => connectedMarkets.has(id)).length,
+        marketplaces: KEYS.length,
         revenue: +(revenueRows[0]?.revenue || 0).toFixed(2),
         orders30,
         buyers,

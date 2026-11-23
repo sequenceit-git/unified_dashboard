@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { KEYS } = require('../marketplaces')
 
 const userSchema = new mongoose.Schema(
   {
@@ -19,7 +20,7 @@ const userSchema = new mongoose.Schema(
     },
     marketplaces: {
       type: [String],
-      enum: ['ebay', 'tiktok_shop', 'temu'],
+      enum: KEYS,
       default: [],
     },
     shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', default: null },

@@ -8,16 +8,16 @@ const Notification = require('../../models/Notification')
 const Product = require('../../models/Product')
 const events = require('./events')
 
-const SHOP_LABEL = { ebay: 'eBay', tiktok_shop: 'TikTok Shop', temu: 'Temu Shop' }
+const registry = require('../../marketplaces')
 const FAILED_RAW = new Set(['FAILED', 'FREEZE', 'PLATFORM_DEACTIVATED'])
 const DRAFT_RAW = 'DRAFT'
 
 function shopLabel(marketplace) {
-  return SHOP_LABEL[marketplace] || 'Shop'
+  return registry.KEYS.includes(marketplace) ? registry.get(marketplace).label : 'Shop'
 }
 
 function shopPath(path, marketplace) {
-  const id = marketplace === 'tiktok_shop' ? 'tiktok' : marketplace
+  const id = marketplace ? registry.urlId(marketplace) : marketplace
   return id ? `${path}?shop=${id}` : path
 }
 

@@ -12,6 +12,7 @@
 
 const ExcelJS = require('exceljs')
 const { newSku } = require('../../utils/sku')
+const { KEYS } = require('../../marketplaces')
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const HEADER_BG = '4F46E5'  // indigo-600
@@ -68,7 +69,7 @@ function buildExportRow(rec, _i, _timestampSuffix) {
   const score = rec.opportunityScore ?? ''
 
   // Preview SKU using official marketplace pattern
-  const sku = newSku(rec.targetMarketplace || 'ebay')
+  const sku = newSku(rec.targetMarketplace || KEYS[0])
 
   return {
     sku,

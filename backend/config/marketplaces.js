@@ -1,13 +1,8 @@
 /**
- * Unified Marketplace API Configuration
- * Configuration for eBay, TikTok Shop, and Temu Developer APIs.
+ * Each shop's API settings from the environment, by marketplace key (marketplaces/<key>/config.js).
  */
+const { KEYS } = require('../marketplaces')
 
-const MARKETPLACE_CONFIG = {
-  ebay: require('../marketplaces/ebay/config'),
-  tiktok_shop: require('../marketplaces/tiktok_shop/config'),
-  temu: require('../marketplaces/temu/config'),
-}
+const MARKETPLACE_CONFIG = Object.fromEntries(KEYS.map((key) => [key, require(`../marketplaces/${key}/config`)]))
 
 module.exports = MARKETPLACE_CONFIG
-

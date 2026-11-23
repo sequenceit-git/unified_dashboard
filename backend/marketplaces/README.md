@@ -6,7 +6,7 @@ Everything specific to one shop lives in its folder. The shared core (`services/
 
 ```
 marketplaces/
-  index.js       registry: KEYS, get(key), all(), labels(), canonical(value), listingUrl(...), assertAdapters()
+  index.js       registry: KEYS, get(key), all(), labels(), urlId(key), canonical(value), listingUrl(...), assertAdapters()
   contract.js    the adapter contract (REQUIRED / OPTIONAL members, checkAdapter)
   <key>/         ebay | tiktok_shop | temu  (same as Shop.marketplace in the database)
     index.js     the adapter: what the shared core may use
@@ -17,6 +17,7 @@ marketplaces/
     service.js   one object with every API method the core calls (getOrders, updateStock, ...)
     webhooks.js  push notifications: handle / enable
     hooks.js     shop-specific steps inside the shared sync (optional)
+    routes.js    the shop's public endpoints under /api (webhooks), mounted by routes/system/api.js
     profile.js   sidebar sections (+ read-only access probes), statuses, product form rules
     sections/    one file per sidebar section; each returns { summary, tables } for its subsections
     scripts/     smoke tests and read-only checks (npm run smoke:<shop>, check:ebay-listings)
@@ -39,6 +40,17 @@ Optional, read by the core only when present:
   `tracksOrdersSyncedAt`, `syncsVariants`, `relistOnRestock`, `productKeyListings`,
   `listingFetchLimit` (number), `listingNoun` (string).
 - `listingUrl(id, saved, { status })` — the listing's public (or Seller Center) page.
+- `routes(router)` — mounts the shop's public endpoints (webhooks; eBay account deletion).
+- `skuPrefix` — prefix of new SKUs for this shop (`EBAY`, `TTS`, `TEMU`; `EP` when none).
+- `configStatus(config)` — what `GET /api/shops/configs` reports: `{ configured, environment, ... }`.
+- `aiHint` — extra instruction for the AI when it drafts a listing for this shop from a URL.
+- `importer` — `{ matches(url), readItem(url), source }`: read the shop's own item pages through
+  its API instead of scraping (eBay's Browse API).
+- `buyer.fallbackEmail(username)` — relay address when a buyer has no email (eBay).
+- `hooks.publishedSku(product, publishRes)` — new SKU once a listing exists (eBay: `EBAY-<item ID>`).
+
+Shared code (services, routes, models, middleware, utils, config) must not name a shop;
+`test/no-shop-branches.test.js` fails on any shop-name string or shop-keyed map there.
 
 ## Add a section to a shop
 

@@ -205,23 +205,9 @@ router.patch('/:id/ai-reply', requireRole('super_admin'), async (req, res) => {
   }
 })
 
-// GET /api/shops/configs — Check configuration status for eBay marketplace
+// GET /api/shops/configs — whether each shop's API keys are set (from its adapter)
 router.get('/configs', requireRole('super_admin'), (req, res) => {
-  res.json({
-    ebay: {
-      configured: Boolean(config.ebay?.clientId && config.ebay?.clientSecret),
-      environment: config.ebay?.environment || 'PRODUCTION',
-      ruNameConfigured: Boolean(config.ebay?.ruName),
-    },
-    tiktok_shop: {
-      configured: Boolean(config.tiktok_shop?.appKey && config.tiktok_shop?.appSecret && config.tiktok_shop?.serviceId),
-      environment: 'US',
-    },
-    temu: {
-      configured: Boolean(config.temu?.appKey && config.temu?.appSecret),
-      environment: 'US',
-    },
-  })
+  res.json(Object.fromEntries(registry.all().map((adapter) => [adapter.key, adapter.configStatus?.(config[adapter.key] || {}) || { configured: false }])))
 })
 
 // GET /api/shops/oauth/connect/:marketplace — Generate OAuth connect URL

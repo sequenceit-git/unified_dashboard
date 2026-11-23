@@ -22,7 +22,7 @@
 const REQUIRED = ['key', 'label', 'config', 'service', 'profile', 'sections']
 
 /** Members an adapter may have; the core checks before using them. */
-const OPTIONAL = ['webhooks', 'hooks', 'capabilities']
+const OPTIONAL = ['webhooks', 'hooks', 'capabilities', 'routes', 'importer', 'buyer', 'skuPrefix', 'configStatus', 'aiHint']
 
 /**
  * @param {Partial<Adapter> | null | undefined} adapter
