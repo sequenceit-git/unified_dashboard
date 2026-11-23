@@ -1,9 +1,9 @@
 /**
  * Background loading of new marketplace data (inbox, orders, listings, API access).
  *
- * With REDIS_URL set, jobs go to a BullMQ queue that the sync worker (`node worker.js`) runs, so
- * slow marketplace calls never block the API. Without Redis, the same jobs run inside the API
- * process. After every job the affected cache is cleared and a `sync` event tells open
+ * With REDIS_URL set, jobs go to a BullMQ queue whose worker runs inside the API process
+ * (started from server.js), so slow marketplace calls don't block requests. Without Redis,
+ * the same jobs run on in-process timers. After every job the affected cache is cleared and a `sync` event tells open
  * browsers to reload.
  */
 
