@@ -1,11 +1,12 @@
 import { Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ShopSectionGate from './components/ShopSectionGate'
 import { Spinner } from './components/ui/Feedback'
 import LegacyShopRedirect from './components/LegacyShopRedirect'
 import { SHOPS } from './marketplaces'
+import { gateFor, renamedPath } from './lib/shopRoutes'
 import Login from './pages/auth/Login'
 import Overview from './pages/dashboard/Overview'
 import ProductDiscoveryPage from './pages/discovery/ProductDiscoveryPage'
@@ -14,10 +15,14 @@ import SettingsPage from './pages/settings/SettingsPage'
 import SubAdminFormPage from './pages/sub-admins/SubAdminFormPage'
 import SubAdminManagementPage from './pages/sub-admins/SubAdminManagementPage'
 
-/** Shop sections behind a main-route permission (the others check access on their own page). */
-const GATED_SECTIONS = ['analytics', 'products', 'inventory', 'orders', 'customers', 'inbox']
 /** Old shop URLs: /orders?shop=ebay, /shop/returns?shop=tiktok → /<shop>/<section>. */
-const LEGACY_SHOP_PATHS = [...GATED_SECTIONS.map((id) => `/${id}`), '/shop/:sectionId']
+const LEGACY_SHOP_PATHS = ['/analytics', '/products', '/inventory', '/orders', '/customers', '/inbox', '/shop/:sectionId']
+
+/** /<shop>/<old section name> → the shop's own name for it (eBay products → listings). */
+function RenamedSectionRedirect() {
+  const { pathname, search } = useLocation()
+  return <Navigate to={`${renamedPath(pathname) || pathname}${search}`} replace />
+}
 
 function PublicOnly({ children }) {
   const { token } = useAuth()
@@ -51,13 +56,17 @@ export default function App() {
         {LEGACY_SHOP_PATHS.map((path) => <Route key={path} path={path} element={<LegacyShopRedirect />} />)}
         {SHOPS.map((shop) => (
           <Route key={shop.key} path={`/${shop.urlId}`}>
-            {Object.entries(shop.pages).map(([id, Page]) => (
-              <Route
-                key={id}
-                path={id}
-                element={<Suspense fallback={<Spinner />}>{GATED_SECTIONS.includes(id) ? <RouteAccess route={id}><ShopSectionGate sectionId={id}><Page /></ShopSectionGate></RouteAccess> : <Page />}</Suspense>}
-              />
-            ))}
+            {Object.entries(shop.pages).map(([id, Page]) => {
+              const { gated, route } = gateFor(shop, id)
+              return (
+                <Route
+                  key={id}
+                  path={id}
+                  element={<Suspense fallback={<Spinner />}>{gated ? <RouteAccess route={route}><ShopSectionGate sectionId={id}><Page /></ShopSectionGate></RouteAccess> : <Page />}</Suspense>}
+                />
+              )
+            })}
+            {Object.keys(shop.renamedSections || {}).map((old) => <Route key={old} path={old} element={<RenamedSectionRedirect />} />)}
           </Route>
         ))}
         <Route path="/settings" element={<SettingsPage />} />

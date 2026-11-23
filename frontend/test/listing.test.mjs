@@ -7,8 +7,8 @@ const server = await createServer({ logLevel: 'silent', server: { middlewareMode
 const load = (path) => server.ssrLoadModule(path)
 test.after(() => server.close())
 
-test('eBay listing validators give the same messages after moving into the eBay products section', async () => {
-  const rules = await load('/src/marketplaces/ebay/sections/products/listing/rules.js')
+test('eBay listing validators give the same messages after moving into the eBay listings section', async () => {
+  const rules = await load('/src/marketplaces/ebay/sections/listings/listing/rules.js')
   for (const [variants, strict, loose] of frozen.ebay) {
     assert.deepEqual(rules.validateVariantsForEbay(variants), strict)
     assert.deepEqual(rules.validateVariantsForEbay(variants, { requireStock: false }), loose)

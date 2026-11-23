@@ -30,7 +30,7 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
     if (!quiet) setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/ebay/products${queryString({ q, sort, page, limit: 15 })}`, token)
+      const res = await api.get(`/api/ebay/listings${queryString({ q, sort, page, limit: 15 })}`, token)
       if (id !== requestId.current) return
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })

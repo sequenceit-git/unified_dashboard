@@ -2,6 +2,7 @@ import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { fallbackShopId } from '../hooks/useShopSection'
 import { shopSectionFromId } from '../lib/shops'
+import { renamedPath } from '../lib/shopRoutes'
 
 /**
  * Old shop URLs (/orders?shop=ebay, /shop/returns?shop=tiktok) → /<shop>/<section>.
@@ -17,5 +18,6 @@ export default function LegacyShopRedirect() {
   if (!shop) return <p className="p-8 text-center text-sm text-gray-500">No shop is assigned to this account.</p>
   params.delete('shop')
   const rest = params.toString()
-  return <Navigate to={`/${shop}/${section}${rest ? `?${rest}` : ''}`} replace />
+  const target = `/${shop}/${section}`
+  return <Navigate to={`${renamedPath(target) || target}${rest ? `?${rest}` : ''}`} replace />
 }
