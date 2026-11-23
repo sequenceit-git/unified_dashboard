@@ -18,3 +18,8 @@ test("TikTok Shop app code reads only its own rows: every request marketplace re
   }
   assert.deepEqual(hits, [])
 })
+
+test("another shop's product id is a 404", async () => {
+  const router = require('../routes/products')('tiktok_shop')
+  assert.ok(router.params?.id?.length, 'the products routes check that an :id belongs to this shop')
+})
