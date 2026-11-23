@@ -144,7 +144,7 @@ async function adjust(ctx) {
       await Product.findByIdAndUpdate(productId, { $inc: { stock: change } })
     }
 
-    let logShopId = shopId
+    let logShopId = shopId || null
     if (!logShopId) {
       const relatedListing = await Listing.findOne({ productId }).sort({ updatedAt: -1 })
       if (relatedListing?.shopId) logShopId = relatedListing.shopId

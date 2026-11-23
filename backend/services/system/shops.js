@@ -99,7 +99,8 @@ async function list(ctx) {
     return shops.map(({ liveUpdates, ...shop }) => ({
       ...shop,
       liveUpdates: liveUpdates ? { enabled: Boolean(liveUpdates.enabled), error: liveUpdates.error, enabledAt: liveUpdates.enabledAt } : undefined,
-      listing: marketplaceManager.listingCapabilities(shop.marketplace),
+      // What the shop's listing API supports, from the shop's own app.
+      listing: registry.KEYS.includes(shop.marketplace) ? registry.get(shop.marketplace).app.catalog.capabilities() : {},
     }))
 }
 

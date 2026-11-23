@@ -375,7 +375,7 @@ class Manager {
             ...ord,
             shopId: shop._id,
             marketplace: shop.marketplace,
-            customerId: customer?._id,
+            customerId: customer?._id || null,
           })
           createdCount++
 
@@ -898,7 +898,7 @@ class Manager {
       status: item.listingStatus === 'live' && item.stock === 0 ? 'out_of_stock' : item.listingStatus,
       marketplaceStatus: item.marketplaceStatus || undefined,
       listingUrl: item.listingUrl || undefined,
-      syncError: item.listingError,
+      syncError: item.listingError || null,
       lastSyncedAt: new Date(),
       ...(item.detailed ? { detailSyncedAt: new Date() } : {}),
     })

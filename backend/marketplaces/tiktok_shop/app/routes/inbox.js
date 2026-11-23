@@ -152,7 +152,7 @@ function inboxRoutes(shopKey) {
   router.get('/templates', async (req, res) => {
     try {
       const or = [{ shopId: null }]
-      const shopId = req.query.shopId
+      const shopId = req.query.shopId || null
       if (req.user.role === 'sub_admin' && shopId && !req.allowedShopIds.some((id) => String(id) === shopId)) {
         return res.status(403).json({ error: 'You do not have access to this shop' })
       }

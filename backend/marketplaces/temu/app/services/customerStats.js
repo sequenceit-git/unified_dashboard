@@ -1,11 +1,13 @@
 const Customer = require('../../../../models/Customer')
 const Order = require('../../../../models/Order')
 const registry = require('../../..')
-const ADAPTER = require('../..')
 
 const { canonical: canonicalMarketplace } = registry
-/** The shop's buyer relay-address maker (eBay: username@members.ebay.com), if it has one. */
-const buyerEmail = (key) => (key === 'temu' ? ADAPTER.buyer?.fallbackEmail : undefined)
+/**
+ * A buyer relay-address maker (eBay: username@members.ebay.com) for an identity's marketplace. A
+ * customer can have identities on several shops, so this looks at each identity's own shop.
+ */
+const buyerEmail = (key) => (registry.KEYS.includes(key) ? registry.get(key).buyer?.fallbackEmail : undefined)
 
 function buyerKeys(customer) {
   const keys = new Set()
@@ -117,7 +119,7 @@ async function withOrderStats(customers, marketplace) {
 
     const resolvedEmail = customer.email || row.email || fallbackEmail || ''
     const resolvedPhone = customer.phone || row.phone || ''
-    const resolvedAddress = customer.address || row.address
+    const resolvedAddress = customer.address || row.address || null
 
     return {
       ...customer,

@@ -85,3 +85,13 @@ test('list searches title and sku with an escaped regex', async () => {
     assert.equal(out.total, 0)
   } finally { restore() }
 })
+
+test('a product not listed on this shop has shopListing: null', async () => {
+  const { service, restore } = load({ products: [{ _id: 'p1', title: 'Mug', sku: 'S1' }], listings: [] })
+  try {
+    // onlyShop pins marketplace on every request to this shop's API.
+    const res = await service.list({ ...admin, query: { marketplace: 'temu' } })
+    assert.equal(res.data.length, 1)
+    assert.strictEqual(res.data[0].shopListing, null)
+  } finally { restore() }
+})

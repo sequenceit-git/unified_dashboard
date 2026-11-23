@@ -32,3 +32,17 @@ test('connectedShop returns the shop when there is one', async () => {
     assert.deepEqual(await service.connectedShop(sub, 'temu'), { _id: 's1', marketplace: 'temu' })
   } finally { restore() }
 })
+
+test("the shop list gives each shop its own listing capabilities (from the shop's app)", async () => {
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean']) p[m] = () => p; return p }
+  const shops = [{ _id: 's1', name: 'eBay store', marketplace: 'ebay', status: 'connected' }, { _id: 's2', name: 'Temu store', marketplace: 'temu', status: 'connected' }]
+  const caps = { ebay: { canList: true }, temu: { canList: false } }
+  const registry = { KEYS: ['ebay', 'tiktok_shop', 'temu'], canonical: (v) => v, all: () => [], get: (key) => ({ app: { catalog: { capabilities: () => caps[key] } } }) }
+  const restore = stubModules({ '/models/Shop': { find: () => chain(shops) }, '../../marketplaces': registry })
+  try {
+    const out = await freshRequire('services/system/shops.js').list({ user: { id: 'u1', role: 'super_admin' }, query: {}, body: {}, params: {} })
+    assert.deepEqual(out.map((s) => [s.marketplace, s.listing]), [['ebay', { canList: true }], ['temu', { canList: false }]])
+  } finally {
+    restore()
+  }
+})

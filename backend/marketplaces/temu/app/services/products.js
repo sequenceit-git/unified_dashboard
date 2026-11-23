@@ -140,7 +140,7 @@ async function list(ctx) {
       }]))
       result.data = result.data.map((row) => {
         const plain = typeof row.toObject === 'function' ? row.toObject() : row
-        return { ...plain, shopListing: byProduct.get(String(plain._id)) }
+        return { ...plain, shopListing: byProduct.get(String(plain._id)) || null }
       })
     }
     return result
