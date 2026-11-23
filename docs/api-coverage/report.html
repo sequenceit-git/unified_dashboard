@@ -70,6 +70,9 @@ td .sub { color: var(--muted); font-size: 12.5px; }
 .p-high { color: var(--high); background: var(--high-bg); }
 .p-medium { color: var(--med); background: var(--med-bg); }
 .p-low { color: var(--low); background: var(--low-bg); }
+.acc { font-size: 12px; white-space: nowrap; }
+.acc-granted { color: var(--covered); font-weight: 500; }
+.acc-needs { color: var(--muted); white-space: normal; }
 .size { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
 .st { white-space: nowrap; font-size: 12.5px; }
 .st::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; background: var(--c); }
@@ -112,6 +115,7 @@ td .sub { color: var(--muted); font-size: 12.5px; }
         <label for="f-priority">Priority <select id="f-priority"><option value="">All</option><option>high</option><option>medium</option><option>low</option></select></label>
         <label for="f-size">Size <select id="f-size"><option value="">All</option><option>small</option><option>medium</option><option>large</option></select></label>
         <label for="f-section">Section <select id="f-section"><option value="">All</option></select></label>
+        <label for="f-access" id="accesswrap" hidden>Access <select id="f-access"><option value="">All</option><option value="granted">Available now</option><option value="needs-scope">Needs a scope</option></select></label>
         <label for="f-status" id="statuswrap" hidden>Status <select id="f-status"><option value="">All</option><option value="covered">Covered</option><option value="covered-older">Covered, older version</option><option value="missing">Missing</option><option value="not-for-sellers">Not for sellers</option></select></label>
       </div>
       <div class="resultnote" id="resultnote"></div>
@@ -127,6 +131,8 @@ td .sub { color: var(--muted); font-size: 12.5px; }
 const $ = (id) => document.getElementById(id)
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 const RANK = { high: 0, medium: 1, low: 2, small: 0, large: 2 }
+const ACCESS = { granted: 0, 'needs-scope': 1 }
+const accessCell = (r) => r.access === 'granted' ? '<td class="acc acc-granted">Available now</td>' : r.access === 'needs-scope' ? `<td class="acc acc-needs">Needs scope:<br>${esc(r.scope)}</td>` : ''
 const STATUS_LABEL = { covered: 'Covered', 'covered-older': 'Covered, older version', missing: 'Missing', 'not-for-sellers': 'Not for sellers' }
 const hashOf = (key) => key.replace(/_/g, '-')
 let DATA = []
@@ -149,7 +155,7 @@ function renderSummary() {
     return `<button type="button" class="shopcard" data-shop="${s.key}" aria-pressed="${s.key === state.shop}">
       <div class="top"><span class="name">${esc(s.label)}</span><span class="pct">${pct}% of seller endpoints used</span></div>
       <div class="bar">${seg('covered', '--covered')}${seg('covered-older', '--older')}${seg('missing', '--missing')}${seg('not-for-sellers', '--notseller')}</div>
-      <div class="counts"><span><b>${s.rows.length}</b> endpoints</span><span><b>${done}</b> used</span><span><b>${n('missing')}</b> missing</span><span><b>${high}</b> high priority</span></div>
+      <div class="counts"><span><b>${s.rows.length}</b> endpoints</span><span><b>${done}</b> used</span><span><b>${n('missing')}</b> missing</span><span><b>${high}</b> high priority</span>${s.app ? `<span><b>${s.rows.filter((r) => r.status === 'missing' && r.access === 'granted').length}</b> callable now</span>` : ''}</div>
     </button>`
   }).join('')
   for (const b of document.querySelectorAll('.shopcard[data-shop]')) b.addEventListener('click', () => { location.hash = hashOf(b.dataset.shop) })
@@ -174,20 +180,23 @@ function render() {
   $('view-gaps').setAttribute('aria-pressed', state.view === 'gaps')
   $('view-all').setAttribute('aria-pressed', state.view === 'all')
   $('statuswrap').hidden = state.view === 'gaps'
+  $('accesswrap').hidden = !shop.app
   for (const b of document.querySelectorAll('.shopcard[data-shop]')) b.setAttribute('aria-pressed', b.dataset.shop === state.shop)
   const q = $('q').value.trim().toLowerCase()
+  const fa = shop.app ? $('f-access').value : ''
   const fp = $('f-priority').value, fs = $('f-size').value, fsec = $('f-section').value, fst = $('f-status').value
   let rows = shop.rows.filter((r) => (state.view === 'gaps' ? r.status === 'missing' : !fst || r.status === fst))
   if (fp || fs || fsec) rows = rows.filter((r) => r.gap && (!fp || r.gap.priority === fp) && (!fs || r.gap.size === fs) && (!fsec || r.gap.section === fsec))
+  if (fa) rows = rows.filter((r) => r.access === fa)
   if (q) rows = rows.filter((r) => [r.id, r.name, r.summary, r.group, r.gap && r.gap.value].join(' ').toLowerCase().includes(q))
   let html = ''
   if (state.view === 'gaps') {
-    $('thead').innerHTML = '<tr><th>Priority</th><th>Size</th><th>Endpoint</th><th>What it gives the seller</th></tr>'
+    $('thead').innerHTML = `<tr>${shop.app ? '<th>Access</th>' : ''}<th>Priority</th><th>Size</th><th>Endpoint</th><th>What it gives the seller</th></tr>`
     const sections = [...new Set(rows.map((r) => r.gap.section))].sort((a, b) => a.startsWith('new: ') - b.startsWith('new: ') || a.localeCompare(b))
     for (const sec of sections) {
-      const list = rows.filter((r) => r.gap.section === sec).sort((a, b) => RANK[a.gap.priority] - RANK[b.gap.priority] || RANK[a.gap.size] - RANK[b.gap.size] || a.id.localeCompare(b.id))
-      html += `<tr class="sectionrow"><td colspan="4">${esc(sec.startsWith('new: ') ? 'New section: ' + sec.slice(5) : sec)}<span class="n">${list.length}</span></td></tr>`
-      for (const r of list) html += `<tr><td><span class="pill p-${r.gap.priority}">${r.gap.priority}</span></td><td class="size">${r.gap.size}</td>${endpointCell(r)}<td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.gap.value)}</div></td></tr>`
+      const list = rows.filter((r) => r.gap.section === sec).sort((a, b) => (ACCESS[a.access] || 0) - (ACCESS[b.access] || 0) || RANK[a.gap.priority] - RANK[b.gap.priority] || RANK[a.gap.size] - RANK[b.gap.size] || a.id.localeCompare(b.id))
+      html += `<tr class="sectionrow"><td colspan="${shop.app ? 5 : 4}">${esc(sec.startsWith('new: ') ? 'New section: ' + sec.slice(5) : sec)}<span class="n">${list.length}</span></td></tr>`
+      for (const r of list) html += `<tr>${accessCell(r)}<td><span class="pill p-${r.gap.priority}">${r.gap.priority}</span></td><td class="size">${r.gap.size}</td>${endpointCell(r)}<td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.gap.value)}</div></td></tr>`
     }
   } else {
     $('thead').innerHTML = '<tr><th>Status</th><th>Group</th><th>Endpoint</th><th>Name and summary</th><th>Called from</th></tr>'
@@ -201,7 +210,7 @@ function render() {
   $('tbody').innerHTML = html || `<tr><td colspan="5" class="empty">No endpoints match these filters.</td></tr>`
   const total = state.view === 'gaps' ? shop.rows.filter((r) => r.status === 'missing').length : shop.rows.length
   $('resultnote').textContent = `Showing ${rows.length} of ${total} ${state.view === 'gaps' ? 'missing endpoints' : 'endpoints'}. Researched ${shop.researchedAt}.`
-  $('sources').innerHTML = `<div><b>Sources</b></div><ul>${shop.sources.map((u) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>`).join('')}</ul>${shop.notes.length ? `<ul class="notes">${shop.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`
+  $('sources').innerHTML = `<div><b>Sources</b></div><ul>${shop.sources.map((u) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>`).join('')}</ul>${shop.app ? `<div><b>Your app: ${esc(shop.app.appCategory)}</b> — holds ${shop.app.scopes.length} scopes: ${shop.app.scopes.map(esc).join(', ')}.</div><div>${esc(shop.app.source)}</div>` : ''}${shop.notes.length ? `<ul class="notes">${shop.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`
 }
 
 function selectShop() {
@@ -212,7 +221,7 @@ function selectShop() {
 
 $('view-gaps').addEventListener('click', () => { state.view = 'gaps'; render() })
 $('view-all').addEventListener('click', () => { state.view = 'all'; render() })
-for (const id of ['q', 'f-priority', 'f-size', 'f-section', 'f-status']) $(id).addEventListener('input', render)
+for (const id of ['q', 'f-access', 'f-priority', 'f-size', 'f-section', 'f-status']) $(id).addEventListener('input', render)
 addEventListener('hashchange', selectShop)
 
 fetch('report-data.json').then((r) => r.json()).then((data) => {

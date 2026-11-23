@@ -131,3 +131,35 @@ test('the README in the repo is up to date', () => {
   const readme = fs.readFileSync(path.join(ROOT, '..', 'docs', 'api-coverage', 'README.md'), 'utf8')
   assert.equal(readme, buildReport(), 'run: npm run api-coverage')
 })
+
+// ---- App scopes (TikTok E-commerce connector app)
+test("gaps are split by the scopes the shop's app has", () => {
+  const rows = coverageOf()({ endpoints: [
+    row({ id: 'GET /finance/202501/a', scope: 'Finance Information' }),
+    row({ id: 'GET /fbt/202408/b', scope: 'Fulfilled by TikTok(FBT) Info' }),
+    row({ id: 'GET /x/202309/c', scope: 'Live Data, Finance Information' }),
+    row({ id: 'GET /order/202309/d', scope: 'Order Information' }),
+  ] }, [{ id: 'GET /order/202309/d', files: ['o.js'] }], { scopes: ['Finance Information', 'Order Information'] })
+  assert.deepEqual(rows.map((r) => [r.status, r.access]), [['missing', 'granted'], ['missing', 'needs-scope'], ['missing', 'granted'], ['covered', 'granted']])
+  const [noApp] = coverageOf()({ endpoints: [row({ id: 'GET /y/v1/z', scope: 'S' })] }, [])
+  assert.equal(noApp.access, undefined)
+})
+
+test('the TikTok app scope list includes every scope the dashboard already uses', () => {
+  const { shopCoverage, readJson } = require('../scripts/apiCoverage/compare')
+  const app = readJson('apps', 'tiktok_shop.json')
+  assert.ok(app.appCategory && Array.isArray(app.scopes))
+  for (const r of shopCoverage('tiktok_shop').filter((x) => x.status.startsWith('covered'))) {
+    assert.ok(r.scope.split(', ').some((s) => app.scopes.includes(s)), `${r.id} needs one of: ${r.scope}`)
+  }
+})
+
+test('the report shows which gaps the app can call now', () => {
+  const { buildReport } = require('../scripts/apiCoverage/report')
+  const { shopCoverage } = require('../scripts/apiCoverage/compare')
+  const md = buildReport()
+  const now = shopCoverage('tiktok_shop').filter((r) => r.status === 'missing' && r.access === 'granted').length
+  assert.match(md, /App category: E-commerce connector/)
+  assert.match(md, new RegExp(`\\| TikTok Shop \\|[^\\n]*\\| ${now} \\|\\n`))
+  assert.match(md, /\| needs scope: Live Data \|/)
+})

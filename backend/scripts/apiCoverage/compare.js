@@ -5,6 +5,8 @@
  *   covered-older    called at an older API version (TikTok /YYYYMM/ paths)
  *   missing          a seller endpoint the dashboard never calls
  *   not-for-sellers  buyer / creator / partner APIs, called or not (never a gap)
+ * With the shop app's granted scopes (docs/api-coverage/apps/<key>.json), every row also gets
+ * access: 'granted' (the app holds one of the endpoint's scopes) or 'needs-scope'.
  */
 const fs = require('fs')
 const path = require('path')
@@ -16,7 +18,8 @@ const versionless = (id) => normalizeId(id).replace(VERSION, '/{v}/')
 const pathOnly = (id) => versionless(id).replace(/^[A-Z]+ /, '')
 const versionOf = (id) => (String(id).match(VERSION) || [])[1] || ''
 
-function coverage(catalog, used) {
+function coverage(catalog, used, app) {
+  const granted = app ? new Set(app.scopes) : null
   const endpoints = catalog.endpoints
   const callsFor = new Map(endpoints.map((e) => [e.id, []]))
   for (const call of used) {
@@ -46,6 +49,7 @@ function coverage(catalog, used) {
       confirmed: e.confirmed !== false,
       files,
       ...(newest && newest !== e.id ? { calledAs: newest } : {}),
+      ...(granted ? { access: String(e.scope || '').split(', ').some((x) => granted.has(x)) ? 'granted' : 'needs-scope' } : {}),
     }
   })
 }
@@ -54,7 +58,12 @@ const readJson = (...parts) => JSON.parse(fs.readFileSync(path.join(DOCS, ...par
 
 /** Coverage rows for a shop from the files in docs/api-coverage/. */
 function shopCoverage(key) {
-  return coverage(readJson('catalog', `${key}.json`), usedEndpoints(key))
+  return coverage(readJson('catalog', `${key}.json`), usedEndpoints(key), appOf(key))
 }
 
-module.exports = { coverage, shopCoverage, readJson, DOCS }
+/** The shop app's granted scopes, when recorded (docs/api-coverage/apps/<key>.json). */
+function appOf(key) {
+  return fs.existsSync(path.join(DOCS, 'apps', `${key}.json`)) ? readJson('apps', `${key}.json`) : null
+}
+
+module.exports = { coverage, shopCoverage, appOf, readJson, DOCS }
