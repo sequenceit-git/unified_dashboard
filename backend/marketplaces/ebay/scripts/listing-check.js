@@ -15,7 +15,7 @@ const connectDB = require('../../../config/db')
 const Shop = require('../../../models/Shop')
 const Listing = require('../../../models/Listing')
 require('../../../models/Product')
-const manager = require('../../../services/marketplace')
+const manager = require('../../../services/marketplace/connection')
 const trading = require('../trading')
 
 const numericId = (id) => String(id || '').replace(/^(ebay-)?item-/, '')

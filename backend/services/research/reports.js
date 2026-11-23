@@ -4,7 +4,6 @@ const ResearchReport = require('../../models/ResearchReport')
 const Product = require('../../models/Product')
 const Shop = require('../../models/Shop')
 const Listing = require('../../models/Listing')
-const marketplaceManager = require('../../services/marketplace')
 const registry = require('../../marketplaces')
 
 const { canonical: canonicalMarketplace } = registry
@@ -348,7 +347,8 @@ async function relist(ctx) {
       throw new HttpError(400, { error: `"${product?.title || 'This product'}" has no stock. Add stock in Inventory, then relist it.` })
     }
 
-    const result = await marketplaceManager.applyListingAction(shop, listing, 'relist', { quantity })
+    const app = registry.get(shop.marketplace).app
+    const result = await app.catalog.listingAction(shop, listing, 'relist', { quantity })
     const { listingUrl } = require('../../marketplaces')
     listing.status = result.status || 'live'
     if (result.marketplaceStatus) listing.marketplaceStatus = result.marketplaceStatus
@@ -358,7 +358,7 @@ async function relist(ctx) {
     listing.syncError = null
     listing.lastSyncedAt = new Date()
     await listing.save()
-    await marketplaceManager.rememberListing(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
+    await app.catalog.remember(shop._id, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
     await require('../../services/core/notify').listingStatusChanged(listing, shop, {}).catch(() => {})
     await syncReportOpportunities(report)
     return { success: true, listedShops: opp.listedShops || [], listingUrl: listing.listingUrl }
@@ -446,7 +446,7 @@ async function addToCatalog(ctx) {
     }
 
     const shop = await Shop.findOne({ marketplace, status: 'connected' }).select('_id')
-    const capabilities = marketplaceManager.listingCapabilities(marketplace)
+    const capabilities = registry.get(marketplace).app.catalog.capabilities()
     return {
       product,
       listedShops: opp.listedShops || [],

@@ -16,7 +16,7 @@ const ADAPTER = require('..')
 const SERVICE = ADAPTER.service
 
 /** Connecting to the shop (OAuth, tokens, access checks) stays shared: services/marketplace. */
-const connection = () => require('../../../services/marketplace')
+const connection = () => require('../../../services/marketplace/connection')
 
 /** Temu's sync and listing logic: orders, listings, stock, publishing (no inbox). */
 class Manager {

@@ -147,7 +147,7 @@ async function handle(rawBody, body, authHeader, topicQuery = '') {
 }
 
 async function enable(shop) {
-  const manager = require('../../services/marketplace')
+  const manager = require('../../services/marketplace/connection')
   const tiktok = require('./service')
   const problem = setupProblem()
   const events = Object.keys(EVENTS)

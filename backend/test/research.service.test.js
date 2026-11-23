@@ -87,3 +87,37 @@ test('generate queues the report and starts the discovery agent', async () => {
     assert.equal(runs.length, 1, 'runDiscoveryAgent was not started')
   } finally { restore() }
 })
+
+test("research relists through the shop's app", async () => {
+  const calls = []
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean', 'populate']) p[m] = () => p; return p }
+  const report = { _id: ID, opportunities: [{ rank: 1, addedProductId: 'P1', listedShops: [] }], save: async () => {} }
+  const shop = { _id: 'T1', name: 'Temu store', marketplace: 'temu', status: 'connected' }
+  const listing = { _id: 'L1', productId: 'P1', shopId: 'T1', externalListingId: 'G1', status: 'ended', save: async () => {} }
+  const apps = {
+    temu: { catalog: {
+      listingAction: async (s, l, action, options) => { calls.push(['listingAction', s.marketplace, l._id, action, options]); return { status: 'live' } },
+      remember: async (shopId) => { calls.push(['remember', shopId]) },
+    } },
+  }
+  const registry = { KEYS: ['ebay', 'tiktok_shop', 'temu'], canonical: (v) => v, labels: () => ({ temu: 'Temu Shop' }), get: (key) => ({ app: apps[key] }), listingUrl: () => 'https://seller.temu.com/G1' }
+  const restore = stubModules({
+    '/models/ResearchReport': { findById: () => chain(report), find: () => chain([]) },
+    '/models/Product': { findById: () => chain({ sku: 'S1', stock: 4, title: 'Mug' }), find: () => chain([]) },
+    '/models/Shop': { findOne: async () => shop, find: () => chain([]) },
+    '/models/Listing': { find: () => chain([]), findOne: async () => listing },
+    '../../services/marketplace': {},
+    '../../marketplaces': registry,
+    '/core/notify': { listingStatusChanged: async () => {} },
+    '/agent/discovery/discoveryAgent': { runDiscoveryAgent: async () => {} },
+    '/agent/discovery/listingImage': { productImages: async () => [] },
+  })
+  try {
+    const service = freshRequire('services/research/reports.js')
+    const out = await service.relist({ ...admin, body: { reportId: ID, rank: 1, marketplace: 'temu' } })
+    assert.equal(out.success, true)
+    assert.deepEqual(calls, [['listingAction', 'temu', 'L1', 'relist', { quantity: 4 }], ['remember', 'T1']])
+  } finally {
+    restore()
+  }
+})

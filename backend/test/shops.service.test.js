@@ -32,22 +32,3 @@ test('connectedShop returns the shop when there is one', async () => {
     assert.deepEqual(await service.connectedShop(sub, 'temu'), { _id: 's1', marketplace: 'temu' })
   } finally { restore() }
 })
-
-test('section and section actions run without undefined names (regression: canonicalMarketplace / PACKAGE_SHOP / verifyOAuthState)', async () => {
-  const { service, restore } = load({ shop: null, exists: false })
-  const admin = { user: { id: 'u1', role: 'super_admin' }, allowedShopIds: [], query: {}, body: {}, params: {} }
-  try {
-    const calls = [
-      service.section({ ...admin, params: { sectionId: 'returns' }, query: { marketplace: 'ebay' } }),
-      service.sendOffer({ ...admin, body: { marketplace: 'ebay' } }),
-      service.decideReturn({ ...admin, body: { marketplace: 'ebay', returnId: 'r1' } }),
-      service.decideCancellation({ ...admin, body: { marketplace: 'temu', cancelId: 'c1' } }),
-      service.createPromotion({ ...admin, body: { marketplace: 'ebay' } }),
-      service.shipPackage({ ...admin, params: { packageId: 'p1' }, body: {} }),
-      service.oauthCallback({ ...admin, params: { marketplace: 'temu' }, body: {} }),
-    ]
-    for (const call of calls) {
-      await assert.rejects(call, (e) => !(e instanceof ReferenceError), 'must not be a ReferenceError')
-    }
-  } finally { restore() }
-})

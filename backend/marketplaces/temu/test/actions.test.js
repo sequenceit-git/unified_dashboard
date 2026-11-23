@@ -17,7 +17,9 @@ function load() {
     if (r instanceof Error) throw r
     return typeof r === 'function' ? r(params) : (r ?? {})
   }
-  const sections = require('../../../services/marketplace/sections.js')
+  // Temu's own section loaders (marketplaces/temu/sections/), by section id.
+  const own = require('../sections')
+  const sections = { load: (marketplace, id, token, shop) => own[id](token, shop) }
   const last = (type) => [...calls].reverse().find((c) => c.type === type)?.params
   return { temu, sections, calls, responses, last, restore }
 }

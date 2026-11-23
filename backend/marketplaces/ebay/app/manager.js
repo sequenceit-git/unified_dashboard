@@ -20,7 +20,7 @@ const CAPS = ADAPTER.capabilities || {}
 const SERVICE = ADAPTER.service
 
 /** Connecting to the shop (OAuth, tokens, access checks) stays shared: services/marketplace. */
-const connection = () => require('../../../services/marketplace')
+const connection = () => require('../../../services/marketplace/connection')
 
 /** This shop's sync and listing logic: orders, listings, stock, inbox, publishing. */
 class Manager {

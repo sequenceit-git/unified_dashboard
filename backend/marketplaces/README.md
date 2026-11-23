@@ -18,7 +18,7 @@ marketplaces/
     webhooks.js  push notifications: handle / enable
     hooks.js     shop-specific steps inside the shared sync (optional)
     routes.js    the shop's public endpoints under /api (webhooks), mounted by routes/system/api.js
-    api.js       the shop's dashboard API groups, mounted at /api/<urlId> by server.js
+    app/         the shop's dashboard logic: api.js, routes/, services/, manager.js (sync), test/
     profile.js   sidebar sections (+ read-only access probes), statuses, product form rules
     sections/    one file per sidebar section; each returns { summary, tables } for its subsections
     scripts/     smoke tests and read-only checks (npm run smoke:<shop>, check:ebay-listings)
@@ -42,10 +42,13 @@ Optional, read by the core only when present:
   `listingFetchLimit` (number), `listingNoun` (string).
 - `listingUrl(id, saved, { status })` — the listing's public (or Seller Center) page.
 - `routes(router)` — mounts the shop's public endpoints (webhooks; eBay account deletion).
-- `api` — the shop's dashboard API, mounted at `/api/<urlId>` (`api.js`: the route groups this shop
-  has, e.g. Temu has no inbox). The handlers live once in `routes/shop/` as `(shopKey) => router`;
-  `middleware/shopScope.js` pins `marketplace` to the shop, narrows a sub-admin's stores to it, and
-  answers 404 for another shop's order, conversation or store id.
+- `app` — everything the shop does in the dashboard, in `app/` (loaded on first use):
+  `api` (its routes, mounted at `/api/<urlId>`), `sync` (`orders`, `listings`, `access`, `full`,
+  `inbox` when it has one — the scheduler runs these), and `catalog` (`pushStock`, `pushChanges`,
+  `publish`, `listingAction`, `capabilities`, `remember`, `relist` for eBay). `app/routes/`,
+  `app/services/` and `app/manager.js` are this shop's own copies of the order, product,
+  inventory, customer, analytics, section, inbox and sync logic; `app/test/` holds its tests.
+  `middleware/shopScope.js` pins every request to the shop.
 - `skuPrefix` — prefix of new SKUs for this shop (`EBAY`, `TTS`, `TEMU`; `EP` when none).
 - `configStatus(config)` — what `GET /api/shops/configs` reports: `{ configured, environment, ... }`.
 - `aiHint` — extra instruction for the AI when it drafts a listing for this shop from a URL.
@@ -73,3 +76,12 @@ Shared code (services, routes, models, middleware, utils, config) must not name 
 2. Add the key to `KEYS` in `marketplaces/index.js` and its config to `config/marketplaces.js`.
 3. Frontend: `frontend/src/marketplaces/<new_key>/index.js` and one line in its registry.
 4. `npm test` must pass (the contract and the no-shop-names checks run there).
+
+## What stays shared
+
+Only infrastructure: models, middleware, utils, config, `services/core/*` (scheduler, cache,
+events, notifications), `services/marketplace/connection.js` (OAuth, tokens, access checks,
+profiles), `services/catalog/fanOut.js` (a product's stock/price change reaches each of its
+listings through that listing's own shop), and the cross-shop screens: auth/users, overview,
+market research, settings. `test/no-shop-branches.test.js` fails if shop logic returns there or
+one shop's folder requires another's.

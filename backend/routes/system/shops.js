@@ -1,6 +1,6 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireRole, signOAuthState, verifyOAuthState } = require('../../middleware/auth')
-const marketplaceManager = require('../../services/marketplace')
+const marketplaceManager = require('../../services/marketplace/connection')
 const config = require('../../config/marketplaces')
 const registry = require('../../marketplaces')
 const { canonical: canonicalMarketplace } = registry

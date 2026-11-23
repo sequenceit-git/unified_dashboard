@@ -16,11 +16,10 @@ const { newSku, isMachineSku, skuPrefix } = require('../../../utils/sku')
 const { productKey, escapeRegex, listingAliases, ignoreTokens } = require('../../../services/marketplace/listingKeys')
 const ADAPTER = require('..')
 const HOOKS = ADAPTER.hooks || {}
-const CAPS = ADAPTER.capabilities || {}
 const SERVICE = ADAPTER.service
 
 /** Connecting to the shop (OAuth, tokens, access checks) stays shared: services/marketplace. */
-const connection = () => require('../../../services/marketplace')
+const connection = () => require('../../../services/marketplace/connection')
 
 /** This shop's sync and listing logic: orders, listings, stock, inbox, publishing. */
 class Manager {
@@ -634,7 +633,7 @@ class Manager {
   async fetchShopListings(shop, token) {
     const service = SERVICE
     if (typeof service.getInventory !== 'function') return { complete: false, items: [] }
-    const limit = CAPS.listingFetchLimit || 200
+    const limit = 2000
     const res = await service.getInventory(token, { limit, shop })
     const items = res.inventoryItems || []
     return {

@@ -150,7 +150,7 @@ async function handle(xml, soapAction) {
  * belongs to (notifications name the seller, not the shop).
  */
 async function enable(shop) {
-  const manager = require('../../services/marketplace')
+  const manager = require('../../services/marketplace/connection')
   const trading = require('./trading')
   const problem = setupProblem()
   const events = eventNames()

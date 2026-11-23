@@ -40,3 +40,11 @@ test("shop folders never require another shop's folder", () => {
   }
   assert.deepEqual(hits, [])
 })
+
+test('shared backend code holds no shop logic: the per-shop copies replaced it', () => {
+  const removed = ['routes/shop/', 'services/sales/orders', 'services/sales/customers', 'services/sales/customerStats', 'services/catalog/products', 'services/catalog/inventory', 'services/catalog/productImport', 'services/analytics/reports', 'services/inbox/inboxBot', 'services/marketplace/sections']
+  for (const rel of removed) assert.equal(fs.existsSync(path.join(ROOT, rel.endsWith('/') ? rel : `${rel}.js`)), false, `${rel} should be gone`)
+  const connection = require('../services/marketplace/connection')
+  const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(connection)).concat(Object.keys(connection))
+  assert.deepEqual(methods.filter((name) => /^(sync|push|propagate|publish|save|reconcile|process|cancel)/.test(name)), [])
+})

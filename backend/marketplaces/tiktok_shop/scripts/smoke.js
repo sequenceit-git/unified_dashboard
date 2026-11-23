@@ -14,7 +14,7 @@ const connectDB = require('../../../config/db')
 const Shop = require('../../../models/Shop')
 const config = require('../config')
 const tiktok = require('../service')
-const manager = require('../../../services/marketplace')
+const manager = require('../../../services/marketplace/connection')
 const { PROFILES } = require('../../../services/marketplace/profiles')
 
 const results = []

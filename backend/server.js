@@ -99,7 +99,7 @@ connectDB(process.env.MONGODB_URL || process.env.MONGO_URI).then(async () => {
     console.warn('[Research] Stale reports cleanup check warning:', err.message)
   }
 
-  const marketplaceManager = require('./services/marketplace')
+  const marketplaceManager = require('./services/marketplace/connection')
   marketplaceManager.autoConnectFromEnv().catch((err) => {
     console.warn('Auto-connect from ENV warning:', err.message)
   })

@@ -137,7 +137,7 @@ const isTokenError = (err) => Boolean(err?.deadLogin || err?.status === 401
 
 /** Turns the webhook events on for a shop (on connect and once a day). */
 async function enable(shop) {
-  const manager = require('../../services/marketplace')
+  const manager = require('../../services/marketplace/connection')
   const temu = require('./service')
   const events = Object.keys(EVENTS)
   let liveUpdates
