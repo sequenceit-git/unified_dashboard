@@ -42,17 +42,6 @@ async function identityTaken(val, exceptId) {
   return Boolean(await User.findOne(query).select('_id'))
 }
 
-function parseMarkets(values) {
-  if (!Array.isArray(values)) return { error: 'marketplaces must be a list of shops' }
-  const markets = []
-  for (const value of values) {
-    const market = canonicalMarketplace(value)
-    if (!market || !SHOP_MARKETS.includes(market)) return { error: 'Unknown shop' }
-    if (!markets.includes(market)) markets.push(market)
-  }
-  return { markets }
-}
-
 async function marketsFromShopIds(shopIds) {
   const shops = await Shop.find({ _id: { $in: shopIds } }).select('marketplace')
   return [...new Set(shops.map((shop) => shop.marketplace).filter((market) => SHOP_MARKETS.includes(market)))]
@@ -199,8 +188,6 @@ async function createUser(ctx) {
       role = 'sub_admin',
       marketplace,
       marketplaces,
-      shopIds = [],
-      shopId,
       mainRoutes = [],
       allowedSections = [],
       profileImageUrl = '',
@@ -344,7 +331,7 @@ async function deleteUser(ctx) {
 }
 
 /** GET /users: sub-admins with their shops, routes and marketplaces. */
-async function listUsers(ctx) {
+async function listUsers(_ctx) {
   const users = await User.find({ role: 'sub_admin', isDeleted: { $ne: true } }).select('-passwordHash').sort({ createdAt: -1 })
   const access = await UserShopAccess.find({ userId: { $in: users.map((user) => user._id) } })
   const byUser = new Map()

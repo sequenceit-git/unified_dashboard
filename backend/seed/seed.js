@@ -13,18 +13,13 @@ const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 
 const User = require('../models/User')
-const Shop = require('../models/Shop')
 const Product = require('../models/Product')
 const Listing = require('../models/Listing')
-const InventoryLog = require('../models/InventoryLog')
 const Order = require('../models/Order')
 const Customer = require('../models/Customer')
 const Conversation = require('../models/Conversation')
 const Message = require('../models/Message')
 const ResearchReport = require('../models/ResearchReport')
-const SyncLog = require('../models/SyncLog')
-const Notification = require('../models/Notification')
-const AuditLog = require('../models/AuditLog')
 
 async function main() {
   const uri = process.env.MONGODB_URL || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/unified_dashboard'

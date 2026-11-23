@@ -125,7 +125,7 @@ function ownsReport(req, report) {
 }
 
 /** GET /reports */
-async function listReports(ctx) {
+async function listReports(_ctx) {
     const reports = await ResearchReport.find()
       .sort({ createdAt: -1 })
       .limit(50)
@@ -512,7 +512,7 @@ async function exportReport(ctx) {
       return `"${str.replace(/"/g, '""')}"`
     }
 
-    const rows = recommendations.map((r, i) => {
+    const rows = recommendations.map((r) => {
       const title = r.title || r.productName || ''
       const category = r.category || r.metrics?.category || ''
       const basePrice = r.metrics?.price != null ? r.metrics.price : (r.price ?? r.metrics?.averagePrice ?? '')

@@ -107,7 +107,7 @@ module.exports = {
       throw err
     }
     if (action === 'end' || action === 'delete') {
-      const res = await trading.endListing(accessToken, itemId)
+      await trading.endListing(accessToken, itemId)
       // Best-effort removal of inventory item if a SKU exists
       const sku = listing.sku || (Array.isArray(listing.matchSkus) && listing.matchSkus[0])
       if (sku) {

@@ -14,7 +14,6 @@ function getResolvedUrl() {
   if (!url) return null
   // When running outside Docker container, resolve 'redis' service hostname to localhost fallback
   if (url.includes('redis:6379')) {
-    const dns = require('dns')
     try {
       // If redis host doesn't exist in local DNS, substitute with 127.0.0.1
       require('child_process').execSync('node -e "require(\'dns\').lookup(\'redis\', (e) => process.exit(e ? 1 : 0))"', { stdio: 'ignore' })

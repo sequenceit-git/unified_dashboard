@@ -368,7 +368,7 @@ class UnifiedMarketplaceManager {
           }
           // Totals the marketplace filled in later (Temu reports amounts separately).
           if (!Number(existing.totals?.total) && Number(ord.totals?.total)) {
-            existing.totals = { ...(existing.totals?.toObject?.() || existing.totals || {}), ...ord.totals }
+            existing.totals = { ...(existing.totals?.toObject?.() || existing.totals), ...ord.totals }
             if ((ord.items || []).length === existing.items.length) {
               existing.items.forEach((item, i) => {
                 if (!item.unitPrice && ord.items[i]?.unitPrice) item.unitPrice = ord.items[i].unitPrice

@@ -58,7 +58,7 @@ function verifiedLinks(rec) {
 
 // Build one export row using the exact same mapping as the CSV download,
 // so xlsx and csv outputs never drift apart.
-function buildExportRow(rec, i, timestampSuffix) {
+function buildExportRow(rec, _i, _timestampSuffix) {
   const title = rec.title || rec.productName || ''
   const category = rec.category || rec.metrics?.category || ''
   const basePrice = rec.metrics?.price != null ? rec.metrics.price : (rec.price ?? rec.metrics?.averagePrice ?? '')

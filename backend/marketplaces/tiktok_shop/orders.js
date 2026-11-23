@@ -230,7 +230,7 @@ module.exports = {
   /**
    * Cancels unfulfilled order on TikTok Shop
    */
-  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', comment = '', shop } = {}) {
+  async cancelOrder(accessToken, orderId, { reason = 'OUT_OF_STOCK', shop } = {}) {
     const reasonMap = {
       OUT_OF_STOCK: 'seller_cancel_reason_out_of_stock',
       BUYER_CANCEL: 'seller_cancel_reason_buyer_request',

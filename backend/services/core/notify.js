@@ -47,12 +47,6 @@ async function resolve(key) {
   await Notification.updateMany({ key, isRead: false }, { isRead: true })
 }
 
-function isLow(product) {
-  if (!product || product.stock == null) return false
-  const threshold = Number(product.lowStockThreshold ?? 5)
-  return Number(product.stock) <= threshold
-}
-
 function shopRef(shop) {
   if (!shop) return { shopId: null, marketplace: undefined }
   if (shop.marketplace || shop.name) return { shopId: shop._id || null, marketplace: shop.marketplace }

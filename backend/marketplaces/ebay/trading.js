@@ -661,7 +661,7 @@ async function addListing(token, product, opts = {}) {
   const aspects = {
     Brand: brand,
     ...(mpn ? { MPN: mpn } : {}),
-    ...(opts.aspects || {}),
+    ...opts.aspects,
   }
   const excludeSpecifics = new Set((varResult?.optionNames || []).map((n) => n.toLowerCase()))
   const pldXml = productListingDetailsXml({

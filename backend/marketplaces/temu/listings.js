@@ -2,7 +2,7 @@
 const { temuMoney } = require('./format')
 
 module.exports = {
-  async getInventory(accessToken, { limit = 50 } = {}) {
+  async getInventory(accessToken, _options = {}) {
     const pageSize = 100
     const maxPages = 20
     const goods = []

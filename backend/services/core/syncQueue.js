@@ -14,8 +14,6 @@ const cache = require('./cache')
 const events = require('./events')
 
 const QUEUE = 'marketplace-sync'
-const isProduction = () => process.env.NODE_ENV === 'production'
-
 /** Env flag `NAME=true|false`, defaulting to on unless explicitly set to `'false'`. */
 function autoSync(name) {
   return process.env[name] ? process.env[name] === 'true' : true
