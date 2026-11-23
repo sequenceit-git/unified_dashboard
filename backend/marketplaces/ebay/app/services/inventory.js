@@ -15,7 +15,7 @@ async function lowStock(ctx) {
     if (ctx.user.role === 'sub_admin') listingFilter.shopId = { $in: ctx.allowedShopIds }
     const marketplace = 'ebay'
     if (marketplace) listingFilter.marketplace = marketplace
-    const filter = { $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
+    const filter = { marketplace: 'ebay', $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
     if (Object.keys(listingFilter).length) {
       filter._id = { $in: await Listing.find(listingFilter).distinct('productId') }
     }
@@ -60,6 +60,7 @@ async function logs(ctx) {
     if (ctx.query.q) {
       const q = escapeRegex(ctx.query.q.trim())
       const productIds = await Product.find({
+        marketplace: 'ebay',
         $or: [
           { sku: { $regex: q, $options: 'i' } },
           { title: { $regex: q, $options: 'i' } },
@@ -97,7 +98,7 @@ async function adjust(ctx) {
     }
     await assertProductAccess(ctx, productId)
     if (shopId && !canAccessShop(ctx, shopId)) throw new HttpError(403, { error: 'You do not have permission for this shop' })
-    const product = await Product.findById(productId)
+    const product = await Product.findOne({ _id: productId, marketplace: 'ebay' })
     if (!product) throw new HttpError(404, { error: 'Product not found' })
 
     let change = ctx.body.change
@@ -165,7 +166,7 @@ async function adjust(ctx) {
       const pushPayload = variantSku
         ? { quantity: updated.stock, variantSku, variantStock: stockAfter, variants: updated.variants }
         : { quantity: updated.stock }
-      const syncResults = await require('../../../../services/catalog/fanOut').pushProductChanges(updated, pushPayload)
+      const syncResults = await marketplaceManager.pushProductChanges(updated, pushPayload)
       pushedCount = syncResults.filter((r) => r.ok).length
       warnings.push(...syncResults.filter((r) => !r.ok).map((r) => `${r.shopName}: ${r.error}`))
     } catch (err) {

@@ -18,3 +18,8 @@ test("eBay app code reads only eBay rows: every request marketplace read is pinn
   }
   assert.deepEqual(hits, [])
 })
+
+test("another shop's product id is a 404", async () => {
+  const router = require('../routes/products')('ebay')
+  assert.ok(router.params?.id?.length, 'the products routes check that an :id belongs to this shop')
+})
