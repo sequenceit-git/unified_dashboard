@@ -6,13 +6,13 @@
  */
 
 const OpenAI = require('openai')
-const Shop = require('../models/Shop')
-const Conversation = require('../models/Conversation')
-const Message = require('../models/Message')
-const Listing = require('../models/Listing')
-const marketplaceManager = require('./marketplace')
-const registry = require('../marketplaces')
-const { getAiConfig } = require('./aiSettings')
+const Shop = require('../../models/Shop')
+const Conversation = require('../../models/Conversation')
+const Message = require('../../models/Message')
+const Listing = require('../../models/Listing')
+const marketplaceManager = require('../marketplace')
+const registry = require('../../marketplaces')
+const { getAiConfig } = require('../system/aiSettings')
 
 const HANDOFF = 'HANDOFF'
 const MAX_MESSAGE_AGE_MS = 24 * 60 * 60 * 1000

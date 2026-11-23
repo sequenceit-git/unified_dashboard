@@ -7,7 +7,7 @@ const MessageTemplate = require('../../models/MessageTemplate')
 const Shop = require('../../models/Shop')
 const marketplaceManager = require('../../services/marketplace')
 const { canonical: canonicalMarketplace } = require('../../marketplaces')
-const { refreshThread } = require('../../services/inboxBot')
+const { refreshThread } = require('../../services/inbox/inboxBot')
 const syncQueue = require('../../services/core/syncQueue')
 const cache = require('../../services/core/cache')
 

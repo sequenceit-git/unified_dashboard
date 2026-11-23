@@ -5,7 +5,7 @@
  */
 
 const crypto = require('crypto')
-const AppSetting = require('../models/AppSetting')
+const AppSetting = require('../../models/AppSetting')
 
 const DEFAULT_MODEL = 'gpt-5-mini'
 const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,79}$/

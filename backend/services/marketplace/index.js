@@ -1160,7 +1160,7 @@ class UnifiedMarketplaceManager {
     let newMessages = 0
     let updatedThreads = 0
     if (shopCaps(shop.marketplace).inbox && shop.apiAccess?.inbox?.ok !== false) {
-      inboxResult = await require('../inboxBot').syncAndReply(shop).catch((err) => ({ error: err.message }))
+      inboxResult = await require('../inbox/inboxBot').syncAndReply(shop).catch((err) => ({ error: err.message }))
       newMessages = inboxResult?.newMessages || 0
       updatedThreads = inboxResult?.updatedThreads || 0
     }

@@ -8,7 +8,7 @@
 
 const OpenAI = require('openai')
 const ResearchReport2 = require('../../models/ResearchReport')
-const { getAiConfig } = require('../../services/aiSettings')
+const { getAiConfig } = require('../../services/system/aiSettings')
 const { skillManager } = require('./skills/index')
 const { computeOpportunityScore, calculateUnitEconomics } = require('./economics')
 const { productImages } = require('./listingImage')

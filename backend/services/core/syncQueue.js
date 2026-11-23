@@ -35,7 +35,7 @@ const KINDS = {
   inbox: {
     every: () => (autoSync('INBOX_AUTO_SYNC') ? Number(process.env.INBOX_SYNC_MINUTES || 2) : 0),
     applies: (shop) => Boolean(shopAdapter(shop)?.capabilities?.inbox) && shop.apiAccess?.inbox?.ok !== false,
-    run: (shop) => require('../inboxBot').syncAndReply(shop),
+    run: (shop) => require('../inbox/inboxBot').syncAndReply(shop),
     clears: () => ['resp:dashboard:'],
   },
   orders: {

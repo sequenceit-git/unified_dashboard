@@ -10,7 +10,7 @@ const CORE_FILES = [
   'services/marketplace/sections.js',
   'routes/system/shops.js',
   'services/core/syncQueue.js',
-  'services/inboxBot.js',
+  'services/inbox/inboxBot.js',
 ]
 
 test('core files have no shop-name literals', () => {

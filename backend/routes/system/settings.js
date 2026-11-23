@@ -1,6 +1,6 @@
 const express = require('express')
 const { requireAuth, loadAccess, requireRole } = require('../../middleware/auth')
-const { getPublicAiSettings, saveAiSettings } = require('../../services/aiSettings')
+const { getPublicAiSettings, saveAiSettings } = require('../../services/system/aiSettings')
 
 const router = express.Router()
 router.use(requireAuth, loadAccess, requireRole('super_admin'))
