@@ -52,7 +52,7 @@ const ebayOrders = (token) => ebayRest(token, '/sell/fulfillment/v1/order?limit=
 const ttProducts = ttCall('POST', '/product/202502/products/search', { query: { page_size: 1 }, body: {} })
 const ttOrders = ttCall('POST', '/order/202309/orders/search', { query: { page_size: 1 }, body: {} })
 const temuGoods = (token) => temu.call('bg.local.goods.list.query', { access_token: token, pageNo: 1, pageSize: 1, goodsSearchType: 1 })
-const temuOrders = (token) => temu.call('bg.order.list.get', { access_token: token, pageNumber: 1, pageSize: 1, parentOrderStatus: 0, regionId: 211 })
+const temuOrders = (token) => temu.call('bg.order.list.v2.get', { access_token: token, pageNumber: 1, pageSize: 1, parentOrderStatus: 0, regionId: 211 })
 const temuPriceOrders = (token) => temu.call('bg.local.goods.priceorder.query', { access_token: token, page: 1, size: 1 })
 const temuShipping = (token) => temu.call('bg.logistics.warehouse.list.get', { access_token: token })
 const temuReturns = (token) => {
@@ -176,11 +176,11 @@ const PROFILES = {
       { id: 'analytics', label: 'Analytics', path: '/analytics', route: 'analytics', needs: 'Order Management', probe: temuOrders },
       { id: 'products', label: 'Goods', path: '/products', route: 'products', needs: 'Product Management', probe: temuGoods },
       { id: 'inventory', label: 'Inventory', path: '/inventory', route: 'inventory', needs: 'Product Management', probe: temuGoods },
-      { id: 'orders', label: 'Orders', path: '/orders', route: 'orders', needs: 'bg.order.list.get', probe: temuOrders },
+      { id: 'orders', label: 'Orders', path: '/orders', route: 'orders', needs: 'bg.order.list.v2.get', probe: temuOrders },
       { id: 'fulfillment', label: 'Shipping', path: '/shop/fulfillment', route: 'orders', needs: 'bg.logistics.warehouse.list.get', probe: temuShipping },
       { id: 'returns', label: 'Returns & refunds', path: '/shop/returns', route: 'orders', needs: 'bg.aftersales.parentaftersales.list.get', probe: temuReturns },
       { id: 'prices', label: 'Price reviews', path: '/shop/prices', route: 'products', needs: 'bg.local.goods.priceorder.query', probe: temuPriceOrders },
-      { id: 'customers', label: 'Customers', path: '/customers', route: 'customers', needs: 'bg.order.list.get', probe: temuOrders },
+      { id: 'customers', label: 'Customers', path: '/customers', route: 'customers', needs: 'bg.order.list.v2.get', probe: temuOrders },
     ],
     statuses: {
       live: { label: 'On sale', color: 'green' },

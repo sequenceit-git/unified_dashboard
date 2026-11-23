@@ -571,7 +571,7 @@ const TEMU = {
         id: 'unshipped',
         title: 'Awaiting shipment',
         columns: [col('order', 'Order'), col('placed', 'Placed', 'date'), col('items', 'Items')],
-        load: async () => (await temu.call('bg.order.list.get', {
+        load: async () => (await temu.call('bg.order.list.v2.get', {
           access_token: token,
           pageNumber: 1,
           pageSize: 50,

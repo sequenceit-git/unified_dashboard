@@ -83,7 +83,7 @@ async function main() {
       return `${inventoryItems.length} SKUs, complete=${complete}`
     })
 
-    await check('Orders paging (bg.order.list.get)', async () => {
+    await check('Orders paging (bg.order.list.v2.get)', async () => {
       const { orders } = await temu.getOrders(token, { limit: 10 })
       const line = orders[0]?.items?.[0]
       return line

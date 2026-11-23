@@ -2,7 +2,7 @@
  * United States Temu local-seller Open API.
  * One POST router. Documented types used here:
  * bg.open.accesstoken.create
- * bg.order.list.get
+ * bg.order.list.v2.get
  * bg.local.goods.list.query
  */
 
@@ -77,7 +77,7 @@ class TemuService {
     const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 100)
     const orders = []
     for (let pageNumber = 1; pageNumber <= 10; pageNumber += 1) {
-      const result = await this.call('bg.order.list.get', {
+      const result = await this.call('bg.order.list.v2.get', {
         access_token: accessToken,
         pageNumber,
         pageSize,
