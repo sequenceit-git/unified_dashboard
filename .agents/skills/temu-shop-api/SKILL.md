@@ -3,7 +3,7 @@ name: temu-shop-api
 description: >-
   Integrate the Temu seller Open API into this dashboard. Use when connecting
   a Temu shop, adding TEMU_* env vars, signing router requests, or creating
-  backend/services/marketplace/temu.js. Temu does not publish an MCP server.
+  backend/marketplaces/temu/. Temu does not publish an MCP server.
 ---
 
 # Temu shop API
@@ -30,7 +30,7 @@ Confirm the goods, order, and inventory `type` names in the app's region API lis
 
 ## This dashboard
 
-Add `backend/services/marketplace/temu.js` and register it as `temu`. Config key `temu` in `backend/config/marketplaces.js` with `TEMU_APP_KEY`, `TEMU_APP_SECRET`, and region fixed to `us`.
+All Temu code lives in `backend/marketplaces/temu/` (registered as `temu`): `client.js` (signing + router), `orders.js`, `listings.js`, `webhooks.js` (encrypted, signed pushes), `profile.js`, `sections/`, `scripts/` (`npm run smoke:temu`), `test/`. Config: `config.js` with `TEMU_APP_KEY`, `TEMU_APP_SECRET`, region fixed to `us`. Frontend: `frontend/src/marketplaces/temu/`.
 
 Match the eBay service methods: `getAuthUrl`, `exchangeCode`, `refreshToken`, `getOrders`, `getInventory`, `createListing`, `updateStock`, `updatePrice`. Dispatch sync, stock, and price with `shop.marketplace`.
 

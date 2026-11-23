@@ -33,7 +33,9 @@ public (logged-out) pages rendered outside `DashboardLayout`.
 - **Shared UI** (buttons, tables, cards, modals, inputs) lives in
   `src/components/ui/` — do not duplicate it inside a section folder.
 - **Shared logic**: API client `src/lib/api.js`, data hook `src/hooks/useApi.js`,
-  constants `src/lib/marketplaces.js`, auth `src/auth/AuthContext.jsx`.
+  marketplace registry `src/marketplaces/` (see its README), auth `src/auth/AuthContext.jsx`.
+- **Shop-specific UI** (section buttons, listing fields, shop colours) lives in
+  `src/marketplaces/<key>/`, never as `marketplace === '...'` checks in pages.
 - Imports inside a section use `../../auth|components|hooks|lib/...`.
 - No cross-section imports: if two sections need it, promote it to
   `src/components/`.

@@ -30,8 +30,11 @@ The official integration system is `@tts-open-toolkit/cli` (`tts_open_toolkit`).
 
 ## This dashboard
 
-`marketplaceServices` does not include TikTok Shop yet. Add `backend/services/marketplace/tiktok.js` and register it as `tiktok_shop` (`Shop.marketplace`). The id `tiktok` is wrong.
+All TikTok Shop code lives in `backend/marketplaces/tiktok_shop/` (registered as `tiktok_shop`, the `Shop.marketplace` value; the id `tiktok` is only a URL alias):
+- `client.js` (signing, auth, `call`), `orders.js`, `listings.js`, `promotions.js`, `finance.js`, `inbox.js`, `analytics.js`; `service.js` puts them on one object
+- `webhooks.js`, `profile.js` (sidebar sections + access probes), `sections/` (one file per section), `hooks.js` (TikTok steps in the shared sync), `scripts/smoke.js` (`npm run smoke:tiktok`), `test/`
+- Frontend: `frontend/src/marketplaces/tiktok_shop/` (section buttons, listing fields and rules)
 
-Match the eBay service methods used by `backend/services/marketplace/index.js`: `getAuthUrl`, `exchangeCode`, `refreshToken`, `getOrders`, `getInventory`, `createListing`, `updateStock`, `updatePrice`. Stop calling `getService('ebay')` for stock, price, orders, and listings; dispatch on `shop.marketplace`.
+The shared core (`backend/services/marketplace/`) never checks for TikTok by name; add behaviour through the adapter in `index.js` (see `backend/marketplaces/README.md`).
 
-Put `TIKTOK_SHOP_APP_KEY`, `TIKTOK_SHOP_APP_SECRET`, and `TIKTOK_SHOP_SERVICE_ID` in `backend/config/marketplaces.js` under `tiktok_shop`. Authorize with the seller link from Partner Center (`service_id` plus `state`). Persist access token, refresh token, expiry, and `shop_cipher` on `Shop.auth`. Do not log secrets.
+`TIKTOK_SHOP_APP_KEY`, `TIKTOK_SHOP_APP_SECRET` and `TIKTOK_SHOP_SERVICE_ID` are read in `backend/marketplaces/tiktok_shop/config.js`. Authorize with the seller link from Partner Center (`service_id` plus `state`). Persist access token, refresh token, expiry, and `shop_cipher` on `Shop.auth`. Do not log secrets.

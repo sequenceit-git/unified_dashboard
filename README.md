@@ -52,12 +52,12 @@ Marketplace webhooks: `POST /api/ebay/notifications`, `/api/ebay/deletion`, `/ap
 
 ```sh
 cd backend && npm test      # node --test; marketplace APIs are stubbed, no network or database
-cd frontend && npm run build && npm run lint
+cd frontend && npm test && npm run build && npm run lint
 ```
 
 ## Folder map
 
-> Target layout. The restructure in [`docs/restructure-plan.md`](docs/restructure-plan.md) is in progress; until it finishes, shop code still partly lives in `backend/services/marketplace/`.
+See [`backend/marketplaces/README.md`](backend/marketplaces/README.md), [`backend/services/README.md`](backend/services/README.md) and [`frontend/src/marketplaces/README.md`](frontend/src/marketplaces/README.md).
 
 ```
 backend/

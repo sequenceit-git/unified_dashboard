@@ -2,7 +2,7 @@
 name: ebay-shop-api
 description: >-
   Integrate eBay Sell APIs into this dashboard. Use when connecting an eBay
-  shop, changing EBAY_* env vars, editing backend/services/marketplace/ebay.js,
+  shop, changing EBAY_* env vars, editing backend/marketplaces/ebay/,
   or calling the official eBay MCP server (@ebay/npm-public-api-mcp).
 ---
 
@@ -28,9 +28,10 @@ If `query_ebay_api` / `call_ebay_api` are not connected, say so and use the dash
 
 Seller connect, listing publish, stock, price, fulfillment, and refunds stay in this repo because the official MCP cannot write.
 
-- Service: `backend/services/marketplace/ebay.js`
-- Registry: `backend/services/marketplace/index.js` key `ebay`
-- Config: `backend/config/marketplaces.js` key `ebay`
+- Code: `backend/marketplaces/ebay/` — `client.js` (auth, REST), `trading.js` (XML Trading API), `orders.js`, `listings.js`, `finance.js`, `inbox.js`, `webhooks.js`, `accountDeletion.js`, `hooks.js`, `profile.js`, `sections/`, `scripts/` (`npm run smoke:ebay`), `test/`
+- Registry: `backend/marketplaces/index.js` key `ebay` (adapter in `backend/marketplaces/ebay/index.js`)
+- Config: `backend/marketplaces/ebay/config.js`
+- Frontend: `frontend/src/marketplaces/ebay/`
 - Shop id: `ebay`
 - Connect: `GET /api/shops/oauth/connect/ebay`, return to `/settings?connected=ebay`
 

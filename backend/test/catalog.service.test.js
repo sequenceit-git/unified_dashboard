@@ -28,7 +28,6 @@ function load(db = {}) {
     '/models/ResearchReport': { updateMany: () => ({ catch: () => {} }) },
     '../../services/marketplace': manager,
     '../marketplace': manager,
-    '/services/productImport': {},
     '/catalog/productImport': {},
     '/core/notify': { stockChangedOnShops: async () => {} },
   })

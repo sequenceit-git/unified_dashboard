@@ -12,6 +12,29 @@
 
 **Order of tasks:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 6a → 6b → 6c → 6d → 6e → 6f → 7 → 8 → 8a → 9
 
+## Progress (2026-11-23)
+
+| Task | Status | Commit |
+|---|---|---|
+| 0 Housekeeping | done | 495a370 |
+| 1 Test suite | done | ff7df37 |
+| 2 Registry + contract | done | f0af079 |
+| 3 Temu → marketplaces/temu | done | 74a1c4c |
+| 4 TikTok Shop → marketplaces/tiktok_shop | done | 1ad1723 |
+| 5 eBay → marketplaces/ebay | done | 0d2f8bb |
+| 6 Core without shop branches | done | a5373d9, 6612484 |
+| 6a services/core | done | de2bf2a |
+| 6b–6f domain services (catalog, sales, research, auth, analytics + shops) | done | 9884b53, 2b5650b, 1b16771, fb68870, d7c7c97 |
+| 7 Frontend registry + section files | done | 3a42a95 |
+| 8 Listing forms | partly: rules, shop fields and field-set flags moved; per-shop `Fields` JSX not yet extracted | 1f62b37 |
+| 8a Big pages | partly: sub-admin management page split; others capped by test | 269c7db |
+| 9 Docs and paths | done | (this commit) |
+
+**Still to do (needs a UI test pass with a running backend):** move the shop-specific JSX out of
+`ListModal`, `DirectListModal` and `ProductModal` into `src/marketplaces/<key>/listing/Fields.jsx`;
+split `SubAdminFormPage`, `ProductDiscoveryPage` and `ShopSectionPage` into components + hooks;
+turn the TikTok-only performance path in `services/analytics/reports.js` into a TikTok adapter hook.
+
 ## Decisions (the spec)
 
 1. One folder per shop on a shared core, backend and frontend. Not three apps.
