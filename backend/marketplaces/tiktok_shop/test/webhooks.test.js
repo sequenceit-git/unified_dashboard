@@ -1,7 +1,7 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const crypto = require('crypto')
-const { stubModules, freshRequire } = require('./helpers/stub')
+const { stubModules, freshRequire } = require('../../../test/helpers/stub')
 
 process.env.TIKTOK_SHOP_APP_KEY = 'tt-key'
 process.env.TIKTOK_SHOP_APP_SECRET = 'tt-secret'
@@ -10,10 +10,10 @@ function load() {
   const queued = []
   const restore = stubModules({
     '/models/Shop': { findOne: () => ({ select: async () => ({ _id: 'shopT', name: 'TT', status: 'connected' }) }), find: () => ({ select: () => ({ limit: async () => [] }) }), updateOne: async () => ({}) },
-    './cache': { claim: async () => true },
-    './syncQueue': { enqueue: async (kind, id) => { queued.push(`${kind}:${id}`) } },
+    '/cache': { claim: async () => true },
+    '/syncQueue': { enqueue: async (kind, id) => { queued.push(`${kind}:${id}`) } },
   })
-  return { n: freshRequire('services/tiktokNotifications.js'), queued, restore }
+  return { n: freshRequire('marketplaces/tiktok_shop/webhooks.js'), queued, restore }
 }
 
 const sign = (body) => crypto.createHmac('sha256', 'tt-secret').update(Buffer.concat([Buffer.from('tt-key'), Buffer.from(body)])).digest('hex')

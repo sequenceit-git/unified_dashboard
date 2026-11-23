@@ -5,17 +5,17 @@
  * finance, analytics, creators, and webhooks. Nothing is mutated. Exits 1 if any check fails.
  */
 const path = require('path')
-const root = path.join(__dirname, '..', '..')
+const root = path.join(__dirname, '..', '..', '..', '..')
 require('dotenv').config({ path: path.join(root, '.env.local') })
 require('dotenv').config({ path: path.join(root, '.env') })
 
 const mongoose = require('mongoose')
-const connectDB = require('../config/db')
-const Shop = require('../models/Shop')
-const config = require('../config/marketplaces').tiktok_shop
-const tiktok = require('../services/marketplace/tiktok')
-const manager = require('../services/marketplace')
-const { PROFILES } = require('../services/marketplace/profiles')
+const connectDB = require('../../../config/db')
+const Shop = require('../../../models/Shop')
+const config = require('../config')
+const tiktok = require('../service')
+const manager = require('../../../services/marketplace')
+const { PROFILES } = require('../../../services/marketplace/profiles')
 
 const results = []
 async function check(name, fn) {

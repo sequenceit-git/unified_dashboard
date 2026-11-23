@@ -8,9 +8,9 @@
  */
 
 const crypto = require('crypto')
-const config = require('../config/marketplaces').tiktok_shop
-const Shop = require('../models/Shop')
-const cache = require('./cache')
+const config = require('./config')
+const Shop = require('../../models/Shop')
+const cache = require('../../services/cache')
 
 const EVENTS = {
   ORDER_STATUS_CHANGE: 'orders',
@@ -142,13 +142,13 @@ async function handle(rawBody, body, authHeader, topicQuery = '') {
     return { status: 200, message: `Shop ${shop.name} is not connected; ignored` }
   }
 
-  await require('./syncQueue').enqueue(kind, shop._id, { push: true })
+  await require('../../services/syncQueue').enqueue(kind, shop._id, { push: true })
   return { status: 200, message: `${topic || kind}: queued ${kind} sync for ${shop.name}`, job: kind }
 }
 
 async function enable(shop) {
-  const manager = require('./marketplace')
-  const tiktok = require('./marketplace/tiktok')
+  const manager = require('../../services/marketplace')
+  const tiktok = require('./service')
   const problem = setupProblem()
   const events = Object.keys(EVENTS)
   let liveUpdates

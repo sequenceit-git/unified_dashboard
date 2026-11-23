@@ -5,7 +5,7 @@ const router = express.Router()
 const crypto = require('crypto')
 const ebayDeletion = require('../../services/ebayAccountDeletion')
 const ebayNotifications = require('../../services/ebayNotifications')
-const tiktokNotifications = require('../../services/tiktokNotifications')
+const tiktokNotifications = require('../../marketplaces/tiktok_shop/webhooks')
 const temuNotifications = require('../../marketplaces/temu/webhooks')
 
 router.get('/health', (req, res) => {
