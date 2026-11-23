@@ -1,0 +1,37 @@
+{
+  "shops": [
+    "GET /oauth/callback/:marketplace",
+    "GET /",
+    "GET /profiles",
+    "GET /sections/:sectionId",
+    "POST /sections/offers/send",
+    "POST /sections/returns/decide",
+    "POST /sections/cancellations/decide",
+    "POST /sections/promotions/create",
+    "POST /sections/promotions/:id/pause",
+    "POST /sections/promotions/:id/resume",
+    "GET /sections/fulfillment/:packageId/label",
+    "POST /sections/fulfillment/:packageId/ship",
+    "PATCH /:id/ai-reply",
+    "GET /configs",
+    "GET /oauth/connect/:marketplace",
+    "POST /oauth/callback/:marketplace",
+    "GET /:id/categories",
+    "GET /:id/categories/:categoryId/attributes",
+    "GET /:id/categories/:categoryId/rules",
+    "GET /:id/brands",
+    "GET /:id/size-charts",
+    "GET /:id/finances",
+    "POST /sync-all",
+    "POST /:id/live-updates",
+    "POST /:id/sync"
+  ],
+  "api": [
+    "GET /health",
+    "GET /ebay/deletion",
+    "POST /ebay/deletion",
+    "POST /ebay/notifications",
+    "POST /tiktok/webhooks",
+    "POST /temu/webhooks"
+  ]
+}

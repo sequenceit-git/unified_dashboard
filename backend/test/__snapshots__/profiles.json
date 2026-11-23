@@ -1,0 +1,419 @@
+{
+  "ebay": {
+    "label": "eBay",
+    "sections": [
+      {
+        "id": "analytics",
+        "label": "Analytics",
+        "path": "/analytics",
+        "route": "analytics",
+        "needs": "Sell Fulfillment API"
+      },
+      {
+        "id": "inbox",
+        "label": "Inbox",
+        "path": "/inbox",
+        "route": "inbox",
+        "needs": "commerce.message scope"
+      },
+      {
+        "id": "products",
+        "label": "Listings",
+        "path": "/products",
+        "route": "products",
+        "needs": "Trading API"
+      },
+      {
+        "id": "inventory",
+        "label": "Inventory",
+        "path": "/inventory",
+        "route": "inventory",
+        "needs": "Trading API"
+      },
+      {
+        "id": "orders",
+        "label": "Orders",
+        "path": "/orders",
+        "route": "orders",
+        "needs": "sell.fulfillment scope"
+      },
+      {
+        "id": "returns",
+        "label": "Returns & cases",
+        "path": "/shop/returns",
+        "route": "orders",
+        "needs": "Post-Order API"
+      },
+      {
+        "id": "offers",
+        "label": "Best offers",
+        "path": "/shop/offers",
+        "route": "products",
+        "needs": "Negotiation API"
+      },
+      {
+        "id": "promotions",
+        "label": "Promotions",
+        "path": "/shop/promotions",
+        "route": "products",
+        "needs": "sell.marketing scope"
+      },
+      {
+        "id": "finances",
+        "label": "Payouts",
+        "path": "/shop/finances",
+        "route": "analytics",
+        "needs": "sell.finances scope"
+      },
+      {
+        "id": "customers",
+        "label": "Buyers",
+        "path": "/customers",
+        "route": "customers",
+        "needs": "sell.fulfillment scope"
+      }
+    ],
+    "statuses": {
+      "live": {
+        "label": "Active",
+        "color": "green"
+      },
+      "out_of_stock": {
+        "label": "Out of stock",
+        "color": "yellow"
+      },
+      "pending": {
+        "label": "Pending",
+        "color": "blue"
+      },
+      "paused": {
+        "label": "Unsold",
+        "color": "gray"
+      },
+      "ended": {
+        "label": "Ended",
+        "color": "gray"
+      },
+      "error": {
+        "label": "Not listed",
+        "color": "red"
+      }
+    },
+    "rawStatuses": {},
+    "productForm": {
+      "titleMax": 80,
+      "subtitleMax": 55,
+      "maxImages": 12,
+      "condition": true,
+      "conditionDescription": true,
+      "variants": true,
+      "bestOffer": true,
+      "dispatchTime": true,
+      "mpn": true,
+      "specifics": {
+        "label": "Item specifics",
+        "hint": "eBay asks for different specifics per category. Brand is always sent."
+      },
+      "packageDetails": {
+        "required": false,
+        "note": "Used by eBay for calculated shipping."
+      },
+      "productStatus": {
+        "draft": "Draft",
+        "active": "Ready to list",
+        "archived": "Archived"
+      },
+      "listAction": "List on eBay",
+      "directIntro": "eBay listing format: 80-character title, optional subtitle, condition & details, variations, category specifics, identifiers, Best Offer, and handling time."
+    }
+  },
+  "tiktok_shop": {
+    "label": "TikTok Shop",
+    "sections": [
+      {
+        "id": "analytics",
+        "label": "Analytics",
+        "path": "/analytics",
+        "route": "analytics",
+        "needs": "Data Analytics API"
+      },
+      {
+        "id": "inbox",
+        "label": "Inbox",
+        "path": "/inbox",
+        "route": "inbox",
+        "needs": "Customer Service scope"
+      },
+      {
+        "id": "products",
+        "label": "Products",
+        "path": "/products",
+        "route": "products",
+        "needs": "Product API"
+      },
+      {
+        "id": "inventory",
+        "label": "Inventory",
+        "path": "/inventory",
+        "route": "inventory",
+        "needs": "Product API"
+      },
+      {
+        "id": "orders",
+        "label": "Orders",
+        "path": "/orders",
+        "route": "orders",
+        "needs": "Order API"
+      },
+      {
+        "id": "fulfillment",
+        "label": "Packages",
+        "path": "/shop/fulfillment",
+        "route": "orders",
+        "needs": "Fulfillment API"
+      },
+      {
+        "id": "returns",
+        "label": "Returns & cancellations",
+        "path": "/shop/returns",
+        "route": "orders",
+        "needs": "Return and Refund API"
+      },
+      {
+        "id": "promotions",
+        "label": "Promotions",
+        "path": "/shop/promotions",
+        "route": "products",
+        "needs": "Promotion API"
+      },
+      {
+        "id": "finances",
+        "label": "Finance",
+        "path": "/shop/finances",
+        "route": "analytics",
+        "needs": "Finance API"
+      },
+      {
+        "id": "content",
+        "label": "Videos & LIVE",
+        "path": "/shop/content",
+        "route": "analytics",
+        "needs": "Data Analytics API"
+      },
+      {
+        "id": "creators",
+        "label": "Creators",
+        "path": "/shop/creators",
+        "route": "products",
+        "needs": "Affiliate Seller scope"
+      },
+      {
+        "id": "customers",
+        "label": "Customers",
+        "path": "/customers",
+        "route": "customers",
+        "needs": "Order API"
+      }
+    ],
+    "statuses": {
+      "live": {
+        "label": "Live",
+        "color": "green"
+      },
+      "out_of_stock": {
+        "label": "Out of stock",
+        "color": "yellow"
+      },
+      "pending": {
+        "label": "Reviewing",
+        "color": "blue"
+      },
+      "paused": {
+        "label": "Deactivated",
+        "color": "gray"
+      },
+      "ended": {
+        "label": "Deleted",
+        "color": "gray"
+      },
+      "error": {
+        "label": "Failed",
+        "color": "red"
+      }
+    },
+    "rawStatuses": {
+      "ACTIVATE": {
+        "label": "Live",
+        "color": "green"
+      },
+      "PENDING": {
+        "label": "Reviewing",
+        "color": "blue"
+      },
+      "DRAFT": {
+        "label": "Draft",
+        "color": "gray"
+      },
+      "FAILED": {
+        "label": "Failed",
+        "color": "red"
+      },
+      "SELLER_DEACTIVATED": {
+        "label": "Deactivated",
+        "color": "gray"
+      },
+      "PLATFORM_DEACTIVATED": {
+        "label": "Suspended by TikTok",
+        "color": "red"
+      },
+      "FREEZE": {
+        "label": "Frozen",
+        "color": "red"
+      },
+      "DELETED": {
+        "label": "Deleted",
+        "color": "gray"
+      }
+    },
+    "productForm": {
+      "titleMax": 255,
+      "maxImages": 9,
+      "condition": false,
+      "variants": true,
+      "specifics": {
+        "label": "Product attributes",
+        "hint": "TikTok asks for attributes per category, matched when you list."
+      },
+      "packageDetails": {
+        "required": true,
+        "note": "TikTok needs package weight and size to make shipping labels."
+      },
+      "productStatus": {
+        "draft": "Draft",
+        "active": "Ready to publish",
+        "archived": "Archived"
+      },
+      "listAction": "Publish to TikTok Shop",
+      "directIntro": "TikTok Shop format: title, variants, brand, category attributes, size chart, certifications, required package size, and draft or direct listing."
+    }
+  },
+  "temu": {
+    "label": "Temu Shop",
+    "sections": [
+      {
+        "id": "analytics",
+        "label": "Analytics",
+        "path": "/analytics",
+        "route": "analytics",
+        "needs": "Order Management"
+      },
+      {
+        "id": "products",
+        "label": "Goods",
+        "path": "/products",
+        "route": "products",
+        "needs": "Product Management"
+      },
+      {
+        "id": "inventory",
+        "label": "Inventory",
+        "path": "/inventory",
+        "route": "inventory",
+        "needs": "Product Management"
+      },
+      {
+        "id": "orders",
+        "label": "Orders",
+        "path": "/orders",
+        "route": "orders",
+        "needs": "bg.order.list.v2.get"
+      },
+      {
+        "id": "fulfillment",
+        "label": "Shipping",
+        "path": "/shop/fulfillment",
+        "route": "orders",
+        "needs": "bg.logistics.warehouse.list.get"
+      },
+      {
+        "id": "returns",
+        "label": "Returns & refunds",
+        "path": "/shop/returns",
+        "route": "orders",
+        "needs": "bg.aftersales.parentaftersales.list.get"
+      },
+      {
+        "id": "prices",
+        "label": "Price reviews",
+        "path": "/shop/prices",
+        "route": "products",
+        "needs": "bg.local.goods.priceorder.query"
+      },
+      {
+        "id": "promotions",
+        "label": "Promotions",
+        "path": "/shop/promotions",
+        "route": "products",
+        "needs": "bg.promotion.activity.query"
+      },
+      {
+        "id": "ads",
+        "label": "Ads",
+        "path": "/shop/ads",
+        "route": "analytics",
+        "needs": "temu.searchrec.ad.reports.mall.query"
+      },
+      {
+        "id": "customers",
+        "label": "Customers",
+        "path": "/customers",
+        "route": "customers",
+        "needs": "bg.order.list.v2.get"
+      }
+    ],
+    "statuses": {
+      "live": {
+        "label": "On sale",
+        "color": "green"
+      },
+      "out_of_stock": {
+        "label": "Sold out",
+        "color": "yellow"
+      },
+      "pending": {
+        "label": "Under review",
+        "color": "blue"
+      },
+      "paused": {
+        "label": "Off sale",
+        "color": "gray"
+      },
+      "ended": {
+        "label": "Removed",
+        "color": "gray"
+      },
+      "error": {
+        "label": "Rejected",
+        "color": "red"
+      }
+    },
+    "rawStatuses": {},
+    "productForm": {
+      "titleMax": 250,
+      "maxImages": 10,
+      "condition": false,
+      "specifics": null,
+      "packageDetails": {
+        "required": false,
+        "note": ""
+      },
+      "productStatus": {
+        "draft": "Draft",
+        "active": "Ready",
+        "archived": "Archived"
+      },
+      "listAction": "List on Temu",
+      "directIntro": "Save goods to the catalog. New Temu goods are still created in Seller Center, then synced here."
+    }
+  }
+}
