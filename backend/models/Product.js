@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const { newSku } = require('../utils/sku')
+const { KEYS } = require('../marketplaces')
 
 const identifierCodeSchema = new mongoose.Schema(
   {
@@ -25,6 +26,8 @@ const variantSchema = new mongoose.Schema(
 
 const productSchema = new mongoose.Schema(
   {
+    /** The shop this product belongs to: each shop has its own products, stock and price. */
+    marketplace: { type: String, enum: KEYS, index: true },
     sku: { type: String, required: true },
     title: { type: String, required: true },
     subtitle: { type: String },
@@ -85,8 +88,8 @@ function cleanIdentifierCode(idObj) {
 productSchema.pre('validate', async function assignSku() {
   if (!String(this.sku || '').trim()) {
     for (let attempt = 0; attempt < 5; attempt++) {
-      const sku = newSku(this.attributes?.targetMarketplace)
-      if (!(await this.constructor.exists({ sku }))) {
+      const sku = newSku(this.marketplace || this.attributes?.targetMarketplace)
+      if (!(await this.constructor.exists({ marketplace: this.marketplace, sku }))) {
         this.sku = sku
         break
       }
@@ -99,7 +102,8 @@ productSchema.pre('validate', async function assignSku() {
   })
 })
 
-productSchema.index({ sku: 1 }, { unique: true })
+// A SKU is unique within a shop; the same SKU may exist once on each shop.
+productSchema.index({ marketplace: 1, sku: 1 }, { unique: true })
 productSchema.index({ createdBy: 1 })
 productSchema.index({ 'variants.sku': 1 }, { sparse: true })
 productSchema.index({ status: 1, category: 1 })
