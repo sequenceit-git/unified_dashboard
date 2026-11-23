@@ -66,14 +66,14 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
               📞 {phone}
             </a>
           ) : null}
-          {ebayIdentity?.username ? (
+          {buyerIdentity?.username && getShop(buyerIdentity.marketplace)?.buyer?.profileUrl ? (
             <a
-              href={`https://www.ebay.com/usr/${encodeURIComponent(ebayIdentity.username)}`}
+              href={getShop(buyerIdentity.marketplace).buyer.profileUrl(buyerIdentity.username)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 transition-colors"
             >
-              ↗ View on eBay (@{ebayIdentity.username})
+              ↗ View on {getShop(buyerIdentity.marketplace).label} (@{buyerIdentity.username})
             </a>
           ) : null}
         </div>
