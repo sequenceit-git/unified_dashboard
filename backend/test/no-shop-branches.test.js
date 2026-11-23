@@ -48,3 +48,12 @@ test('shared backend code holds no shop logic: the per-shop copies replaced it',
   const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(connection)).concat(Object.keys(connection))
   assert.deepEqual(methods.filter((name) => /^(sync|push|propagate|publish|save|reconcile|process|cancel)/.test(name)), [])
 })
+
+test('no cross-shop fan-out remains: each shop pushes only to its own listings', () => {
+  assert.equal(fs.existsSync(path.join(ROOT, 'services/catalog/fanOut.js')), false)
+  const hits = []
+  for (const dir of ['services', 'routes', 'marketplaces']) {
+    for (const file of walk(dir)) if (/fanOut/.test(fs.readFileSync(path.join(ROOT, file), 'utf8'))) hits.push(file)
+  }
+  assert.deepEqual(hits.filter((f) => !f.includes('/test/')), [])
+})

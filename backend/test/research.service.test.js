@@ -91,7 +91,7 @@ test('generate queues the report and starts the discovery agent', async () => {
 test("research relists through the shop's app", async () => {
   const calls = []
   const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean', 'populate']) p[m] = () => p; return p }
-  const report = { _id: ID, opportunities: [{ rank: 1, addedProductId: 'P1', listedShops: [] }], save: async () => {} }
+  const report = { _id: ID, opportunities: [{ rank: 1, addedProductId: 'P1', listedShops: [] }], save: async () => {}, markModified: () => {} }
   const shop = { _id: 'T1', name: 'Temu store', marketplace: 'temu', status: 'connected' }
   const listing = { _id: 'L1', productId: 'P1', shopId: 'T1', externalListingId: 'G1', status: 'ended', save: async () => {} }
   const apps = {
@@ -103,7 +103,7 @@ test("research relists through the shop's app", async () => {
   const registry = { KEYS: ['ebay', 'tiktok_shop', 'temu'], canonical: (v) => v, labels: () => ({ temu: 'Temu Shop' }), get: (key) => ({ app: apps[key] }), listingUrl: () => 'https://seller.temu.com/G1' }
   const restore = stubModules({
     '/models/ResearchReport': { findById: () => chain(report), find: () => chain([]) },
-    '/models/Product': { findById: () => chain({ sku: 'S1', stock: 4, title: 'Mug' }), find: () => chain([]) },
+    '/models/Product': { findById: () => chain({ sku: 'S1', stock: 4, title: 'Mug' }), find: (q) => chain([{ _id: 'P1', marketplace: 'temu', sku: 'S1', stock: 4, title: 'Mug' }].filter((p) => !q.marketplace || p.marketplace === q.marketplace)) },
     '/models/Shop': { findOne: async () => shop, find: () => chain([]) },
     '/models/Listing': { find: () => chain([]), findOne: async () => listing },
     '../../services/marketplace': {},
@@ -117,6 +117,39 @@ test("research relists through the shop's app", async () => {
     const out = await service.relist({ ...admin, body: { reportId: ID, rank: 1, marketplace: 'temu' } })
     assert.equal(out.success, true)
     assert.deepEqual(calls, [['listingAction', 'temu', 'L1', 'relist', { quantity: 4 }], ['remember', 'T1']])
+  } finally {
+    restore()
+  }
+})
+
+test("add to catalog creates the product for the chosen shop, never reusing another shop's", async () => {
+  const created = []
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean', 'populate']) p[m] = () => p; return p }
+  // Already added to eBay (P-ebay); now added to Temu.
+  const opp = { rank: 1, title: 'Planter', listingUrl: 'https://x.test/p', addedProductId: 'P-ebay', listedShops: ['ebay'], metrics: { price: 20 } }
+  const report = { _id: ID, opportunities: [opp], save: async () => {}, markModified: () => {} }
+  const products = [{ _id: 'P-ebay', marketplace: 'ebay', source: 'research_bot', attributes: { listingUrl: 'https://x.test/p' } }]
+  const registry = { KEYS: ['ebay', 'tiktok_shop', 'temu'], canonical: (v) => v, labels: () => ({}), get: () => ({ app: { catalog: { capabilities: () => ({ canList: true }) } } }), listingUrl: () => '' }
+  const restore = stubModules({
+    '/models/ResearchReport': { findById: () => chain(report), find: () => chain([]) },
+    '/models/Product': {
+      find: (q) => chain(products.filter((p) => !q.marketplace || p.marketplace === q.marketplace)),
+      findById: (id) => chain(products.find((p) => p._id === id) || null),
+      create: async (body) => { created.push(body); return { _id: 'P-temu', ...body } },
+    },
+    '/models/Shop': { findOne: () => chain({ _id: 'T1' }), find: () => chain([]) },
+    '/models/Listing': { find: () => chain([]), findOne: async () => null, exists: async () => false },
+    '../../services/marketplace': {},
+    '../../marketplaces': registry,
+    '/agent/discovery/discoveryAgent': { runDiscoveryAgent: async () => {} },
+    '/agent/discovery/listingImage': { productImages: async () => [] },
+  })
+  try {
+    const service = freshRequire('services/research/reports.js')
+    const out = await service.addToCatalog({ ...admin, body: { reportId: ID, rank: 1, marketplace: 'temu' } })
+    assert.equal(created.length, 1, 'a new product for Temu')
+    assert.equal(created[0].marketplace, 'temu')
+    assert.equal(out.product._id, 'P-temu')
   } finally {
     restore()
   }

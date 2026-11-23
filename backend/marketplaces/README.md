@@ -44,8 +44,8 @@ Optional, read by the core only when present:
 - `routes(router)` — mounts the shop's public endpoints (webhooks; eBay account deletion).
 - `app` — everything the shop does in the dashboard, in `app/` (loaded on first use):
   `api` (its routes, mounted at `/api/<urlId>`), `sync` (`orders`, `listings`, `access`, `full`,
-  `inbox` when it has one — the scheduler runs these), and `catalog` (`pushStock`, `pushChanges`,
-  `publish`, `listingAction`, `capabilities`, `remember`, `relist` for eBay). `app/routes/`,
+  `inbox` when it has one — the scheduler runs these), and `catalog` (`publish`, `listingAction`,
+  `capabilities`, `remember`, used by Market research). `app/routes/`,
   `app/services/` and `app/manager.js` are this shop's own copies of the order, product,
   inventory, customer, analytics, section, inbox and sync logic; `app/test/` holds its tests.
   `middleware/shopScope.js` pins every request to the shop.
@@ -81,7 +81,13 @@ Shared code (services, routes, models, middleware, utils, config) must not name 
 
 Only infrastructure: models, middleware, utils, config, `services/core/*` (scheduler, cache,
 events, notifications), `services/marketplace/connection.js` (OAuth, tokens, access checks,
-profiles), `services/catalog/fanOut.js` (a product's stock/price change reaches each of its
-listings through that listing's own shop), and the cross-shop screens: auth/users, overview,
+profiles), and the cross-shop screens: auth/users, overview,
 market research, settings. `test/no-shop-branches.test.js` fails if shop logic returns there or
 one shop's folder requires another's.
+
+## Products are per shop
+
+Every product belongs to one shop (`Product.marketplace`); a SKU is unique within a shop. A shop's
+app only reads, creates, matches and updates its own products, and pushes stock, price and edits
+only to its own listings — a sale or edit on one shop never changes another shop. Existing data is
+split by `npm run split-products` (see `docs/superpowers/specs/2026-11-24-per-shop-stock-design.md`).

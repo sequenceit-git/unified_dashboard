@@ -27,3 +27,18 @@ APIs, and stock is kept separately per shop, so a product's data must not be sha
 
 API URLs and response shapes (a product gains a `marketplace` field), each shop's pages, the
 Overview (it sums per shop), notifications, sync intervals.
+
+## Deploy runbook
+
+1. In the server's `.env` set `ORDER_AUTO_SYNC=false`, `LISTING_AUTO_SYNC=false`,
+   `INBOX_AUTO_SYNC=false`.
+2. `git pull && docker compose up -d --build backend frontend`
+3. Dry run, read the summary: `docker compose exec backend npm run split-products`
+4. Apply: `docker compose exec backend npm run split-products -- --apply`
+5. Copy the backup out right away (the script prints the exact command), e.g.
+   `docker cp unified-dashboard-backend:/app/backups/split-products-<time> ./`
+6. Run the dry run again: it must report 0 products, 0 copies.
+7. Remove the three `*_AUTO_SYNC=false` lines and `docker compose up -d backend`.
+
+Between steps 2 and 4 product pages show no products (they have no shop yet), so run the
+migration right after the deploy.

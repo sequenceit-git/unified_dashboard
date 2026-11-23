@@ -12,8 +12,6 @@ module.exports = {
     full: (shop) => manager().syncAllForShop(shop),
   },
   catalog: {
-    pushStock: (shop, listing, product, quantity) => manager().pushStockOne(shop, listing, product, quantity),
-    pushChanges: (shop, listing, product, changes) => manager().reviseOne(shop, listing, product, changes),
     publish: (shop, product, options) => manager().publishListing(shop, product, options),
     listingAction: (shop, listing, action, options) => manager().applyListingAction(shop, listing, action, options),
     capabilities: () => manager().listingCapabilities(),

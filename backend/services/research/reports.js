@@ -16,6 +16,18 @@ const { newSku } = require('../../utils/sku')
 
 const SHOP_LABELS = registry.labels()
 
+/**
+ * Every shop's product made from this opportunity: products are per shop, so the same
+ * opportunity added to eBay and Temu has two products (found by the stored id or the source page).
+ */
+async function oppProducts(opp, extra = {}) {
+  const or = []
+  if (opp.addedProductId) or.push({ _id: opp.addedProductId })
+  if (opp.listingUrl) or.push({ source: 'research_bot', 'attributes.listingUrl': opp.listingUrl })
+  if (!or.length) return []
+  return Product.find({ $or: or, ...extra }).select('_id marketplace sku stock title')
+}
+
 async function syncReportOpportunities(report) {
   if (!report || !Array.isArray(report.opportunities) || report.opportunities.length === 0) return false
   let changed = false
@@ -54,8 +66,8 @@ async function syncReportOpportunities(report) {
   }
   for (const opp of report.opportunities) {
     if (opp.addedProductId) {
-      const prod = await Product.findById(opp.addedProductId).select('_id')
-      if (!prod) {
+      const prods = await oppProducts(opp)
+      if (!prods.length) {
         opp.addedProductId = null
         if (opp.listedShops && opp.listedShops.length > 0) {
           opp.listedShops = []
@@ -63,7 +75,7 @@ async function syncReportOpportunities(report) {
         changed = true
       } else {
         const activeListings = await Listing.find({
-          productId: prod._id,
+          productId: { $in: prods.map((row) => row._id) },
           status: { $in: ACTIVE_LISTING },
         }).select('marketplace')
         const activeMarkets = [...new Set(activeListings.map((l) => l.marketplace))]
@@ -333,15 +345,16 @@ async function relist(ctx) {
     if (!report) throw new HttpError(404, { error: 'Research report not found' })
     await syncReportOpportunities(report)
     const opp = report.opportunities.find((o) => o.rank === Number(rank))
-    if (!opp?.addedProductId) throw new HttpError(404, { error: 'This product has not been listed before.' })
+    const [own] = opp ? await oppProducts(opp, { marketplace }) : []
+    if (!own) throw new HttpError(404, { error: 'This product has not been listed before.' })
 
     const shopFilter = { marketplace, status: 'connected' }
     if (ctx.user.role === 'sub_admin') shopFilter._id = { $in: ctx.allowedShopIds }
     const shop = await Shop.findOne(shopFilter)
     if (!shop) throw new HttpError(404, { error: `No connected ${SHOP_LABELS[marketplace] || marketplace} shop` })
-    const listing = await Listing.findOne({ productId: opp.addedProductId, shopId: shop._id, status: { $in: RELISTABLE } })
+    const listing = await Listing.findOne({ productId: own._id, shopId: shop._id, status: { $in: RELISTABLE } })
     if (!listing) throw new HttpError(404, { error: `No ended ${SHOP_LABELS[marketplace] || marketplace} listing to relist.` })
-    const product = await Product.findById(opp.addedProductId).select('sku stock title')
+    const product = own
     const quantity = Math.floor(Number(product?.stock) || 0)
     if (quantity < 1) {
       throw new HttpError(400, { error: `"${product?.title || 'This product'}" has no stock. Add stock in Inventory, then relist it.` })
@@ -394,11 +407,13 @@ async function addToCatalog(ctx) {
       throw new HttpError(409, { error: `This product is already listed on ${SHOP_LABELS[marketplace] || marketplace}.`, listedShops: opp.listedShops })
     }
     // An ended listing is put back on sale with Relist, never listed a second time.
-    if (opp.addedProductId && await Listing.exists({ productId: opp.addedProductId, marketplace, status: { $in: RELISTABLE } })) {
+    const [own] = await oppProducts(opp, { marketplace })
+    if (own && await Listing.exists({ productId: own._id, marketplace, status: { $in: RELISTABLE } })) {
       throw new HttpError(409, { error: `This product has an ended ${SHOP_LABELS[marketplace] || marketplace} listing. Relist it instead of listing it again.`, relist: true })
     }
 
-    let product = opp.addedProductId ? await Product.findById(opp.addedProductId) : null
+    // Each shop has its own product: reuse this shop's, never another shop's.
+    let product = own ? await Product.findById(own._id) : null
 
     const sellingPrice = price != null ? Number(price) : opp.metrics?.averagePrice ?? opp.metrics?.price ?? 0
     const estCost = opp.metrics?.estimatedCost != null ? Number(opp.metrics.estimatedCost) : 0
@@ -419,6 +434,7 @@ async function addToCatalog(ctx) {
 
     if (!product) {
       product = await Product.create({
+        marketplace,
         title: title || opp.title,
         description: fullDescription,
         category: opp.metrics?.category || opp.category || 'General',
