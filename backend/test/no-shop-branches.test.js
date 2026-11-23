@@ -9,6 +9,7 @@ const CORE_FILES = [
   'services/marketplace/profiles.js',
   'services/marketplace/sections.js',
   'routes/system/shops.js',
+  'services/system/shops.js',
   'services/core/syncQueue.js',
   'services/inbox/inboxBot.js',
 ]
