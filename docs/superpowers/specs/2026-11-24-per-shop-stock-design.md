@@ -38,10 +38,13 @@ Overview (it sums per shop), notifications, sync intervals.
 4. Apply: `docker compose exec backend npm run split-products -- --apply`
 5. Copy the backup out right away (the script prints the exact command), e.g.
    `docker cp unified-dashboard-backend:/app/backups/split-products-<time> ./`
-6. Run the dry run again: it must report 0 products, 0 copies and 0 listings attached to another
+6. Rename stored section ids to the shops' own names (sub-admin permissions, shop access keys):
+   `docker compose exec backend npm run rename-sections` (dry run), then with `-- --apply`, and
+   copy its backup out the same way.
+7. Run the split dry run again: it must report 0 products, 0 copies and 0 listings attached to another
    shop's product. If `--apply` stopped midway (connection drop), just run it again: it reuses the
    copies already made and finishes.
-7. Remove `SYNC_PAUSED=true` and `docker compose up -d backend`.
+8. Remove `SYNC_PAUSED=true` and `docker compose up -d backend`.
 
 Between steps 2 and 4 product pages show no products (they have no shop yet), so run the
 migration right after the deploy.

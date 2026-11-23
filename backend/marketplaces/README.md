@@ -91,3 +91,11 @@ Every product belongs to one shop (`Product.marketplace`); a SKU is unique withi
 app only reads, creates, matches and updates its own products, and pushes stock, price and edits
 only to its own listings — a sale or edit on one shop never changes another shop. Existing data is
 split by `npm run split-products` (see `docs/superpowers/specs/2026-11-24-per-shop-stock-design.md`).
+
+## Section names
+
+Section ids follow each shop's own API (see `profile.js`): they name the section loader files,
+the API paths (`/api/ebay/listings`, `/api/temu/sections/after-sales`), permission checks and the
+stored ids (sub-admin `allowedSections` as `<key>:<id>`, `Shop.apiAccess` keys). `renamedSections`
+on the adapter maps the older generic ids; `npm run rename-sections` renames stored ids.
+Main-route permissions (`config/access.js`) are app-wide and keep their names.
