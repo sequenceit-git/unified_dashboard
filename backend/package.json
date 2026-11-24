@@ -20,7 +20,8 @@
     "tiktok-remove-inbox-data": "node marketplaces/tiktok_shop/scripts/remove-inbox-data.js",
     "temu-probe": "node marketplaces/temu/scripts/probe.js",
     "temu-set-token": "node marketplaces/temu/scripts/set-token.js",
-    "temu-access": "node marketplaces/temu/scripts/access.js"
+    "temu-access": "node marketplaces/temu/scripts/access.js",
+    "temu-check": "node marketplaces/temu/scripts/check.js"
   },
   "keywords": [],
   "author": "",
