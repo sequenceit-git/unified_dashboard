@@ -85,7 +85,8 @@ async function payouts(token, shop, { now = new Date() } = {}) {
         title: 'eBay bill',
         note: 'Every fee and credit eBay charged: insertion and final value fees, ad fees, store subscription.',
         columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('details', 'Details'), col('orderId', 'Order'), col('amount', 'Amount', 'money')],
-        load: async () => (await ebayGet(token, `${host}/sell/finances/v1/billing_activity?limit=50&filter=${billFilter}`)).billingActivities?.map((row) => ({
+        // Only api.ebay.com serves billing_activity (eBay's contract): a relative path goes there; apiz answers 404.
+        load: async () => (await ebayGet(token, `/sell/finances/v1/billing_activity?limit=50&filter=${billFilter}`)).billingActivities?.map((row) => ({
           date: row.billingTransactionDate,
           type: words(row.feeType),
           details: row.feeTypeDescription || '',
