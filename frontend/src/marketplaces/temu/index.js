@@ -62,5 +62,6 @@ export default {
   },
   liveUpdates: { pushes: 'order changes', arrives: 'orders' },
   shipNeedsTracking: true,
-  listingDefaults: { canList: false },
+  // Temu goods are listed from the dashboard with Temu's own form (category, attributes, SKUs).
+  listingDefaults: { canList: true },
 }

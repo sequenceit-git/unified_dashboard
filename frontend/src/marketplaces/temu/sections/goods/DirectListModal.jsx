@@ -184,8 +184,8 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
         {draft && (
           <Button type="button" onClick={create} disabled={saving || fetching}>
             {saving
-              ? (layout.canList ? ('Publishing…') : 'Saving…')
-              : (layout.canList ? (layout.listAction) : `Save to ${shopLabel}`)}
+              ? 'Saving…'
+              : 'Next: Temu details'}
           </Button>
         )}
       </div>

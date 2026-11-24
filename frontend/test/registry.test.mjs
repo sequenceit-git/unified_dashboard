@@ -68,7 +68,8 @@ test('listing defaults match the old per-shop checks', async () => {
   assert.equal(Boolean(d('ebay').brands || d('ebay').listPrice || d('ebay').sizeChart), false)
   assert.deepEqual(d('tiktok_shop').saveModes, ['LISTING', 'AS_DRAFT'])
   assert.equal(d('tiktok_shop').listAction, 'Publish to TikTok Shop')
-  assert.equal(d('temu').canList, false)
+  // Temu lists from the dashboard since wave 3 (its own Temu form).
+  assert.equal(d('temu').canList, true)
 })
 
 const SECTION_IDS = {

@@ -192,18 +192,13 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
       if (!(numPrice > 0)) {
         return update({ error: 'Set your selling price.' })
       }
-      if (layout.canList && (!(Number(stock) >= 1))) {
-        return update({ error: 'Set stock to at least 1 before listing.' })
-      }
 
     if (!draft.images.length) return update({ error: 'Add at least one image.' })
     if (packageRequired && !(Number(weight) > 0)) return update({ error: `${shopLabel} needs the package weight and size.` })
-    if (layout.category === 'search' && layout.canList && !categoryId) return update({ error: `Pick a ${shopLabel} category.` })
 
     const named = namedValues()
     const missing = required.filter((attr) => !hasAspectValue(aspects[attr.id]))
       if (missing.length) return update({ error: `Fill in: ${missing.map((attr) => attr.name).join(', ')}.` })
-    if (layout.canList && !shop?._id) return update({ error: `Connect ${shopLabel} in Settings first.` })
 
     update({ saving: true, error: '' })
     try {

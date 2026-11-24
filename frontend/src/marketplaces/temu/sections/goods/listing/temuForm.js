@@ -140,6 +140,20 @@ export function problemsByField(body = {}) {
   return out
 }
 
+/** A dashboard product for new goods made in the Temu form (saved before it is listed). */
+export function newProductBody(form) {
+  const prices = (form.variants || []).map((v) => Number(v.basePrice)).filter((n) => Number.isFinite(n) && n > 0)
+  return {
+    title: String(form.title || '').trim(),
+    description: form.description || '',
+    images: form.images || [],
+    basePrice: prices.length ? Math.min(...prices) : undefined,
+    stock: (form.variants || []).reduce((t, v) => t + (Number(v.quantity) || 0), 0),
+    ...(filled(form.outGoodsSn) ? { sku: String(form.outGoodsSn).trim() } : {}),
+    status: 'active',
+  }
+}
+
 /** The request's `temuForm`, with every photo swapped for Temu's own url (`temuUrl(source)`). */
 export function toTemuForm(form, temuUrl) {
   return {

@@ -1,4 +1,5 @@
 /**
+ * New goods (no `product`): the same form; on submit the dashboard product is saved first, then listed.
  * List a dashboard product on Temu US with Temu's own release flow: category → Temu's attributes
  * → variant values and one row per SKU → photos → shipping template → Check → List on Temu.
  * Temu reviews new goods, so they start "Under review". A refusal shows Temu's reason next to the
@@ -15,13 +16,15 @@ import ImageDropzone from '../../../../components/ui/ImageDropzone'
 import CategoryPicker from './listing/CategoryPicker'
 import TemplateFields from './listing/TemplateFields'
 import TemuVariants from './listing/TemuVariants'
-import { formFromProduct, problemsByField, skusFor, toTemuForm, validate } from './listing/temuForm'
+import { formFromProduct, newProductBody, problemsByField, skusFor, toTemuForm, validate } from './listing/temuForm'
 
 export default function ListModal({ product, onClose, onSaved }) {
   const { token } = useAuth()
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shop = (shopsRes.data || []).find((s) => s.marketplace === 'temu' && s.status === 'connected')
-  const [form, setForm] = useState(() => formFromProduct(product))
+  const [form, setForm] = useState(() => formFromProduct(product || {}))
+  // New goods: the dashboard product saved on the first submit (kept so a retry doesn't make another).
+  const [saved, setSaved] = useState(product || null)
   const [template, setTemplate] = useState(null)
   const [templates, setTemplates] = useState([])
   const [errors, setErrors] = useState({})
@@ -96,7 +99,12 @@ export default function ListModal({ product, onClose, onSaved }) {
       const sources = [...new Set([...form.images, ...form.variants.flatMap((v) => v.images || [])])]
       const uploaded = await api.post('/api/temu/goods/helpers/images', { urls: sources }, token)
       const temuUrl = (src) => uploaded.find((u) => u.source === src)?.url || src
-      await api.post(`/api/temu/goods/${product._id}/list`, {
+      let target = saved
+      if (!target?._id) {
+        target = await api.post('/api/temu/goods', newProductBody(form), token)
+        setSaved(target)
+      }
+      await api.post(`/api/temu/goods/${target._id}/list`, {
         shopId: shop._id,
         title: form.title.trim(),
         price: Number(form.variants[0].basePrice),
@@ -105,7 +113,7 @@ export default function ListModal({ product, onClose, onSaved }) {
         temuForm: toTemuForm(form, temuUrl),
       }, token)
       setDone('Sent to Temu. Temu reviews new goods before they go on sale; the next sync shows the result.')
-      onSaved?.(product)
+      onSaved?.(target)
     } catch (err) {
       setErrors(problemsByField(err.data || { error: err.message }))
     } finally {
@@ -114,7 +122,7 @@ export default function ListModal({ product, onClose, onSaved }) {
   }
 
   return (
-    <Modal title={`List "${product.title}" on Temu`} onClose={onClose} size="4xl" wide>
+    <Modal title={product ? `List "${product.title}" on Temu` : 'New goods on Temu'} onClose={onClose} size="4xl" wide>
       {done ? (
         <div className="space-y-3">
           <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{done}</p>

@@ -23,6 +23,7 @@ export default function GoodsPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [rowPatch, setRowPatch] = useState(null)
   const [tab, setTab] = useState('catalog')
+  const [showNewTemu, setShowNewTemu] = useState(false)
   const { session: directSession } = useDirectListing(marketplace)
   const directWork = hasDirectListingWork(marketplace)
 
@@ -56,7 +57,7 @@ export default function GoodsPage() {
           <Button variant="secondary" onClick={() => setShowDirect(true)}>
             {directSession.fetching ? 'Direct listing…' : directWork ? 'Continue listing' : 'Direct listing'}
           </Button>
-          <Button onClick={() => setShowNew(true)}>New product</Button>
+          <Button onClick={() => setShowNewTemu(true)}>New goods on Temu</Button>
         </div>
       </div>
       {directWork && !showDirect && (
@@ -93,6 +94,9 @@ export default function GoodsPage() {
         />
       )}
       {showDirect && <DirectListModal shopLabel={section.label} marketplace={marketplace} onClose={() => setShowDirect(false)} onCreated={created} />}
+      {showNewTemu && (
+        <ListModal product={null} marketplace={marketplace} onClose={() => { setShowNewTemu(false); setRefreshKey((k) => k + 1) }} onSaved={() => setRefreshKey((k) => k + 1)} />
+      )}
       {listing && (
         <ListModal
           product={listing}

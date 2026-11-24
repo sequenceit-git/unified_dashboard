@@ -130,3 +130,11 @@ test('a label still being bought offers Check again, never Buy', async () => {
   assert.deepEqual(labelButtons({ status: 'failed', packageSn: 'PK1' }), { buy: false, retry: true, check: false, open: false })
   assert.deepEqual(labelButtons({ status: 'bought', packageSn: 'PK1' }), { buy: false, retry: false, check: false, open: true })
 })
+
+test('new goods made in the Temu form become a dashboard product first', async () => {
+  const { newProductBody, formFromProduct } = await load('/src/marketplaces/temu/sections/goods/listing/temuForm.js')
+  const form = { ...formFromProduct({}), title: ' Red mug ', description: 'Ceramic', images: ['/uploads/a.jpg'], outGoodsSn: 'MUG-1',
+    variants: [{ basePrice: '9.5', quantity: '3' }, { basePrice: '8', quantity: '2' }] }
+  assert.deepEqual(newProductBody(form), { title: 'Red mug', description: 'Ceramic', images: ['/uploads/a.jpg'], basePrice: 8, stock: 5, sku: 'MUG-1', status: 'active' })
+  assert.equal(newProductBody({ ...form, outGoodsSn: '' }).sku, undefined)
+})
