@@ -7,6 +7,7 @@ import { aspectToText, hasAspectValue, isAttributeRequired } from '../listing/at
 import { listingFormFor, useShopProfile } from '../../../../../hooks/useShopProfiles'
 import { clearDirectListing, startDirectFetch, useDirectListing } from './useDirectListing'
 import { useApi } from '../../../../../hooks/useApi'
+import { directProblems } from '../listing/directSteps'
 
 const HIDDEN = new Set(['targetMarketplace', 'sourceUrl', 'gtin', 'aiOpportunityScore', 'listingUrl', 'estimatedCost'])
 
@@ -44,6 +45,7 @@ function attributeMap(raw) {
  */
 
 export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
+  const [tried, setTried] = useState(false)
   const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const shopsRes = useApi('/api/shops')
@@ -69,6 +71,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
   const fetchDetails = async (e) => {
     e.preventDefault()
     if (!url.trim() || fetching) return
+    setTried(false)
     await startDirectFetch(marketplace, { url, useAi, token, titleMax, attributeMap })
   }
 
@@ -184,21 +187,28 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
     ...Object.fromEntries(extras.map((row) => [row.name.trim(), asText(row.value)]).filter(([name, value]) => name && value)),
   })
 
+  // After the first try, problems follow every edit (fixed ones disappear at once).
+  const checkNow = () => directProblems({
+    shopLabel,
+    title: draft.title,
+    titleMax,
+    price: draft.price,
+    stock,
+    images: draft.images.length,
+    packageRequired,
+    weight,
+    missingRequired: required.filter((attr) => !hasAspectValue(aspects[attr.id])).map((attr) => attr.name),
+  })
+  const problems = tried && draft ? checkNow() : []
+
   const create = async () => {
-    if (!draft.title.trim()) return update({ error: 'Add a title.' })
-    if (draft.title.length > titleMax) return update({ error: `${shopLabel} titles can be at most ${titleMax} characters.` })
-
-    const numPrice = Number(draft.price)
-      if (!(numPrice > 0)) {
-        return update({ error: 'Set your selling price.' })
-      }
-
-    if (!draft.images.length) return update({ error: 'Add at least one image.' })
-    if (packageRequired && !(Number(weight) > 0)) return update({ error: `${shopLabel} needs the package weight and size.` })
-
+    setTried(true)
+    const found = checkNow()
+    if (found.length) {
+      update({ error: '' })
+      return
+    }
     const named = namedValues()
-    const missing = required.filter((attr) => !hasAspectValue(aspects[attr.id]))
-      if (missing.length) return update({ error: `Fill in: ${missing.map((attr) => attr.name).join(', ')}.` })
 
     update({ saving: true, error: '' })
     try {
@@ -253,6 +263,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
   }
 
   return {
+    problems,
     url,
     useAi,
     fetching,
