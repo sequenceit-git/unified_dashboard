@@ -88,7 +88,7 @@ class TemuClient {
           : raw)
       err.code = code
       if (ipBlocked) err.ipBlocked = true
-      if (adsInactive) err.adsInactive = true
+      if (adsInactive) { err.adsInactive = true; err.unavailable = true }
       throw err
     }
     return body.result || body

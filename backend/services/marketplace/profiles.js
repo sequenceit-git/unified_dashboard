@@ -19,7 +19,8 @@ async function probeSections(marketplace, token, shop) {
       await section.probe(token, shop)
       return [section.id, { ok: true }]
     } catch (err) {
-      const denied = /access denied|scope|not been granted|insufficient|permission|not authorized|401|403/i.test(err.message || '')
+      // `unavailable`: the shop's API says this feature isn't switched on for the shop.
+      const denied = err.unavailable === true || /access denied|scope|not been granted|insufficient|permission|not authorized|401|403/i.test(err.message || '')
       return [section.id, { ok: !denied, reason: denied ? `Needs ${section.needs}` : '', error: denied ? '' : String(err.message || '').slice(0, 200) }]
     }
   }))
@@ -38,11 +39,13 @@ function describe(marketplace, shop) {
     accessCheckedAt: shop?.apiAccessCheckedAt || null,
     grantedScopes: shop?.grantedScopes || [],
     missingScopes: shop ? registry.get(marketplace).missingScopes?.(shop) || [] : [],
-    sections: profile.sections.map(({ probe, ...section }) => {
+    sections: profile.sections.map(({ probe, hideWhenUnavailable, ...section }) => {
       const result = access[section.id]
       const available = !shop || shop.status !== 'connected' ? null : result ? result.ok : null
+      // A section the shop hasn't switched on (e.g. an ads programme) is left out, not greyed out.
+      if (hideWhenUnavailable && available === false) return null
       return { ...section, available, reason: result?.reason || '' }
-    }),
+    }).filter(Boolean),
     statuses: profile.statuses,
     rawStatuses: profile.rawStatuses,
     productForm: profile.productForm,

@@ -354,7 +354,7 @@
         "label": "Ads",
         "path": "/temu/ads",
         "route": "analytics",
-        "needs": "temu.searchrec.ad.reports.mall.query"
+        "needs": "Temu Ads switched on in Seller Center"
       },
       {
         "id": "customers",

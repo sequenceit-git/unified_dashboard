@@ -34,3 +34,7 @@ test('Temu Ads not active for the shop says how to switch it on', async () => {
     return true
   })
 })
+
+test('Temu Ads not active marks the error unavailable (the Ads page is then hidden)', async () => {
+  await assert.rejects(callWith({ success: false, errorCode: 230016701, errorMsg: 'has no permission' }), (e) => e.unavailable === true)
+})

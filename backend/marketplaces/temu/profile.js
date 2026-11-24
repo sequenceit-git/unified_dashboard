@@ -41,7 +41,7 @@ module.exports = {
     { id: 'after-sales', label: 'Returns & refunds', path: '/temu/after-sales', route: 'orders', needs: 'bg.aftersales.parentaftersales.list.get', probe: temuReturns },
     { id: 'price-reviews', label: 'Price reviews', path: '/temu/price-reviews', route: 'products', needs: 'bg.local.goods.priceorder.query', probe: temuPriceOrders },
     { id: 'promotions', label: 'Promotions', path: '/temu/promotions', route: 'products', needs: 'bg.promotion.activity.query', probe: temuPromotions },
-    { id: 'ads', label: 'Ads', path: '/temu/ads', route: 'analytics', needs: 'temu.searchrec.ad.reports.mall.query', probe: temuAds },
+    { id: 'ads', label: 'Ads', path: '/temu/ads', route: 'analytics', needs: 'Temu Ads switched on in Seller Center', hideWhenUnavailable: true, probe: temuAds },
     { id: 'customers', label: 'Customers', path: '/temu/customers', route: 'customers', needs: 'bg.order.list.v2.get', probe: temuOrders },
   ],
   statuses: {
