@@ -44,6 +44,7 @@ test('ads share of sales and order health over 30 days', async () => {
     assert.equal(tile('Ad spend (30 days)').value, 50)
     assert.equal(tile('Return requests per 100 orders'), 5)
     assert.equal(tile('Cancellations per 100 orders'), 2.5)
+    assert.deepEqual(summary.map((t) => t.id), ['ad-share', 'ad-spend', 'returns-per-100', 'cancels-per-100'])
     const r = calls.find(([t]) => t === 'bg.aftersales.parentaftersales.list.get')[1]
     assert.equal(r.createAtEnd - r.createAtStart, 30 * 86400)
   } finally { restore() }

@@ -156,8 +156,18 @@ async function products(ctx) {
       { $sort: { revenue: -1 } },
       { $limit: limit },
     ])
+    // Each product's Temu goods ids (listings are "<goodsId>:<skuId>"), so the page can match Temu's traffic warnings.
+    const listingFilter = { productId: { $in: rows.map((r) => r._id) }, marketplace: 'temu', externalListingId: /^\d+:\d+$/ }
+    if (ctx.user.role === 'sub_admin') listingFilter.shopId = { $in: ctx.allowedShopIds || [] }
+    const goods = new Map()
+    for (const l of await Listing.find(listingFilter).select('productId externalListingId').lean()) {
+      const key = String(l.productId)
+      const id = String(l.externalListingId).split(':')[0]
+      if (!goods.has(key)) goods.set(key, [])
+      if (!goods.get(key).includes(id)) goods.get(key).push(id)
+    }
     return rows.map((r) => ({
-      productId: r._id, sku: r.sku, title: r.title, qty: r.qty, revenue: +r.revenue.toFixed(2),
+      productId: r._id, sku: r.sku, title: r.title, qty: r.qty, revenue: +r.revenue.toFixed(2), goodsIds: goods.get(String(r._id)) || [],
     }))
 }
 

@@ -59,10 +59,10 @@ async function analytics(token, shop, { now = new Date() } = {}) {
   const totalSales = adVal(ads?.summary?.orderPayAmt?.total)
   const adSales = adVal(ads?.summary?.orderPayAmt?.ad)
   const tiles = [
-    ...(totalSales > 0 && adSales != null ? [{ tab: 'Temu insights', label: `Sales from ads (${DAYS} days)`, value: round1((adSales / totalSales) * 100), type: 'percent' }] : []),
-    ...(ads?.summary?.spend?.ad ? [{ tab: 'Temu insights', label: `Ad spend (${DAYS} days)`, value: adMoney(ads.summary.spend.ad), type: 'money' }] : []),
-    ...(per100(count(returnsRes)) != null ? [{ tab: 'Temu insights', label: 'Return requests per 100 orders', value: per100(count(returnsRes)), type: 'number' }] : []),
-    ...(per100(count(cancelsRes)) != null ? [{ tab: 'Temu insights', label: 'Cancellations per 100 orders', value: per100(count(cancelsRes)), type: 'number' }] : []),
+    ...(totalSales > 0 && adSales != null ? [{ id: 'ad-share', tab: 'Temu insights', label: `Sales from ads (${DAYS} days)`, value: round1((adSales / totalSales) * 100), type: 'percent' }] : []),
+    ...(ads?.summary?.spend?.ad ? [{ id: 'ad-spend', tab: 'Temu insights', label: `Ad spend (${DAYS} days)`, value: adMoney(ads.summary.spend.ad), type: 'money' }] : []),
+    ...(per100(count(returnsRes)) != null ? [{ id: 'returns-per-100', tab: 'Temu insights', label: 'Return requests per 100 orders', value: per100(count(returnsRes)), type: 'number' }] : []),
+    ...(per100(count(cancelsRes)) != null ? [{ id: 'cancels-per-100', tab: 'Temu insights', label: 'Cancellations per 100 orders', value: per100(count(cancelsRes)), type: 'number' }] : []),
   ]
   return { summary: tiles, tables: list }
 }

@@ -30,3 +30,26 @@ test('Temu totals count only Temu orders in the date range, without cancelled or
     assert.equal($match.placedAt.$lte.toISOString(), '2026-11-20T00:00:00.000Z')
   } finally { restore() }
 })
+
+test('top goods carry their Temu goods ids, within the sub-admin shops', async () => {
+  const filters = []
+  const listings = [{ productId: 'p1', externalListingId: '77:1' }, { productId: 'p1', externalListingId: '77:2' }, { productId: 'p1', externalListingId: '88:5' }]
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean']) p[m] = () => p; return p }
+  const restore = stubModules({
+    '/models/Order': { schema: { path: () => true }, aggregate: async () => [{ _id: 'p1', sku: 'A', title: 'Case', qty: 2, revenue: 20 }] },
+    '/models/Product': {},
+    '/models/Listing': { find: (filter) => { filters.push(filter); return chain(listings) } },
+    '/models/Shop': { findOne: () => chain(null), find: () => chain([]) },
+    '../../services/marketplace': {},
+    '../manager': {},
+  })
+  try {
+    const service = freshRequire('marketplaces/temu/app/services/analytics.js')
+    const out = await service.products({ ...admin, query: { from: '2026-11-01', to: '2026-11-20' } })
+    assert.deepEqual(out[0].goodsIds, ['77', '88'])
+    await service.products({ user: { id: 'u2', role: 'sub_admin' }, allowedShopIds: ['s1'], query: { from: '2026-11-01', to: '2026-11-20' }, body: {}, params: {} })
+    const f = filters.at(-1)
+    assert.equal(f.marketplace, 'temu')
+    assert.deepEqual(f.shopId, { $in: ['s1'] })
+  } finally { restore() }
+})
