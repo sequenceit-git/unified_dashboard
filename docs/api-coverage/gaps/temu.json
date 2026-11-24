@@ -1,40 +1,4 @@
 {
-  "temu.searchrec.ad.create": {
-    "section": "ads",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
-  },
-  "temu.searchrec.ad.detail.query": {
-    "section": "ads",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
-  },
-  "temu.searchrec.ad.goods.create.query": {
-    "section": "ads",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
-  },
-  "temu.searchrec.ad.log.query": {
-    "section": "ads",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
-  },
-  "temu.searchrec.ad.modify": {
-    "section": "ads",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
-  },
-  "temu.searchrec.ad.roas.pred": {
-    "section": "ads",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
-  },
   "temu.local.mall.tags.get": {
     "section": "new: account",
     "size": "small",
