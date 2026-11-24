@@ -106,3 +106,23 @@ test('a seller level row opens its metrics', async () => {
     await assert.rejects(analytics.details.standards('tok', {}, 'PROGRAM_US'), (e) => e.status === 400)
   } finally { restore() }
 })
+
+test('daily traffic asks eBay by day for exact calendar days and returns its last day', async () => {
+  const day = (d, imp, views, sold) => ({ dimensionValues: [{ value: d }], metricValues: [{ value: imp }, { value: views }, { value: sold }] })
+  const report = { endDate: '2026-11-23T07:00:00.000Z', header: { metrics: [{ key: 'LISTING_IMPRESSION_TOTAL' }, { key: 'LISTING_VIEWS_TOTAL' }, { key: 'TRANSACTION' }] }, records: [day('20261122', 500, 20, 1), day('20261123', 300, 10, 0)] }
+  const { analytics, urls, restore } = load(() => report)
+  try {
+    const out = await analytics.dailyTraffic('tok', '2026-11-17', '2026-11-23')
+    assert.equal(urls[0], '/sell/analytics/v1/traffic_report?dimension=DAY&metric=LISTING_IMPRESSION_TOTAL,LISTING_VIEWS_TOTAL,TRANSACTION&filter=marketplace_ids:%7BEBAY_US%7D,date_range:%5B20261117..20261123%5D')
+    assert.deepEqual(out, { latestDate: '2026-11-23', days: [{ date: '2026-11-22', impressions: 500, views: 20, sold: 1 }, { date: '2026-11-23', impressions: 300, views: 10, sold: 0 }] })
+  } finally { restore() }
+})
+
+test('seller level and service rows carry eBay codes for the page', async () => {
+  const { analytics, restore } = load(fixtures())
+  try {
+    const data = await analytics('tok', {}, { now: NOW })
+    assert.equal(data.tables.find((t) => t.id === 'standards').rows[0].levelCode, 'TOP_RATED')
+    assert.equal(data.tables.find((t) => t.id === 'service').rows[0].ratingCode, 'HIGH')
+  } finally { restore() }
+})

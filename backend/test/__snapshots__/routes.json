@@ -56,6 +56,7 @@
       "GET /messages/templates",
       "POST /messages/templates",
       "GET /analytics/summary",
+      "GET /analytics/traffic",
       "GET /analytics/revenue",
       "GET /analytics/marketplaces",
       "GET /analytics/products",

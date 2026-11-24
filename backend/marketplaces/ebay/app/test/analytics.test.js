@@ -27,6 +27,6 @@ test('eBay totals count only eBay orders in the date range, without cancelled or
     assert.equal($match.marketplace, 'ebay', 'whatever the client sends, only eBay rows')
     assert.deepEqual($match.status, { $nin: ['cancelled', 'refunded'] })
     assert.equal($match.placedAt.$gte.toISOString(), '2026-11-01T00:00:00.000Z')
-    assert.equal($match.placedAt.$lte.toISOString(), '2026-11-20T00:00:00.000Z')
+    assert.equal($match.placedAt.$lte.toISOString(), '2026-11-20T23:59:59.999Z', 'a plain "to" day counts in full')
   } finally { restore() }
 })

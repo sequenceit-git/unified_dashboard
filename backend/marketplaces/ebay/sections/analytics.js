@@ -27,6 +27,26 @@ function trafficUrl(now) {
   return `/sell/analytics/v1/traffic_report?dimension=LISTING&metric=${METRICS.join(',')}&filter=${filter}`
 }
 
+const day = (s) => String(s).replace(/-/g, '')
+const DAY_METRICS = ['LISTING_IMPRESSION_TOTAL', 'LISTING_VIEWS_TOTAL', 'TRANSACTION']
+
+/**
+ * Shop traffic by day for exact calendar days (`from`/`to` as YYYY-MM-DD) and eBay's last day with
+ * data: `{ latestDate, days: [{ date, impressions, views, sold }] }`.
+ */
+async function dailyTraffic(token, from, to) {
+  const filter = `marketplace_ids:{${MARKETPLACE}},date_range:[${day(from)}..${day(to)}]`.replace(/[{}[\]]/g, encodeURIComponent)
+  const report = await ebayGet(token, `/sell/analytics/v1/traffic_report?dimension=DAY&metric=${DAY_METRICS.join(',')}&filter=${filter}`)
+  const order = (report.header?.metrics || []).map((m) => m.key)
+  const days = (report.records || []).map((record) => {
+    const m = Object.fromEntries(order.map((key, i) => [key, num(record.metricValues?.[i])]))
+    const d = String(record.dimensionValues?.[0]?.value ?? '')
+    return { date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`, impressions: m.LISTING_IMPRESSION_TOTAL, views: m.LISTING_VIEWS_TOTAL, sold: m.TRANSACTION }
+  }).sort((a, b) => a.date.localeCompare(b.date))
+  const latestDate = report.endDate ? String(report.endDate).slice(0, 10) : days.at(-1)?.date || null
+  return { latestDate, days }
+}
+
 async function trafficRows(token, now) {
   const report = await ebayGet(token, trafficUrl(now))
   const order = (report.header?.metrics || []).map((m) => m.key)
@@ -59,6 +79,7 @@ async function standardsRows(token) {
       program: words(String(p.program || '').replace(/^PROGRAM_/, '')),
       cycle: words(p.cycle?.cycleType),
       level: words(p.standardsLevel),
+      levelCode: p.standardsLevel || '',
       defectRate: rate(metric(STANDARD_KEYS.defectRate)),
       lateShipmentRate: rate(metric(STANDARD_KEYS.lateShipmentRate)),
       casesClosed: rate(metric(STANDARD_KEYS.casesClosed)),
@@ -75,6 +96,7 @@ async function serviceRows(token) {
       metric: label,
       category: d.dimension?.name || d.dimension?.value || '',
       rating: words(m.benchmark?.rating),
+      ratingCode: m.benchmark?.rating || '',
       yourRate: rate(m.value),
       peerRate: rate(m.benchmark?.metadata?.average),
     })))
@@ -142,5 +164,7 @@ analytics.details = {
     }
   },
 }
+
+analytics.dailyTraffic = dailyTraffic
 
 module.exports = analytics

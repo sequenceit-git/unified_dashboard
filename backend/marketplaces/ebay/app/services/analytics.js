@@ -5,7 +5,9 @@ const Listing = require('../../../../models/Listing')
 const { shopFilter } = require('../../../../middleware/auth')
 
 function dates(req) {
-  const to = req.query.to ? new Date(req.query.to) : new Date()
+  // A plain calendar day ("2026-11-23") as `to` counts in full.
+  const plainDay = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.to || ''))
+  const to = req.query.to ? new Date(plainDay ? `${req.query.to}T23:59:59.999Z` : req.query.to) : new Date()
   const from = req.query.from ? new Date(req.query.from) : new Date(to.getTime() - 29 * 86400000)
   return { from, to }
 }
@@ -105,6 +107,17 @@ async function summary(ctx) {
     }
 }
 
+/** The viewer's IANA time zone when valid, else UTC: days are grouped in it. */
+function viewerZone(tz) {
+  if (typeof tz !== 'string' || tz.length > 64 || !/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)*$/.test(tz)) return 'UTC'
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz })
+    return tz
+  } catch {
+    return 'UTC'
+  }
+}
+
 /** GET /revenue */
 async function revenue(ctx) {
     const extra = { ...marketplaceFilter(ctx), status: { $nin: ['cancelled', 'refunded'] } }
@@ -112,7 +125,7 @@ async function revenue(ctx) {
       { $match: match(ctx, extra) },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$placedAt' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$placedAt', timezone: viewerZone(ctx.query.tz) } },
           revenue: { $sum: '$totals.total' },
           orders: { $sum: 1 },
         },
@@ -179,4 +192,29 @@ async function inventory(ctx) {
     return { lowCount: low.length, outCount: out, low }
 }
 
-module.exports = { summary, revenue, marketplaces, products, inventory }
+/**
+ * GET /traffic?from=YYYY-MM-DD&to=YYYY-MM-DD — eBay's traffic report by day for the page's tiles
+ * and chart: `{ latestDate, days: [{ date, impressions, views, sold }] }`.
+ */
+async function traffic(ctx) {
+    const { HttpError } = require('../../../../utils/httpError')
+    const Shop = require('../../../../models/Shop')
+    const filter = { marketplace: 'ebay', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    if (!shop) throw new HttpError(404, { error: 'No connected eBay shop' })
+    const day = /^\d{4}-\d{2}-\d{2}$/
+    const from = String(ctx.query.from || '')
+    const to = String(ctx.query.to || '')
+    if (!day.test(from) || !day.test(to)) throw new HttpError(400, { error: 'from and to must be YYYY-MM-DD' })
+    const marketplaceManager = require('../manager')
+    const { dailyTraffic } = require('../../sections/analytics')
+    try {
+      return await marketplaceManager.withShopToken(shop, (token) => dailyTraffic(token, from, to))
+    } catch (err) {
+      const denied = err?.status === 401 || err?.status === 403 || /insufficient|scope|permission/i.test(err?.message || '')
+      throw new HttpError(502, { error: denied ? 'Reconnect eBay in Settings to allow listing traffic.' : err.message })
+    }
+}
+
+module.exports = { summary, revenue, marketplaces, products, inventory, traffic }
