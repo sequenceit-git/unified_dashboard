@@ -10,6 +10,27 @@ const { temuAmount, temuGoodsRows, grantAware } = require('./helpers')
 
 const GOODS_PER_CALL = 20
 
+/** Temu's price-order status codes (price management guide). */
+const PRICE_ORDER_STATUS = {
+  100: 'Under review',
+  101: 'Waiting for you',
+  201: 'Approved',
+  202: 'Rejected: change the price',
+  203: 'You confirmed',
+  204: "You're changing it",
+  205: 'You refused',
+  206: 'Rejected',
+}
+
+/** Dashboard titles of Temu goods ids (listings are "<goodsId>:<skuId>"). */
+async function goodsTitles(shop, goodsIds) {
+  if (!goodsIds.length) return new Map()
+  const listings = await Listing.find({ shopId: shop?._id, marketplace: 'temu', externalListingId: { $regex: `^(${[...new Set(goodsIds)].filter((g) => /^\d+$/.test(g)).join('|') || '0'}):` } }).select('externalListingId productId').lean()
+  const products = await Product.find({ _id: { $in: listings.map((l) => l.productId) } }).select('title').lean()
+  const byId = new Map(products.map((p) => [String(p._id), p.title]))
+  return new Map(listings.map((l) => [String(l.externalListingId).split(':')[0], byId.get(String(l.productId)) || '']))
+}
+
 /** Current and recommended price for every SKU the shop lists on Temu ("<goodsId>:<skuId>"). */
 /**
  * Every SKU Temu has for the shop (up to 20 pages of 100): Temu's newer SKU list
@@ -96,13 +117,27 @@ async function prices(token, shop) {
       id: 'reviews',
       tab: 'Price reviews',
       title: 'Price reviews',
-      columns: [col('id', 'Price order'), col('goodsId', 'Goods'), col('status', 'Status', 'status'), col('price', 'Price', 'money')],
-      load: async () => firstList(await temu.call('bg.local.goods.priceorder.query', { access_token: token, page: 1, size: 50 })).map((row) => ({
-        id: row.priceOrderId || row.id,
-        goodsId: row.goodsId,
-        status: words(row.priceOrderStatus || row.status || row.orderStatus),
-        price: temuAmount(row.supplierPrice || row.suggestSupplyPrice || row.price, row.currency),
-      })),
+      columns: [col('id', 'Price order'), col('product', 'Product'), col('goodsId', 'Goods'), col('status', 'Status', 'status'), col('yourPrice', 'Your price', 'money'), col('suggested', 'Temu suggests', 'money')],
+      load: async () => {
+        const rows = firstList(await temu.call('bg.local.goods.priceorder.query', { access_token: token, page: 1, size: 50 }))
+        const titles = await goodsTitles(shop, rows.map((r) => String(r.goodsId)))
+        return rows.map((row) => {
+          const raw = row.priceOrderStatus ?? row.status ?? row.orderStatus
+          const code = Number(raw)
+          return {
+            id: row.priceOrderId || row.id,
+            goodsId: row.goodsId,
+            product: titles.get(String(row.goodsId)) || '',
+            // Temu's price-order codes (price management guide); 101 needs the seller's answer.
+            status: PRICE_ORDER_STATUS[code] || (Number.isFinite(code) ? `Temu status ${code}` : words(raw)),
+            statusCode: Number.isFinite(code) ? code : null,
+            waiting: code === 101,
+            price: temuAmount(row.supplierPrice || row.suggestSupplyPrice || row.price, row.currency),
+            yourPrice: row.supplierPrice ? temuAmount(row.supplierPrice, row.currency) : null,
+            suggested: row.suggestSupplyPrice ? temuAmount(row.suggestSupplyPrice, row.currency) : null,
+          }
+        })
+      },
     },
     {
       id: 'catalog',

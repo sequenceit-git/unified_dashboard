@@ -138,3 +138,27 @@ test('on Temu US the price guide takes your price from the SKU list (the price q
     assert.ok(!calls.includes('bg.local.goods.sku.list.price.query'))
   } finally { restore() }
 })
+
+test("price reviews: Temu's status codes in words (101 = waiting for you), both prices and the goods title", async () => {
+  const restore = stubModules({
+    '/models/Listing': modelStub(() => [{ externalListingId: '77:1', productId: 'p1' }]),
+    '/models/Product': modelStub(() => [{ _id: 'p1', title: 'Phone case' }]),
+    '../service': {
+      call: async (type) => {
+        if (type === 'bg.local.goods.priceorder.query') return { list: [
+          { priceOrderId: 'PO1', goodsId: 77, priceOrderStatus: 101, supplierPrice: USD(12), suggestSupplyPrice: USD(9.5) },
+          { priceOrderId: 'PO2', goodsId: 88, priceOrderStatus: 201 },
+          { priceOrderId: 'PO3', goodsId: 88, priceOrderStatus: 999 },
+        ] }
+        if (type === 'bg.local.goods.list.query') return { goodsList: [] }
+        return {}
+      },
+    },
+  })
+  try {
+    const prices = freshRequire('marketplaces/temu/sections/price-reviews.js')
+    const rows = (await prices('tok', { _id: 's1', grantedScopes: ['bg.local.goods.priceorder.query', 'bg.local.goods.list.query'] })).tables.find((t) => t.id === 'reviews').rows
+    assert.deepEqual(rows.map((r) => [r.status, r.statusCode, r.waiting]), [['Waiting for you', 101, true], ['Approved', 201, false], ['Temu status 999', 999, false]])
+    assert.deepEqual([rows[0].yourPrice.value, rows[0].suggested.value, rows[0].product], [12, 9.5, 'Phone case'])
+  } finally { restore() }
+})
