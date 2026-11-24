@@ -6,11 +6,20 @@ const OpenAI = require('openai')
 const { getAiConfig } = require('../../services/system/aiSettings')
 const profile = require('./profile')
 
-const RULES = 'eBay US search title, at most 80 characters: brand first (if known), then what the item is, then the details buyers search for (model, size, colour, material, quantity). Plain words: no promotional words (free shipping, best, sale, wow), no ALL CAPS words, no emojis or symbols like ★ or !!, no repeated words.'
+const RULES = "eBay US search title, at most 80 characters: what the item is first, then the details buyers search for (model, size, colour, material, quantity). Add a brand only if it is the seller's own brand, never another company's brand. Plain words: no promotional words (free shipping, best, sale, wow), no ALL CAPS words, no emojis or symbols, no repeated words."
+
+/** Promotional words, emojis and symbols marketplaces reject in titles. */
+function cleanTitle(text) {
+  return String(text || '')
+    .replace(/\b(hot sale|free shipping|best seller|limited time|new arrival|on sale|sale|wow)\b/gi, ' ')
+    .replace(/[^\p{L}\p{N}\s'".,&/()+%#-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 /** The longest start of `text` within `max` characters that ends on a whole word. */
 function fitWords(text, max) {
-  const clean = String(text || '').replace(/\s+/g, ' ').trim()
+  const clean = cleanTitle(text)
   if (clean.length <= max) return clean
   const cut = clean.slice(0, max + 1)
   const end = cut.lastIndexOf(' ')
@@ -20,7 +29,8 @@ function fitWords(text, max) {
 async function aiTitle({ title, description, brand }, max) {
   const { apiKey, model } = await getAiConfig({ purpose: 'listing' })
   if (!apiKey) return null
-  const client = new OpenAI({ apiKey })
+  // A slow AI must not hold up "List on shop": give up fast and cut the title instead.
+  const client = new OpenAI({ apiKey, timeout: 8000, maxRetries: 0 })
   const res = await client.responses.create({
     model,
     instructions: `Write one product title. ${RULES} Use only facts given. Reply with JSON only: { "title": "..." }.`,

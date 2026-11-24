@@ -199,5 +199,8 @@ test('weights and sizes from the agent are read in pounds and inches', () => {
   assert.deepEqual(specMeasurements([{ name: 'Item Weight', value: '12 oz' }]), { weight: 0.8 })
   assert.deepEqual(specMeasurements([{ name: 'Package Dimensions', value: '20 x 10 x 5 cm' }]), { dimensions: { length: 7.9, width: 3.9, height: 2 } })
   assert.deepEqual(specMeasurements([{ name: 'Color', value: 'Red' }]), {})
+  assert.deepEqual(specMeasurements([{ name: 'Weight Capacity', value: '300 lb' }, { name: 'Maximum Load Weight', value: '50 kg' }]), {}, 'what it holds is not what it weighs')
+  assert.deepEqual(specMeasurements([{ name: 'Product Dimensions', value: '2 x 3 x 0.5 ft' }]), { dimensions: { length: 24, width: 36, height: 6 } })
+  assert.deepEqual(specMeasurements([{ name: 'Product Dimensions', value: '2 x 1 x 0.5 m' }]), { dimensions: { length: 78.7, width: 39.4, height: 19.7 } })
   assert.deepEqual(specMeasurements(null), {})
 })

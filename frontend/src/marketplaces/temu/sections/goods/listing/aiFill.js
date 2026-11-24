@@ -4,10 +4,10 @@ import { visibleAttributes } from './temuForm'
 const filledValue = (v) => Boolean(v && ((v.vids || []).length || String(v.value ?? '').trim()))
 const compact = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '')
 
-/** Empty required template properties shown now, by name with their allowed values. */
+/** Empty required template properties shown now, by name with their allowed values (not ones needing a unit). */
 export function missingForAi(template, form) {
   return visibleAttributes(template, form)
-    .filter((a) => a.required && !filledValue(form.attributes?.[a.templatePid]))
+    .filter((a) => a.required && !(a.units || []).length && !filledValue(form.attributes?.[a.templatePid]))
     .slice(0, 25)
     .map((a) => ({ id: String(a.templatePid), name: a.name, required: true, values: (a.values || []).map((v) => v.value), freeText: !(a.values || []).length }))
 }
@@ -18,7 +18,7 @@ export function applyAiFill(template, form, answers) {
   const filled = []
   for (const [pid, answer] of Object.entries(answers || {})) {
     const attr = (template?.attributes || []).find((a) => String(a.templatePid) === String(pid))
-    if (!attr || filledValue(attributes[attr.templatePid]) || !String(answer ?? '').trim()) continue
+    if (!attr || (attr.units || []).length || filledValue(attributes[attr.templatePid]) || !String(answer ?? '').trim()) continue
     if ((attr.values || []).length) {
       const hit = attr.values.find((v) => compact(v.value) === compact(answer))
       if (!hit) continue

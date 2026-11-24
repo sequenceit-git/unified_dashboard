@@ -28,3 +28,33 @@ for (const [shop, max] of [['ebay', 80], ['tiktok_shop', 255], ['temu', 250]]) {
     } finally { restore() }
   })
 }
+
+for (const shop of ['ebay', 'tiktok_shop', 'temu']) {
+  test(`${shop}: the AI title call gives up fast (no retries) and the fallback title is cleaned`, async () => {
+    const made = []
+    const restore = stubModules({
+      '/system/aiSettings': { getAiConfig: async () => ({ apiKey: 'k', model: 'm' }) },
+      openai: function OpenAI(opts) { made.push(opts); return { responses: { create: async () => { throw new Error('timed out') } } } },
+    })
+    try {
+      const { researchListing } = freshRequire(`marketplaces/${shop}/researchListing.js`)
+      const { title } = await researchListing({ title: '🔥 HOT SALE Ceramic Plant Pot FREE SHIPPING ⭐ White', brand: '' })
+      assert.ok(made[0].timeout <= 10000 && made[0].maxRetries === 0, JSON.stringify(made[0]))
+      assert.equal(title, 'Ceramic Plant Pot White')
+    } finally { restore() }
+  })
+
+  test(`${shop}: the prompt never puts another company's brand first`, async () => {
+    let instructions = ''
+    const restore = stubModules({
+      '/system/aiSettings': { getAiConfig: async () => ({ apiKey: 'k', model: 'm' }) },
+      openai: function OpenAI() { return { responses: { create: async (req) => { instructions = req.instructions; return { output_text: '{"title":"Plant Pot"}' } } } } },
+    })
+    try {
+      const { researchListing } = freshRequire(`marketplaces/${shop}/researchListing.js`)
+      await researchListing({ title: 'Plant Pot', brand: 'Acme' })
+      assert.doesNotMatch(instructions, /brand first/i)
+      assert.match(instructions, /brand/i)
+    } finally { restore() }
+  })
+}

@@ -6,11 +6,20 @@ const OpenAI = require('openai')
 const { getAiConfig } = require('../../services/system/aiSettings')
 const profile = require('./profile')
 
-const RULES = 'TikTok Shop US product name, at most 255 characters and at least 25: brand (if known) + product type + the key feature + main specs (size, colour, material, quantity). Clear sentence case, no promotional or exaggerated claims (best, #1, cheapest), no emojis, no hashtags, no ALL CAPS, no repeated keywords.'
+const RULES = "TikTok Shop US product name, at most 255 characters and at least 25: product type + the key feature + main specs (size, colour, material, quantity). Add a brand only if it is the seller's own brand, never another company's brand. Clear sentence case, no promotional or exaggerated claims (best, #1, cheapest), no emojis, no hashtags, no ALL CAPS, no repeated keywords."
+
+/** Promotional words, emojis and symbols marketplaces reject in titles. */
+function cleanTitle(text) {
+  return String(text || '')
+    .replace(/\b(hot sale|free shipping|best seller|limited time|new arrival|on sale|sale|wow)\b/gi, ' ')
+    .replace(/[^\p{L}\p{N}\s'".,&/()+%#-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 /** The longest start of `text` within `max` characters that ends on a whole word. */
 function fitWords(text, max) {
-  const clean = String(text || '').replace(/\s+/g, ' ').trim()
+  const clean = cleanTitle(text)
   if (clean.length <= max) return clean
   const cut = clean.slice(0, max + 1)
   const end = cut.lastIndexOf(' ')
@@ -20,7 +29,8 @@ function fitWords(text, max) {
 async function aiTitle({ title, description, brand }, max) {
   const { apiKey, model } = await getAiConfig({ purpose: 'listing' })
   if (!apiKey) return null
-  const client = new OpenAI({ apiKey })
+  // A slow AI must not hold up "List on shop": give up fast and cut the title instead.
+  const client = new OpenAI({ apiKey, timeout: 8000, maxRetries: 0 })
   const res = await client.responses.create({
     model,
     instructions: `Write one product title. ${RULES} Use only facts given. Reply with JSON only: { "title": "..." }.`,

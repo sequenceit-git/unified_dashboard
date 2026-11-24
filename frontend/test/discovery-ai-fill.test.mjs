@@ -34,9 +34,9 @@ test('temu: template attributes go to the AI by name, its answers map back to Te
   ] }
   const form = { attributes: { 2: { vids: [21] } } }
   const missing = missingForAi(template, form)
-  assert.deepEqual(missing.map((a) => a.id), ['1', '3'])
+  assert.deepEqual(missing.map((a) => a.id), ['1'], 'a property that needs a unit is left for the seller')
   assert.deepEqual(missing[0].values, ['Ceramic', 'Plastic'])
   const out = applyAiFill(template, form, { 1: 'ceramic', 3: '500', 2: 'White' })
-  assert.deepEqual(out.attributes, { 1: { vids: [11] }, 2: { vids: [21] }, 3: { value: '500' } })
-  assert.deepEqual(out.filled, ['1', '3'])
+  assert.deepEqual(out.attributes, { 1: { vids: [11] }, 2: { vids: [21] } })
+  assert.deepEqual(out.filled, ['1'])
 })

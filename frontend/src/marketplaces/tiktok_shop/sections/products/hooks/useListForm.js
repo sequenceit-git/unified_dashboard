@@ -75,6 +75,8 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   const [categorySearch, setCategorySearch] = useState('')
   const [categoryState, setCategoryState] = useState({ loading: false, error: '' })
   const [attributes, setAttributes] = useState([])
+  // The category the loaded attributes belong to (a new category keeps the old list until its own loads).
+  const [attributesFor, setAttributesFor] = useState('')
   const [salesAttributes, setSalesAttributes] = useState([])
   const [categoryRules, setCategoryRules] = useState(() => normalizeCategoryRules([]))
   const [certificationFiles, setCertificationFiles] = useState({})
@@ -136,6 +138,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
         const prodAttrs = all.filter((a) => a.type !== 'sales')
         const salesAttrs = all.filter((a) => a.type === 'sales')
         setAttributes(prodAttrs)
+        setAttributesFor(categoryId)
         setSalesAttributes(salesAttrs)
         setAttributeError('')
         setAspects((prev) => ({
@@ -354,7 +357,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   }
 
   useEffect(() => {
-    if (product.source !== 'research_bot' || !categoryId || !attributes.length || aiDoneFor.current === categoryId) return
+    if (product.source !== 'research_bot' || !categoryId || attributesFor !== categoryId || !attributes.length || aiDoneFor.current === categoryId) return
     aiDoneFor.current = categoryId
     const missing = missingForAi(attributes, aspectsNow.current)
     if (!missing.length) return
@@ -377,7 +380,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
         if (aiDoneFor.current === forCategory) setAiFill({ busy: false, filled: [], asked: missing.length, error: err.message })
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.source, categoryId, attributes])
+  }, [product.source, categoryId, attributes, attributesFor])
 
   return {
     aiFill,
