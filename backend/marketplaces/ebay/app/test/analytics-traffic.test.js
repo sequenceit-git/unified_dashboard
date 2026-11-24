@@ -48,8 +48,22 @@ test('revenue by day is grouped in the viewer time zone and a plain "to" day cou
   try {
     await service.revenue({ ...admin, query: { from: '2026-11-17', to: '2026-11-23', tz: 'America/New_York' } })
     assert.equal(pipelines[0][1].$group._id.$dateToString.timezone, 'America/New_York')
-    assert.equal(pipelines[0][0].$match.placedAt.$lte.toISOString(), '2026-11-23T23:59:59.999Z')
+    assert.equal(pipelines[0][0].$match.placedAt.$lte.toISOString(), '2026-11-24T04:59:59.999Z', 'the end of Nov 23 in New York')
     await service.revenue({ ...admin, query: { ...admin.query, tz: 'bad zone!' } })
     assert.equal(pipelines[1][1].$group._id.$dateToString.timezone, 'UTC')
+  } finally { restore() }
+})
+
+test("plain days with a time zone are that zone's whole days (eBay US: Pacific)", async () => {
+  const pipelines = []
+  const { service, restore } = load({ pipelines, dailyTraffic: async () => ({}) })
+  try {
+    await service.revenue({ ...admin, query: { from: '2026-11-17', to: '2026-11-23', tz: 'America/Los_Angeles' } })
+    const { $gte, $lte } = pipelines[0][0].$match.placedAt
+    assert.equal($gte.toISOString(), '2026-11-17T08:00:00.000Z')
+    assert.equal($lte.toISOString(), '2026-11-24T07:59:59.999Z')
+    await service.summary({ ...admin, query: { from: '2026-06-01', to: '2026-06-01', tz: 'America/Los_Angeles' } })
+    const s = pipelines.find((pl) => pl[0].$match.placedAt.$gte.toISOString() === '2026-06-01T07:00:00.000Z')
+    assert.ok(s, 'summary uses the zone too (summer time)')
   } finally { restore() }
 })

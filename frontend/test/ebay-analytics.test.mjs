@@ -10,7 +10,9 @@ test('periods are whole days ending on the given day', async () => {
   const { periodRanges, yesterday, PERIODS } = await load()
   assert.deepEqual(PERIODS.map((p) => p.value), ['7', '30', '60', '90'])
   assert.deepEqual(periodRanges(7, '2026-11-23'), { current: { from: '2026-11-17', to: '2026-11-23' }, previous: { from: '2026-11-10', to: '2026-11-16' } })
-  assert.equal(yesterday(new Date('2026-11-24T10:00:00')), '2026-11-23')
+  assert.equal(yesterday(new Date('2026-11-24T20:00:00Z')), '2026-11-23')
+  // 02:00 on Nov 24 in Dhaka is still Nov 23 in Pacific time: yesterday there is Nov 22.
+  assert.equal(yesterday(new Date('2026-11-23T20:00:00Z')), '2026-11-22')
 })
 
 test('change, points and margin', async () => {
@@ -63,4 +65,14 @@ test('needs attention: below standard, worse than similar sellers, stock; never 
   assert.equal(attentionStatus({ items: [], loading: false, error: 'x' }), 'error')
   assert.equal(attentionStatus({ items: [], loading: false, error: '' }), 'all-good')
   assert.equal(attentionStatus({ items: [{}], loading: true, error: '' }), 'problems')
+})
+
+test('traffic days fill gaps with zero across the period', async () => {
+  const { fillDays } = await load()
+  assert.deepEqual(fillDays([{ date: '2026-11-18', impressions: 5, views: 1, sold: 0 }], '2026-11-17', '2026-11-19'), [
+    { date: '2026-11-17', impressions: 0, views: 0, sold: 0 },
+    { date: '2026-11-18', impressions: 5, views: 1, sold: 0 },
+    { date: '2026-11-19', impressions: 0, views: 0, sold: 0 },
+  ])
+  assert.deepEqual(fillDays(null, '2026-11-17', '2026-11-17'), [{ date: '2026-11-17', impressions: 0, views: 0, sold: 0 }])
 })

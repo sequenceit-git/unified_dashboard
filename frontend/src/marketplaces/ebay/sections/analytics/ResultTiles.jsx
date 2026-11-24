@@ -27,8 +27,9 @@ export function SalesTiles({ now, before, loading, error, onRetry }) {
   )
 }
 
-export function TrafficTiles({ now, before, loading, error }) {
-  if (error) return <Card className="text-sm text-gray-600 dark:text-gray-300">eBay isn't sharing traffic: {error}</Card>
+export function TrafficTiles({ now, before, loading, error, onRetry }) {
+  if (error && /reconnect ebay/i.test(error)) return <Card className="text-sm text-gray-600 dark:text-gray-300">eBay isn't sharing traffic: {error}</Card>
+  if (error) return <Card><ErrorState message={`Couldn't load eBay traffic: ${error}`} onRetry={onRetry} /></Card>
   const show = (v) => (loading ? '…' : v)
   const pct = (v) => (v == null ? '—' : `${v}%`)
   return (

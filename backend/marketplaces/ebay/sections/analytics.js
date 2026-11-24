@@ -43,7 +43,8 @@ async function dailyTraffic(token, from, to) {
     const d = String(record.dimensionValues?.[0]?.value ?? '')
     return { date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`, impressions: m.LISTING_IMPRESSION_TOTAL, views: m.LISTING_VIEWS_TOTAL, sold: m.TRANSACTION }
   }).sort((a, b) => a.date.localeCompare(b.date))
-  const latestDate = report.endDate ? String(report.endDate).slice(0, 10) : days.at(-1)?.date || null
+  // eBay's endDate is the end of the asked range; its last day with data is the last record it sent.
+  const latestDate = days.at(-1)?.date || null
   return { latestDate, days }
 }
 

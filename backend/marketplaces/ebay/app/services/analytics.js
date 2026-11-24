@@ -4,9 +4,30 @@ const Product = require('../../../../models/Product')
 const Listing = require('../../../../models/Listing')
 const { shopFilter } = require('../../../../middleware/auth')
 
+/** Milliseconds `tz` is ahead of UTC at instant `t`. */
+function zoneOffset(t, tz) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    .formatToParts(new Date(t)).map((p) => [p.type, p.value]))
+  return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second) - t
+}
+
+/** The instant a calendar day starts in `tz` (summer time included). */
+function dayStart(day, tz) {
+  const t = Date.parse(`${day}T00:00:00Z`)
+  return new Date(t - zoneOffset(t - zoneOffset(t, tz), tz))
+}
+
+const nextDay = (day) => new Date(Date.parse(`${day}T00:00:00Z`) + 86400000).toISOString().slice(0, 10)
+
 function dates(req) {
+  const plain = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''))
+  // Plain calendar days with a time zone are that zone's whole days (eBay US counts days in Pacific time).
+  if (plain(req.query.from) && plain(req.query.to) && req.query.tz && viewerZone(req.query.tz) !== 'UTC') {
+    const tz = viewerZone(req.query.tz)
+    return { from: dayStart(req.query.from, tz), to: new Date(dayStart(nextDay(req.query.to), tz).getTime() - 1) }
+  }
   // A plain calendar day ("2026-11-23") as `to` counts in full.
-  const plainDay = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.to || ''))
+  const plainDay = plain(req.query.to)
   const to = req.query.to ? new Date(plainDay ? `${req.query.to}T23:59:59.999Z` : req.query.to) : new Date()
   const from = req.query.from ? new Date(req.query.from) : new Date(to.getTime() - 29 * 86400000)
   return { from, to }
@@ -213,7 +234,7 @@ async function traffic(ctx) {
       return await marketplaceManager.withShopToken(shop, (token) => dailyTraffic(token, from, to))
     } catch (err) {
       const denied = err?.status === 401 || err?.status === 403 || /insufficient|scope|permission/i.test(err?.message || '')
-      throw new HttpError(502, { error: denied ? 'Reconnect eBay in Settings to allow listing traffic.' : err.message })
+      throw new HttpError(502, { error: denied ? 'Reconnect eBay in Settings to allow listing traffic.' : err.message, ...(denied ? { reconnect: true } : {}) })
     }
 }
 

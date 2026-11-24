@@ -36,6 +36,12 @@ export default function NeedsAttention({ items, loading, error, onRetry, onDetai
           </li>
         ))}
       </ul>
+      {error && (
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-rose-700 dark:text-rose-300">
+          Couldn't check everything: {error}
+          <Button size="sm" variant="secondary" onClick={onRetry}>Retry</Button>
+        </p>
+      )}
     </Card>
   )
 }

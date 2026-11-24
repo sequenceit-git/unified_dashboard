@@ -109,7 +109,7 @@ test('a seller level row opens its metrics', async () => {
 
 test('daily traffic asks eBay by day for exact calendar days and returns its last day', async () => {
   const day = (d, imp, views, sold) => ({ dimensionValues: [{ value: d }], metricValues: [{ value: imp }, { value: views }, { value: sold }] })
-  const report = { endDate: '2026-11-23T07:00:00.000Z', header: { metrics: [{ key: 'LISTING_IMPRESSION_TOTAL' }, { key: 'LISTING_VIEWS_TOTAL' }, { key: 'TRANSACTION' }] }, records: [day('20261122', 500, 20, 1), day('20261123', 300, 10, 0)] }
+  const report = { endDate: '2026-11-24T07:59:59.000Z', header: { metrics: [{ key: 'LISTING_IMPRESSION_TOTAL' }, { key: 'LISTING_VIEWS_TOTAL' }, { key: 'TRANSACTION' }] }, records: [day('20261122', 500, 20, 1), day('20261123', 300, 10, 0)] }
   const { analytics, urls, restore } = load(() => report)
   try {
     const out = await analytics.dailyTraffic('tok', '2026-11-17', '2026-11-23')
@@ -124,5 +124,14 @@ test('seller level and service rows carry eBay codes for the page', async () => 
     const data = await analytics('tok', {}, { now: NOW })
     assert.equal(data.tables.find((t) => t.id === 'standards').rows[0].levelCode, 'TOP_RATED')
     assert.equal(data.tables.find((t) => t.id === 'service').rows[0].ratingCode, 'HIGH')
+  } finally { restore() }
+})
+
+test("eBay's last traffic day is the last day it returned, not the end of the asked range", async () => {
+  const day = (d) => ({ dimensionValues: [{ value: d }], metricValues: [{ value: 5 }, { value: 1 }, { value: 0 }] })
+  const report = { endDate: '2026-11-24T07:59:59.000Z', header: { metrics: [{ key: 'LISTING_IMPRESSION_TOTAL' }, { key: 'LISTING_VIEWS_TOTAL' }, { key: 'TRANSACTION' }] }, records: [day('20261121'), day('20261122')] }
+  const { analytics, restore } = load(() => report)
+  try {
+    assert.equal((await analytics.dailyTraffic('tok', '2026-11-17', '2026-11-23')).latestDate, '2026-11-22')
   } finally { restore() }
 })

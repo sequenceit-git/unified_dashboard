@@ -9,11 +9,21 @@ const round1 = (n) => Math.round(n * 10) / 10
 
 export const PERIODS = [7, 30, 60, 90].map((d) => ({ value: String(d), label: `Last ${d} days` }))
 
-/** Yesterday as a calendar day: eBay's traffic has no "today". */
+/** eBay US counts days in US Pacific time; the whole page uses its days. */
+export const EBAY_TZ = 'America/Los_Angeles'
+
+/** Yesterday in eBay's time zone: eBay's traffic has no "today". */
 export function yesterday(now = new Date()) {
-  const d = new Date(now)
-  d.setDate(d.getDate() - 1)
-  return dayKey(d)
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: EBAY_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+  return addDays(today, -1)
+}
+
+/** Every day from `from` to `to`, days eBay left out counting zero. */
+export function fillDays(days, from, to) {
+  const byDate = new Map((days || []).map((d) => [d.date, d]))
+  const out = []
+  for (let d = from; d <= to; d = addDays(d, 1)) out.push(byDate.get(d) || { date: d, impressions: 0, views: 0, sold: 0 })
+  return out
 }
 
 /** `days` whole calendar days ending on `endDay`, and the same number of days just before them. */
@@ -100,13 +110,4 @@ export function attentionStatus({ items, loading, error }) {
   if (loading) return 'loading'
   if (error) return 'error'
   return 'all-good'
-}
-
-/** The browser's time zone, so revenue days match the page's days. */
-export function viewerZone() {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  } catch {
-    return 'UTC'
-  }
 }
