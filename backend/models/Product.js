@@ -47,6 +47,14 @@ const productSchema = new mongoose.Schema(
       autoAcceptPrice: { type: Number },
       minOfferPrice: { type: Number },
     },
+    // Who pays the delivery charge on the eBay listing (set by that shop's adapter on sync); `type`
+    // and `policy` tell the listing form what it may change.
+    ebayShipping: {
+      paidBy: { type: String, enum: ['buyer', 'seller'] },
+      cost: { type: Number },
+      type: { type: String },
+      policy: { type: String },
+    },
     images: [{ type: String }],
     basePrice: { type: Number },
     listPrice: { type: Number },

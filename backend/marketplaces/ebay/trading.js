@@ -15,6 +15,9 @@ const LIST_TAGS = new Set([
   'Value',
   'ShippingServiceOptions',
   'ShipToLocations',
+  'InternationalShippingServiceOption',
+  'ShipToLocation',
+  'ExcludeShipToLocation',
   'Variation',
   'VariationSpecificPictureSet',
   'Pictures',
@@ -194,6 +197,7 @@ function parseItem(item) {
     } : {}),
     ...(variants.length ? { variants } : {}),
     specifics,
+    shipping: shippingPayer(item),
     listingStatus: item.SellingStatus?.ListingStatus || '',
     url: item.ListingDetails?.ViewItemURL || '',
   }
@@ -349,6 +353,90 @@ async function getActiveListings(token, { limit = 200 } = {}) {
   return items
 }
 
+/**
+ * Who pays shipping on an eBay listing: the seller when the first domestic service is free.
+ * `{ paidBy: 'buyer' | 'seller', cost, type: 'Flat' | 'Calculated', policy }`; `policy` is the
+ * shipping business policy's name when the listing uses one (its shipping can't be changed here).
+ */
+function shippingPayer(item) {
+  const shipping = item.ShippingDetails || {}
+  const first = [...(shipping.ShippingServiceOptions || [])].sort((a, b) => Number(text(a.ShippingServicePriority) || 1) - Number(text(b.ShippingServicePriority) || 1))[0]
+  const cost = Number(text(first?.ShippingServiceCost))
+  return {
+    paidBy: String(text(first?.FreeShipping)) === 'true' ? 'seller' : 'buyer',
+    cost: Number.isFinite(cost) && text(first?.ShippingServiceCost) !== '' ? cost : null,
+    type: /Calculated/i.test(text(shipping.ShippingType) || '') ? 'Calculated' : 'Flat',
+    policy: text(item.SellerProfiles?.SellerShippingProfile?.ShippingProfileName) || null,
+  }
+}
+
+const badRequest = (message) => Object.assign(new Error(message), { status: 400 })
+
+/** Domestic shipping options of a listing as the template keeps them. */
+const shippingOptionsOf = (shipping) => (shipping.ShippingServiceOptions || []).map((option) => ({
+  service: option.ShippingService,
+  priority: text(option.ShippingServicePriority) || '1',
+  free: String(text(option.FreeShipping)) === 'true',
+  cost: text(option.ShippingServiceCost),
+  additionalCost: text(option.ShippingServiceAdditionalCost),
+}))
+
+/**
+ * Applies "who pays shipping" to the domestic options: free shipping on the first service only
+ * (eBay's rule; the others keep their costs), or the buyer pays the given cost (Flat) / eBay's
+ * calculated rate (Calculated). No choice → the options as they are.
+ */
+function applyShippingPayer(type, options, payer) {
+  if (!payer?.paidBy || !options.length) return options
+  const first = [...options].sort((a, b) => Number(a.priority || 1) - Number(b.priority || 1))[0]
+  let cost = null
+  if (payer.paidBy === 'buyer' && !/Calculated/i.test(type)) {
+    cost = Number(payer.cost)
+    if (payer.cost === '' || payer.cost == null || !(cost >= 0.01)) throw badRequest('Enter the shipping cost the buyer pays.')
+  }
+  return options.map((option) => {
+    if (option !== first) return option
+    if (payer.paidBy === 'seller') return { ...option, free: true, cost: '0.00', additionalCost: '0.00' }
+    return { ...option, free: false, ...(cost != null ? { cost: cost.toFixed(2) } : {}) }
+  })
+}
+
+/** The `<ShippingServiceOptions>` of the domestic services. */
+function domesticXml(type, options) {
+  return options.map((option) => [
+    '<ShippingServiceOptions>',
+    `<ShippingServicePriority>${escapeXml(option.priority)}</ShippingServicePriority>`,
+    `<ShippingService>${escapeXml(option.service)}</ShippingService>`,
+    option.free ? '<FreeShipping>true</FreeShipping>' : '',
+    type !== 'Calculated' && option.cost !== '' ? `<ShippingServiceCost currencyID="USD">${escapeXml(option.cost)}</ShippingServiceCost>` : '',
+    type !== 'Calculated' && option.additionalCost !== '' ? `<ShippingServiceAdditionalCost currencyID="USD">${escapeXml(option.additionalCost)}</ShippingServiceAdditionalCost>` : '',
+    '</ShippingServiceOptions>',
+  ].join('')).join('')
+}
+
+/**
+ * A live listing's whole `<ShippingDetails>` with who pays shipping changed: eBay replaces the
+ * container on revise, so the other services, international options and excluded places are sent
+ * back as they are.
+ */
+function reviseShippingXml(item, payer) {
+  const shipping = item.ShippingDetails || {}
+  const type = text(shipping.ShippingType) || 'Flat'
+  const money = (v) => (text(v) !== '' ? `<ShippingServiceCost currencyID="USD">${escapeXml(text(v))}</ShippingServiceCost>` : '')
+  const international = (shipping.InternationalShippingServiceOption || []).map((o) => [
+    '<InternationalShippingServiceOption>',
+    `<ShippingServicePriority>${escapeXml(text(o.ShippingServicePriority) || '1')}</ShippingServicePriority>`,
+    `<ShippingService>${escapeXml(text(o.ShippingService))}</ShippingService>`,
+    money(o.ShippingServiceCost),
+    text(o.ShippingServiceAdditionalCost) !== '' ? `<ShippingServiceAdditionalCost currencyID="USD">${escapeXml(text(o.ShippingServiceAdditionalCost))}</ShippingServiceAdditionalCost>` : '',
+    ...(o.ShipToLocation || []).map((l) => `<ShipToLocation>${escapeXml(text(l))}</ShipToLocation>`),
+    '</InternationalShippingServiceOption>',
+  ].join('')).join('')
+  const excluded = (shipping.ExcludeShipToLocation || []).map((l) => `<ExcludeShipToLocation>${escapeXml(text(l))}</ExcludeShipToLocation>`).join('')
+  const domestic = domesticXml(type, applyShippingPayer(type, shippingOptionsOf(shipping), payer))
+  return `<ShippingDetails><ShippingType>${escapeXml(type)}</ShippingType>${domestic}${international}${excluded}</ShippingDetails>`
+}
+
 const templates = new Map()
 
 /** Location, shipping and returns copied from one of the seller's live listings. */
@@ -367,13 +455,7 @@ async function listingTemplate(token, cacheKey) {
     postalCode: raw.PostalCode || '',
     dispatchTimeMax: raw.DispatchTimeMax || '3',
     shippingType: shipping.ShippingType || 'Flat',
-    shippingOptions: (shipping.ShippingServiceOptions || []).map((option) => ({
-      service: option.ShippingService,
-      priority: option.ShippingServicePriority || '1',
-      free: String(option.FreeShipping) === 'true',
-      cost: text(option.ShippingServiceCost),
-      additionalCost: text(option.ShippingServiceAdditionalCost),
-    })),
+    shippingOptions: shippingOptionsOf(shipping),
     packageType: shipping.CalculatedShippingRate?.ShippingPackage || raw.ShippingPackageDetails?.ShippingPackage || '',
     returns: raw.ReturnPolicy || {},
   }
@@ -382,15 +464,9 @@ async function listingTemplate(token, cacheKey) {
 }
 
 function shippingXml(template, product, opts) {
-  const options = template.shippingOptions.map((option) => [
-    '<ShippingServiceOptions>',
-    `<ShippingServicePriority>${escapeXml(option.priority)}</ShippingServicePriority>`,
-    `<ShippingService>${escapeXml(option.service)}</ShippingService>`,
-    option.free ? '<FreeShipping>true</FreeShipping>' : '',
-    template.shippingType !== 'Calculated' && option.cost !== '' ? `<ShippingServiceCost currencyID="USD">${escapeXml(option.cost)}</ShippingServiceCost>` : '',
-    template.shippingType !== 'Calculated' && option.additionalCost !== '' ? `<ShippingServiceAdditionalCost currencyID="USD">${escapeXml(option.additionalCost)}</ShippingServiceAdditionalCost>` : '',
-    '</ShippingServiceOptions>',
-  ].join('')).join('')
+  // Who pays shipping: the request's choice, else the product's saved one, else the template's.
+  const payer = opts.ebayShipping !== undefined ? opts.ebayShipping : product.ebayShipping
+  const options = domesticXml(template.shippingType, applyShippingPayer(template.shippingType, template.shippingOptions, payer))
   let xml = `<ShippingDetails><ShippingType>${escapeXml(template.shippingType)}</ShippingType>${options}</ShippingDetails>`
   if (/Calculated/i.test(template.shippingType)) {
     const pounds = Number(opts.weight || product.weight || 1)
@@ -735,6 +811,15 @@ async function reviseInventoryStatus(token, itemId, updates = []) {
  */
 async function reviseListing(token, itemId, changes = {}) {
   const { title, description, price, quantity, images, subtitle, conditionDescription } = changes
+  // Who pays shipping is checked (and the listing's shipping read) before anything is sent.
+  let shippingPart = ''
+  if (changes.ebayShipping?.paidBy) {
+    const current = await getItem(token, itemId)
+    if (!current) throw badRequest(`eBay has no listing ${itemId}.`)
+    const policy = shippingPayer(current.raw).policy
+    if (policy) throw badRequest(`This listing uses your eBay shipping policy "${policy}". Change who pays shipping in that policy in Seller Hub.`)
+    shippingPart = reviseShippingXml(current.raw, changes.ebayShipping)
+  }
   let compliantImages = []
   if (images && images.length) {
     compliantImages = await filterEbayCompliantImages(images)
@@ -780,6 +865,7 @@ async function reviseListing(token, itemId, changes = {}) {
       description ? `<Description>${cdata(description)}</Description>` : '',
       conditionDescription !== undefined ? `<ConditionDescription>${escapeXml(String(conditionDescription || '').slice(0, 1000))}</ConditionDescription>` : '',
       compliantImages.length ? `<PictureDetails>${compliantImages.map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('')}</PictureDetails>` : '',
+      shippingPart,
     ]
     if (itemParts.slice(1).some(Boolean)) {
       await call(token, 'ReviseFixedPriceItem', `<Item>${itemParts.join('')}</Item>`)
@@ -796,6 +882,7 @@ async function reviseListing(token, itemId, changes = {}) {
     conditionDescription !== undefined ? `<ConditionDescription>${escapeXml(String(conditionDescription || '').slice(0, 1000))}</ConditionDescription>` : '',
     price != null ? `<StartPrice currencyID="USD">${Number(price).toFixed(2)}</StartPrice>` : '',
     compliantImages.length ? `<PictureDetails>${compliantImages.map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('')}</PictureDetails>` : '',
+    shippingPart,
   ]
   const qtyPart = normalizedQty != null ? `<Quantity>${normalizedQty}</Quantity>` : ''
   try {
@@ -803,7 +890,7 @@ async function reviseListing(token, itemId, changes = {}) {
     return { success: true }
   } catch (err) {
     if (normalizedQty === 0 && /quantity|greater than 0|at least 1|out.?of.?stock/i.test(err.message || '')) {
-      const hasOtherChanges = Boolean(title || description || price != null || compliantImages.length || subtitle !== undefined || conditionDescription !== undefined)
+      const hasOtherChanges = Boolean(title || description || price != null || compliantImages.length || subtitle !== undefined || conditionDescription !== undefined || shippingPart)
       if (hasOtherChanges) {
         await call(token, 'ReviseFixedPriceItem', `<Item>${nonQtyParts.join('')}</Item>`)
       }
@@ -896,6 +983,8 @@ module.exports = {
   addListing,
   reviseInventoryStatus,
   reviseListing,
+  shippingXml,
+  shippingPayer,
   endListing,
   relistListing,
 }

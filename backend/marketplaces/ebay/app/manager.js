@@ -937,6 +937,7 @@ class Manager {
         dimensions: item.dimensions || undefined,
         ...(item.identifierCode?.code ? { identifierCode: item.identifierCode } : {}),
         ...(item.bestOffer?.enabled ? { bestOffer: item.bestOffer } : {}),
+        ...(item.shipping?.paidBy ? { ebayShipping: item.shipping } : {}),
         ...(item.sizeChart && (item.sizeChart.templateId || item.sizeChart.image) ? { sizeChart: item.sizeChart } : {}),
         attributes: item.attributes || undefined,
         ...(Array.isArray(item.variants) ? { variants: item.variants } : {}),
@@ -952,6 +953,8 @@ class Manager {
       }
       if (item.identifierCode?.code) product.identifierCode = item.identifierCode
       if (item.bestOffer?.enabled) product.bestOffer = item.bestOffer
+      // Who pays shipping, as eBay has it now (the edit form starts from it).
+      if (item.shipping?.paidBy) product.ebayShipping = item.shipping
       if (item.sizeChart && (item.sizeChart.templateId || item.sizeChart.image)) product.sizeChart = item.sizeChart
       if (Array.isArray(item.variants) && (item.variants.length > 0 || ((product.variants?.length)))) {
         product.variants = item.variants

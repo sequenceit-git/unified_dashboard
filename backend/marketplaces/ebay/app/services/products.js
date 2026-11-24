@@ -28,6 +28,8 @@ function changedListingFields(before, after) {
   if (Number(after.basePrice) !== Number(before.basePrice)) changes.price = after.basePrice
   if (Number(after.stock) !== Number(before.stock)) changes.quantity = after.stock
   if (JSON.stringify(after.images || []) !== JSON.stringify(before.images || [])) changes.images = after.images
+  const payer = (p) => (p?.ebayShipping?.paidBy ? { paidBy: p.ebayShipping.paidBy, cost: p.ebayShipping.paidBy === 'buyer' ? p.ebayShipping.cost ?? null : null } : null)
+  if (payer(after) && JSON.stringify(payer(after)) !== JSON.stringify(payer(before))) changes.ebayShipping = payer(after)
   if (after.weight != null && Number(after.weight) !== Number(before.weight)) changes.weight = after.weight
   const bd = before.dimensions || {}
   const ad = after.dimensions || {}
@@ -308,6 +310,7 @@ async function listOnShop(ctx) {
       mpn: ctx.body.mpn !== undefined ? ctx.body.mpn : product.mpn,
       dispatchTimeMax: ctx.body.dispatchTimeMax !== undefined && ctx.body.dispatchTimeMax !== '' ? Number(ctx.body.dispatchTimeMax) : product.dispatchTimeMax,
       bestOffer: ctx.body.bestOffer !== undefined ? ctx.body.bestOffer : product.bestOffer,
+      ebayShipping: ctx.body.ebayShipping !== undefined ? ctx.body.ebayShipping : product.ebayShipping,
       certifications: ctx.body.certifications,
       variants: hasVariants ? normalizedVariants : undefined,
       identifierCode: ctx.body.identifierCode !== undefined ? ctx.body.identifierCode : product.identifierCode,
@@ -358,6 +361,7 @@ async function listOnShop(ctx) {
       ...(listingOptions.conditionDescription !== undefined ? { conditionDescription: listingOptions.conditionDescription } : {}),
       ...(listingOptions.dispatchTimeMax != null && Number.isFinite(Number(listingOptions.dispatchTimeMax)) ? { dispatchTimeMax: Number(listingOptions.dispatchTimeMax) } : {}),
       ...(listingOptions.bestOffer !== undefined ? { bestOffer: listingOptions.bestOffer } : {}),
+      ...(listingOptions.ebayShipping?.paidBy ? { ebayShipping: listingOptions.ebayShipping } : {}),
       ...(listingOptions.weight ? { weight: listingOptions.weight } : {}),
       ...(listingOptions.dimensions ? { dimensions: listingOptions.dimensions } : {}),
       ...(Array.isArray(publishRes.variants) ? { variants: publishRes.variants } : hasVariants ? { variants: normalizedVariants } : {}),

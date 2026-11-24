@@ -397,6 +397,7 @@ async function fetchEbayListings(manager, shop, token, service) {
       dispatchTimeMax: detail?.dispatchTimeMax,
       identifierCode: detail?.identifierCode,
       bestOffer: detail?.bestOffer,
+      shipping: detail?.shipping,
       attributes: detail?.specifics,
       listingStatus: 'live',
       marketplaceStatus: source.listingStatus || 'Active',
