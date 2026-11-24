@@ -4,13 +4,20 @@ import { useAuth } from '../../../../auth/AuthContext'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { api, queryString } from '../../../../lib/api'
-import Card from '../../../../components/ui/Card'
+import ShopSectionGate from '../../../../components/ShopSectionGate'
 import DataTable from '../../../../components/ui/DataTable'
 import Pagination from '../../../../components/ui/Pagination'
 import SearchInput from '../../../../components/ui/SearchInput'
 import CustomerDrawer from './CustomerDrawer'
+import PageHeader from '../../ui/PageHeader'
+import StatusPills from '../../ui/StatusPills'
+import { customerPills, customerSummary } from './customersView'
 
 export default function CustomersPage() {
+  return <ShopSectionGate sectionId="customers"><Customers /></ShopSectionGate>
+}
+
+function Customers() {
   const { token } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
@@ -22,14 +29,18 @@ export default function CustomersPage() {
   const [sort, setSort] = useState('-lastOrderAt')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(null)
+  const [pill, setPill] = useState('all')
+  const [counts, setCounts] = useState(null)
+  const [openError, setOpenError] = useState('')
 
   const fetchRows = async () => {
     if (!marketplace) return
     setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/temu/customers${queryString({ q, sort, page, limit: 15 })}`, token)
+      const res = await api.get(`/api/temu/customers${queryString({ q, sort, page, limit: 15, repeat: pill === 'repeat' ? 1 : undefined })}`, token)
       setRows(res.data)
+      setCounts(res.counts || null)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {
       setError(e.message)
@@ -42,21 +53,28 @@ export default function CustomersPage() {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketplace, q, sort, page])
+  }, [marketplace, q, sort, page, pill])
 
   const open = async (row) => {
-    setSelected(await api.get(`/api/temu/customers/${row._id}`, token))
+    setOpenError('')
+    try {
+      setSelected(await api.get(`/api/temu/customers/${row._id}`, token))
+    } catch (e) {
+      setOpenError(e.message)
+    }
   }
 
   if (!section) return <RequireShopSection />
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl sm:text-2xl font-bold">{section.label} customers</h1>
-      <Card>
-        <div className="mb-3">
-          <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search name, email, phone…" />
-        </div>
+    <div className="space-y-3">
+      <PageHeader title="Temu customers" summary={customerSummary(counts)} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <StatusPills pills={customerPills(counts)} active={pill} onChange={(k) => { setPill(k); setPage(1) }} />
+        <div className="w-full sm:w-72"><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search name, email, phone…" /></div>
+      </div>
+      {openError && <p className="text-sm text-rose-600 dark:text-rose-400">{openError}</p>}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <DataTable
           columns={[
             {
@@ -114,7 +132,7 @@ export default function CustomersPage() {
                 )
               },
             },
-            { key: 'orderCount', label: 'Orders', sortable: true },
+            { key: 'orderCount', label: 'Orders', sortable: true, render: (r) => <span>{r.orderCount}{r.orderCount >= 2 && <span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">repeat</span>}</span> },
             { key: 'totalSpent', label: 'Spent', sortable: true, render: (r) => `$${r.totalSpent?.toFixed(2)}` },
             { key: 'lastOrderAt', label: 'Last order', sortable: true, render: (r) => r.lastOrderAt && new Date(r.lastOrderAt).toLocaleDateString() },
           ]}
@@ -127,7 +145,7 @@ export default function CustomersPage() {
           onRowClick={open}
         />
         <Pagination page={meta.page} pages={meta.pages} total={meta.total} onPage={setPage} />
-      </Card>
+      </div>
       {selected && (
         <CustomerDrawer
           customer={selected}
