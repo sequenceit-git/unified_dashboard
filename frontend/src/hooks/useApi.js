@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { api } from '../lib/api'
 
+/** True only while nothing has loaded yet: a refetch keeps showing the data it already has. */
+export function isFirstLoad(res) {
+  return Boolean(res?.loading) && res?.data == null
+}
+
 // GET helper with loading/error/refetch. Deps array re-triggers the fetch.
 export function useApi(path, deps = []) {
   const { token } = useAuth()

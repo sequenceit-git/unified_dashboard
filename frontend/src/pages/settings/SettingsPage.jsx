@@ -5,7 +5,7 @@ import { useAuth } from '../../auth/AuthContext'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { ErrorState, Spinner } from '../../components/ui/Feedback'
-import { useApi } from '../../hooks/useApi'
+import { isFirstLoad, useApi } from '../../hooks/useApi'
 import { useLiveEvents } from '../../hooks/useLiveEvents'
 import { useShopProfiles } from '../../hooks/useShopProfiles'
 import { api } from '../../lib/api'
@@ -155,7 +155,8 @@ export default function SettingsPage() {
     }
   }
 
-  if (shopsRes.loading || (isAdmin && configsRes.loading)) return <Spinner />
+  // Only the first load: a shop's sync refetches in the background without blanking the page.
+  if (isFirstLoad(shopsRes) || (isAdmin && isFirstLoad(configsRes))) return <Spinner />
   if (shopsRes.error) return <ErrorState message={shopsRes.error} onRetry={shopsRes.refetch} />
 
   return (
