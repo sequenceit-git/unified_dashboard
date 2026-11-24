@@ -15,7 +15,7 @@ class TemuClient {
   listingCapabilities = {
     canList: true,
     apiName: 'Temu Open API',
-    editAfterListing: ['quantity'],
+    editAfterListing: ['quantity', 'title', 'description', 'images', 'attributes'],
     note: 'New goods go to Temu for review before they are on sale. Stock changes are sent with bg.local.goods.stock.edit.',
   }
 

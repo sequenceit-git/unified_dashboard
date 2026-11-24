@@ -185,12 +185,6 @@
     "priority": "medium",
     "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
   },
-  "bg.local.goods.partial.update": {
-    "section": "goods",
-    "size": "large",
-    "priority": "high",
-    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
-  },
   "bg.local.goods.property.get": {
     "section": "goods",
     "size": "medium",
@@ -227,12 +221,6 @@
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
-  "temu.local.goods.attributes.edit": {
-    "section": "goods",
-    "size": "large",
-    "priority": "high",
-    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
-  },
   "temu.local.goods.baseprice.recommend": {
     "section": "price-reviews",
     "size": "small",
@@ -250,12 +238,6 @@
     "size": "medium",
     "priority": "medium",
     "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
-  "temu.local.goods.delete": {
-    "section": "goods",
-    "size": "large",
-    "priority": "high",
-    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
   },
   "temu.local.goods.image.v2.upload": {
     "section": "goods",

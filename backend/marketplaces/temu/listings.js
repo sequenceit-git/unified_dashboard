@@ -3,6 +3,7 @@ const { temuMoney } = require('./format')
 const { buildGoodsAdd } = require('./goodsPayload')
 const { mapTemplate } = require('./goodsTemplate')
 
+const filled = (v) => v !== undefined && v !== null && String(v).trim() !== ''
 const badRequest = (message, extra = {}) => Object.assign(new Error(message), { status: 400, ...extra })
 
 module.exports = {
@@ -97,16 +98,49 @@ module.exports = {
     return { success: true }
   },
 
+  /**
+   * Sends a dashboard edit to Temu: stock (stock.edit), title/photos/description (one partial
+   * update — Temu's recommended edit; photos are re-uploaded so goods use Temu's urls) and
+   * attributes (attributes.edit). Price changes still go through Temu's price review (Price reviews).
+   */
   async reviseListing(accessToken, externalListingId, changes) {
+    const goodsId = Number(String(externalListingId || '').split(':')[0])
     if (changes.quantity != null) await this.updateStock(accessToken, null, changes.quantity, { externalListingId })
-    // Temu price changes go through Seller Center price review; text and images are edited there too.
-    const skipped = ['price', 'title', 'description', 'images'].filter((key) => changes[key] != null && changes[key] !== '')
+    const basic = {}
+    if (filled(changes.title)) basic.goodsName = String(changes.title).trim()
+    if (Array.isArray(changes.images) && changes.images.length) {
+      const urls = []
+      for (const fileUrl of changes.images.slice(0, 49)) urls.push((await this.call('bg.local.goods.image.upload', { access_token: accessToken, fileUrl })).url)
+      basic.goodsGallery = { goodsCarouselImage: urls, detailImage: urls }
+    }
+    const partial = {
+      ...(Object.keys(basic).length ? { goodsBasic: basic } : {}),
+      ...(changes.description != null && changes.description !== '' ? { goodsDesc: String(changes.description) } : {}),
+    }
+    if (Object.keys(partial).length) {
+      if (!goodsId) throw new Error('Sync this Temu goods again so its id is saved, then edit it.')
+      await this.call('bg.local.goods.partial.update', { access_token: accessToken, goodsId, ...partial })
+    }
+    if (changes.attributes && typeof changes.attributes === 'object') {
+      // Plain name → value(s) only; structured dashboard data (objects) isn't a Temu attribute.
+      const attributes = Object.entries(changes.attributes)
+        .filter(([, value]) => value === null || typeof value !== 'object' || Array.isArray(value))
+        .map(([name, value]) => ({ name, value: (Array.isArray(value) ? value : [value]).map((v) => String(v ?? '').trim()).filter(Boolean) }))
+        .filter((a) => a.name && a.value.length)
+      if (attributes.length) await this.call('temu.local.goods.attributes.edit', { access_token: accessToken, goodsId, attributes })
+    }
+    const skipped = ['price'].filter((key) => changes[key] != null && changes[key] !== '')
     return { success: true, ...(skipped.length ? { skipped } : {}) }
   },
 
   async applyListingAction(accessToken, action, listing) {
     const goodsId = String(listing.externalListingId || '').split(':')[0]
     if (!goodsId) throw new Error('This product is not on Temu yet.')
+    if (action === 'delete') {
+      const res = await this.call('temu.local.goods.delete', { access_token: accessToken, goodsId: Number(goodsId) })
+      if (res?.success === false) throw new Error(res.errorMsg || 'Temu did not delete this goods.')
+      return { status: 'ended', marketplaceStatus: 'DELETED' }
+    }
     const onsale = action === 'publish' ? 1 : action === 'unpublish' ? 0 : null
     if (onsale == null) throw new Error(`Temu cannot ${action} a listing.`)
     const result = await this.call('bg.local.goods.sale.status.set', {

@@ -28,6 +28,7 @@ function changedListingFields(before, after) {
   if (Number(after.basePrice) !== Number(before.basePrice)) changes.price = after.basePrice
   if (Number(after.stock) !== Number(before.stock)) changes.quantity = after.stock
   if (JSON.stringify(after.images || []) !== JSON.stringify(before.images || [])) changes.images = after.images
+  if (after.attributes && JSON.stringify(after.attributes) !== JSON.stringify(before.attributes || {})) changes.attributes = after.attributes
   if (after.weight != null && Number(after.weight) !== Number(before.weight)) changes.weight = after.weight
   const bd = before.dimensions || {}
   const ad = after.dimensions || {}
@@ -219,6 +220,18 @@ async function remove(ctx) {
     const listings = access.mine
       ? await Listing.find({ _id: { $in: access.mine.map((row) => row._id) } })
       : await Listing.find({ productId: doc._id })
+    // Temu deletes the goods first; if Temu refuses (open orders, active promotion), nothing is removed here.
+    for (const listing of listings) {
+      if (!listing.externalListingId || listing.status === 'ended' || listing.marketplaceStatus === 'DELETED') continue
+      const shop = await Shop.findById(listing.shopId)
+      if (!shop || shop.status !== 'connected') continue
+      try {
+        await marketplaceManager.withShopToken(shop, (token) => require('../../service').applyListingAction(token, 'delete', listing))
+        listing.marketplaceStatus = 'DELETED'
+      } catch (err) {
+        throw new HttpError(422, { error: `Temu did not delete this goods, so it was kept here: ${err.message}` })
+      }
+    }
     for (const listing of listings) {
       await marketplaceManager.forgetListing(listing, [doc.sku])
       const shop = await Shop.findById(listing.shopId)
