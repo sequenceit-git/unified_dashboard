@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 31 | 0 | 102 | 0 | 26 | — |
+| Temu | 133 | 33 | 0 | 100 | 0 | 24 | — |
 
 ## eBay
 
@@ -1696,13 +1696,11 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | low | small | `bg.order.customization.get` | — | Query order customization information | Order customisation details and order verification uploads. |
 | — | low | small | `temu.local.order.verification.upload` | — | Merchants upload verification information before shipping. | Order customisation details and order verification uploads. |
 
-#### price-reviews (3)
+#### price-reviews (1)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `bg.local.goods.sku.list.price.query` | — | Batch query latest supplier price of SKUs. | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
 | — | high | small | `temu.local.goods.baseprice.recommend` | — | recommend base price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
-| — | high | small | `temu.local.goods.recommendedprice.query` | — | Batch query recommended price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
 
 #### promotions (5)
 
@@ -1798,10 +1796,12 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `bg.local.goods.priceorder.query` | Query price offer Info | Support merchants within the white list to query the price offer list. | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.publish.status.get` | Batch Query Product Publication Status | Batch Query Product Publication Status | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sale.status.set` | Modify The Listing Status Of Products | Support goods/SKU dimension for listing and delisting operations | `marketplaces/temu/listings.js` |
+| covered | Product | `bg.local.goods.sku.list.price.query` | Batch query latest supplier price of SKUs. | This is an API for batch querying the latest supply prices of SKUs for local-to-local goods. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.sku.list.query` | Get sku list | Get sku list, as well as get Variants | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Check if contribution ID for SKU is duplicate | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sku.out.sn.set` | Set contribution ID for SKU | Set contribution ID for SKU | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js` |
+| covered | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |
 | missing | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels |  |
 | missing | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu |  |
@@ -1823,7 +1823,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `bg.local.goods.property.relations.level.template` | Query dependency and level in relation-property database | Obtaining the hierarchical attribute value and hierarchical id of vehicle type library data. |  |
 | missing | Product | `bg.local.goods.property.relations.template` | Query property data in relation- property database | Query the full quantum attribute by the dependency id of the parent attribute value and the hierarchical id. |  |
 | missing | Product | `bg.local.goods.size.element.get` | Query Size Chart Element Information | Check size chart/image upload limits and requirements for this category. |  |
-| missing | Product | `bg.local.goods.sku.list.price.query` | Batch query latest supplier price of SKUs. | This is an API for batch querying the latest supply prices of SKUs for local-to-local goods. |  |
 | missing | Product | `bg.local.goods.spec.id.get` | Search And Generate Merchant-Customized Specifications | Search And Generate Merchant-Customized Specifications |  |
 | missing | Product | `bg.local.goods.tax.code.get` | Get ITC list | local-local goods B |  |
 | missing | Product | `bg.local.goods.template.get` | Query Product Attributes Template | query product attributes template |  |
@@ -1840,7 +1839,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `temu.local.goods.list.retrieve` | Product list Retrieve | local goods list search |  |
 | missing | Product | `temu.local.goods.missing.attributes.get` | temu.local.goods.missing.attributes.get | temu.local.goods.missing.attributes.get |  |
 | missing | Product | `temu.local.goods.pre.sale.status.edit` | Temu Pre-sale Bulk Enable/Disable API | This API allows batch enabling or disabling the pre-sale status for multiple SKUs belonging to a product item. |  |
-| missing | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. |  |
 | missing | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit |  |
 | missing | Product | `temu.local.goods.spec.info.get` | Query specification information | Used to query the specification value information in different languages corresponding to the platform's specification ID |  |
 | missing | Product | `temu.local.goods.v2.add` | Add New Items On Temu | Add New Items On Temu |  |
