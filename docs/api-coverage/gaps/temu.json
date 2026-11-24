@@ -113,12 +113,6 @@
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
-  "temu.local.goods.baseprice.recommend": {
-    "section": "price-reviews",
-    "size": "small",
-    "priority": "high",
-    "value": "Temu's recommended and current supplier price per SKU, to price competitively before a price review."
-  },
   "temu.local.goods.cats.rules.get": {
     "section": "goods",
     "size": "medium",
@@ -184,12 +178,6 @@
     "size": "medium",
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "temu.local.sku.list.retrieve": {
-    "section": "goods",
-    "size": "small",
-    "priority": "high",
-    "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
   },
   "bg.promotion.activity.goods.update": {
     "section": "promotions",

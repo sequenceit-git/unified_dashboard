@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 92 | 0 | 41 | 0 | 7 | — |
+| Temu | 133 | 94 | 0 | 39 | 0 | 5 | — |
 
 ## eBay
 
@@ -1566,12 +1566,11 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 |---|---|---|---|---|---|---|
 | — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
-#### goods (28)
+#### goods (27)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
 | — | high | small | `temu.local.goods.list.retrieve` | — | Product list Retrieve | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
-| — | high | small | `temu.local.sku.list.retrieve` | — | Get SKU list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
 | — | high | large | `bg.local.goods.update` | — | Update Goods Draft On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.v2.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.v3.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
@@ -1605,12 +1604,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 |---|---|---|---|---|---|---|
 | — | medium | small | `temu.order.cancel.appeal.apply` | — | Merchant initiates order cancellation application interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
 | — | medium | small | `temu.order.cancel.appeal.result.get` | — | Merchant initiates order cancellation result query interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
-
-#### price-reviews (1)
-
-| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
-|---|---|---|---|---|---|---|
-| — | high | small | `temu.local.goods.baseprice.recommend` | — | recommend base price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
 
 #### promotions (1)
 
@@ -1706,12 +1699,14 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `bg.local.goods.tax.code.get` | Get ITC list | local-local goods B | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.template.get` | Query Product Attributes Template | query product attributes template | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/listings.js` |
 | covered | Product | `temu.local.goods.attributes.edit` | temu.local.goods.attributes.edit | temu.local.goods.attributes.edit | `marketplaces/temu/listings.js` |
+| covered | Product | `temu.local.goods.baseprice.recommend` | recommend base price | recommend baseprice | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.brand.trademark.V2.get` | Query trademarks and properties | Query trademarks and properties | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.delete` | Product deletion | Product deletion | `marketplaces/temu/listings.js` |
 | covered | Product | `temu.local.goods.illegal.vocabulary.check` | check illeagl vocabulary | check illegal vocabulary | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |
+| covered | Product | `temu.local.sku.list.retrieve` | Get SKU list | local sku list search | `marketplaces/temu/sections/price-reviews.js` |
 | missing | Product | `bg.local.goods.category.check` | goods category precheck | precheck category misplacement |  |
 | missing | Product | `bg.local.goods.compliance.edit` | Edit product qualification information | Edit product qualification information |  |
 | missing | Product | `bg.local.goods.compliance.extra.template.get` | Inquire Required Compliance Information | Inquire Required Compliance Information |  |
@@ -1724,7 +1719,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `bg.local.goods.property.relations.template` | Query property data in relation- property database | Query the full quantum attribute by the dependency id of the parent attribute value and the hierarchical id. |  |
 | missing | Product | `bg.local.goods.update` | Update Goods Draft On Temu | Edit all properties (e.g. description, brand, images, attributes) of a product. |  |
 | missing | Product | `bg.local.goods.videocoverimage.get` | Get video cover | Used to obtain the cover image of the video screen |  |
-| missing | Product | `temu.local.goods.baseprice.recommend` | recommend base price | recommend baseprice |  |
 | missing | Product | `temu.local.goods.cats.rules.get` | Query the rules for posting products | Query the rules for posting products |  |
 | missing | Product | `temu.local.goods.compliance.v2.edit` | edit goods compliance interface v2 version | edit goods compliance interface v2 version |  |
 | missing | Product | `temu.local.goods.image.v2.upload` | Image material processing | Image material processing |  |
@@ -1736,7 +1730,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `temu.local.goods.v3.add` | Add New Items On Temu | Post products to temu and automatically populate the database based on the original product data provided. |  |
 | missing | Product | `temu.local.product.attributes.get` | Query Attribute Template | Query Attribute Template |  |
 | missing | Product | `temu.local.product.variation.get` | Query Mandatory And Optional Variations Of Products | Query Mandatory And Optional variations Of Products |  |
-| missing | Product | `temu.local.sku.list.retrieve` | Get SKU list | local sku list search |  |
 | covered | Promotions | `bg.promotion.activity.candidate.goods.query` | paged query for activity candidate products. | the local to local activity candidate goods | `marketplaces/temu/sections/promotions.js` |
 | covered | Promotions | `bg.promotion.activity.goods.enroll` | product Registration the activity | enroll products in the local to local activity | `marketplaces/temu/sections/promotions.js` |
 | covered | Promotions | `bg.promotion.activity.goods.operation.query` | querying the operation result of active goods. | query the result of operation in the local to local activity | `marketplaces/temu/sections/promotions.js` |

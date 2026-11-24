@@ -114,6 +114,33 @@ async function netUnits(ctx) {
   return (res.netContentUnitTypeDTOList || []).flatMap((t) => (t.netContentUnitDTOList || []).map((u) => ({ code: u.code, name: u.value, type: t.value })))
 }
 
+const oneDecimal = (v) => String(Number((Math.round(Number(v) * 10) / 10).toFixed(1)))
+
+/**
+ * POST helpers/price-suggestion { catId, shippingTemplateId, variants: [{ specIds, weight, length,
+ * width, height }] } — Temu's recommended base price per SKU of a goods being listed (US: lb, in).
+ */
+async function priceSuggestion(ctx) {
+  const b = ctx.body || {}
+  const variants = (Array.isArray(b.variants) ? b.variants : []).filter((v) => Array.isArray(v.specIds) && v.specIds.length)
+  if (!variants.length) throw new HttpError(400, { error: 'Choose the variant values first.' })
+  const res = await temuCall(ctx, 'temu.local.goods.baseprice.recommend', {
+    supplierPriceEstimateQry: {
+      goodsBasicInfo: { catId: intParam(b.catId, 'catId'), ...(b.shippingTemplateId ? { costTemplateId: String(b.shippingTemplateId) } : {}) },
+      supplierPriceEstimateSkuQryList: variants.map((v) => ({
+        specIdList: v.specIds.map(Number),
+        productDimensionsInfo: { weight: oneDecimal(v.weight), weightUnit: 'lb', length: oneDecimal(v.length), width: oneDecimal(v.width), height: oneDecimal(v.height), dimensionUnit: 'in' },
+      })),
+    },
+  })
+  const list = res.supplierPriceEstimateInfo?.skuEstimateInfoList || []
+  return variants.map((v) => {
+    const hit = list.find((e) => (e.specIdList || []).map(Number).sort().join(',') === v.specIds.map(Number).sort().join(','))
+    const p = hit?.recommendBasePriceInfo
+    return { specIds: v.specIds.map(Number), price: p?.amount != null ? { value: Number(p.amount), currency: p.currency || 'USD' } : null }
+  })
+}
+
 const FIELD = { goodsName: 'title', goodsDesc: 'description', bulletPoints: 'bulletPoints' }
 
 /** POST helpers/check — Temu's banned-word check and duplicate goods/SKU codes, per form field. */
@@ -140,4 +167,4 @@ async function check(ctx) {
   return { problems }
 }
 
-module.exports = { goodsShop, categories, recommend, template, spec, uploadImages, shippingTemplates, brands, taxCodes, netUnits, check }
+module.exports = { goodsShop, priceSuggestion, categories, recommend, template, spec, uploadImages, shippingTemplates, brands, taxCodes, netUnits, check }

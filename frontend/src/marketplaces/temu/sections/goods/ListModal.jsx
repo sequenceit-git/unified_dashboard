@@ -64,6 +64,26 @@ export default function ListModal({ product, onClose, onSaved }) {
     }
   }
 
+  /** Temu's recommended base price per SKU (needs category, variant values and each SKU's weight/size). */
+  const suggest = async () => {
+    setBusy('suggest')
+    setCheckNote('')
+    try {
+      const list = await api.post('/api/temu/goods/helpers/price-suggestion', {
+        catId: form.catId,
+        shippingTemplateId: form.shippingTemplateId || undefined,
+        variants: form.variants.map((v) => ({ specIds: v.specs.map((s) => s.specId), weight: v.weight, length: v.length, width: v.width, height: v.height })),
+      }, token)
+      const byKey = new Map(list.map((x) => [x.specIds.join(','), x.price]))
+      setForm((f) => ({ ...f, variants: f.variants.map((v) => { const p = byKey.get(v.specs.map((s) => s.specId).join(',')); return p ? { ...v, basePrice: String(p.value) } : v }) }))
+      setCheckNote(list.some((x) => x.price) ? "Temu's suggested prices are filled in; change them if you like." : 'Temu has no price suggestion for these SKUs.')
+    } catch (err) {
+      setCheckNote(err.message)
+    } finally {
+      setBusy('')
+    }
+  }
+
   const submit = async (e) => {
     e.preventDefault()
     const found = validate(form, template || {})
@@ -130,6 +150,7 @@ export default function ListModal({ product, onClose, onSaved }) {
           {checkNote && <p className="text-xs text-gray-700">{checkNote}</p>}
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
+            <Button variant="secondary" type="button" disabled={Boolean(busy) || !form.variants.length} onClick={suggest}>{busy === 'suggest' ? 'Asking Temu…' : 'Suggest prices'}</Button>
             <Button variant="secondary" type="button" disabled={Boolean(busy)} onClick={check}>{busy === 'check' ? 'Checking…' : 'Check with Temu'}</Button>
             <Button type="submit" disabled={Boolean(busy)}>{busy === 'list' ? 'Sending to Temu…' : 'List on Temu'}</Button>
           </div>

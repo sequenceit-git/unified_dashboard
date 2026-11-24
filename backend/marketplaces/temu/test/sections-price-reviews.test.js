@@ -80,3 +80,35 @@ test('SKUs on Temu but not in the dashboard are in the price guide', async () =>
     assert.deepEqual(rows.map((r) => [r.skuId, r.product]).sort(), [['1', 'Phone case'], ['3', '']])
   } finally { restore() }
 })
+
+test('the price guide reads SKUs with the newer SKU list when granted, the old one otherwise', async () => {
+  const run = async (grantedScopes) => {
+    const calls = []
+    const restore = stubModules({
+      '/models/Listing': modelStub(() => [{ externalListingId: '77:1', productId: 'p1' }]),
+      '/models/Product': modelStub(() => [{ _id: 'p1', title: 'Phone case' }]),
+      '../service': {
+        call: async (type, body) => {
+          calls.push(type)
+          if (type === 'temu.local.sku.list.retrieve') return body.pageToken ? { skuList: [{ goodsId: '77', skuId: '3' }], pagination: {} } : { skuList: [{ goodsId: '77', skuId: '1' }], pagination: { nextToken: 'n2' } }
+          if (type === 'bg.local.goods.sku.list.query') return { skuList: [{ goodsId: 77, skuId: 1 }] }
+          if (type === 'bg.local.goods.sku.list.price.query') return { openapiGoodsSupplierPriceDTOList: body.querySupplierPriceBaseList.map((g) => ({ goodsId: g.goodsId, openapiSkuSupplierPriceDTOList: g.skuIdList.map((id) => ({ skuId: id, supplierPrice: USD(10) })) })) }
+          if (type === 'temu.local.goods.recommendedprice.query') return { goodsList: [] }
+          if (type === 'bg.local.goods.priceorder.query') return { list: [] }
+          if (type === 'bg.local.goods.list.query') return { goodsList: [] }
+          throw new Error(`unexpected ${type}`)
+        },
+      },
+    })
+    try {
+      const prices = freshRequire('marketplaces/temu/sections/price-reviews.js')
+      const rows = (await prices('tok', { _id: 's1', grantedScopes })).tables[0].rows
+      return { calls, skus: rows.map((r) => r.skuId).sort() }
+    } finally { restore() }
+  }
+  const granted = await run(undefined)
+  assert.ok(granted.calls.includes('temu.local.sku.list.retrieve') && !granted.calls.includes('bg.local.goods.sku.list.query'))
+  assert.deepEqual(granted.skus, ['1', '3'])
+  const old = await run(['bg.local.goods.sku.list.query', 'bg.local.goods.sku.list.price.query', 'temu.local.goods.recommendedprice.query', 'bg.local.goods.priceorder.query', 'bg.local.goods.list.query'])
+  assert.ok(!old.calls.includes('temu.local.sku.list.retrieve') && old.calls.includes('bg.local.goods.sku.list.query'))
+})

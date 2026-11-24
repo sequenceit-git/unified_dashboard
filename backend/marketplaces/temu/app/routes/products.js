@@ -148,6 +148,15 @@ function productsRoutes(shopKey) {
     }
   })
 
+  router.post('/helpers/price-suggestion', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.priceSuggestion(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   router.post('/helpers/check', async (req, res) => {
     try {
       res.json(await goodsHelpers.check(ctxOf(req)))

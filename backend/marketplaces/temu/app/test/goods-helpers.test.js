@@ -123,3 +123,19 @@ test('a sub-admin without Goods gets 403 and a method the app is not granted say
     assert.equal(calls.length, 0)
   } finally { restore() }
 })
+
+test("Temu's suggested base price per SKU for the new goods", async () => {
+  const { helpers, restore, calls } = load({ replies: { 'temu.local.goods.baseprice.recommend': { supplierPriceEstimateInfo: { skuEstimateInfoList: [{ specIdList: [9001], recommendBasePriceInfo: { amount: '8.40', currency: 'USD' } }, { specIdList: [9002] }] } } } })
+  try {
+    const res = await helpers.priceSuggestion(ctx({}, { catId: 29069, shippingTemplateId: 'T1', variants: [{ specIds: [9001], weight: '0.44', length: '10', width: '8', height: '1' }, { specIds: [9002], weight: '1', length: '10', width: '8', height: '1' }] }))
+    assert.deepEqual(calls[0][1], { access_token: 'tok', supplierPriceEstimateQry: {
+      goodsBasicInfo: { catId: 29069, costTemplateId: 'T1' },
+      supplierPriceEstimateSkuQryList: [
+        { specIdList: [9001], productDimensionsInfo: { weight: '0.4', weightUnit: 'lb', length: '10', width: '8', height: '1', dimensionUnit: 'in' } },
+        { specIdList: [9002], productDimensionsInfo: { weight: '1', weightUnit: 'lb', length: '10', width: '8', height: '1', dimensionUnit: 'in' } },
+      ],
+    } })
+    assert.deepEqual(res, [{ specIds: [9001], price: { value: 8.4, currency: 'USD' } }, { specIds: [9002], price: null }])
+    await assert.rejects(helpers.priceSuggestion(ctx({}, { catId: 1, variants: [] })), (e) => e.status === 400)
+  } finally { restore() }
+})

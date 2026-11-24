@@ -155,6 +155,7 @@
       "GET /goods/helpers/brands",
       "GET /goods/helpers/tax-codes",
       "GET /goods/helpers/net-units",
+      "POST /goods/helpers/price-suggestion",
       "POST /goods/helpers/check",
       "GET /goods/:goodsId/temu-detail",
       "POST /goods/:goodsId/sku-codes",

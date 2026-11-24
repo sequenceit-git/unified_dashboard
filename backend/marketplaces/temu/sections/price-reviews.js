@@ -11,18 +11,43 @@ const { temuAmount, temuGoodsRows, grantAware } = require('./helpers')
 const GOODS_PER_CALL = 20
 
 /** Current and recommended price for every SKU the shop lists on Temu ("<goodsId>:<skuId>"). */
+/**
+ * Every SKU Temu has for the shop (up to 20 pages of 100): Temu's newer SKU list
+ * (temu.local.sku.list.retrieve, token paging) when the app has it, else the older one.
+ */
+async function allTemuSkus(token, shop) {
+  const granted = Array.isArray(shop?.grantedScopes) && shop.grantedScopes.length ? shop.grantedScopes : null
+  if (!granted || granted.includes('temu.local.sku.list.retrieve')) {
+    try {
+      const all = []
+      let pageToken = ''
+      for (let page = 0; page < 20; page += 1) {
+        const res = await temu.call('temu.local.sku.list.retrieve', { access_token: token, pageSize: 100, ...(pageToken ? { pageToken } : {}) })
+        all.push(...(res.skuList || []))
+        pageToken = res.pagination?.nextToken || ''
+        if (!pageToken || !(res.skuList || []).length) break
+      }
+      return all
+    } catch {
+      // Not available for this app or site: the older list below.
+    }
+  }
+  const all = []
+  for (let pageNo = 1; pageNo <= 20; pageNo += 1) {
+    const res = await temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo, pageSize: 100, skuSearchType: 'ALL' })
+    all.push(...(res.skuList || []))
+    if (!(res.skuList || []).length || all.length >= (res.total ?? all.length)) break
+  }
+  return all
+}
+
 async function priceGuide(token, shop) {
   const listings = (await Listing.find({ shopId: shop?._id, marketplace: 'temu', externalListingId: /^\d+:\d+$/ }).select('externalListingId productId').lean())
     .map((l) => { const [goodsId, skuId] = String(l.externalListingId).split(':'); return { goodsId, skuId, productId: String(l.productId) } })
   const titles = new Map((await Product.find({ _id: { $in: [...new Set(listings.map((l) => l.productId))] } }).select('title').lean()).map((p) => [String(p._id), p.title]))
   const listingBySku = new Map(listings.map((l) => [l.skuId, l]))
   // Every SKU Temu has for the shop (Seller Center additions too), not only the dashboard's listings.
-  const temuSkus = []
-  for (let pageNo = 1; pageNo <= 20; pageNo += 1) {
-    const res = await temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo, pageSize: 100, skuSearchType: 'ALL' })
-    temuSkus.push(...(res.skuList || []))
-    if (!(res.skuList || []).length || temuSkus.length >= (res.total ?? temuSkus.length)) break
-  }
+  const temuSkus = await allTemuSkus(token, shop)
   const skus = (temuSkus.length ? temuSkus.map((s) => ({ goodsId: String(s.goodsId), skuId: String(s.skuId) })) : listings)
     .map((s) => ({ ...s, productId: listingBySku.get(s.skuId)?.productId }))
   const goods = new Map()
