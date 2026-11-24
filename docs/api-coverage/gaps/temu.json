@@ -29,12 +29,6 @@
     "priority": "medium",
     "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
   },
-  "temu.searchrec.ad.reports.goods.query": {
-    "section": "ads",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-product ad report: spend, impressions, clicks, orders and ROAS for each advertised item."
-  },
   "temu.searchrec.ad.roas.pred": {
     "section": "ads",
     "size": "medium",

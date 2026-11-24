@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 35 | 0 | 98 | 0 | 22 | — |
+| Temu | 133 | 36 | 0 | 97 | 0 | 21 | — |
 
 ## eBay
 
@@ -1605,11 +1605,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 
 ### Temu — gaps by section
 
-#### ads (7)
+#### ads (6)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `temu.searchrec.ad.reports.goods.query` | — | Advertisement goods data report (goods dimension) interface | Per-product ad report: spend, impressions, clicks, orders and ROAS for each advertised item. |
 | — | medium | medium | `temu.searchrec.ad.create` | — | Advertisement creation interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
 | — | medium | medium | `temu.searchrec.ad.detail.query` | — | Advertising campaign details query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
 | — | medium | medium | `temu.searchrec.ad.goods.create.query` | — | Advertising goods can create query interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
@@ -1754,13 +1753,13 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 
 | Status | Group | Endpoint | Name | Summary | Called from |
 |---|---|---|---|---|---|
+| covered | Ads | `temu.searchrec.ad.reports.goods.query` | Advertisement goods data report (goods dimension) interface | Advertisement goods data report (goods dimension) | `marketplaces/temu/sections/ads.js` |
 | covered | Ads | `temu.searchrec.ad.reports.mall.query` | Advertisement overall data report (mall dimension) interface | Advertisement overall data report (mall dimension) | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/helpers.js` |
 | missing | Ads | `temu.searchrec.ad.create` | Advertisement creation interface | Advertisement creation |  |
 | missing | Ads | `temu.searchrec.ad.detail.query` | Advertising campaign details query interface | Advertising campaign details query |  |
 | missing | Ads | `temu.searchrec.ad.goods.create.query` | Advertising goods can create query interface | Advertising goods can create query |  |
 | missing | Ads | `temu.searchrec.ad.log.query` | Advertisement log query interface | Advertisement log query |  |
 | missing | Ads | `temu.searchrec.ad.modify` | Advertisement modify interface | Advertisement modify |  |
-| missing | Ads | `temu.searchrec.ad.reports.goods.query` | Advertisement goods data report (goods dimension) interface | Advertisement goods data report (goods dimension) |  |
 | missing | Ads | `temu.searchrec.ad.roas.pred` | Advertising roas prediction interface | Advertising roas prediction |  |
 | covered | Authorization | `bg.open.accesstoken.create` | Get Access Token | Temu's authorization callback interface allows developers to receive notifications when a user has successfully authorized their application. When after the user grants permission, Temu will redirect back to the develope | `marketplaces/temu/client.js` |
 | covered | Authorization | `bg.open.accesstoken.info.get` | Get Accesstoken Detail Information | This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints. | `marketplaces/temu/app/services/sections.js`, `marketplaces/temu/client.js` |

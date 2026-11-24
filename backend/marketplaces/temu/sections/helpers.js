@@ -72,18 +72,17 @@ const adMoney = (field) => {
 }
 
 /** The ads report's timestamp unit isn't documented: try milliseconds, then seconds. */
-async function temuAdReport(token, days) {
+async function temuAdReport(token, days, period = {}) {
   const end = Date.now()
   const start = end - days * 24 * 3600 * 1000
+  // `period` gets the startTs/endTs that worked, so other ad reports can use the same unit.
   try {
+    Object.assign(period, { startTs: start, endTs: end })
     return await temu.call('temu.searchrec.ad.reports.mall.query', { access_token: token, startTs: start, endTs: end })
   } catch (err) {
     if (String(err.code) !== '230012000') throw err
-    return temu.call('temu.searchrec.ad.reports.mall.query', {
-      access_token: token,
-      startTs: Math.floor(start / 1000),
-      endTs: Math.floor(end / 1000),
-    })
+    Object.assign(period, { startTs: Math.floor(start / 1000), endTs: Math.floor(end / 1000) })
+    return temu.call('temu.searchrec.ad.reports.mall.query', { access_token: token, ...period })
   }
 }
 
