@@ -122,8 +122,12 @@ module.exports = {
       await this.call('bg.local.goods.partial.update', { access_token: accessToken, goodsId, ...partial })
     }
     if (changes.attributes && typeof changes.attributes === 'object') {
-      // Plain name → value(s) only; structured dashboard data (objects) isn't a Temu attribute.
+      // Only attributes Temu's goods already has (never the dashboard's own data, such as research
+      // scores, costs or source links), and only plain name → value(s).
+      const known = new Set(((await this.call('bg.local.goods.detail.query', { access_token: accessToken, goodsId })).goodsProperties || [])
+        .map((p) => String(p.name || p.propName || '').trim().toLowerCase()).filter(Boolean))
       const attributes = Object.entries(changes.attributes)
+        .filter(([name]) => known.has(String(name).trim().toLowerCase()))
         .filter(([, value]) => value === null || typeof value !== 'object' || Array.isArray(value))
         .map(([name, value]) => ({ name, value: (Array.isArray(value) ? value : [value]).map((v) => String(v ?? '').trim()).filter(Boolean) }))
         .filter((a) => a.name && a.value.length)

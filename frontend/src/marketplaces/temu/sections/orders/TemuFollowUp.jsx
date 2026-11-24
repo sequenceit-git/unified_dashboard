@@ -4,6 +4,7 @@ import { useAuth } from '../../../../auth/AuthContext'
 import { useApi } from '../../../../hooks/useApi'
 import { api } from '../../../../lib/api'
 import Button from '../../../../components/ui/Button'
+import { openLabel } from './openLabel'
 
 /** Serial number / IMEI Temu asks for on some items before shipping. */
 function Verification({ orderId, items }) {
@@ -37,6 +38,8 @@ function Verification({ orderId, items }) {
 }
 
 export default function TemuFollowUp({ orderId }) {
+  const { token } = useAuth()
+  const [labelError, setLabelError] = useState('')
   const { data, loading, error } = useApi(orderId ? `/api/temu/orders/${orderId}/temu-follow-up` : null)
   if (loading && !data) return <p className="text-xs text-gray-500">Loading tracking…</p>
   if (error) return <p className="text-xs text-rose-600">{error}</p>
@@ -45,9 +48,12 @@ export default function TemuFollowUp({ orderId }) {
     <div className="space-y-3 text-sm">
       <div>
         <h3 className="font-semibold text-gray-900 dark:text-slate-100">Tracking on Temu</h3>
+        {labelError && <p className="text-xs text-rose-600">{labelError}</p>}
         {data.packages.length ? data.packages.map((p) => (
           <div key={p.packageSn} className="mt-1">
-            <p className="text-xs text-gray-600">{p.carrier} {p.trackingNumber} · package {p.packageSn}</p>
+            <p className="flex items-center gap-2 text-xs text-gray-600">{p.carrier} {p.trackingNumber} · package {p.packageSn}
+              <Button size="sm" type="button" variant="secondary" onClick={() => { setLabelError(''); openLabel(orderId, p.packageSn, token).catch((err) => setLabelError(err.message)) }}>Open label</Button>
+            </p>
             <ul className="ml-2 border-l pl-2 text-xs">
               {p.events.length ? p.events.map((e, i) => <li key={i}>{e.time ? `${new Date(e.time).toLocaleString()} · ` : ''}{e.status}</li>) : <li className="text-gray-500">No tracking events yet.</li>}
             </ul>

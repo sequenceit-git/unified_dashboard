@@ -1,13 +1,15 @@
 /** Temu's attributes for the chosen category: lists for fixed values (several when allowed), text with a unit otherwise. */
 import { Input, Select } from '../../../../../components/ui/Input'
-import { visibleAttributes } from './temuForm'
+import { allowedValues, visibleAttributes } from './temuForm'
 
 export default function TemplateFields({ template, form, setAttr, errors = {} }) {
   const shown = visibleAttributes(template, form)
   if (!shown.length) return null
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {shown.map((a) => {
+      {shown.map((attr) => {
+        // A child attribute offers only the values its parent's choice allows.
+        const a = { ...attr, values: allowedValues(attr, template, form) }
         const v = form.attributes[a.templatePid] || {}
         const err = errors[`attributes.${a.templatePid}`]
         const label = `${a.name}${a.required ? ' *' : ''}`

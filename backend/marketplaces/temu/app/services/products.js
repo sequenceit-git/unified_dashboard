@@ -220,14 +220,28 @@ async function remove(ctx) {
     const listings = access.mine
       ? await Listing.find({ _id: { $in: access.mine.map((row) => row._id) } })
       : await Listing.find({ productId: doc._id })
-    // Temu deletes the goods first; if Temu refuses (open orders, active promotion), nothing is removed here.
+    // A Temu goods holds every SKU: if another dashboard product lists a SKU of the same goods,
+    // deleting this one product would remove theirs on Temu too, so it is refused.
+    const goodsIds = [...new Set(listings.map((l) => String(l.externalListingId || '').split(':')[0]).filter((g) => /^\d+$/.test(g)))]
+    for (const goodsId of goodsIds) {
+      const others = (await Listing.find({ marketplace: 'temu', externalListingId: new RegExp(`^${goodsId}(:|$)`) }) || [])
+        .filter((l) => String(l.productId) !== String(doc._id))
+      if (others.length) {
+        throw new HttpError(409, { error: `Temu goods ${goodsId} also holds SKUs of ${others.length} other products here. Delete those products too, or delete the goods in Temu Seller Center.` })
+      }
+    }
+    // Temu deletes the goods first (once per goods); if Temu refuses (open orders, active promotion), nothing is removed here.
+    const done = new Set()
     for (const listing of listings) {
+      const goodsId = String(listing.externalListingId || '').split(':')[0]
+      if (done.has(goodsId)) { listing.marketplaceStatus = 'DELETED'; continue }
       if (!listing.externalListingId || listing.status === 'ended' || listing.marketplaceStatus === 'DELETED') continue
       const shop = await Shop.findById(listing.shopId)
       if (!shop || shop.status !== 'connected') continue
       try {
         await marketplaceManager.withShopToken(shop, (token) => require('../../service').applyListingAction(token, 'delete', listing))
         listing.marketplaceStatus = 'DELETED'
+        done.add(goodsId)
       } catch (err) {
         throw new HttpError(422, { error: `Temu did not delete this goods, so it was kept here: ${err.message}` })
       }

@@ -89,3 +89,44 @@ test('a Temu file field gives name, type, size and a data URL', async () => {
   class Reader { readAsDataURL(f) { this.result = `data:${f.type};base64,JVBERg==`; this.onload() } }
   assert.deepEqual(await readFileValue({ name: 'label.pdf', type: 'application/pdf', size: 4 }, Reader), { name: 'label.pdf', type: 'application/pdf', size: 4, dataUrl: 'data:application/pdf;base64,JVBERg==' })
 })
+
+const POWER_TEMPLATE = { attributes: [
+  { templatePid: 891917, refPid: 1561, name: 'Power Supply', required: true, values: [{ vid: 36627, value: 'Use Without Electricity' }, { vid: 36789, value: 'Battery Powered (with Plug)' }], units: [], parent: null },
+  { templatePid: 900001, refPid: 1600, name: 'Operating Voltage', required: true, values: [{ vid: 501, value: '110V' }, { vid: 502, value: '220V' }, { vid: 503, value: '12V' }], units: [], parent: { templatePid: 891917, vids: [36789], allowed: [{ parentVids: [36789], vids: [501, 502] }] } },
+], variants: [] }
+
+test('a child attribute linked by its parent templatePid shows only with the triggering value, with the values it allows', async () => {
+  const { visibleAttributes, allowedValues } = await load('/src/marketplaces/temu/sections/goods/listing/temuForm.js')
+  assert.deepEqual(visibleAttributes(POWER_TEMPLATE, { attributes: { 891917: { vids: [36627] } } }).map((a) => a.templatePid), [891917])
+  const form = { attributes: { 891917: { vids: [36789] } } }
+  assert.deepEqual(visibleAttributes(POWER_TEMPLATE, form).map((a) => a.templatePid), [891917, 900001])
+  assert.deepEqual(allowedValues(POWER_TEMPLATE.attributes[1], POWER_TEMPLATE, form).map((v) => v.value), ['110V', '220V'])
+})
+
+test('typed SKU values survive adding a value to an earlier variant type', async () => {
+  const { skusFor } = await load('/src/marketplaces/temu/sections/goods/listing/temuForm.js')
+  const red = { parentSpecId: 1, specId: 11, value: 'Red' }
+  const blue = { parentSpecId: 1, specId: 12, value: 'Blue' }
+  const s = { parentSpecId: 2, specId: 21, value: 'S' }
+  const first = skusFor([[red], [s]], [], { defaults: {} })
+  first[0].basePrice = '12'
+  // The toggled type now comes last: the same SKU must keep its price.
+  const again = skusFor([[s], [red, blue]], first, { defaults: {} })
+  assert.equal(again.find((x) => x.specs.some((y) => y.specId === 11)).basePrice, '12')
+})
+
+test("Temu's refusal on a field the form doesn't show still appears", async () => {
+  const { problemsByField } = await load('/src/marketplaces/temu/sections/goods/listing/temuForm.js')
+  const out = problemsByField({ error: 'Temu does not accept these attributes for this category.', problems: [{ field: 'attributes', message: 'Temu does not accept these attributes for this category.' }, { field: 'title', message: 'Enter a title.' }, { field: 'handlingDays', message: 'Handling time is a whole number of days.' }] })
+  assert.equal(out.title, 'Enter a title.')
+  assert.match(out._, /does not accept these attributes/)
+  assert.match(out._, /Handling time/)
+})
+
+test('a label still being bought offers Check again, never Buy', async () => {
+  const { labelButtons } = await load('/src/marketplaces/temu/sections/orders/labelState.js')
+  assert.deepEqual(labelButtons(null), { buy: true, retry: false, check: false, open: false })
+  assert.deepEqual(labelButtons({ status: 'pending', packageSn: 'PK1' }), { buy: false, retry: false, check: true, open: false })
+  assert.deepEqual(labelButtons({ status: 'failed', packageSn: 'PK1' }), { buy: false, retry: true, check: false, open: false })
+  assert.deepEqual(labelButtons({ status: 'bought', packageSn: 'PK1' }), { buy: false, retry: false, check: false, open: true })
+})

@@ -7,8 +7,9 @@ import { useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
 import { api, queryString } from '../../../../lib/api'
 import Button from '../../../../components/ui/Button'
+import { labelButtons } from './labelState'
+import { openLabel as fetchLabel } from './openLabel'
 
-const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 const money = (a) => (a ? new Intl.NumberFormat(undefined, { style: 'currency', currency: a.currency || 'USD' }).format(a.value) : '—')
 
 export default function TemuLabel({ orderId }) {
@@ -21,6 +22,7 @@ export default function TemuLabel({ orderId }) {
   const [window_, setWindow] = useState({ start: '', end: '' })
   const ready = ['weight', 'length', 'width', 'height'].every((k) => Number(pkg[k]) > 0)
   const say = (text, error = false) => setNote({ text, error })
+  const can = labelButtons(result)
 
   const quote = async () => {
     setBusy('quote')
@@ -39,8 +41,23 @@ export default function TemuLabel({ orderId }) {
     setBusy(`buy-${s.channelId}`)
     say('')
     try {
-      const path = result?.status === 'failed' ? 'label-retry' : 'buy-label'
-      const res = await api.post(`/api/temu/orders/${orderId}/${path}`, { channelId: s.channelId, shipCompanyId: s.shipCompanyId, service: s.service, ...pkg, ...(result?.status === 'failed' ? { packageSn: result.packageSn } : {}) }, token)
+      if (!can.buy && !can.retry) return
+      const path = can.retry ? 'label-retry' : 'buy-label'
+      const res = await api.post(`/api/temu/orders/${orderId}/${path}`, { channelId: s.channelId, shipCompanyId: s.shipCompanyId, service: s.service, ...pkg, ...(can.retry ? { packageSn: result.packageSn } : {}) }, token)
+      setResult(res)
+      say(res.message || '', res.status === 'failed')
+    } catch (err) {
+      say(err.message, true)
+    } finally {
+      setBusy('')
+    }
+  }
+  /** Asks Temu again for a label still being bought (never buys a second one). */
+  const checkAgain = async () => {
+    setBusy('check')
+    say('')
+    try {
+      const res = await api.get(`/api/temu/orders/${orderId}/label-result${queryString({ packageSn: result.packageSn })}`, token)
       setResult(res)
       say(res.message || '', res.status === 'failed')
     } catch (err) {
@@ -53,11 +70,7 @@ export default function TemuLabel({ orderId }) {
     setBusy('label')
     say('')
     try {
-      const res = await fetch(`${BASE}/api/temu/orders/${orderId}/label${queryString({ packageSn: result.packageSn })}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Label not available (${res.status})`)
-      const url = URL.createObjectURL(await res.blob())
-      window.open(url, '_blank', 'noopener')
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
+      await fetchLabel(orderId, result.packageSn, token)
     } catch (err) {
       say(err.message, true)
     } finally {
@@ -90,19 +103,20 @@ export default function TemuLabel({ orderId }) {
         {field('weight', 'Weight (lb)')}{field('length', 'Length (in)')}{field('width', 'Width (in)')}{field('height', 'Height (in)')}
         <Button size="sm" type="button" variant="secondary" disabled={!ready || Boolean(busy)} onClick={quote}>{busy === 'quote' ? 'Asking Temu…' : 'See services'}</Button>
       </div>
-      {services?.services?.length > 0 && result?.status !== 'bought' && (
+      {can.check && <Button size="sm" type="button" variant="secondary" disabled={Boolean(busy)} onClick={checkAgain}>{busy === 'check' ? 'Asking Temu…' : 'Check again'}</Button>}
+      {services?.services?.length > 0 && (can.buy || can.retry) && (
         <ul className="space-y-1">
           {services.services.map((s) => (
             <li key={s.channelId} className="flex items-center justify-between gap-2 rounded border px-2 py-1">
               <span>{s.carrier} {s.service} <span className="text-xs text-gray-500">{s.estimate}</span></span>
-              <span className="flex items-center gap-2">{money(s.price)}<Button size="sm" type="button" disabled={Boolean(busy)} onClick={() => buy(s)}>{busy === `buy-${s.channelId}` ? 'Buying…' : result?.status === 'failed' ? 'Buy again' : 'Buy'}</Button></span>
+              <span className="flex items-center gap-2">{money(s.price)}<Button size="sm" type="button" disabled={Boolean(busy)} onClick={() => buy(s)}>{busy === `buy-${s.channelId}` ? 'Buying…' : can.retry ? 'Buy again' : 'Buy'}</Button></span>
             </li>
           ))}
         </ul>
       )}
       {services?.unavailable?.length > 0 && <p className="text-xs text-gray-500">Not available: {services.unavailable.map((u) => `${u.carrier} (${u.reason})`).join(', ')}</p>}
       {note.text && <p className={`text-xs ${note.error ? 'text-rose-600' : 'text-emerald-700'}`}>{note.text}</p>}
-      {result?.status === 'bought' && (
+      {can.open && (
         <div className="space-y-2">
           <Button size="sm" type="button" disabled={busy === 'label'} onClick={openLabel}>{busy === 'label' ? 'Opening…' : 'Open label'}</Button>
           <div className="flex flex-wrap items-end gap-2 text-xs">

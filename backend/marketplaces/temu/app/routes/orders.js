@@ -44,7 +44,7 @@ function ordersRoutes(shopKey) {
 
   // Temu buy-shipping (services/labels.js): services, buy, retry, own carrier, pickups; the label file itself.
   const labels = require('../services/labels')
-  for (const [method, path, fn] of [['get', '/:id/label-services', 'services'], ['post', '/:id/buy-label', 'buy'], ['post', '/:id/label-retry', 'retry'], ['post', '/:id/own-carrier', 'ownCarrier'], ['post', '/:id/pickup', 'pickup'], ['get', '/:id/pickup', 'pickupStatus'], ['post', '/:id/pickup-cancel', 'cancelPickup']]) {
+  for (const [method, path, fn] of [['get', '/:id/label-services', 'services'], ['post', '/:id/buy-label', 'buy'], ['get', '/:id/label-result', 'check'], ['post', '/:id/label-retry', 'retry'], ['post', '/:id/own-carrier', 'ownCarrier'], ['post', '/:id/pickup', 'pickup'], ['get', '/:id/pickup', 'pickupStatus'], ['post', '/:id/pickup-cancel', 'cancelPickup']]) {
     router[method](path, async (req, res) => {
       try {
         res.json(await labels[fn](ctxOf(req)))

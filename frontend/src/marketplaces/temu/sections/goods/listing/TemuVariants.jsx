@@ -18,7 +18,11 @@ export default function TemuVariants({ token, catId, template, form, setGroups, 
   const toggle = (type, val) => {
     const now = chosen(type.parentSpecId)
     const next = now.some((x) => x.specId === val.specId) ? now.filter((x) => x.specId !== val.specId) : [...now, val]
-    setGroups([...form.variantGroups.filter((g) => g.parentSpecId !== type.parentSpecId), { parentSpecId: type.parentSpecId, values: next }].filter((g) => g.values.length))
+    // Groups stay in the template's order, so SKU rows keep what was typed for them.
+    const order = types.map((t) => t.parentSpecId)
+    setGroups([...form.variantGroups.filter((g) => g.parentSpecId !== type.parentSpecId), { parentSpecId: type.parentSpecId, values: next }]
+      .filter((g) => g.values.length)
+      .sort((a, b) => order.indexOf(a.parentSpecId) - order.indexOf(b.parentSpecId)))
   }
   const addCustom = async (type) => {
     const name = String(custom[type.parentSpecId] || '').trim()

@@ -159,3 +159,29 @@ test('the Shipping page lists bought labels of the last 30 days and Temu US carr
     assert.equal(calls.find(([t]) => t === 'temu.logistics.shiplogisticstype.get')[1].regionId, 211)
   } finally { restore() }
 })
+
+test('a label still being bought can be checked again without buying twice', async () => {
+  const { labels, restore, calls } = load({ 'bg.order.detail.v2.get': DETAIL, 'bg.logistics.shipment.result.get': { packageInfoResultList: [{ packageSn: 'PK1', shippingLabelStatus: 1, trackingNumber: '9400' }] } })
+  try {
+    const res = await labels.check(admin({ id: 'o1' }, {}, { packageSn: 'PK1' }))
+    assert.deepEqual([res.status, res.trackingNumber], ['bought', '9400'])
+    assert.ok(!calls.some(([t]) => t === 'bg.logistics.shipment.create'))
+  } finally { restore() }
+})
+
+test('the Labels table reads every page', async () => {
+  const restore = stubModules({
+    '../service': {
+      call: async (type, body) => {
+        if (type === 'temu.logistics.label.list.get') return { totalItemNum: 150, shippingLabelInfoList: Array.from({ length: body.pageNumber === 1 ? 100 : 50 }, (_, i) => ({ packageSn: `PK${body.pageNumber}-${i}`, shippingLabelStatus: 1 })) }
+        if (type === 'temu.logistics.shiplogisticstype.get') return { shipLogisticsTypeInfoDTOList: [] }
+        return { pageItems: [], warehouseList: [], templateList: [] }
+      },
+    },
+  })
+  try {
+    const shipping = freshRequire('marketplaces/temu/sections/shipping.js')
+    const { tables } = await shipping('tok', {}, { now: new Date('2026-11-24T00:00:00Z') })
+    assert.equal(tables.find((t) => t.id === 'labels').rows.length, 150)
+  } finally { restore() }
+})

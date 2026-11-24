@@ -4,9 +4,27 @@
  * units, and the parent attribute/values that make a child attribute apply (showCondition).
  */
 
+/**
+ * The parent that makes a child attribute apply (20-parent-child-attribute-guide.md): with the
+ * parent's controlType 0 it's `showCondition` (by refPid); with 1, 3 or 16 it's `parentTemplatePid`
+ * + `templatePropertyValueParentList`, which also says which child values each parent value allows.
+ */
+function parentOf(p) {
+  const condition = (p.showCondition || [])[0]
+  if (condition) return { refPid: condition.parentRefPid, vids: condition.parentVids || [] }
+  const list = p.templatePropertyValueParentList || []
+  if (Number(p.parentTemplatePid) > 0 && list.length) {
+    return {
+      templatePid: p.parentTemplatePid,
+      vids: [...new Set(list.flatMap((x) => x.parentVids || []))],
+      allowed: list.map((x) => ({ parentVids: x.parentVids || [], vids: x.vids || [] })),
+    }
+  }
+  return null
+}
+
 /** One template property. */
 function field(p) {
-  const condition = (p.showCondition || [])[0]
   return {
     pid: p.pid,
     refPid: p.refPid,
@@ -16,7 +34,7 @@ function field(p) {
     multiple: Number(p.chooseMaxNum) > 1,
     values: (p.values || []).map((v) => ({ vid: v.vid, value: v.value, ...(v.specId != null ? { specId: v.specId } : {}) })),
     units: (p.valueUnitList || []).map((u) => ({ id: u.valueUnitId, name: u.valueUnit })),
-    parent: condition ? { refPid: condition.parentRefPid, vids: condition.parentVids || [] } : null,
+    parent: parentOf(p),
     ...(p.parentSpecId != null ? { parentSpecId: p.parentSpecId } : {}),
   }
 }

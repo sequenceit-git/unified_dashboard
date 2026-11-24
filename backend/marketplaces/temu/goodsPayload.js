@@ -29,13 +29,23 @@ const within = (v, r) => filled(v) && Number(oneDecimal(v)) >= r.min && Number(o
 const money = (v) => ({ amount: Number(v).toFixed(2), currency: CURRENCY })
 const filled = (v) => v !== undefined && v !== null && String(v).trim() !== ''
 
+/** An attribute's parent attribute (by refPid, or by templatePid for controlType 1/3/16). */
+const parentAttr = (attr, template) => (template.attributes || []).find((a) => (attr.parent.templatePid != null ? a.templatePid === attr.parent.templatePid : a.refPid === attr.parent.refPid))
+
 /** Whether an attribute applies: no parent, or its parent attribute has one of the trigger values. */
 function applies(attr, template, form) {
   if (!attr.parent) return true
-  const parent = (template.attributes || []).find((a) => a.refPid === attr.parent.refPid)
+  const parent = parentAttr(attr, template)
   if (!parent || !applies(parent, template, form)) return false
   const chosen = form.attributes?.[parent.templatePid]?.vids || []
   return chosen.some((vid) => attr.parent.vids.includes(vid))
+}
+
+/** The child values the chosen parent values allow (null: any of the attribute's values). */
+function allowedVids(attr, template, form) {
+  if (!attr.parent?.allowed) return null
+  const chosen = form.attributes?.[parentAttr(attr, template)?.templatePid]?.vids || []
+  return [...new Set(attr.parent.allowed.filter((a) => a.parentVids.some((v) => chosen.includes(v))).flatMap((a) => a.vids))]
 }
 
 const hasValue = (entry) => Boolean(entry && ((entry.vids || []).length || filled(entry.value)))
@@ -55,7 +65,18 @@ function formErrors(form, template) {
   if (!filled(form.shippingTemplateId)) add('shippingTemplateId', 'Choose a shipping template.')
   if (filled(form.handlingDays) && !(Number.isInteger(Number(form.handlingDays)) && Number(form.handlingDays) >= 1)) add('handlingDays', 'Handling time is a whole number of days.')
   for (const attr of template.attributes || []) {
-    if (attr.required && applies(attr, template, form) && !hasValue(form.attributes?.[attr.templatePid])) add(`attributes.${attr.templatePid}`, `${attr.name} is required.`)
+    if (!applies(attr, template, form)) continue
+    const entry = form.attributes?.[attr.templatePid]
+    const field = `attributes.${attr.templatePid}`
+    if (attr.required && !hasValue(entry)) { add(field, `${attr.name} is required.`); continue }
+    const allowed = allowedVids(attr, template, form)
+    const wrong = allowed ? (entry?.vids || []).filter((vid) => !allowed.includes(vid)) : []
+    if (wrong.length) {
+      const parent = parentAttr(attr, template)
+      add(field, `${(attr.values || []).find((v) => v.vid === wrong[0])?.value || wrong[0]} is not allowed for ${attr.name} with this ${parent?.name || 'choice'}.`)
+    } else if ((attr.units || []).length && filled(entry?.value) && !(entry.vids || []).length && !attr.units.some((u) => u.id === entry.unitId)) {
+      add(field, `Choose a unit for ${attr.name}.`)
+    }
   }
   const variants = form.variants || []
   if (!variants.length) add('variants', 'Add at least one SKU.')
@@ -148,4 +169,4 @@ function buildGoodsAdd(form, template) {
   }
 }
 
-module.exports = { buildGoodsAdd, formErrors, applies }
+module.exports = { buildGoodsAdd, formErrors, applies, allowedVids }

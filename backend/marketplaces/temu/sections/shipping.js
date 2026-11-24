@@ -5,6 +5,18 @@ const { temuTime, grantAware } = require('./helpers')
 
 const LABEL_STATUS = { 0: 'Buying', 1: 'Bought', 2: 'Failed' }
 
+/** Every label of the period (all pages, up to 20 × 100). */
+async function labelPages(token, start, end) {
+  const all = []
+  for (let pageNumber = 1; pageNumber <= 20; pageNumber += 1) {
+    const res = await temu.call('temu.logistics.label.list.get', { access_token: token, createAtStart: start, createAtEnd: end, pageNumber, pageSize: 100 })
+    const page = res.shippingLabelInfoList || []
+    all.push(...page)
+    if (!page.length || all.length >= (res.totalItemNum ?? all.length)) break
+  }
+  return all
+}
+
 async function fulfillment(token, shop, { now = new Date() } = {}) {
   const end = Math.floor(now.getTime() / 1000)
   const list = await tables([
@@ -53,7 +65,7 @@ async function fulfillment(token, shop, { now = new Date() } = {}) {
       title: 'Temu labels (last 30 days)',
       note: 'Labels bought with Temu. Open an order to buy, print or retry a label.',
       columns: [col('packageSn', 'Package'), col('orders', 'Orders'), col('carrier', 'Carrier'), col('tracking', 'Tracking'), col('status', 'Label', 'status'), col('printed', 'Printed'), col('created', 'Bought', 'date')],
-      load: grantAware(shop, 'temu.logistics.label.list.get', async () => ((await temu.call('temu.logistics.label.list.get', { access_token: token, createAtStart: end - 30 * 86400, createAtEnd: end, pageNumber: 1, pageSize: 100 })).shippingLabelInfoList || []).map((l) => ({
+      load: grantAware(shop, 'temu.logistics.label.list.get', async () => (await labelPages(token, end - 30 * 86400, end)).map((l) => ({
         packageSn: l.packageSn,
         orders: [...new Set((l.orderInfoList || []).map((o) => o.parentOrderSn))].join(', '),
         carrier: l.trackingInfoList?.[0]?.shippingCompanyName || '',

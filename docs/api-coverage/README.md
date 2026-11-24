@@ -1673,7 +1673,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `bg.local.goods.cats.get` | Query Categories | Get Temu Categories | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.compliance.property.check` | Verify Product Attribute Settings | Verify Product Attribute Settings | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.compliance.rules.get` | Query Mandatory Qualification Information | Query Mandatory Qualification Information | `marketplaces/temu/app/services/compliance.js` |
-| covered | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail | `marketplaces/temu/app/services/compliance.js`, `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail | `marketplaces/temu/app/services/compliance.js`, `marketplaces/temu/app/services/products.js`, `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.image.upload` | Image material processing | Image material processing | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.list.query` | Get product list | Get product list | `marketplaces/temu/listings.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.out.sn.check` | Check if contribution ID for goods is repeated | Check if contribution ID for goods is repeated | `marketplaces/temu/app/services/goodsHelpers.js` |

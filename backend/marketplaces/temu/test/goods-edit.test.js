@@ -37,9 +37,9 @@ test('a title or photo edit sends a partial update of only those fields', async 
 
 test("an attribute edit uses Temu's attribute call", async () => {
   const calls = []
-  const s = service({ 'temu.local.goods.attributes.edit': { goodsId: 77 } }, calls)
+  const s = service({ 'bg.local.goods.detail.query': { goodsProperties: [{ name: 'Material' }, { name: 'Features' }, { name: 'Empty' }] }, 'temu.local.goods.attributes.edit': { goodsId: 77 } }, calls)
   await s.reviseListing('tok', '77:1', { attributes: { Material: 'Cotton', Features: ['Waterproof', 'Light'], Empty: '' } })
-  assert.deepEqual(calls, [['temu.local.goods.attributes.edit', { access_token: 'tok', goodsId: 77, attributes: [{ name: 'Material', value: ['Cotton'] }, { name: 'Features', value: ['Waterproof', 'Light'] }] }]])
+  assert.deepEqual(calls.filter(([t]) => t !== 'bg.local.goods.detail.query'), [['temu.local.goods.attributes.edit', { access_token: 'tok', goodsId: 77, attributes: [{ name: 'Material', value: ['Cotton'] }, { name: 'Features', value: ['Waterproof', 'Light'] }] }]])
 })
 
 test('a deleted goods is deleted on Temu; a refusal says why', async () => {
@@ -55,7 +55,7 @@ test('deleting goods Temu refuses keeps the dashboard product and shows why', as
   const deleted = []
   const restore = stubModules({
     '/models/Product': modelStub(() => ({ _id: 'p1', sku: 'TEE' }), { findByIdAndDelete: async (id) => { deleted.push(id) } }),
-    '/models/Listing': modelStub(() => [{ _id: 'l1', shopId: 's1', externalListingId: '77:1', status: 'live' }], { deleteMany: async () => { deleted.push('listings') } }),
+    '/models/Listing': modelStub(() => [{ _id: 'l1', shopId: 's1', productId: 'p1', externalListingId: '77:1', status: 'live' }], { deleteMany: async () => { deleted.push('listings') } }),
     '/models/Shop': modelStub(() => ({ _id: 's1', marketplace: 'temu', status: 'connected', name: 'Temu Shop' })),
     '/models/ResearchReport': modelStub(() => null),
     '/services/productAccess': { productAccess: async () => ({ visible: true, mine: null, others: 0 }), assertProductAccess: async () => {}, ownDrafts: () => ({}) },
@@ -69,6 +69,37 @@ test('deleting goods Temu refuses keeps the dashboard product and shows why', as
   try {
     const products = freshRequire('marketplaces/temu/app/services/products.js')
     await assert.rejects(products.remove({ user: { role: 'super_admin' }, params: { id: 'p1' } }), (e) => e.status === 422 && /Goods has unfinished orders/.test(e.body.error))
+    assert.deepEqual(deleted, [])
+  } finally { restore() }
+})
+
+test("an attribute edit sends only the changed names Temu's goods already has", async () => {
+  const calls = []
+  const s = service({
+    'bg.local.goods.detail.query': { goodsProperties: [{ name: 'Material', value: 'TPU' }, { name: 'Color family', value: 'Red' }] },
+    'temu.local.goods.attributes.edit': { goodsId: 77 },
+  }, calls)
+  await s.reviseListing('tok', '77:1', { attributes: { Material: 'Cotton', estimatedCost: 3.2, listingUrl: 'https://competitor.example/x', targetMarketplace: 'temu' } })
+  assert.deepEqual(calls.find(([t]) => t === 'temu.local.goods.attributes.edit')[1].attributes, [{ name: 'Material', value: ['Cotton'] }])
+  calls.length = 0
+  await s.reviseListing('tok', '77:1', { attributes: { aiOpportunityScore: 9 } })
+  assert.ok(!calls.some(([t]) => t === 'temu.local.goods.attributes.edit'))
+})
+
+test('a goods holding SKUs of other dashboard products is not deleted from one product', async () => {
+  const deleted = []
+  const restore = stubModules({
+    '/models/Product': modelStub(() => ({ _id: 'p1', sku: 'TEE-S' }), { findByIdAndDelete: async (id) => { deleted.push(id) } }),
+    '/models/Listing': modelStub((q) => (q?.productId ? [{ _id: 'l1', shopId: 's1', productId: 'p1', externalListingId: '77:1', status: 'live' }] : [{ _id: 'l2', productId: 'p2', externalListingId: '77:2' }]), { deleteMany: async () => { deleted.push('listings') } }),
+    '/models/Shop': modelStub(() => ({ _id: 's1', marketplace: 'temu', status: 'connected', name: 'Temu Shop' })),
+    '/models/ResearchReport': modelStub(() => null),
+    '/services/productAccess': { productAccess: async () => ({ visible: true, mine: null, others: 0 }), assertProductAccess: async () => {}, ownDrafts: () => ({}) },
+    '../manager': { withShopToken: async (shop, fn) => fn('tok'), forgetListing: async () => {}, removeFromShop: async () => {} },
+    '../../service': { applyListingAction: async () => { deleted.push('temu'); return {} } },
+  })
+  try {
+    const products = freshRequire('marketplaces/temu/app/services/products.js')
+    await assert.rejects(products.remove({ user: { role: 'super_admin' }, params: { id: 'p1' } }), (e) => e.status === 409 && /other products/.test(e.body.error))
     assert.deepEqual(deleted, [])
   } finally { restore() }
 })

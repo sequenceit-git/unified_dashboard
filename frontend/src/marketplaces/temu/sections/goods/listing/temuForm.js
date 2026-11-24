@@ -39,11 +39,22 @@ export function formFromProduct(product = {}) {
   }
 }
 
+// A child's parent: by refPid (showCondition), or by templatePid (controlType 1/3/16, Temu's guide 20).
+const parentAttr = (attr, template) => (template.attributes || []).find((a) => (attr.parent.templatePid != null ? a.templatePid === attr.parent.templatePid : a.refPid === attr.parent.refPid))
+
 function applies(attr, template, form) {
   if (!attr.parent) return true
-  const parent = (template.attributes || []).find((a) => a.refPid === attr.parent.refPid)
+  const parent = parentAttr(attr, template)
   if (!parent || !applies(parent, template, form)) return false
   return (form.attributes?.[parent.templatePid]?.vids || []).some((vid) => attr.parent.vids.includes(vid))
+}
+
+/** The values a child attribute may take for the parent values chosen (all of them otherwise). */
+export function allowedValues(attr, template, form) {
+  if (!attr.parent?.allowed) return attr.values || []
+  const chosen = form.attributes?.[parentAttr(attr, template)?.templatePid]?.vids || []
+  const ok = new Set(attr.parent.allowed.filter((a) => a.parentVids.some((v) => chosen.includes(v))).flatMap((a) => a.vids))
+  return (attr.values || []).filter((v) => ok.has(v.vid))
 }
 
 /** The attributes to show now. */
@@ -51,7 +62,8 @@ export function visibleAttributes(template, form) {
   return (template?.attributes || []).filter((a) => applies(a, template, form))
 }
 
-const keyOf = (specs) => specs.map((s) => s.specId).join(',')
+// The same SKU whatever order its variant types come in.
+const keyOf = (specs) => specs.map((s) => s.specId).sort((a, b) => a - b).join(',')
 
 /**
  * One SKU per combination of the chosen values (`groups` = per variant type, its chosen values).
@@ -93,8 +105,11 @@ export function validate(form, template) {
   if (!filled(form.shippingTemplateId)) e.shippingTemplateId = 'Choose a shipping template.'
   for (const a of visibleAttributes(template, form)) {
     const v = form.attributes?.[a.templatePid]
-    if (a.required && !((v?.vids || []).length || filled(v?.value))) e[`attributes.${a.templatePid}`] = `${a.name} is required.`
+    const at = `attributes.${a.templatePid}`
+    if (a.required && !((v?.vids || []).length || filled(v?.value))) e[at] = `${a.name} is required.`
+    else if ((a.units || []).length && filled(v?.value) && !(v.vids || []).length && !a.units.some((u) => u.id === v.unitId)) e[at] = `Choose a unit for ${a.name}.`
   }
+  if (filled(form.handlingDays) && !(Number.isInteger(Number(form.handlingDays)) && Number(form.handlingDays) >= 1)) e._ = 'Handling time is a whole number of days.'
   if (!(form.variants || []).length) e.variants = 'Choose at least one variant value.'
   ;(form.variants || []).forEach((v, i) => {
     const at = (f) => `variants.${i}.${f}`
@@ -109,11 +124,19 @@ export function validate(form, template) {
   return e
 }
 
-/** Temu's refusal (the list route's 422 body) by field; a refusal without fields goes under `_`. */
+// Fields the form shows a message next to; anything else goes to the message at the top (`_`).
+const SHOWN = /^(catId|title|images|shippingTemplateId|bulletPoints|variants|attributes\.\d+|variants\.\d+\.(basePrice|listPrice|quantity|weight|size|images))$/
+
+/** Temu's refusal (the list route's 422 body) by field; whatever has no place on the form goes under `_`. */
 export function problemsByField(body = {}) {
   const out = {}
-  for (const p of body.problems || []) if (p?.field && !out[p.field]) out[p.field] = p.message
-  if (!Object.keys(out).length && body.error) out._ = body.error
+  const loose = []
+  for (const p of body.problems || []) {
+    if (!p?.message) continue
+    if (p.field && SHOWN.test(p.field)) { if (!out[p.field]) out[p.field] = p.message } else loose.push(p.message)
+  }
+  if (loose.length) out._ = [...new Set(loose)].join(' ')
+  else if (!Object.keys(out).length && body.error) out._ = body.error
   return out
 }
 

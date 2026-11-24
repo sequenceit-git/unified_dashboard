@@ -177,6 +177,7 @@
       "POST /orders/:id/full-address",
       "GET /orders/:id/label-services",
       "POST /orders/:id/buy-label",
+      "GET /orders/:id/label-result",
       "POST /orders/:id/label-retry",
       "POST /orders/:id/own-carrier",
       "POST /orders/:id/pickup",

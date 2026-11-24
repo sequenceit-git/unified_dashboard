@@ -90,3 +90,27 @@ test('Temu US: weight in lb and size in inches with one decimal, within US limit
   assert.deepEqual(fields({ height: '1000' }), ['variants.0.size'])
   assert.deepEqual(fields({ basePrice: '0.01' }), ['variants.0.basePrice'])
 })
+
+// Guide 20: "Power Supply" (controlType 1) → "Operating Voltage" via parentTemplatePid + templatePropertyValueParentList.
+const { mapTemplate } = require('../goodsTemplate')
+const POWER = mapTemplate({ templateInfo: { goodsProperties: [
+  { pid: 1425, refPid: 1561, templatePid: 891917, name: 'Power Supply', required: true, controlType: 1, parentTemplatePid: 0, showCondition: null, templatePropertyValueParentList: null, isSale: false, values: [{ vid: 36627, value: 'Use Without Electricity' }, { vid: 36789, value: 'Battery Powered (with Plug)' }] },
+  { pid: 1500, refPid: 1600, templatePid: 900001, name: 'Operating Voltage', required: true, controlType: 1, parentTemplatePid: 891917, showCondition: null, isSale: false,
+    templatePropertyValueParentList: [{ parentVids: [36789], vids: [501, 502] }], values: [{ vid: 501, value: '110V' }, { vid: 502, value: '220V' }, { vid: 503, value: '12V' }] },
+] } })
+
+test('a child attribute linked by parentTemplatePid applies only when its parent value triggers it', () => {
+  const volt = POWER.attributes[1]
+  assert.deepEqual(volt.parent, { templatePid: 891917, vids: [36789], allowed: [{ parentVids: [36789], vids: [501, 502] }] })
+  const base = { ...FORM(), attributes: { 1000: { vids: [1] }, 1001: { value: '95', unitId: 5 } } }
+  const t = { ...TEMPLATE, attributes: [...TEMPLATE.attributes, ...POWER.attributes] }
+  assert.deepEqual(formErrors({ ...base, attributes: { ...base.attributes, 891917: { vids: [36627] } } }, t), [])
+  assert.deepEqual(formErrors({ ...base, attributes: { ...base.attributes, 891917: { vids: [36789] } } }, t), [{ field: 'attributes.900001', message: 'Operating Voltage is required.' }])
+  assert.deepEqual(formErrors({ ...base, attributes: { ...base.attributes, 891917: { vids: [36789] }, 900001: { vids: [503] } } }, t), [{ field: 'attributes.900001', message: '12V is not allowed for Operating Voltage with this Power Supply.' }])
+  const body = buildGoodsAdd({ ...base, attributes: { ...base.attributes, 891917: { vids: [36627] }, 900001: { vids: [501] } } }, t)
+  assert.ok(!body.goodsProperty.goodsProperties.some((p) => p.templatePid === 900001))
+})
+
+test('an attribute with units needs a unit', () => {
+  assert.deepEqual(formErrors(FORM({ attributes: { 1000: { vids: [1] }, 1001: { value: '95' } } }), TEMPLATE), [{ field: 'attributes.1001', message: 'Choose a unit for Cotton share.' }])
+})

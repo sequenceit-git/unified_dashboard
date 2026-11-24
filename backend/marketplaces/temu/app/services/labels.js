@@ -111,6 +111,13 @@ async function buy(ctx) {
   })
 }
 
+/** GET /:id/label-result?packageSn= — Temu's result for a label still being bought (never buys again). */
+async function check(ctx) {
+  const packageSn = packageSnOf(ctx.query?.packageSn)
+  const { shop } = await temuOrderFor(ctx)
+  return temuRun(shop, (call) => result(call, [packageSn]))
+}
+
 /** POST /:id/label-retry { packageSn, channelId, shipCompanyId, service, weight, … } — buys again after a failure. */
 async function retry(ctx) {
   const packageSn = packageSnOf(ctx.body?.packageSn)
@@ -196,5 +203,5 @@ async function cancelPickup(ctx) {
   })
 }
 
-const labels = { services, buy, retry, ownCarrier, labelFile, pickup, pickupStatus, cancelPickup, toaHeaders, wait: (ms) => new Promise((r) => setTimeout(r, ms)) }
+const labels = { services, buy, check, retry, ownCarrier, labelFile, pickup, pickupStatus, cancelPickup, toaHeaders, wait: (ms) => new Promise((r) => setTimeout(r, ms)) }
 module.exports = labels
