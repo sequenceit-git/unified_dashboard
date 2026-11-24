@@ -70,6 +70,25 @@ Shared code (services, routes, models, middleware, utils, config) must not name 
 4. Frontend: add the subsection to `frontend/src/marketplaces/<key>/index.js`, and a
    `sections/<id>.jsx` if its tables have action buttons.
 
+### Tabs, row actions and scopes (eBay)
+
+- A table or summary tile may carry `tab: '<name>'`; the shop's `SectionView`
+  (`frontend/src/marketplaces/ebay/SectionView.jsx`) shows one tab per name, in loader order.
+  Tiles without a tab show on every tab. A page can keep its own content as the first tab
+  (`extraTabs`: eBay Analytics "Sales", Buyers "Buyers").
+- A row may carry `actions: [{ id, label, confirm?, input? }]`; the page posts
+  `POST /api/ebay/sections/<section>/<action>` with `{ id: row.id, value }`. eBay routes:
+  `returns-cases/:actionId` (mark-received, refund, inquiry-refund, inquiry-tracking,
+  dispute-accept), `buyers/reply`, `offers/:actionId` (offer-accept, offer-decline,
+  offer-counter). Each service also checks the section, not only the route guard.
+- Write each API path out in full at the call (no shared base variable): the API coverage
+  report (`npm run api-coverage`) finds endpoints by their path.
+- eBay asks for four scopes beyond the original six (`config.extraScopes`: analytics, order
+  earnings, payment disputes, feedback). `EBAY_EXTRA_SCOPES` replaces the list; `""` asks for
+  none, e.g. if the eBay keyset refuses one. Shops connected before them see which features a
+  reconnect turns on (`missingScopes`); tables whose scope is missing say "Reconnect eBay in
+  Settings to allow …" (`sections/helpers.js` `scopeAware`).
+
 ## Add a shop
 
 1. Create `marketplaces/<new_key>/` with the files above and an `index.js` adapter.

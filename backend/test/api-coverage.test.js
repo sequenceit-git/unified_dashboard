@@ -190,3 +190,21 @@ test('report links only open https pages', () => {
   assert.ok(!/href=/.test(out), out)
   assert.match(endpointCell({ id: 'GET /x', docs: 'https://partner.tiktokshop.com/x', confirmed: true }), /href="https:/)
 })
+
+// ---- eBay wave 1 (docs/superpowers/plans/2026-11-24-ebay-api-wave1.md)
+test('eBay wave 1 endpoints are covered', () => {
+  const { shopCoverage } = require('../scripts/apiCoverage/compare')
+  const rows = new Map(shopCoverage('ebay').map((r) => [r.id, r.status]))
+  const WAVE1 = [
+    'GET /sell/analytics/v1/traffic_report', 'GET /sell/analytics/v1/seller_standards_profile',
+    'GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}',
+    'GET /sell/finances/v1/seller_funds_summary', 'GET /sell/finances/v1/order_earnings', 'GET /sell/finances/v1/order_earnings_summary', 'GET /sell/finances/v1/billing_activity',
+    'GET /post-order/v2/inquiry/search', 'POST /post-order/v2/inquiry/{inquiryId}/issue_refund', 'POST /post-order/v2/inquiry/{inquiryId}/provide_shipment_info',
+    'GET /post-order/v2/casemanagement/search', 'POST /post-order/v2/return/{returnId}/mark_as_received', 'POST /post-order/v2/return/{returnId}/issue_refund',
+    'GET /sell/fulfillment/v1/payment_dispute_summary', 'POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept',
+    'GET /commerce/feedback/v1/feedback', 'GET /commerce/feedback/v1/feedback_rating_summary', 'POST /commerce/feedback/v1/respond_to_feedback',
+    'Trading:GetBestOffers', 'Trading:RespondToBestOffer',
+    'GET /sell/marketing/v1/promotion_report', 'GET /sell/marketing/v1/promotion_summary_report',
+  ]
+  for (const id of WAVE1) assert.match(String(rows.get(id)), /^covered/, id)
+})
