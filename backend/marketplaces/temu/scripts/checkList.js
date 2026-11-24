@@ -11,7 +11,7 @@ const CHECKS = [
   { feature: 'Goods & listing', method: 'bg.freight.template.list.query', params: () => ({}) },
   { feature: 'Goods & listing', method: 'bg.local.goods.detail.query', params: (ctx) => (ctx.goodsId ? { goodsId: Number(ctx.goodsId) } : null), keep: (r, ctx) => { ctx.catId = r.catId } },
   { feature: 'Goods & listing', method: 'bg.local.goods.template.get', params: (ctx) => (ctx.catId ? { catId: Number(ctx.catId) } : null) },
-  { feature: 'Inventory', method: 'bg.local.goods.sku.list.query', params: () => ({ pageNo: 1, pageSize: 10, skuSearchType: 'ALL' }), keep: (r, ctx) => { const s = (r.skuList || [])[0]; if (s) { ctx.skuId = s.skuId; ctx.goodsId = ctx.goodsId || s.goodsId } } },
+  { feature: 'Inventory', method: 'bg.local.goods.sku.list.query', params: () => ({ pageNo: 1, pageSize: 10, skuSearchType: 1 }), keep: (r, ctx) => { const s = (r.skuList || [])[0]; if (s) { ctx.skuId = s.skuId; ctx.goodsId = ctx.goodsId || s.goodsId } } },
   { feature: 'Inventory', method: 'temu.local.goods.sku.stock.query', params: (ctx) => (ctx.goodsId ? { goodsId: Number(ctx.goodsId) } : null) },
   { feature: 'Orders', method: 'bg.order.list.v2.get', params: () => ({ pageNumber: 1, pageSize: 10, parentOrderStatus: 0, regionId: 211 }) },
   { feature: 'Orders', method: 'bg.order.combinedshipment.list.get', params: () => ({}) },
@@ -24,7 +24,7 @@ const CHECKS = [
   { feature: 'Price reviews', method: 'temu.local.goods.recommendedprice.query', params: (ctx) => (ctx.goodsId ? { goodsIdList: [Number(ctx.goodsId)] } : null) },
   { feature: 'Promotions', method: 'bg.promotion.activity.query', params: () => ({ pageNumber: 1, pageSize: 10, activityType: 2 }) },
   { feature: 'Ads', method: 'temu.searchrec.ad.reports.mall.query', params: () => ({ startTs: (now() - 30 * 86400) * 1000, endTs: now() * 1000 }) },
-  { feature: 'Analytics', method: 'temu.local.goods.list.retrieve', params: () => ({ pageSize: 10 }) },
+  { feature: 'Analytics', method: 'temu.local.goods.list.retrieve', params: () => ({ pageSize: 10, goodsSearchType: 'ALL' }) },
   { feature: 'Analytics', method: 'temu.local.mall.tags.get', params: () => ({}) },
   { feature: 'Compliance', method: 'bg.local.compliance.goods.list.query', params: () => ({ pageNo: 1, pageSize: 10 }) },
 ]

@@ -17,7 +17,7 @@ async function allGoods(token) {
   const all = []
   let pageToken = ''
   for (let page = 0; page < 20; page += 1) {
-    const res = await temu.call('temu.local.goods.list.retrieve', { access_token: token, pageSize: 100, ...(pageToken ? { pageToken } : {}) })
+    const res = await temu.call('temu.local.goods.list.retrieve', { access_token: token, pageSize: 100, goodsSearchType: 'ALL', ...(pageToken ? { pageToken } : {}) })
     all.push(...(res.goodsList || []))
     pageToken = res.pagination?.nextToken || ''
     if (!pageToken || !(res.goodsList || []).length) break

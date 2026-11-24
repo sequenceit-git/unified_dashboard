@@ -78,11 +78,17 @@ class TemuClient {
       const raw = body.errorMsg || body.error_msg || `Temu ${type} failed`
       // Temu only answers calls from server IPs listed for the app: say where to add it.
       const ipBlocked = /NOT_IN_IP_WHITE_LIST/i.test(raw)
+      const code = body.errorCode ?? body.error_code
+      // 230016701 on the ads calls: the shop hasn't switched Temu Ads on (agreement, ad reserve).
+      const adsInactive = Number(code) === 230016701
       const err = new Error(ipBlocked
         ? "Temu blocked this server's IP (NOT_IN_IP_WHITE_LIST). Add the server's public IP to your app's IP whitelist in the Temu Partner Platform."
-        : raw)
-      err.code = body.errorCode ?? body.error_code
+        : adsInactive
+          ? "Temu Ads isn't active for this shop. In Seller Center open Product ADS (ads.temu.com), sign the advertising agreement and set the ad reserve, then refresh."
+          : raw)
+      err.code = code
       if (ipBlocked) err.ipBlocked = true
+      if (adsInactive) err.adsInactive = true
       throw err
     }
     return body.result || body

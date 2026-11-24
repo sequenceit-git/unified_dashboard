@@ -26,3 +26,11 @@ test('a server IP Temu has not allowed says how to fix it', async () => {
 test('other Temu errors keep their own message', async () => {
   await assert.rejects(callWith({ success: false, errorCode: 1, errorMsg: 'parameter is illegal' }), (e) => e.message === 'parameter is illegal' && !e.ipBlocked)
 })
+
+test('Temu Ads not active for the shop says how to switch it on', async () => {
+  await assert.rejects(callWith({ success: false, errorCode: 230016701, errorMsg: 'has no permission' }), (e) => {
+    assert.equal(e.adsInactive, true)
+    assert.match(e.message, /^Temu Ads isn't active for this shop/)
+    return true
+  })
+})

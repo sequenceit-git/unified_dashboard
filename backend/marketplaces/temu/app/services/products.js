@@ -553,7 +553,7 @@ async function temuDetail(ctx) {
     const temu = require('../../service')
     const [detail, skus, publish] = await marketplaceManager.withShopToken(shop, (token) => Promise.all([
       temu.call('bg.local.goods.detail.query', { access_token: token, goodsId: Number(goodsId) }),
-      temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo: 1, pageSize: 100, skuSearchType: 'ALL', searchText: goodsId }).catch(() => ({ skuList: [] })),
+      temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo: 1, pageSize: 100, skuSearchType: 1, searchText: goodsId }).catch(() => ({ skuList: [] })),
       temu.call('bg.local.goods.publish.status.get', { access_token: token, goodsIdList: [Number(goodsId)] }).catch(() => ({ goodsPublishStatusList: [] })),
     ]))
     const own = (skus.skuList || []).filter((s) => String(s.goodsId) === goodsId)

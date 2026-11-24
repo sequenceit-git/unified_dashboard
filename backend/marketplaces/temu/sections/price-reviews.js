@@ -23,7 +23,7 @@ async function allTemuSkus(token, shop, { withPrice = false } = {}) {
       const all = []
       let pageToken = ''
       for (let page = 0; page < 20; page += 1) {
-        const res = await temu.call('temu.local.sku.list.retrieve', { access_token: token, pageSize: 100, ...(pageToken ? { pageToken } : {}) })
+        const res = await temu.call('temu.local.sku.list.retrieve', { access_token: token, pageSize: 100, skuSearchType: 'ALL', ...(pageToken ? { pageToken } : {}) })
         all.push(...(res.skuList || []))
         pageToken = res.pagination?.nextToken || ''
         if (!pageToken || !(res.skuList || []).length) break
@@ -35,7 +35,8 @@ async function allTemuSkus(token, shop, { withPrice = false } = {}) {
   }
   const all = []
   for (let pageNo = 1; pageNo <= 20; pageNo += 1) {
-    const res = await temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo, pageSize: 100, skuSearchType: 'ALL' })
+    // bg.* lists take Temu's number enum (1 = ALL); the temu.local.* lists take text ("ALL").
+    const res = await temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo, pageSize: 100, skuSearchType: 1 })
     all.push(...(res.skuList || []))
     if (!(res.skuList || []).length || all.length >= (res.total ?? all.length)) break
   }
