@@ -6,6 +6,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import RequireShopSection from '../../../../components/RequireShopSection'
+import ShopSectionGate from '../../../../components/ShopSectionGate'
+import Button from '../../../../components/ui/Button'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { useApi } from '../../../../hooks/useApi'
 import { useSyncReload } from '../../../../hooks/useLiveEvents'
@@ -20,11 +22,18 @@ import { labelRows, orderOf, shippingTiles } from './shippingView'
 
 const date = (v) => (v ? new Date(v).toLocaleDateString() : '—')
 
+/** Access and availability checks for the section (as the generic section page did), then the page. */
 export default function ShippingPage() {
+  return <ShopSectionGate sectionId="shipping"><Shipping /></ShopSectionGate>
+}
+
+function Shipping() {
   const section = useShopSection()
   const navigate = useNavigate()
   const [pill, setPill] = useState('awaiting')
-  const { data, loading, error, refetch } = useApi('/api/temu/sections/shipping')
+  // Refresh asks the server for a fresh read (it keeps the section 10 minutes otherwise).
+  const [fresh, setFresh] = useState(0)
+  const { data, loading, error, refetch } = useApi(`/api/temu/sections/shipping${fresh ? `?refresh=1&n=${fresh}` : ''}`)
   useSyncReload('orders', section?.marketplace, () => refetch())
   if (!section) return <RequireShopSection />
 
@@ -34,9 +43,9 @@ export default function ShippingPage() {
   const show = (v) => (loading && !data ? '…' : v == null ? '—' : v)
   const pills = [
     { key: 'awaiting', label: 'Awaiting shipment', count: t.awaiting },
-    { key: 'labels', label: 'Labels', count: table('labels')?.rows?.length ?? null },
-    { key: 'carriers', label: 'Carriers & services', count: null },
-    { key: 'setup', label: 'Warehouses & templates', count: null },
+    { key: 'labels', label: 'Labels', count: table('labels') && !table('labels').error ? table('labels').rows.length : null },
+    { key: 'carriers', label: 'Carriers & services', count: table('carriers') && !table('carriers').error ? table('carriers').rows.length : null },
+    { key: 'setup', label: 'Warehouses & templates', count: table('warehouses') && table('templates') ? table('warehouses').rows.length + table('templates').rows.length : null },
   ]
   const card = 'rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900'
   const tableError = (id) => table(id)?.error || ''
@@ -45,7 +54,8 @@ export default function ShippingPage() {
     <div className="space-y-3">
       <PageHeader
         title="Temu shipping"
-        summary={data ? `${t.awaiting ?? 0} awaiting shipment · ${t.boughtToday ?? 0} labels today${t.failed ? ` · ${t.failed} failed` : ''}` : ''}
+        summary={data ? [t.awaiting != null && `${t.awaiting} awaiting shipment`, t.boughtToday != null && `${t.boughtToday} labels today`, t.failed ? `${t.failed} failed` : '', data.loadedAt && `updated ${new Date(data.loadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`].filter(Boolean).join(' · ') : ''}
+        actions={<Button variant="secondary" disabled={loading} onClick={() => setFresh((n) => n + 1)}>{loading ? 'Refreshing…' : 'Refresh'}</Button>}
       />
       {error && <ErrorState message={error} onRetry={refetch} />}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -62,7 +72,7 @@ export default function ShippingPage() {
               { key: 'order', label: 'Order' },
               { key: 'placed', label: 'Placed', render: (r) => date(r.placed) },
               { key: 'items', label: 'Items', render: (r) => <span className="line-clamp-2 max-w-md">{r.items || '—'}</span> },
-              { key: 'actions', label: '', render: (r) => <RowActions main={{ label: 'Ship', primary: true, onClick: () => openOrder(r) }} /> },
+              { key: 'actions', label: '', render: (r) => (orderOf(r) ? <RowActions main={{ label: 'Ship', primary: true, onClick: () => openOrder(r) }} /> : null) },
             ]}
             rows={(table('unshipped')?.rows || []).map((r) => ({ ...r, _key: r.order }))}
             loading={loading && !data}
@@ -81,7 +91,7 @@ export default function ShippingPage() {
                 { key: 'status', label: 'Label', render: (r) => <Badge color={r.status === 'Failed' ? 'red' : r.status === 'Bought' ? 'green' : 'blue'}>{r.status}</Badge> },
                 { key: 'printed', label: 'Printed' },
                 { key: 'created', label: 'Bought', render: (r) => date(r.created) },
-                { key: 'actions', label: '', render: (r) => <RowActions main={{ label: r.status === 'Failed' ? 'Buy again' : 'Open order', primary: r.status === 'Failed', onClick: () => openOrder(r) }} /> },
+                { key: 'actions', label: '', render: (r) => (orderOf(r) ? <RowActions main={{ label: r.status === 'Failed' ? 'Buy again' : 'Open order', primary: r.status === 'Failed', onClick: () => openOrder(r) }} /> : null) },
               ]}
               rows={labelRows(table('labels')?.rows).map((r) => ({ ...r, _key: r.packageSn }))}
               loading={loading && !data}

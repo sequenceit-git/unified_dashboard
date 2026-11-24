@@ -204,7 +204,8 @@ async function shipPackage(ctx) {
       service.shipPackage(token, ctx.params.packageId, { handoverMethod: ctx.body?.handoverMethod || 'DROP_OFF', shop })
     )
 
-    await cache.del(`shop:${shop._id}:section:fulfillment`)
+    // The section was renamed fulfillment → shipping; its cache key follows the section id.
+    await cache.del(`shop:${shop._id}:section:shipping`)
     syncQueue.enqueue('orders', shop._id, { push: true }).catch(() => {})
     return { success: true, result }
 }

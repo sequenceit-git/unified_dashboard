@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../../auth/AuthContext'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
@@ -35,6 +35,18 @@ export default function OrdersPage() {
   const location = useLocation()
   const linkedQ = new URLSearchParams(location.search).get('q') || ''
   const [q, setQ] = useState(linkedQ)
+  const navigateTo = useNavigate()
+  // A new link (or the sidebar, which drops ?q=) sets the search; typing updates the link quietly.
+  const [seenQ, setSeenQ] = useState(linkedQ)
+  if (linkedQ !== seenQ) {
+    setSeenQ(linkedQ)
+    setQ(linkedQ)
+  }
+  const search = (v) => {
+    setQ(v)
+    setSeenQ(v)
+    navigateTo({ search: v ? `?q=${encodeURIComponent(v)}` : '' }, { replace: true })
+  }
   const [sort, setSort] = useState('-placedAt')
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
@@ -122,7 +134,7 @@ export default function OrdersPage() {
       <StatusPills pills={pills} active={active.key} onChange={(k) => { setPill(k); setPage(1) }} />
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-3">
-          <SearchInput className="sm:max-w-md" value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Order, tracking, buyer or SKU…" />
+          <SearchInput className="sm:max-w-md" value={q} onChange={(v) => { search(v); setPage(1) }} placeholder="Order, tracking, buyer or SKU…" />
         </div>
         <DataTable
           columns={[

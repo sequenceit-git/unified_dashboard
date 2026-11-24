@@ -34,3 +34,9 @@ test('the order a label or shipment row belongs to (first one)', async () => {
   assert.equal(orderOf({ orders: 'PO-7, PO-8' }), 'PO-7')
   assert.equal(orderOf({}), '')
 })
+
+test("a table Temu didn't load gives no number, not 0", async () => {
+  const { shippingTiles } = await load()
+  const t = shippingTiles({ tables: [{ id: 'unshipped', rows: [{ order: 'PO-1' }] }, { id: 'labels', rows: [], error: 'no permission' }] }, NOW)
+  assert.deepEqual(t, { awaiting: 1, boughtToday: null, failed: null, notPrinted: null })
+})

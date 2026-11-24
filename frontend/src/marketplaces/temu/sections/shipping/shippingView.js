@@ -8,11 +8,13 @@ export function shippingTiles(section, now = new Date()) {
   const labels = table(section, 'labels')
   if (!section) return { awaiting: null, boughtToday: null, failed: null, notPrinted: null }
   const rows = labels?.rows || []
+  // A table Temu didn't load (error) gives no number rather than 0.
+  const ok = (t) => t && !t.error
   return {
-    awaiting: unshipped ? unshipped.rows.length : null,
-    boughtToday: labels ? rows.filter((r) => r.status === 'Bought' && r.created && sameDay(new Date(r.created), now)).length : null,
-    failed: labels ? rows.filter((r) => r.status === 'Failed').length : null,
-    notPrinted: labels ? rows.filter((r) => r.status === 'Bought' && r.printed === 'No').length : null,
+    awaiting: ok(unshipped) ? unshipped.rows.length : null,
+    boughtToday: ok(labels) ? rows.filter((r) => r.status === 'Bought' && r.created && sameDay(new Date(r.created), now)).length : null,
+    failed: ok(labels) ? rows.filter((r) => r.status === 'Failed').length : null,
+    notPrinted: ok(labels) ? rows.filter((r) => r.status === 'Bought' && r.printed === 'No').length : null,
   }
 }
 
