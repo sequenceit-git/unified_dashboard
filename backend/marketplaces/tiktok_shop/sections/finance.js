@@ -72,11 +72,34 @@ async function finance(token, shop) {
       title: 'Account transactions',
       note: 'Money in and out of your TikTok Shop balance.',
       columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('reference', 'Reference'), col('amount', 'Amount', 'money')],
-      load: scopeAware(async () => (await ttGet(token, shop, '/finance/202609/account_transactions', { page_size: 50 })).flows?.map((row) => {
-        const amount = ttMoney(row.amount?.amount, row.amount?.currency)
-        if (amount && /OUT/i.test(row.direction || '')) amount.value = -Math.abs(amount.value)
-        return { id: row.transaction_id, date: when(row.create_time), type: words(row.type), reference: row.reference_id || row.origin_transaction_id || '', amount }
-      }) || [], SCOPE),
+      load: scopeAware(async () => {
+        try {
+          const { flows = [] } = await ttGet(token, shop, '/finance/202609/account_transactions', { page_size: 50 })
+          return flows.map((row) => {
+            const amount = ttMoney(row.amount?.amount, row.amount?.currency)
+            if (amount && /OUT/i.test(row.direction || '')) amount.value = -Math.abs(amount.value)
+            return { id: row.transaction_id, date: when(row.create_time), type: words(row.type), reference: row.reference_id || row.origin_transaction_id || '', amount }
+          })
+        } catch (err) {
+          if (err?.status === 401) throw err
+          // TradeIn account_transactions rejects non-TradeIn sellers; fall back to Seller Financial Transactions.
+          let res
+          try {
+            res = await ttGet(token, shop, '/finance/202309/withdrawals', { page_size: 50, types: 'SETTLE,TRANSFER,WITHDRAW,REVERSE' })
+          } catch (fallbackErr) {
+            const noPerm = fallbackErr?.status === 401 || fallbackErr?.status === 403
+              || [105005, 105006, 36009004].includes(Number(fallbackErr?.code))
+              || /no permission|not authori[sz]ed|access denied|scope/i.test(fallbackErr?.message || '')
+            if (noPerm) throw fallbackErr
+            res = await ttGet(token, shop, '/finance/202309/withdrawals', { page_size: 50, types: 'WITHDRAW' })
+          }
+          return (res.withdrawals || []).map((row) => {
+            const amount = ttMoney(row.amount, row.currency)
+            if (amount && /WITHDRAW/i.test(row.type || '')) amount.value = -Math.abs(amount.value)
+            return { id: row.id, date: seconds(row.create_time), type: words(row.type), reference: row.id || '', amount }
+          })
+        }
+      }, SCOPE),
     },
     {
       id: 'unsettled',
@@ -101,14 +124,20 @@ async function finance(token, shop) {
       }, SCOPE),
     },
   ])
+  const balanceTiles = balances.map((b, i) => b?.available_balance && {
+    tab: 'Balance',
+    label: `Available balance (${b.available_balance.currency || currencies[i]})`,
+    value: ttMoney(b.available_balance.amount, b.available_balance.currency || currencies[i]),
+    type: 'money',
+  }).filter(Boolean)
+  const fallbackBalanceTiles = balanceTiles.length ? [] : [
+    ...(unsettledTotal ? [{ tab: 'Balance', label: 'Expected to settle', value: unsettledTotal, type: 'money' }] : []),
+    { tab: 'Balance', label: 'Transactions', value: more[0].rows.length, type: 'number' },
+  ]
   return {
     summary: [
-      ...balances.map((b, i) => b?.available_balance && {
-        tab: 'Balance',
-        label: `Available balance (${b.available_balance.currency || currencies[i]})`,
-        value: ttMoney(b.available_balance.amount, b.available_balance.currency || currencies[i]),
-        type: 'money',
-      }).filter(Boolean),
+      ...balanceTiles,
+      ...fallbackBalanceTiles,
       { tab: 'Statements', label: 'Statements', value: list[0].rows.length, type: 'number' },
       { tab: 'Statements', label: 'Payments', value: list[1].rows.length, type: 'number' },
       ...(unsettledTotal ? [{ tab: 'Unsettled orders', label: 'Expected to settle', value: unsettledTotal, type: 'money' }] : []),

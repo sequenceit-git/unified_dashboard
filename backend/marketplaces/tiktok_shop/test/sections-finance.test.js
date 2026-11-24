@@ -15,16 +15,22 @@ const DATA = {
   '/finance/202501/orders/O9/statement_transactions': { currency: 'USD', sku_transactions: [{ sku_id: 'K1', product_name: 'Case', quantity: '2', revenue_amount: '30', settlement_amount: '25' }] },
 }
 
-function load() {
+function load(overrides = {}) {
   const calls = []
+  const dataMap = { ...DATA, ...overrides }
   const restore = stubModules({
     './helpers': {
       ...require('../sections/helpers'),
       ttGet: async (token, shop, path, query) => {
         calls.push([path, query])
+        if (path in overrides) {
+          const val = overrides[path]
+          if (val instanceof Error) throw val
+          return typeof val === 'function' ? val(query) : val
+        }
         if (path === '/finance/202609/account_balances') return { available_balance: { amount: query.currency === 'USD' ? '120.50' : '33', currency: query.currency } }
-        if (!DATA[path]) throw new Error(`unexpected ${path}`)
-        return DATA[path]
+        if (!dataMap[path]) throw new Error(`unexpected ${path}`)
+        return dataMap[path]
       },
     },
   })
@@ -72,5 +78,39 @@ test('statement detail lists its transactions', async () => {
     assert.equal(detail.tables[0].rows[0].settlement.value, 90)
     const order = await finance.details.order('tok', {}, 'O9')
     assert.deepEqual([order.tables[0].rows[0].product, order.tables[0].rows[0].settlement.value], ['Case', 25])
+  } finally { restore() }
+})
+
+test('regular sellers fall back from TradeIn account_transactions to seller financial transactions', async () => {
+  const denied = () => Object.assign(new Error('Access denied'), { code: 105005 })
+  const { finance, restore } = load({
+    '/finance/202609/account_balances': denied(),
+    '/finance/202609/account_transactions': denied(),
+    '/finance/202309/withdrawals': {
+      withdrawals: [
+        { id: 'W1', create_time: 1763000000, type: 'SETTLE', amount: '90', currency: 'USD' },
+        { id: 'W2', create_time: 1763000100, type: 'WITHDRAW', amount: '40', currency: 'USD' },
+      ],
+    },
+  })
+  try {
+    const data = await finance('tok', {})
+    const account = data.tables.find((x) => x.id === 'account')
+    assert.equal(account.error, undefined)
+    assert.deepEqual(account.rows.map((r) => [r.type, r.amount.value]), [['Settle', 90], ['Withdraw', -40]])
+    assert.ok(data.summary.some((s) => s.tab === 'Balance' && s.label === 'Transactions' && s.value === 2))
+  } finally { restore() }
+})
+
+test('missing Finance Information scope still surfaces when seller transactions endpoint also denies access', async () => {
+  const denied = () => Object.assign(new Error('Access denied'), { code: 105005 })
+  const { finance, restore } = load({
+    '/finance/202609/account_balances': denied(),
+    '/finance/202609/account_transactions': denied(),
+    '/finance/202309/withdrawals': denied(),
+  })
+  try {
+    const account = (await finance('tok', {})).tables.find((x) => x.id === 'account')
+    assert.match(account.error, /Finance Information/)
   } finally { restore() }
 })

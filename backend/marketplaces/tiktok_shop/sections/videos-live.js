@@ -16,11 +16,11 @@ const TOP_VIDEOS = 20
 async function videosLive(token, shop, { now = new Date() } = {}) {
   const range = ttRange(30, now)
   const callWithFallback = async (primary, secondary, legacy) => withVersionFallback(
-    () => ttGet(token, shop, primary, { ...range, page_size: 50 }),
+    () => ttGet(token, shop, primary, { ...range, page_size: 50, account_type: 'ALL' }),
     () => (legacy ? withVersionFallback(
-      () => ttGet(token, shop, secondary, { ...range, page_size: 50 }),
-      () => ttGet(token, shop, legacy, { ...range, page_size: 50 }),
-    ) : ttGet(token, shop, secondary, { ...range, page_size: 50 })),
+      () => ttGet(token, shop, secondary, { ...range, page_size: 50, account_type: 'ALL' }),
+      () => ttGet(token, shop, legacy, { ...range, page_size: 50, account_type: 'ALL' }),
+    ) : ttGet(token, shop, secondary, { ...range, page_size: 50, account_type: 'ALL' })),
   )
   let videoIds = []
   const tiles = []
@@ -71,7 +71,7 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       columns: [col('title', 'Video'), col('posted', 'Posted', 'date'), col('views', 'Views', 'number'), col('likes', 'Likes', 'number'), col('productClicks', 'Product clicks', 'number'), col('itemsSold', 'Items sold', 'number'), col('gmv', 'GMV', 'money')],
       load: scopeAware(async () => {
         const [overview, batch] = await Promise.all([
-          ttGet(token, shop, '/analytics/202609/shop_videos/overview_performance', range).catch(() => null),
+          ttGet(token, shop, '/analytics/202609/shop_videos/overview_performance', { ...range, account_type: 'ALL' }).catch(() => null),
           videoIds.length
             ? ttGet(token, shop, '/analytics/202609/shop_videos/batch_performance', { ...range, video_ids: videoIds.slice(0, TOP_VIDEOS).join(',') })
             : { videos: [] },
@@ -106,7 +106,7 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       title: 'LIVE by day (last 30 days)',
       columns: [col('date', 'Date', 'date'), col('views', 'Views', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'LIVE GMV', 'money')],
       load: scopeAware(async () => {
-        const res = await ttGet(token, shop, '/analytics/202609/shop_lives/overview_performance', { ...range, granularity: '1D' })
+        const res = await ttGet(token, shop, '/analytics/202609/shop_lives/overview_performance', { ...range, granularity: '1D', account_type: 'ALL' })
         const days = (res.performance?.intervals || []).map((i) => ({ date: i.start_date || null, views: i.views || 0, orders: i.live_attributed_sku_orders || 0, gmv: money(i.live_gmv) }))
         tiles.push(
           { tab: 'LIVE results', label: 'LIVE views', value: days.reduce((t, d) => t + d.views, 0), type: 'number' },

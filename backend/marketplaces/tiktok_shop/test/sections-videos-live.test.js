@@ -50,6 +50,10 @@ test('video results list views to GMV per video', async () => {
     assert.deepEqual(data.tables.map((x) => x.tab), ['Videos & LIVE', 'Videos & LIVE', 'Video results', 'LIVE results', 'Bestsellers', 'Bestsellers', 'Bestsellers', 'Bestsellers'])
     const topProducts = data.tables.find((x) => x.id === 'bestsellingProducts')
     assert.deepEqual([topProducts.rows[0].title, topProducts.rows[0].unitsSold, topProducts.rows[0].gmv.value], ['Hero item', 40, 800])
+    for (const suffix of ['shop_videos/performance', 'shop_lives/performance', 'shop_videos/overview_performance', 'shop_lives/overview_performance']) {
+      const hit = calls.find(([p]) => p.endsWith(suffix))
+      assert.equal(hit?.[1]?.account_type, 'ALL', `expected account_type=ALL on ${suffix}`)
+    }
   } finally { restore() }
 })
 
