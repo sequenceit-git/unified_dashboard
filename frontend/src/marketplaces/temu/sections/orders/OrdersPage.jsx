@@ -37,9 +37,10 @@ export default function OrdersPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const counts = useApi(`/api/temu/orders/counts?k=${refreshKey}`)
   // Orders Temu lets you ship in one package (for Needs attention).
-  const combine = useApi('/api/temu/orders/temu-ship-together')
+  const combine = useApi(`/api/temu/orders/temu-ship-together?k=${refreshKey}`)
   const pills = orderPills(counts.data)
-  const active = pills.find((p) => p.key === pill) || pills.find((p) => p.key === 'all')
+  // A pill that disappeared (e.g. no late orders left) falls back to To ship.
+  const active = pills.find((p) => p.key === pill) || pills.find((p) => p.key === 'toShip')
 
   const fetchRows = async ({ quiet = false } = {}) => {
     if (!marketplace) return

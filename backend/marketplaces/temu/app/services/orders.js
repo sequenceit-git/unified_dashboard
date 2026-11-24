@@ -29,22 +29,21 @@ const SORTABLE = ['placedAt', 'totals.total', 'createdAt', 'status']
 
 /** GET / */
 async function list(ctx) {
-    const filter = { ...shopFilter(ctx, Order) }
-    if (ctx.query.marketplace && ctx.query.marketplace !== 'all') {
-      const marketplace = 'temu'
-      if (!marketplace) throw new HttpError(400, { error: 'Unknown marketplace' })
-      filter.marketplace = marketplace
-    }
+    // Temu orders only, whatever the client sends.
+    const filter = { ...shopFilter(ctx, Order), marketplace: 'temu' }
     if (ctx.query.shopId) {
       if (ctx.user.role === 'sub_admin' && !ctx.allowedShopIds.some((id) => String(id) === ctx.query.shopId)) {
         throw new HttpError(403, { error: 'You do not have access to this shop' })
       }
       filter.shopId = ctx.query.shopId
     }
-    if (ctx.query.status && ctx.query.status !== 'all') filter.status = ctx.query.status
+    if (ctx.query.status && ctx.query.status !== 'all') {
+      const list = String(ctx.query.status).split(',').filter(Boolean)
+      filter.status = list.length > 1 ? { $in: list } : list[0]
+    }
     // Late: still to ship and past Temu's ship-by date.
     if (ctx.query.late === '1') {
-      filter.status = 'paid'
+      filter.status = { $in: TO_SHIP }
       filter['shipping.shipBy'] = { $lt: new Date() }
     }
     if (ctx.query.from || ctx.query.to) {
@@ -79,6 +78,9 @@ async function list(ctx) {
     return out
 }
 
+/** Orders still to ship: paid, or marked as being handled. */
+const TO_SHIP = ['paid', 'processing']
+
 /**
  * GET /counts — Temu orders per state for the status pills, and the late ones (to ship, past
  * Temu's ship-by date): `{ all, toShip, late, shipped, delivered, cancelled, unpaid }`.
@@ -87,15 +89,16 @@ async function counts(ctx, { now = new Date() } = {}) {
     const base = { ...shopFilter(ctx, Order), marketplace: 'temu' }
     const rows = await Order.aggregate([{ $match: base }, { $group: { _id: '$status', n: { $sum: 1 } } }])
     const by = Object.fromEntries(rows.map((r) => [r._id, r.n]))
-    const late = await Order.countDocuments({ ...base, status: 'paid', 'shipping.shipBy': { $lt: now } })
+    const late = await Order.countDocuments({ ...base, status: { $in: TO_SHIP }, 'shipping.shipBy': { $lt: now } })
     return {
       all: rows.reduce((t, r) => t + r.n, 0),
-      toShip: by.paid || 0,
+      toShip: (by.paid || 0) + (by.processing || 0),
       late,
       shipped: by.shipped || 0,
       delivered: by.delivered || 0,
       cancelled: by.cancelled || 0,
       unpaid: by.pending || 0,
+      returns: (by.returned || 0) + (by.refunded || 0),
     }
 }
 
@@ -420,7 +423,9 @@ async function shipTogether(ctx) {
     if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
     const shop = await Shop.findOne(filter)
     if (!shop) throw new HttpError(404, { error: 'No connected Temu shop' })
-    return temuRun(shop, async (call) => {
+    // Cached a few minutes: the Orders page asks on every visit.
+    const cache = require('../../../../services/core/cache')
+    return cache.wrap(`temu:ship-together:${shop._id}`, 300, () => temuRun(shop, async (call) => {
       const res = await call('bg.order.combinedshipment.list.get')
       const groups = (res.combinedShippingGroups || []).map((g) => ({ orders: (g.combinedShippingGroup || []).map((o) => ({ parentOrderSn: String(o.parentOrderSn), ordered: unixIso(o.parentOrderTime) })) })).filter((g) => g.orders.length)
       const sns = groups.flatMap((g) => g.orders.map((o) => o.parentOrderSn)).slice(0, 50)
@@ -429,7 +434,7 @@ async function shipTogether(ctx) {
         groups,
         unshippedPackages: (unshipped.unshippedPackage || []).map((p) => ({ packageSn: p.packageSn, carrier: p.carrierName || '', trackingNumber: p.trackingNumber || '', orders: [...new Set((p.packageDetail?.shippableOrders || []).map((o) => String(o.parentOrderSn)))] })),
       }
-    })
+    }))
 }
 
 /** POST /:id/verification { items: [{ orderSn, serialNumber?, imeiNumbers? }] } — details Temu asks for before shipping. */

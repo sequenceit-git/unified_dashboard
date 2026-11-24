@@ -8,12 +8,15 @@ module.exports = {
   async getOrders(accessToken, { limit = 50 } = {}) {
     const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 100)
     const orders = []
+    // The newest orders of every state, then every order still to ship (Temu status 2) however old,
+    // so old to-ship orders get their ship-by date too.
+    for (const parentOrderStatus of [0, 2]) {
     for (let pageNumber = 1; pageNumber <= 10; pageNumber += 1) {
       const result = await this.call('bg.order.list.v2.get', {
         access_token: accessToken,
         pageNumber,
         pageSize,
-        parentOrderStatus: 0,
+        parentOrderStatus,
         regionId: 211,
       })
       const rows = result.pageItems || result.orderList || result.parentOrderList || []
@@ -74,9 +77,11 @@ module.exports = {
           }),
         })
       }
-      if (rows.length < pageSize || orders.length >= limit) break
+      if (rows.length < pageSize || (parentOrderStatus === 0 && orders.length >= limit) || (parentOrderStatus === 2 && pageNumber >= 5)) break
     }
-    const found = orders.filter((order) => order.externalOrderId)
+    }
+    const seen = new Set()
+    const found = orders.filter((order) => order.externalOrderId && !seen.has(order.externalOrderId) && seen.add(order.externalOrderId))
     await this.fillOrderDetails(accessToken, found)
     return { orders: found }
   },

@@ -147,7 +147,9 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
   const canRefund = order.status !== 'refunded' && order.status !== 'cancelled'
 
   const shipBy = shipByText(order)
-  const toShip = order.status === 'paid'
+  const toShip = ['paid', 'processing'].includes(order.status)
+  // The Temu label stays for any order that may still ship (Open label / pickup after buying).
+  const showLabel = !['cancelled', 'delivered', 'refunded', 'returned'].includes(order.status)
 
   return (
     <Drawer
@@ -179,9 +181,9 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
     >
       <div className="space-y-4 text-sm">
         {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
-        {toShip && (
+        {showLabel && (
           <section className="space-y-4 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3.5 dark:border-indigo-900 dark:bg-indigo-950/20">
-            <h3 className="text-base font-semibold">Ship this order</h3>
+            <h3 className="text-base font-semibold">{toShip ? 'Ship this order' : 'Temu label'}</h3>
             <TemuLabel orderId={order._id} />
           </section>
         )}

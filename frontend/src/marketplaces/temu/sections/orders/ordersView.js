@@ -1,19 +1,20 @@
 /** What the Temu Orders page shows: state pills, needs attention, ship-by and each order's next step. */
 
 const PILLS = [
-  ['toShip', 'To ship', { status: 'paid' }],
+  ['toShip', 'To ship', { status: 'paid,processing' }],
   ['late', 'Late', { late: '1' }],
   ['shipped', 'Shipped', { status: 'shipped' }],
   ['delivered', 'Delivered', { status: 'delivered' }],
   ['cancelled', 'Cancelled', { status: 'cancelled' }],
   ['unpaid', 'Unpaid', { status: 'pending' }],
+  ['returns', 'Returns & refunds', { status: 'returned,refunded' }],
   ['all', 'All', {}],
 ]
 
 /** Pills with counts; `query` is what the list asks the server for. Late and Unpaid only when there are some. */
 export function orderPills(counts) {
   return PILLS
-    .filter(([key]) => !['late', 'unpaid'].includes(key) || counts?.[key] > 0)
+    .filter(([key]) => !['late', 'unpaid', 'returns'].includes(key) || counts?.[key] > 0)
     .map(([key, label, query]) => ({ key, label, query, count: counts ? counts[key] ?? 0 : null }))
 }
 
@@ -31,12 +32,14 @@ export function attentionItems(counts, combineGroups) {
 }
 
 const DAY = 86400000
-const dayStart = (d) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+// The user's own calendar day.
+const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+const TO_SHIP = ['paid', 'processing']
 
 /** For orders still to ship: "today", "in 2 days" or "late 2 days" (null otherwise). */
 export function shipByText(order, now = new Date()) {
   const raw = order?.shipping?.shipBy
-  if (order?.status !== 'paid' || !raw) return null
+  if (!TO_SHIP.includes(order?.status) || !raw) return null
   const due = new Date(raw)
   if (due < now) {
     const days = Math.max(1, Math.round((dayStart(now) - dayStart(due)) / DAY))
@@ -48,5 +51,5 @@ export function shipByText(order, now = new Date()) {
 
 /** The one thing to do next with an order (both open the order; Ship lands on its shipping part). */
 export function mainAction(order) {
-  return order?.status === 'paid' ? { id: 'ship', label: 'Ship', primary: true } : { id: 'details', label: 'Details' }
+  return TO_SHIP.includes(order?.status) ? { id: 'ship', label: 'Ship', primary: true } : { id: 'details', label: 'Details' }
 }
