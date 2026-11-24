@@ -80,3 +80,13 @@ test('amounts are whole units, not cents', () => {
   assert.deepEqual(sku.price, { basePrice: { amount: '12.50', currency: 'USD' }, listPrice: { amount: '20.00', currency: 'USD' } })
   assert.throws(() => buildGoodsAdd(FORM({ title: '' }), TEMPLATE), (e) => e.status === 400 && e.problems.some((p) => p.field === 'title'))
 })
+
+test('Temu US: weight in lb and size in inches with one decimal, within US limits; price from $0.02', () => {
+  const sku = buildGoodsAdd(FORM({ variants: [SKU(RED, { weight: '0.44', weightUnit: 'kg', length: '10.06', volumeUnit: 'cm' })] }), TEMPLATE).skuList[0]
+  assert.deepEqual([sku.weight, sku.weightUnit, sku.length, sku.volumeUnit], ['0.4', 'lb', '10.1', 'in'])
+  const fields = (v) => formErrors(FORM({ variants: [SKU(RED, v)] }), TEMPLATE).map((e) => e.field)
+  assert.deepEqual(fields({ weight: '0.04' }), ['variants.0.weight'])
+  assert.deepEqual(fields({ weight: '10000' }), ['variants.0.weight'])
+  assert.deepEqual(fields({ height: '1000' }), ['variants.0.size'])
+  assert.deepEqual(fields({ basePrice: '0.01' }), ['variants.0.basePrice'])
+})

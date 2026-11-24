@@ -9,7 +9,8 @@
  *     externalProductType?, externalProductId? }], brand?: { brandId, trademarkId }, taxCode?,
  *   origin?: { region1, region2? } }
  * template = the helpers' template (attributes / variants with templatePid, refPid, parent, units).
- * Amounts are whole currency units ("9.99"), as everywhere for Temu.
+ * Amounts are whole currency units ("9.99"), as everywhere for Temu. Temu US site: weight in lb,
+ * sizes in inches (one decimal), base price at least $0.02.
  */
 
 const CURRENCY = 'USD'
@@ -18,10 +19,15 @@ const MAX_BULLETS = 6
 const MAX_BULLET_CHARS = 700
 const MAX_DESC = 10000
 const MAX_QTY = 999999
+// Temu US site (28-product-differences-site-currency-volume.md): lb and in, one decimal.
+const WEIGHT = { unit: 'lb', min: 0.1, max: 9999.9 }
+const SIZE = { unit: 'in', min: 0.1, max: 999.9 }
+const MIN_PRICE = 0.02
+const oneDecimal = (v) => String(Number((Math.round(Number(v) * 10) / 10).toFixed(1)))
+const within = (v, r) => filled(v) && Number(oneDecimal(v)) >= r.min && Number(oneDecimal(v)) <= r.max
 
 const money = (v) => ({ amount: Number(v).toFixed(2), currency: CURRENCY })
 const filled = (v) => v !== undefined && v !== null && String(v).trim() !== ''
-const positive = (v) => filled(v) && Number(v) > 0
 
 /** Whether an attribute applies: no parent, or its parent attribute has one of the trigger values. */
 function applies(attr, template, form) {
@@ -57,12 +63,12 @@ function formErrors(form, template) {
   variants.forEach((v, i) => {
     const at = (f) => `variants.${i}.${f}`
     if (!(v.specs || []).length) add(at('specs'), 'Choose the variant values of this SKU.')
-    if (!positive(v.basePrice)) add(at('basePrice'), 'Enter a price above 0.')
+    if (!filled(v.basePrice) || !(Number(v.basePrice) >= MIN_PRICE)) add(at('basePrice'), `Enter a price of at least $${MIN_PRICE.toFixed(2)}.`)
     if (filled(v.listPrice) && Number(v.listPrice) < Number(v.basePrice)) add(at('listPrice'), 'The list price can not be below the price.')
     const qty = Number(v.quantity)
     if (!filled(v.quantity) || !Number.isInteger(qty) || qty < 0 || qty > MAX_QTY) add(at('quantity'), `Stock is a whole number from 0 to ${MAX_QTY}.`)
-    if (!positive(v.weight)) add(at('weight'), 'Enter the weight.')
-    if (![v.length, v.width, v.height].every(positive)) add(at('size'), 'Enter length, width and height.')
+    if (!within(v.weight, WEIGHT)) add(at('weight'), `Enter the weight: ${WEIGHT.min}–${WEIGHT.max} lb.`)
+    if (![v.length, v.width, v.height].every((d) => within(d, SIZE))) add(at('size'), `Enter length, width and height: ${SIZE.min}–${SIZE.max} in.`)
     if (!(v.images || []).length) add(at('images'), 'Add a photo for this SKU.')
     const key = (v.specs || []).map((s) => s.specId).sort().join(',')
     if (key && seen.has(key)) add(at('specs'), 'Two SKUs have the same variant values.')
@@ -123,12 +129,12 @@ function buildGoodsAdd(form, template) {
       quantity: Number(v.quantity),
       // No list price: Temu's listPriceType 1 (none needed).
       price: { basePrice: money(v.basePrice), ...(filled(v.listPrice) ? { listPrice: money(v.listPrice) } : { listPriceType: 1 }) },
-      weight: String(v.weight),
-      weightUnit: v.weightUnit,
-      length: String(v.length),
-      width: String(v.width),
-      height: String(v.height),
-      volumeUnit: v.volumeUnit,
+      weight: oneDecimal(v.weight),
+      weightUnit: WEIGHT.unit,
+      length: oneDecimal(v.length),
+      width: oneDecimal(v.width),
+      height: oneDecimal(v.height),
+      volumeUnit: SIZE.unit,
       images: v.images,
       ...(v.externalProductType && filled(v.externalProductId) ? { externalProductType: Number(v.externalProductType), externalProductId: String(v.externalProductId).trim() } : {}),
     })),
