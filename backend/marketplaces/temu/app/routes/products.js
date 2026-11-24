@@ -43,6 +43,16 @@ function productsRoutes(shopKey) {
   })
 
   // GET /api/<shop>/products/categories
+  // GET /api/<shop>/goods/counts — goods per Temu state (Goods status pills)
+  router.get('/counts', async (req, res) => {
+    try {
+      res.json(await service.counts(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   router.get('/categories', async (req, res) => {
     try {
       res.json(await service.categories(ctxOf(req)))
@@ -53,6 +63,16 @@ function productsRoutes(shopKey) {
   })
 
   // Temu compliance (app/services/compliance.js): goods with certificates, a goods' detail, certificate upload.
+  // GET /api/<shop>/goods/signals — Temu's traffic, certificate and price-review signals per goods (cached)
+  router.get('/signals', async (req, res) => {
+    try {
+      res.json(await require('../services/goodsSignals').signals(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   const compliance = require('../services/compliance')
   for (const [method, path, fn] of [['get', '/compliance', 'list'], ['get', '/:goodsId/compliance', 'detail'], ['post', '/:goodsId/certificates', 'uploadCertificate']]) {
     router[method](path, async (req, res) => {

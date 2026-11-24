@@ -81,6 +81,27 @@ async function scopedIds(req) {
 }
 
 /** GET / */
+/**
+ * GET /counts — goods per Temu state for the Goods status pills:
+ * `{ all, live, unlisted, out_of_stock, paused, ended, error, pending }` (each goods counted once).
+ */
+async function counts(ctx) {
+    const ids = await scopedIds(ctx)
+    const productFilter = { marketplace: 'temu', ...(ids ? { _id: { $in: ids } } : {}) }
+    const productIds = new Set((await Product.distinct('_id', productFilter)).map(String))
+    const listings = await Listing.find({ marketplace: 'temu', ...(ids ? { productId: { $in: ids } } : {}) }).select('productId status').lean()
+    const out = { all: productIds.size, live: 0, unlisted: 0, out_of_stock: 0, paused: 0, ended: 0, error: 0, pending: 0 }
+    const listed = new Set()
+    for (const row of listings) {
+      const id = String(row.productId)
+      if (!productIds.has(id) || listed.has(id)) continue
+      listed.add(id)
+      if (row.status in out && !['all', 'unlisted'].includes(row.status)) out[row.status] += 1
+    }
+    out.unlisted = Math.max(0, out.all - listed.size)
+    return out
+}
+
 async function list(ctx) {
     const filter = {}
     if (ctx.query.status) filter.status = ctx.query.status
@@ -92,6 +113,11 @@ async function list(ctx) {
         { title: { $regex: q, $options: 'i' } },
         { sku: { $regex: q, $options: 'i' } },
       ]
+      // A Temu goods id (digits) finds the goods listed under it (listings are "<goodsId>:<skuId>").
+      if (/^\d{6,}$/.test(ctx.query.q.trim())) {
+        const listed = await Listing.find({ marketplace: 'temu', externalListingId: { $regex: `^${q}:` } }).select('productId').lean()
+        if (listed.length) filter.$or.push({ _id: { $in: listed.map((row) => row.productId) } })
+      }
     }
     if (ctx.query.stock === 'low') filter.$expr = { $lte: ['$stock', '$lowStockThreshold'] }
     if (ctx.query.stock === 'out') filter.stock = 0
@@ -100,7 +126,12 @@ async function list(ctx) {
     // This shop's products only: each shop has its own products, stock and price.
     filter.marketplace = 'temu'
     const marketplace = 'temu'
-    if (ctx.query.listing && ctx.query.listing !== 'all') {
+    if (ctx.query.listing === 'unlisted') {
+      // Goods with no Temu listing yet (drafts, or never sent).
+      const listed = (await Listing.find({ marketplace }).select('productId').lean()).map((row) => row.productId)
+      const listedSet = new Set(listed.map(String))
+      filter._id = ids ? { $in: ids.filter((id) => !listedSet.has(String(id))) } : { $nin: listed }
+    } else if (ctx.query.listing && ctx.query.listing !== 'all') {
       const rows = await Listing.find({ marketplace, ...listingStatusFilter(ctx.query.listing) }).select('productId')
       const allowed = ids ? new Set(ids.map(String)) : null
       filter._id = { $in: rows.map((row) => row.productId).filter((id) => !allowed || allowed.has(String(id))) }
@@ -605,4 +636,4 @@ async function setSkuCodes(ctx) {
     })
 }
 
-module.exports = { temuDetail, setSkuCodes, list, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
+module.exports = { temuDetail, setSkuCodes, list, counts, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
