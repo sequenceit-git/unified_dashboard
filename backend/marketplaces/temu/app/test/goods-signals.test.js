@@ -65,3 +65,11 @@ test("methods the shop's token lacks are not called", async () => {
     assert.deepEqual(out.unavailable, ['priceReviews', 'traffic'])
   } finally { restore() }
 })
+
+test('price-review signals ask Temu for both statuses that wait for the seller (101 and 202)', async () => {
+  const { service, calls, restore } = load({ 'bg.local.goods.priceorder.query': { list: [{ goodsId: 2 }] } })
+  try {
+    await service.signals(admin)
+    assert.deepEqual(calls.filter(([m]) => m === 'bg.local.goods.priceorder.query').map(([, p]) => p.status).sort(), [101, 202])
+  } finally { restore() }
+})

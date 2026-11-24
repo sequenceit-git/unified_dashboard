@@ -11,7 +11,8 @@ const marketplaceManager = require('../manager')
 const { goodsShop } = require('./goodsHelpers')
 
 const TTL = 600
-const AWAITING_SELLER = 101
+// Price orders awaiting the seller: confirm (101) or change the price after a rejection (202).
+const AWAITING_SELLER = [101, 202]
 
 function granted(shop, method) {
   const list = shop?.grantedScopes
@@ -62,11 +63,13 @@ async function signals(ctx) {
         }
       }],
       priceReviews: ['bg.local.goods.priceorder.query', async (call) => {
-        for (let page = 1; page <= 5; page += 1) {
-          const res = await call({ page, size: 50, status: AWAITING_SELLER })
-          const list = res.list || res.priceOrderList || res.data || []
-          for (const row of list) if (row.goodsId != null) mark(row.goodsId, { priceReview: true })
-          if (list.length < 50) break
+        for (const status of AWAITING_SELLER) {
+          for (let page = 1; page <= 5; page += 1) {
+            const res = await call({ page, size: 50, status })
+            const list = res.list || res.priceOrderList || res.data || []
+            for (const row of list) if (row.goodsId != null) mark(row.goodsId, { priceReview: true })
+            if (list.length < 50) break
+          }
         }
       }],
     }

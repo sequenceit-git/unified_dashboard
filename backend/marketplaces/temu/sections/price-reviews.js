@@ -25,7 +25,10 @@ const PRICE_ORDER_STATUS = {
 /** Dashboard titles of Temu goods ids (listings are "<goodsId>:<skuId>"). */
 async function goodsTitles(shop, goodsIds) {
   if (!goodsIds.length) return new Map()
-  const listings = await Listing.find({ shopId: shop?._id, marketplace: 'temu', externalListingId: { $regex: `^(${[...new Set(goodsIds)].filter((g) => /^\d+$/.test(g)).join('|') || '0'}):` } }).select('externalListingId productId').lean()
+  // One anchored pattern per goods id (each can use the listing index), with or without a SKU part.
+  const ids = [...new Set(goodsIds)].filter((g) => /^\d+$/.test(g))
+  if (!ids.length) return new Map()
+  const listings = await Listing.find({ shopId: shop?._id, marketplace: 'temu', externalListingId: { $in: ids.map((g) => new RegExp(`^${g}(:|$)`)) } }).select('externalListingId productId').lean()
   const products = await Product.find({ _id: { $in: listings.map((l) => l.productId) } }).select('title').lean()
   const byId = new Map(products.map((p) => [String(p._id), p.title]))
   return new Map(listings.map((l) => [String(l.externalListingId).split(':')[0], byId.get(String(l.productId)) || '']))
@@ -117,22 +120,29 @@ async function prices(token, shop) {
       id: 'reviews',
       tab: 'Price reviews',
       title: 'Price reviews',
-      columns: [col('id', 'Price order'), col('product', 'Product'), col('goodsId', 'Goods'), col('status', 'Status', 'status'), col('yourPrice', 'Your price', 'money'), col('suggested', 'Temu suggests', 'money')],
+      columns: [col('id', 'Price order'), col('product', 'Product'), col('goodsId', 'Goods'), col('status', 'Status', 'status'), col('yourPrice', 'Price in review', 'money'), col('suggested', 'Temu suggests', 'money')],
       load: async () => {
-        const rows = firstList(await temu.call('bg.local.goods.priceorder.query', { access_token: token, page: 1, size: 50 }))
-        const titles = await goodsTitles(shop, rows.map((r) => String(r.goodsId)))
+        // Every page (up to 5 × 50), so reviews waiting for the seller on later pages aren't missed.
+        const rows = []
+        for (let page = 1; page <= 5; page += 1) {
+          const list = firstList(await temu.call('bg.local.goods.priceorder.query', { access_token: token, page, size: 50 }))
+          rows.push(...list)
+          if (list.length < 50) break
+        }
+        const titles = await goodsTitles(shop, rows.map((r) => String(r.goodsId))).catch(() => new Map())
         return rows.map((row) => {
           const raw = row.priceOrderStatus ?? row.status ?? row.orderStatus
-          const code = Number(raw)
+          const code = raw === '' || raw == null ? NaN : Number(raw)
           return {
             id: row.priceOrderId || row.id,
             goodsId: row.goodsId,
             product: titles.get(String(row.goodsId)) || '',
             // Temu's price-order codes (price management guide); 101 needs the seller's answer.
-            status: PRICE_ORDER_STATUS[code] || (Number.isFinite(code) ? `Temu status ${code}` : words(raw)),
+            status: PRICE_ORDER_STATUS[code] || (Number.isFinite(code) ? `Temu status ${code}` : raw ? words(raw) : 'Unknown'),
             statusCode: Number.isFinite(code) ? code : null,
-            waiting: code === 101,
-            price: temuAmount(row.supplierPrice || row.suggestSupplyPrice || row.price, row.currency),
+            // Awaiting the seller: confirm (101), or change the price after a rejection (202).
+            waiting: code === 101 || code === 202,
+            price: row.supplierPrice || row.price ? temuAmount(row.supplierPrice || row.price, row.currency) : null,
             yourPrice: row.supplierPrice ? temuAmount(row.supplierPrice, row.currency) : null,
             suggested: row.suggestSupplyPrice ? temuAmount(row.suggestSupplyPrice, row.currency) : null,
           }

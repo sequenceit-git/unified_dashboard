@@ -162,3 +162,34 @@ test("price reviews: Temu's status codes in words (101 = waiting for you), both 
     assert.deepEqual([rows[0].yourPrice.value, rows[0].suggested.value, rows[0].product], [12, 9.5, 'Phone case'])
   } finally { restore() }
 })
+
+test('price reviews: every page read, 202 also waits for the seller, numeric strings, no fallback to Temu\'s price', async () => {
+  const pages = []
+  const restore = stubModules({
+    '/models/Listing': { find: () => { throw new Error('db down') } },
+    '/models/Product': modelStub(() => []),
+    '../service': {
+      call: async (type, body) => {
+        if (type === 'bg.local.goods.priceorder.query') {
+          pages.push(body.page)
+          if (body.page === 1) return { list: Array.from({ length: 50 }, (_, i) => ({ priceOrderId: `P${i}`, goodsId: 1, priceOrderStatus: 201 })) }
+          return { list: [{ priceOrderId: 'W1', goodsId: 2, priceOrderStatus: '101' }, { priceOrderId: 'W2', goodsId: 3, priceOrderStatus: 202, suggestSupplyPrice: USD(7) }, { priceOrderId: 'E', goodsId: 4, priceOrderStatus: '' }] }
+        }
+        if (type === 'bg.local.goods.list.query') return { goodsList: [] }
+        return {}
+      },
+    },
+  })
+  try {
+    const prices = freshRequire('marketplaces/temu/sections/price-reviews.js')
+    const t = (await prices('tok', { _id: 's1', grantedScopes: ['bg.local.goods.priceorder.query', 'bg.local.goods.list.query'] })).tables.find((x) => x.id === 'reviews')
+    assert.equal(t.error, undefined, 'a database error leaves the reviews')
+    assert.deepEqual(pages, [1, 2])
+    const byId = Object.fromEntries(t.rows.map((r) => [r.id, r]))
+    assert.equal(byId.W1.waiting, true)
+    assert.equal(byId.W2.waiting, true)
+    assert.equal(byId.W2.yourPrice, null)
+    assert.equal(byId.W2.price, null, "never Temu's suggestion as the order's price")
+    assert.equal(byId.E.status, 'Unknown')
+  } finally { restore() }
+})
