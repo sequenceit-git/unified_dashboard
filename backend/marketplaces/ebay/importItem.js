@@ -1,3 +1,4 @@
+const { cleanDescription } = require('./description')
 const ebay = require('./service')
 
 /** eBay item pages: matches(url) says whether the shared importer should ask eBay's Browse API. */
@@ -19,7 +20,7 @@ async function readItem(url) {
   const item = await res.json()
   return {
     title: item.title || '',
-    description: item.description || item.shortDescription || '',
+    description: cleanDescription(item.description || item.shortDescription || ''),
     brand: item.brand || '',
     price: Number(item.price?.value) || null,
     currency: item.price?.currency || 'USD',

@@ -15,7 +15,9 @@
     "test": "node --test \"test/**/*.test.js\" \"marketplaces/**/*.test.js\"",
     "split-products": "node scripts/split-products-per-shop.js",
     "rename-sections": "node scripts/rename-sections.js",
-    "api-coverage": "node scripts/apiCoverage/report.js"
+    "api-coverage": "node scripts/apiCoverage/report.js",
+    "ebay-clean-descriptions": "node marketplaces/ebay/scripts/clean-descriptions.js",
+    "tiktok-remove-inbox-data": "node marketplaces/tiktok_shop/scripts/remove-inbox-data.js"
   },
   "keywords": [],
   "author": "",

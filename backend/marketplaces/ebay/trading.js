@@ -3,6 +3,7 @@
  * cannot see them — so listing sync, publishing and revisions go through these calls.
  */
 
+const { cleanDescription } = require('./description')
 const { XMLParser } = require('fast-xml-parser')
 const config = require('./config')
 const { filterEbayCompliantImages } = require('../../utils/imageResolution')
@@ -172,7 +173,7 @@ function parseItem(item) {
     sku: item.SKU && !/^none$/i.test(String(item.SKU).trim()) ? String(item.SKU).trim() : '',
     title: item.Title || '',
     subtitle: String(text(item.SubTitle) || '').trim() || undefined,
-    description: item.Description || '',
+    description: cleanDescription(item.Description),
     price,
     stock: quantity,
     images: (item.PictureDetails?.PictureURL || []).map(text).filter(Boolean),
