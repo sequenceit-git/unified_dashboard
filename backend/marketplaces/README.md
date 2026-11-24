@@ -89,6 +89,24 @@ Shared code (services, routes, models, middleware, utils, config) must not name 
   reconnect turns on (`missingScopes`); tables whose scope is missing say "Reconnect eBay in
   Settings to allow …" (`sections/helpers.js` `scopeAware`).
 
+### Tabs, drill-downs and actions (TikTok Shop)
+
+TikTok's own section view (`frontend/src/marketplaces/tiktok_shop/SectionView.jsx`; nothing is
+shared with another shop's pages):
+- Tables and tiles carry `tab`; a tile whose tab has no table shows on the first tab.
+- A section file may export `details[name](token, shop, id) → { title, summary?, tables }`
+  (read-only drill-downs, row action `{ id, label, detail: true }`) and
+  `actions[name](token, shop, id, value) → { message }` (row or table `actions`). Both are served
+  by `GET|POST /api/tiktok/sections/:sectionId/:actionId`, after the section's access check.
+  Used by: analytics (`sku`, `metric`), videos-live (`video`, `live`), finance (`statement`,
+  `order`), packages (`package`, action `ship-all`), returns-cancellations (`records`, action
+  `reject` with TikTok's reasons for that return).
+- `sections/helpers.js` `scopeAware(load, scope)`: a TikTok permission error reads "Your TikTok
+  app doesn't have the <scope> scope …"; token errors (401) pass through unchanged.
+- Also: `GET /api/tiktok/orders/:id/price-detail`, `GET /api/tiktok/inventory/tiktok-stock`,
+  `GET /api/tiktok/products/seo-words`, `POST /api/tiktok/products/:id/listing-check` (the same
+  body as `/list`, sent to TikTok's listing check; nothing is published).
+
 ## Add a shop
 
 1. Create `marketplaces/<new_key>/` with the files above and an `index.js` adapter.

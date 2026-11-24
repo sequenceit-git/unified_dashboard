@@ -208,3 +208,25 @@ test('eBay wave 1 endpoints are covered', () => {
   ]
   for (const id of WAVE1) assert.match(String(rows.get(id)), /^covered/, id)
 })
+
+// ---- TikTok Shop wave 1 (docs/superpowers/plans/2026-11-24-tiktok-api-wave1.md)
+test('TikTok wave 1 endpoints are covered', () => {
+  const { shopCoverage } = require('../scripts/apiCoverage/compare')
+  const rows = new Map(shopCoverage('tiktok_shop').map((r) => [r.id, r.status]))
+  const WAVE1 = [
+    'GET /analytics/202509/shop_skus/performance', 'GET /analytics/202509/shop_skus/{sku_id}/performance', 'GET /analytics/202509/shop_products/{product_id}/performance',
+    'GET /analytics/202606/shop_performances/metrics', 'GET /analytics/202606/shop_performances/metrics/{metric_code}/diagnosis',
+    'GET /analytics/202606/shop_performances/metrics/{metric_code}/problem_details', 'GET /analytics/202606/shop_performances/metrics/{metric_code}/top_items',
+    'GET /analytics/202610/shop_performances/overview', 'GET /analytics/202610/shop_performances/benefits', 'GET /analytics/202510/shop/performance/{date}/performance_per_hour',
+    'GET /analytics/202609/shop_videos/overview_performance', 'GET /analytics/202609/shop_videos/batch_performance',
+    'GET /analytics/202509/shop_videos/{video_id}/performance', 'GET /analytics/202509/shop_videos/{video_id}/products/performance',
+    'GET /analytics/202609/shop_lives/overview_performance', 'GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes',
+    'GET /finance/202609/account_balances', 'GET /finance/202609/account_transactions', 'GET /finance/202507/orders/unsettled',
+    'GET /finance/202501/statements/{statement_id}/statement_transactions', 'GET /finance/202501/orders/{order_id}/statement_transactions',
+    'GET /order/202407/orders/{order_id}/price_detail', 'POST /product/202309/inventory/search',
+    'GET /fulfillment/202309/packages/{package_id}', 'GET /fulfillment/202309/orders/{order_id}/tracking', 'POST /fulfillment/202309/packages/ship',
+    'GET /return_refund/202309/returns/{return_id}/records', 'GET /return_refund/202309/reject_reasons',
+    'GET /product/202405/products/seo_words', 'POST /product/202309/products/listing_check',
+  ]
+  for (const id of WAVE1) assert.match(String(rows.get(id)), /^covered/, id)
+})
