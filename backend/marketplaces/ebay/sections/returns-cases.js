@@ -5,7 +5,7 @@
  */
 const { money, words, col, tables } = require('../../../services/marketplace/sectionKit')
 const { ebayGet, ebayApiz, scopeAware } = require('./helpers')
-const { CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS } = require('./returnsActions')
+const { CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS, LABEL_CARRIERS, RETURN_ESCALATIONS, MAX_MESSAGE } = require('./returnsActions')
 
 const CLOSED = /closed|refunded|cancel|resolved|complete/i
 // Any refund already started or issued (REFUND_INITIATED, …_PENDING_CONFIRMATION, LESS_THAN_A_FULL_REFUND_ISSUED).
@@ -14,10 +14,26 @@ const REFUND_STARTED = /refund/i
 const AWAITING_RECEIPT = /ITEM_SHIPPED|RETURN_SHIPPED|ITEM_DELIVERED|BUYER_SHIPPED/i
 const OPEN_DISPUTE = /OPEN|ACTION_NEEDED|WAITING_FOR_SELLER/i
 
+const PHOTO = { name: 'file', label: 'Photo (JPEG or PNG, up to 5 MB)', type: 'file', accept: 'image/jpeg,image/png' }
+const messageField = (label = 'Message') => ({ name: 'message', label, type: 'textarea', maxLength: MAX_MESSAGE })
+
 function returnActions(row) {
   const state = `${row.state || ''} ${row.status || ''}`
-  if (CLOSED.test(state) || REFUND_STARTED.test(state)) return []
+  const details = { id: 'return', label: 'Details', detail: true }
+  if (CLOSED.test(state) || REFUND_STARTED.test(state)) return [details]
   return [
+    details,
+    { id: 'return-message', label: 'Message buyer', input: { fields: [messageField()] } },
+    { id: 'return-photo', label: 'Add photo', input: { fields: [PHOTO] } },
+    // A label only helps before the buyer has shipped.
+    ...(AWAITING_RECEIPT.test(state) ? [] : [{ id: 'return-label', label: 'Send return label', input: { fields: [
+      { name: 'carrier', label: 'Carrier', options: Object.keys(LABEL_CARRIERS).map((c) => ({ value: c, label: c })) },
+      { name: 'trackingNumber', label: 'Label tracking number' },
+    ] } }]),
+    { id: 'return-escalate', label: 'Ask eBay to step in', input: { fields: [
+      { name: 'reason', label: 'Why', options: Object.entries(RETURN_ESCALATIONS).map(([value, label]) => ({ value, label })) },
+      { name: 'comments', label: 'Details for eBay', type: 'textarea', maxLength: MAX_MESSAGE, optional: true },
+    ] } },
     ...(AWAITING_RECEIPT.test(state) ? [{ id: 'mark-received', label: 'Mark received', confirm: `Mark return ${row.returnId} as received?` }] : []),
     { id: 'refund', label: 'Refund', confirm: `Refund return ${row.returnId} for eBay's estimated amount?` },
   ]
@@ -145,6 +161,47 @@ async function returnsCases(token) {
 
 /** Read-only drill-downs: `details[name](token, shop, id) → { title, summary, tables }`. */
 returnsCases.details = {
+  /** A return: what the buyer said, its history, photos and files, and the return shipment's tracking. */
+  return: async (token, shop, id) => {
+    const r = await ebayGet(token, `/post-order/v2/return/${encodeURIComponent(id)}`, { iaf: true })
+    const s = r.summary || {}
+    const track = r.detail?.returnShipmentInfo?.shipmentTracking
+    const [files, tracking] = await Promise.all([
+      ebayGet(token, `/post-order/v2/return/${encodeURIComponent(id)}/files`, { iaf: true }).catch(() => ({ files: [] })),
+      track?.trackingNumber
+        ? ebayGet(token, `/post-order/v2/return/${encodeURIComponent(id)}/tracking?carrier_used=${encodeURIComponent(track.carrierEnum || track.carrierName || '')}&tracking_number=${encodeURIComponent(track.trackingNumber)}`, { iaf: true }).catch(() => null)
+        : null,
+    ])
+    return {
+      title: `Return ${id}`,
+      summary: [
+        { label: 'Status', value: words(s.status || s.state), type: 'text' },
+        { label: 'Buyer', value: s.buyerLoginName || '—', type: 'text' },
+        { label: 'Reason', value: [words(s.creationInfo?.reason), s.creationInfo?.comments?.content].filter(Boolean).join(': ') || '—', type: 'text' },
+        { label: 'Refund', value: money(s.sellerTotalRefund?.estimatedRefundAmount), type: 'money' },
+      ],
+      tables: [
+        {
+          id: 'history',
+          title: 'History',
+          columns: [col('when', 'When', 'date'), col('what', 'What'), col('who', 'By'), col('notes', 'Notes')],
+          rows: (r.detail?.responseHistory || []).map((h) => ({ when: h.creationDate?.value || null, what: words(h.activity), who: words(h.author), notes: h.notes || '' })),
+        },
+        {
+          id: 'files',
+          title: 'Photos and files',
+          columns: [col('name', 'File'), col('purpose', 'About'), col('status', 'Status'), col('added', 'Added', 'date')],
+          rows: (files.files || []).map((f) => ({ name: f.fileName || f.fileId, purpose: words(f.filePurpose), status: words(f.fileStatus), added: f.creationDate?.value || null })),
+        },
+        {
+          id: 'tracking',
+          title: track?.trackingNumber ? `Return shipment ${track.trackingNumber}` : 'Return shipment',
+          columns: [col('when', 'When', 'date'), col('event', 'Event')],
+          rows: (tracking?.scanHistory || []).map((e) => ({ when: e.eventTime?.value || null, event: `${e.eventDesc || words(e.eventStatus)}${e.eventCity ? ` (${e.eventCity})` : ''}` })),
+        },
+      ],
+    }
+  },
   /** A payment dispute: what eBay asks for, the evidence on file, and what happened. */
   dispute: async (token, shop, id) => {
     const base = `${ebayApiz()}/sell/fulfillment/v1/payment_dispute/${encodeURIComponent(id)}`

@@ -1919,29 +1919,11 @@
     "priority": "high",
     "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
   },
-  "POST /post-order/v2/return/{returnId}/add_shipping_label": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
-  },
   "POST /post-order/v2/return": {
     "section": "returns-cases",
     "size": "small",
     "priority": "low",
     "value": "Opens a return on the buyer side; sellers normally never call it."
-  },
-  "POST /post-order/v2/return/{returnId}/escalate": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
-  },
-  "GET /post-order/v2/return/{returnId}/files": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
   },
   "GET /post-order/v2/return/preference": {
     "section": "returns-cases",
@@ -1949,28 +1931,10 @@
     "priority": "low",
     "value": "Read and set return preferences (automatic return rules)."
   },
-  "GET /post-order/v2/return/{returnId}/tracking": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
-  },
-  "POST /post-order/v2/return/{returnId}/send_message": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
-  },
   "POST /post-order/v2/return/preference": {
     "section": "returns-cases",
     "size": "small",
     "priority": "low",
     "value": "Read and set return preferences (automatic return rules)."
-  },
-  "POST /post-order/v2/return/{returnId}/file/upload": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
   }
 }

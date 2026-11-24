@@ -17,6 +17,24 @@ const EVIDENCE_TYPES = {
   PROOF_OF_PICKUP: 'Proof of pickup',
   TRACKING_INFORMATION: 'Tracking information',
 }
+// Carriers eBay's return label call takes (carrierEnum), by the names the dashboard shows.
+const LABEL_CARRIERS = { USPS: 'USPS', UPS: 'UPS', FedEx: 'FEDEX', DHL: 'DHL' }
+// Why a seller asks eBay to step into a return.
+const RETURN_ESCALATIONS = {
+  BUYER_RETURNED_WRONG_ITEM: 'The buyer sent back a different item',
+  BUYER_DAMAGED_ITEM: 'The item came back damaged',
+  BUYER_STILL_UNHAPPY_AFTER_REFUND: 'The buyer is still unhappy after the refund',
+  OTHERS: 'Something else',
+}
+const MAX_MESSAGE = 1000
+
+/** A message typed for the buyer: 1–1000 characters. */
+function messageText(value) {
+  const content = String(value ?? '').trim()
+  if (!content || content.length > MAX_MESSAGE) throw new HttpError(400, { error: `A message is 1 to ${MAX_MESSAGE} characters.` })
+  return content
+}
+
 const ADDRESS_FIELDS = [
   { name: 'fullName', label: 'Return to (full name)' },
   { name: 'addressLine1', label: 'Address' },
@@ -95,6 +113,45 @@ const ACTIONS = {
       return { message: `Tracking ${trackingNumber} sent for inquiry ${id}.` }
     },
   },
+  'return-message': {
+    label: 'Message buyer',
+    run: async (client, token, id, value = {}) => {
+      const content = messageText(value.message)
+      await client.postOrder(token, `/post-order/v2/return/${enc(id)}/send_message`, { method: 'POST', body: { message: { content } } })
+      return { message: `Message sent on return ${id}.` }
+    },
+  },
+  'return-photo': {
+    label: 'Add photo',
+    // Post-Order takes the photo as base64 JSON, then a submit makes it visible on the return.
+    run: async (client, token, id, value = {}) => {
+      const file = imageFile(value.file)
+      const up = await client.postOrder(token, `/post-order/v2/return/${enc(id)}/file/upload`, { method: 'POST', body: { fileName: file.name, data: file.buffer.toString('base64'), filePurpose: 'ITEM_RELATED' } })
+      if (!up?.fileId) throw new HttpError(502, { error: 'eBay did not accept the photo.' })
+      await client.postOrder(token, `/post-order/v2/return/${enc(id)}/file/submit`, { method: 'POST', body: { filePurpose: 'ITEM_RELATED' } })
+      return { message: `${file.name} added to return ${id}.` }
+    },
+  },
+  'return-label': {
+    label: 'Send return label',
+    run: async (client, token, id, value = {}) => {
+      const carrierEnum = LABEL_CARRIERS[String(value.carrier || '')]
+      const trackingNumber = String(value.trackingNumber || '').trim()
+      if (!carrierEnum || !trackingNumber) throw new HttpError(400, { error: 'Choose the carrier and enter the label tracking number.' })
+      await client.postOrder(token, `/post-order/v2/return/${enc(id)}/add_shipping_label`, { method: 'POST', body: { carrierEnum, trackingNumber } })
+      return { message: `Return label ${trackingNumber} sent to the buyer for return ${id}.` }
+    },
+  },
+  'return-escalate': {
+    label: 'Ask eBay to step in',
+    run: async (client, token, id, value = {}) => {
+      const reason = String(value.reason || '')
+      if (!Object.hasOwn(RETURN_ESCALATIONS, reason)) throw new HttpError(400, { error: 'Choose why eBay should step in.' })
+      const comments = String(value.comments || '').trim().slice(0, MAX_MESSAGE)
+      await client.postOrder(token, `/post-order/v2/return/${enc(id)}/escalate`, { method: 'POST', body: { reason, ...(comments ? { comments: { content: comments } } : {}) } })
+      return { message: `eBay was asked to step into return ${id}.` }
+    },
+  },
   'dispute-evidence': {
     label: 'Add evidence',
     // Upload (multipart) → add the file to a new evidence set, or to the set of that type eBay already has.
@@ -146,4 +203,4 @@ const ACTIONS = {
   },
 }
 
-module.exports = { ACTIONS, CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS, imageFile }
+module.exports = { ACTIONS, CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS, LABEL_CARRIERS, RETURN_ESCALATIONS, MAX_MESSAGE, imageFile, messageText }

@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 429 | 91 | 0 | 329 | 9 | 55 | — |
+| eBay | 430 | 98 | 0 | 323 | 9 | 49 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
 | Temu | 133 | 40 | 0 | 93 | 0 | 17 | — |
 
@@ -222,23 +222,17 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | medium | medium | `PUT /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | updateItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `PUT /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | updateItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 
-#### returns-cases (19)
+#### returns-cases (13)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
 | — | high | medium | `GET /post-order/v2/casemanagement/{caseId}` | — | getCase | eBay Money Back Guarantee cases: view case details and appeal decisions. |
 | — | high | medium | `GET /post-order/v2/inquiry/{inquiryId}` | — | getInquiry | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `GET /post-order/v2/return/{returnId}/files` | — | getReturnFiles | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `GET /post-order/v2/return/{returnId}/tracking` | — | getShipmentTrackingInfo | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
 | — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity` | sell.payment.dispute | getActivities | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
 | — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content` | sell.payment.dispute | fetchEvidenceContent | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
 | — | high | medium | `POST /post-order/v2/casemanagement/{caseId}/appeal` | — | appealCaseDecision | eBay Money Back Guarantee cases: view case details and appeal decisions. |
 | — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/escalate` | — | escalateInquiry | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
 | — | high | medium | `POST /post-order/v2/inquiry/{inquiryId}/send_message` | — | sendInquiryMessage | Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/add_shipping_label` | — | addShippingLabelInfo | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/escalate` | — | escalateReturn | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/file/upload` | — | uploadReturnFile | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /post-order/v2/return/{returnId}/send_message` | — | sendReturnMessage | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
 | — | low | small | `DELETE /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | removePostOrderDocument | Upload and manage documents attached to returns and cases. |
 | — | low | small | `GET /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | downloadPostOrderDocument | Upload and manage documents attached to returns and cases. |
 | — | low | small | `GET /post-order/v2/return/preference` | — | getReturnPreferences | Read and set return preferences (automatic return rules). |
@@ -745,7 +739,9 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Post-Order API | `GET /post-order/v2/cancellation/search` | searchCancellations | Searches cancellations. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Post-Order API | `GET /post-order/v2/casemanagement/search` | searchCases | Searches cases. | `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Post-Order API | `GET /post-order/v2/inquiry/search` | searchInquiries | Searches inquiries. | `marketplaces/ebay/sections/returns-cases.js` |
-| covered | Post-Order API | `GET /post-order/v2/return/{returnId}` | getReturn | Returns details of a return request. | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Post-Order API | `GET /post-order/v2/return/{returnId}` | getReturn | Returns details of a return request. | `marketplaces/ebay/sections/returns-cases.js`, `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Post-Order API | `GET /post-order/v2/return/{returnId}/files` | getReturnFiles | Returns the files attached to a return request. | `marketplaces/ebay/sections/returns-cases.js` |
+| covered | Post-Order API | `GET /post-order/v2/return/{returnId}/tracking` | getShipmentTrackingInfo | Returns tracking for a returned item. | `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Post-Order API | `GET /post-order/v2/return/search` | searchReturns | Searches return requests. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Post-Order API | `POST /post-order/v2/cancellation` | createCancellation | Requests or performs an order cancellation. | `marketplaces/ebay/orders.js` |
 | covered | Post-Order API | `POST /post-order/v2/cancellation/{cancelId}/approve` | approveCancellationRequest | Seller agrees to a buyer cancellation request. | `marketplaces/ebay/orders.js` |
@@ -753,23 +749,22 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Post-Order API | `POST /post-order/v2/cancellation/check_eligibility` | checkCancellationEligibility | Checks whether an order can be cancelled. | `marketplaces/ebay/orders.js` |
 | covered | Post-Order API | `POST /post-order/v2/inquiry/{inquiryId}/issue_refund` | issueInquiryRefund | Refunds a line item in an item-not-received inquiry. | `marketplaces/ebay/sections/returnsActions.js` |
 | covered | Post-Order API | `POST /post-order/v2/inquiry/{inquiryId}/provide_shipment_info` | provideInquiryShipmentInfo | Supplies shipment information for an inquiry. | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Post-Order API | `POST /post-order/v2/return/{returnId}/add_shipping_label` | addShippingLabelInfo | Adds a seller-provided return shipping label. | `marketplaces/ebay/sections/returnsActions.js` |
 | covered | Post-Order API | `POST /post-order/v2/return/{returnId}/decide` | processReturnRequest | Approves, declines or otherwise acts on a return request. | `marketplaces/ebay/orders.js` |
+| covered | Post-Order API | `POST /post-order/v2/return/{returnId}/escalate` | escalateReturn | Escalates a return request into a case. | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Post-Order API | `POST /post-order/v2/return/{returnId}/file/submit` | submitReturnFile | Activates uploaded files on a return request. | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Post-Order API | `POST /post-order/v2/return/{returnId}/file/upload` | uploadReturnFile | Uploads files for a return request. | `marketplaces/ebay/sections/returnsActions.js` |
 | covered | Post-Order API | `POST /post-order/v2/return/{returnId}/issue_refund` | issueReturnRefund | Issues a refund for a returned item. | `marketplaces/ebay/sections/returnsActions.js` |
 | covered | Post-Order API | `POST /post-order/v2/return/{returnId}/mark_as_received` | markReturnReceived | Marks a returned item as received. | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Post-Order API | `POST /post-order/v2/return/{returnId}/send_message` | sendReturnMessage | Messages the buyer about a return. | `marketplaces/ebay/sections/returnsActions.js` |
 | missing | Post-Order API | `GET /post-order/v2/cancellation/{cancelId}` | getCancellation | Returns details of a cancellation request. |  |
 | missing | Post-Order API | `GET /post-order/v2/casemanagement/{caseId}` | getCase | Returns details of one case. |  |
 | missing | Post-Order API | `GET /post-order/v2/inquiry/{inquiryId}` | getInquiry | Returns the history and details of an inquiry. |  |
-| missing | Post-Order API | `GET /post-order/v2/return/{returnId}/files` | getReturnFiles | Returns the files attached to a return request. |  |
-| missing | Post-Order API | `GET /post-order/v2/return/{returnId}/tracking` | getShipmentTrackingInfo | Returns tracking for a returned item. |  |
 | missing | Post-Order API | `GET /post-order/v2/return/preference` | getReturnPreferences | Returns the seller's return preferences. |  |
 | missing | Post-Order API | `POST /post-order/v2/casemanagement/{caseId}/appeal` | appealCaseDecision | Appeals a case decision. |  |
 | missing | Post-Order API | `POST /post-order/v2/inquiry/{inquiryId}/escalate` | escalateInquiry | Escalates an inquiry to an item-not-received case. |  |
 | missing | Post-Order API | `POST /post-order/v2/inquiry/{inquiryId}/send_message` | sendInquiryMessage | Messages the buyer about an inquiry. |  |
 | missing | Post-Order API | `POST /post-order/v2/return` | createReturnRequest | Requests a return for an item. |  |
-| missing | Post-Order API | `POST /post-order/v2/return/{returnId}/add_shipping_label` | addShippingLabelInfo | Adds a seller-provided return shipping label. |  |
-| missing | Post-Order API | `POST /post-order/v2/return/{returnId}/escalate` | escalateReturn | Escalates a return request into a case. |  |
-| missing | Post-Order API | `POST /post-order/v2/return/{returnId}/file/upload` | uploadReturnFile | Uploads files for a return request. |  |
-| missing | Post-Order API | `POST /post-order/v2/return/{returnId}/send_message` | sendReturnMessage | Messages the buyer about a return. |  |
 | missing | Post-Order API | `POST /post-order/v2/return/preference` | setReturnPreferences | Sets the seller's return preferences. |  |
 | covered | Recommendation API | `POST /sell/recommendation/v1/find` | findListingRecommendations | The find method currently returns information for a single recommendation type (AD) which contains information that sellers can use to configure Promoted Listings ad campaigns. | `marketplaces/ebay/sections/advertising.js` |
 | missing | Store API | `DELETE /sell/stores/v1/store/categories/{category_id}` | deleteStoreCategory | This method is used to delete one custom category of a user's eBay store through an asynchronous request. |  |

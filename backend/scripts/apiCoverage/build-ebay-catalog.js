@@ -84,6 +84,7 @@ const PO = [
   ['POST', 'return/{returnId}/send_message', 'sendReturnMessage', 'Messages the buyer about a return.'],
   ['POST', 'return/preference', 'setReturnPreferences', "Sets the seller's return preferences."],
   ['POST', 'return/{returnId}/file/upload', 'uploadReturnFile', 'Uploads files for a return request.'],
+  ['POST', 'return/{returnId}/file/submit', 'submitReturnFile', 'Activates uploaded files on a return request.'],
 ]
 for (const [method, p, name, summary] of PO) endpoints.push({ id: `${method} /post-order/v2/${p}`, group: 'Post-Order API', name, summary, scope: '', sellerFacing: true, confirmed: true })
 sources.push('https://developer.ebay.com/devzone/post-order/index.html')

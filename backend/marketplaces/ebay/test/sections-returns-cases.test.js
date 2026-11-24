@@ -45,8 +45,8 @@ test('open inquiries and cases are listed', async () => {
     assert.equal(cases.rows[0].caseId, '7')
     const returns = tables.find((t) => t.id === 'returns')
     assert.equal(returns.tab, 'Returns')
-    assert.deepEqual(returns.rows[0].actions.map((a) => a.id), ['mark-received', 'refund'])
-    assert.deepEqual(returns.rows[1].actions, [])
+    assert.deepEqual(returns.rows[0].actions.map((a) => a.id), ['return', 'return-message', 'return-photo', 'return-escalate', 'mark-received', 'refund'])
+    assert.deepEqual(returns.rows[1].actions.map((a) => a.id), ['return'])
   } finally { restore() }
 })
 
@@ -119,6 +119,7 @@ test('refund is not offered again once a refund has started', async () => {
   const { section, restore } = loadSection()
   try {
     const rows = (await section('tok')).tables.find((t) => t.id === 'returns').rows
-    assert.deepEqual(rows.map((r) => r.actions.map((a) => a.id)), [[], [], [], []])
+    // Only Details once a refund has started.
+    assert.deepEqual(rows.map((r) => r.actions.map((a) => a.id)), [['return'], ['return'], ['return'], ['return']])
   } finally { restore(); GETS['/post-order/v2/return/search'] = old }
 })

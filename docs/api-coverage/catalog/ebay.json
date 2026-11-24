@@ -3889,6 +3889,15 @@
       "confirmed": true
     },
     {
+      "id": "POST /post-order/v2/return/{returnId}/file/submit",
+      "group": "Post-Order API",
+      "name": "submitReturnFile",
+      "summary": "Activates uploaded files on a return request.",
+      "scope": "",
+      "sellerFacing": true,
+      "confirmed": true
+    },
+    {
       "id": "POST /identity/v1/oauth2/token",
       "group": "OAuth",
       "name": "getToken",
