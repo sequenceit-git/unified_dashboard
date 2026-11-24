@@ -11,7 +11,8 @@
  * @property {Object} profile    Sidebar sections, listing statuses, product-form rules
  * @property {Record<string, (token: string, shop?: Object) => Promise<Object>>} sections  Section id → loader
  * @property {Object} [webhooks]      Optional: { handle, enable, ... } for push notifications
- * @property {Object} [hooks]         Optional: shop-specific steps inside the shared sync
+ * @property {Object} [hooks]         Optional: shop-specific steps inside the shared sync, and
+ *   `researchListing({ title, description, brand }) → { title }`: a Product Discovery find shaped for this shop
  * @property {Object} [capabilities]  Optional flags read by the shared core:
  *   inbox, inboxNeedsAccountUsername, refreshToken, tracksOrdersSyncedAt, syncsVariants,
  *   relistOnRestock, productKeyListings, listingFetchLimit (number), listingNoun (string)

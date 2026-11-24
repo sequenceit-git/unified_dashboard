@@ -416,7 +416,9 @@ async function addToCatalog(ctx) {
     let product = own ? await Product.findById(own._id) : null
 
     const sellingPrice = price != null ? Number(price) : opp.metrics?.averagePrice ?? opp.metrics?.price ?? 0
-    const estCost = opp.metrics?.estimatedCost != null ? Number(opp.metrics.estimatedCost) : 0
+    // The agent's sourcing cost, when it found one, becomes the base price (margin in every shop's form).
+    const costOf = [opp.sourcing?.unitCost, opp.sourcing?.landedCost, opp.metrics?.estimatedCost].map(Number).find((n) => Number.isFinite(n) && n > 0)
+    const estCost = costOf ?? 0
     const savedImages = Array.isArray(opp.images) && opp.images.length
       ? opp.images
       : opp.image
@@ -433,9 +435,17 @@ async function addToCatalog(ctx) {
       : baseDescription
 
     if (!product) {
+      // Each shop shapes its own title (length and style) from the agent's facts; the rest is shared.
+      const shopHooks = registry.get(marketplace)?.hooks
+      const shaped = typeof shopHooks?.researchListing === 'function'
+        ? await shopHooks.researchListing({ title: title || opp.title, description: fullDescription, brand: opp.brand || '' }).catch(() => null)
+        : null
+      const { specMeasurements } = require('./measurements')
       product = await Product.create({
         marketplace,
-        title: title || opp.title,
+        title: shaped?.title || title || opp.title,
+        ...specMeasurements(opp.specs),
+        ...(costOf ? { costPrice: costOf } : {}),
         description: fullDescription,
         category: opp.metrics?.category || opp.category || 'General',
         brand: opp.brand || 'Unbranded',

@@ -154,3 +154,50 @@ test("add to catalog creates the product for the chosen shop, never reusing anot
     restore()
   }
 })
+
+test("add to catalog shapes the product for the chosen shop: its title, the agent's weight, size and cost", async () => {
+  const created = []
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean', 'populate']) p[m] = () => p; return p }
+  const opp = {
+    rank: 1, title: 'Ceramic Plant Pot With Drainage Hole And Saucer For Indoor Outdoor Succulents Herbs Large 8 Inch White Modern',
+    description: 'A pot.', brand: 'Leafy', listingUrl: 'https://x.test/p', listedShops: [], metrics: { price: 24 },
+    specs: [{ name: 'Item Weight', value: '1.5 Pounds' }, { name: 'Product Dimensions', value: '8 x 8 x 7 inches' }, { name: 'Color', value: 'White' }],
+    sourcing: { unitCost: 6.5 },
+  }
+  const report = { _id: ID, opportunities: [opp], save: async () => {}, markModified: () => {} }
+  const seen = []
+  const hooks = { researchListing: async (input) => { seen.push(input); return { title: 'Leafy 8" Ceramic Plant Pot with Drainage Hole & Saucer, White' } } }
+  const registry = { KEYS: ['ebay', 'tiktok_shop', 'temu'], canonical: (v) => v, labels: () => ({}), get: () => ({ hooks, app: { catalog: { capabilities: () => ({ canList: true }) } } }), listingUrl: () => '' }
+  const restore = stubModules({
+    '/models/ResearchReport': { findById: () => chain(report), find: () => chain([]) },
+    '/models/Product': { find: () => chain([]), findById: () => chain(null), create: async (body) => { created.push(body); return { _id: 'P1', ...body } } },
+    '/models/Shop': { findOne: () => chain({ _id: 'S1' }), find: () => chain([]) },
+    '/models/Listing': { find: () => chain([]), findOne: async () => null, exists: async () => false },
+    '../../services/marketplace': {},
+    '../../marketplaces': registry,
+    '/agent/discovery/discoveryAgent': { runDiscoveryAgent: async () => {} },
+    '/agent/discovery/listingImage': { productImages: async () => [] },
+  })
+  try {
+    const service = freshRequire('services/research/reports.js')
+    await service.addToCatalog({ ...admin, body: { reportId: ID, rank: 1, marketplace: 'ebay', title: opp.title } })
+    const p = created[0]
+    assert.equal(p.title, 'Leafy 8" Ceramic Plant Pot with Drainage Hole & Saucer, White')
+    assert.equal(seen[0].brand, 'Leafy')
+    assert.equal(p.weight, 1.5)
+    assert.deepEqual(p.dimensions, { length: 8, width: 8, height: 7 })
+    assert.equal(p.costPrice, 6.5)
+    assert.equal(p.attributes.Color, 'White')
+  } finally {
+    restore()
+  }
+})
+
+test('weights and sizes from the agent are read in pounds and inches', () => {
+  const { specMeasurements } = require('../services/research/measurements')
+  assert.deepEqual(specMeasurements([{ name: 'Weight', value: '500 g' }]), { weight: 1.1 })
+  assert.deepEqual(specMeasurements([{ name: 'Item Weight', value: '12 oz' }]), { weight: 0.8 })
+  assert.deepEqual(specMeasurements([{ name: 'Package Dimensions', value: '20 x 10 x 5 cm' }]), { dimensions: { length: 7.9, width: 3.9, height: 2 } })
+  assert.deepEqual(specMeasurements([{ name: 'Color', value: 'Red' }]), {})
+  assert.deepEqual(specMeasurements(null), {})
+})

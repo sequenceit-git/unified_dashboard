@@ -200,4 +200,7 @@ const analytics = {
   },
 }
 
-module.exports = { listingImages, fetchOrders, promotionTargets, analytics, dayPerformance }
+/** A Product Discovery find shaped for this shop (title rules and length). */
+const { researchListing } = require('./researchListing')
+
+module.exports = { listingImages, fetchOrders, promotionTargets, analytics, dayPerformance, researchListing }

@@ -13,6 +13,8 @@ module.exports = {
   profile: require('./profile'),
   sections: require('./sections'),
   webhooks: require('./webhooks'),
+  /** A Product Discovery find shaped for Temu (title rules and length). */
+  hooks: { researchListing: (input) => require('./researchListing').researchListing(input) },
   listingUrl: require('./listingUrl').listingUrl,
   routes: require('./routes'),
   /** The shop's app: dashboard API, sync jobs, listing pushes (loaded on first use, after every adapter). */

@@ -473,6 +473,9 @@ function publishedSku(product, publishRes) {
   return isDraft && publishRes?.externalListingId ? `EBAY-${publishRes.externalListingId}` : null
 }
 
+/** A Product Discovery find shaped for this shop (title rules and length). */
+const { researchListing } = require('./researchListing')
+
 module.exports = {
   publishedSku,
   promotionTargets,
@@ -483,4 +486,5 @@ module.exports = {
   orderItemImages,
   fetchListings: fetchEbayListings,
   autoConnectFromEnv,
+  researchListing,
 }
