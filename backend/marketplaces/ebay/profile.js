@@ -50,7 +50,7 @@ module.exports = {
     pending: { label: 'Pending', color: 'blue' },
     paused: { label: 'Unsold', color: 'gray' },
     ended: { label: 'Ended', color: 'gray' },
-    error: { label: 'Not listed', color: 'red' },
+    error: { label: 'Failed to list', color: 'red' },
   },
   rawStatuses: {},
   productForm: {

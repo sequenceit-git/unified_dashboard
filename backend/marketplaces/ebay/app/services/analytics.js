@@ -238,4 +238,33 @@ async function traffic(ctx) {
     }
 }
 
-module.exports = { summary, revenue, marketplaces, products, inventory, traffic }
+/**
+ * GET /listing-traffic — each listing's 30-day impressions and views for the Listings page, cached
+ * 10 minutes per shop. A refused report gives `{ rows: [], unavailable: true }` (views just don't show).
+ */
+async function listingTraffic(ctx) {
+    const { HttpError } = require('../../../../utils/httpError')
+    const Shop = require('../../../../models/Shop')
+    const cache = require('../../../../services/core/cache')
+    const filter = { marketplace: 'ebay', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    if (!shop) throw new HttpError(404, { error: 'No connected eBay shop' })
+    const key = `shop:${shop._id}:listing-traffic`
+    const hit = await cache.get(key)
+    if (hit !== undefined && hit !== null) return hit
+    const marketplaceManager = require('../manager')
+    const { listingTraffic: load } = require('../../sections/analytics')
+    try {
+      const rows = await marketplaceManager.withShopToken(shop, (token) => load(token))
+      const out = { rows: rows.map(({ listingId, impressions, views }) => ({ listingId, impressions, views })) }
+      await cache.set(key, out, 600)
+      return out
+    } catch (err) {
+      const denied = err?.status === 401 || err?.status === 403 || /insufficient|scope|permission/i.test(err?.message || '')
+      if (denied) return { rows: [], unavailable: true }
+      throw new HttpError(502, { error: err.message })
+    }
+}
+
+module.exports = { summary, revenue, marketplaces, products, inventory, traffic, listingTraffic }

@@ -35,10 +35,10 @@ export function attentionItems(counts) {
 }
 
 /** The one thing to do next with a row. */
-export function mainAction(row) {
+export function mainAction(row, { canRestock = true } = {}) {
   const status = row?.shopListing?.status
   if (!status) return { id: 'list', label: 'List on eBay' }
-  if (status === 'out_of_stock') return { id: 'restock', label: 'Restock' }
+  if (status === 'out_of_stock') return canRestock ? { id: 'restock', label: 'Restock' } : { id: 'edit', label: 'Edit' }
   if (status === 'error') return { id: 'fix', label: 'Fix' }
   if (status === 'ended' || status === 'paused') return { id: 'relist', label: 'Relist' }
   return { id: 'edit', label: 'Edit' }

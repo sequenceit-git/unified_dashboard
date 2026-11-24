@@ -13,6 +13,17 @@ import RowActions from '../../ui/RowActions'
 import { itemId, mainAction } from './listView'
 
 const STATUSES = ['all', 'draft', 'active', 'archived']
+const SORTS = [
+  { value: '-createdAt', label: 'Newest first' },
+  { value: 'createdAt', label: 'Oldest first' },
+  { value: 'title', label: 'Title A–Z' },
+  { value: 'sku', label: 'SKU A–Z' },
+  { value: '-basePrice', label: 'Price: high to low' },
+  { value: 'basePrice', label: 'Price: low to high' },
+  { value: '-costPrice', label: 'Base price: high to low' },
+  { value: 'costPrice', label: 'Base price: low to high' },
+  { value: 'stock', label: 'Stock: low to high' },
+]
 const money = (v) => (v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '—')
 const SOURCES = [
   { value: 'all', label: 'All sources' },
@@ -37,7 +48,7 @@ function categoryLabel(name) {
  * eBay listings table: search and More filters on top (the status pills live on the page), one row per
  * product with its eBay state, 30-day views and one main button for what to do next.
  */
-export default function CatalogTab({ listing = 'all', traffic, onEdit, onList, onRestock, onChanged, refreshKey, rowPatch = null, marketplace = 'ebay' }) {
+export default function CatalogTab({ listing = 'all', traffic, canRestock = true, onEdit, onList, onRestock, onChanged, refreshKey, rowPatch = null, marketplace = 'ebay' }) {
   const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const productStatus = profile?.productForm?.productStatus || {}
@@ -126,6 +137,7 @@ export default function CatalogTab({ listing = 'all', traffic, onEdit, onList, o
 
   const remove = async (id) => {
     if (!window.confirm('Delete this product? This cannot be undone.')) return
+    setNotice({ text: '', error: false })
     try {
       await api.del(`/api/ebay/listings/${id}`, token)
       fetchRows()
@@ -137,7 +149,7 @@ export default function CatalogTab({ listing = 'all', traffic, onEdit, onList, o
 
   const relist = (profile?.listingActions || []).find((a) => a.id === 'relist') || { id: 'relist', label: 'Relist on eBay' }
   const mainFor = (r) => {
-    const next = mainAction(r)
+    const next = mainAction(r, { canRestock })
     const run = {
       list: () => onList(r),
       fix: () => onList(r),
@@ -148,7 +160,7 @@ export default function CatalogTab({ listing = 'all', traffic, onEdit, onList, o
     return { label: next.label, primary: next.id !== 'edit', busy: busy === String(r._id), onClick: run }
   }
   const menuFor = (r) => {
-    const next = mainAction(r).id
+    const next = mainAction(r, { canRestock }).id
     const listed = ['live', 'out_of_stock', 'pending'].includes(r.shopListing?.status)
     const canDelete = !listed || r.shopListing?.status === 'ended' || r.shopListing?.status === 'error'
     return [
@@ -184,6 +196,7 @@ export default function CatalogTab({ listing = 'all', traffic, onEdit, onList, o
           />
           <Select className="min-w-0" value={stock} onChange={(e) => { setStock(e.target.value); setPage(1) }} options={STOCK} aria-label="Stock" />
           <Select className="min-w-0" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={STATUSES.map((s) => ({ value: s, label: s === 'all' ? 'All product states' : productStatus[s] || s }))} aria-label="Product state" />
+          <Select className="min-w-0" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1) }} options={SORTS} aria-label="Sort" />
         </div>
       )}
       {notice.text && <p className={`mb-2 text-sm ${notice.error ? 'text-rose-600' : 'text-emerald-700'}`}>{notice.text}</p>}
@@ -211,8 +224,7 @@ export default function CatalogTab({ listing = 'all', traffic, onEdit, onList, o
                         </a>
                       )}
                       {Array.isArray(r.variants) && r.variants.length > 1 && <span>{r.variants.length} variants</span>}
-                      {r.source === 'research_bot' && <span className="text-purple-600">AI Agent</span>}
-                      {r.source === 'url_import' && <span>Direct listing</span>}
+                      <span className={r.source === 'research_bot' ? 'text-purple-600' : ''}>{r.source === 'research_bot' ? 'AI Agent' : SOURCES.find((s) => s.value === r.source)?.label || 'Manual'}</span>
                     </p>
                   </div>
                 </div>
@@ -249,7 +261,8 @@ export default function CatalogTab({ listing = 'all', traffic, onEdit, onList, o
             label: 'Views (30d)',
             render: (r) => {
               const t = r.shopListing?.externalListingId ? traffic?.get(itemId(r.shopListing.externalListingId)) : null
-              if (!t) return <span className="text-gray-400">—</span>
+              // A live listing eBay has no traffic row for had no views; others show nothing.
+              if (!t) return traffic && ['live', 'out_of_stock'].includes(r.shopListing?.status) ? <span>0</span> : <span className="text-gray-400">—</span>
               return (
                 <span>
                   {t.views.toLocaleString()}

@@ -22,6 +22,16 @@ function analyticsRoutes(shopKey) {
   })
 
   // GET /api/<shop>/analytics/revenue?from=&to=&marketplace=
+  // GET /api/<shop>/analytics/listing-traffic — each listing's 30-day views (Listings page)
+  router.get('/listing-traffic', async (req, res) => {
+    try {
+      res.json(await service.listingTraffic(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/analytics/traffic?from=YYYY-MM-DD&to=YYYY-MM-DD — eBay's traffic by day
   router.get('/traffic', async (req, res) => {
     try {

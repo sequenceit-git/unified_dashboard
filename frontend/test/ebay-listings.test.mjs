@@ -34,6 +34,7 @@ test('each row gets one main action for what to do next', async () => {
   assert.equal(mainAction({ shopListing: { status: 'live' } }).id, 'edit')
   assert.equal(mainAction({ shopListing: { status: 'pending' } }).id, 'edit')
   assert.equal(mainAction({ shopListing: { status: 'out_of_stock' } }).id, 'restock')
+  assert.equal(mainAction({ shopListing: { status: 'out_of_stock' } }, { canRestock: false }).id, 'edit', 'no stock access: change stock in the product form')
   assert.equal(mainAction({ shopListing: { status: 'error' } }).id, 'fix')
   assert.equal(mainAction({ shopListing: { status: 'ended' } }).id, 'relist')
   assert.equal(mainAction({ shopListing: { status: 'paused' } }).id, 'relist')

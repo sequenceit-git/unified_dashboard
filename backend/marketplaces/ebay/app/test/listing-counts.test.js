@@ -14,7 +14,7 @@ function load({ products = [], listings = [] } = {}) {
     '/models/Product': {
       find: (filter) => { seen.productFilters.push(filter); return chain(products) },
       countDocuments: async (filter) => { seen.counted.push(filter); return products.length },
-      distinct: async () => [],
+      distinct: async (field, filter) => { seen.distinct = filter; return products.map((p) => p._id) },
     },
     '/models/Listing': { find: (filter) => { seen.listingFilters.push(filter); return chain(listings) }, distinct: async () => [] },
     '/models/Shop': { find: () => chain([]), findById: () => chain(null) },
@@ -44,7 +44,7 @@ test("a sub-admin's counts only cover their own products", async () => {
   const { service, seen, restore } = load({ listings: [] })
   try {
     await service.counts({ user: { id: 'u2', role: 'sub_admin' }, allowedShopIds: ['s1'], query: {}, body: {}, params: {} })
-    assert.ok(seen.counted[0]._id, 'product count is scoped')
+    assert.ok(seen.distinct._id, 'product count is scoped')
   } finally { restore() }
 })
 
@@ -65,5 +65,15 @@ test('search by eBay item number finds the listed product', async () => {
     const or = seen.productFilters.at(-1).$or
     assert.ok(or.some((c) => c._id && c._id.$in.includes('p9')), JSON.stringify(or))
     assert.ok(seen.listingFilters.some((f) => f.externalListingId), 'looked up by item number')
+  } finally { restore() }
+})
+
+test('counts cover only products the list can show, each product once', async () => {
+  const { service, restore } = load({
+    products: [{ _id: 'a' }, { _id: 'b' }, { _id: 'c' }],
+    listings: [{ productId: 'a', status: 'live' }, { productId: 'a', status: 'live' }, { productId: 'z', status: 'live' }, { productId: 'b', status: 'error' }],
+  })
+  try {
+    assert.deepEqual(await service.counts(admin), { all: 3, live: 1, unlisted: 1, out_of_stock: 0, ended: 0, error: 1, pending: 0 })
   } finally { restore() }
 })

@@ -110,7 +110,8 @@ async function list(ctx) {
     if (ctx.query.listing === 'unlisted') {
       // Products with no eBay listing yet (drafts, or never sent).
       const listed = (await Listing.find({ marketplace }).select('productId').lean()).map((row) => row.productId)
-      filter._id = ids ? { $in: ids.filter((id) => !listed.some((l) => String(l) === String(id))) } : { $nin: listed }
+      const listedSet = new Set(listed.map(String))
+      filter._id = ids ? { $in: ids.filter((id) => !listedSet.has(String(id))) } : { $nin: listed }
     } else if (ctx.query.listing && ctx.query.listing !== 'all') {
       const rows = await Listing.find({ marketplace, ...listingStatusFilter(ctx.query.listing) }).select('productId')
       const allowed = ids ? new Set(ids.map(String)) : null
@@ -147,18 +148,19 @@ async function list(ctx) {
 async function counts(ctx) {
     const ids = await scopedIds(ctx)
     const productFilter = { marketplace: 'ebay', ...(ids ? { _id: { $in: ids } } : {}) }
-    const [all, listings] = await Promise.all([
-      Product.countDocuments(productFilter),
-      Listing.find({ marketplace: 'ebay', ...(ids ? { productId: { $in: ids } } : {}) }).select('productId status').lean(),
-    ])
-    const out = { all, live: 0, unlisted: 0, out_of_stock: 0, ended: 0, error: 0, pending: 0 }
+    // Only products the list can show, each counted once (a listing without its product is left out).
+    const productIds = new Set((await Product.distinct('_id', productFilter)).map(String))
+    const listings = await Listing.find({ marketplace: 'ebay', ...(ids ? { productId: { $in: ids } } : {}) }).select('productId status').lean()
+    const out = { all: productIds.size, live: 0, unlisted: 0, out_of_stock: 0, ended: 0, error: 0, pending: 0 }
     const listed = new Set()
     for (const row of listings) {
-      listed.add(String(row.productId))
+      const id = String(row.productId)
+      if (!productIds.has(id) || listed.has(id)) continue
+      listed.add(id)
       const key = row.status === 'paused' ? 'ended' : row.status
       if (key in out && key !== 'all' && key !== 'unlisted') out[key] += 1
     }
-    out.unlisted = Math.max(0, all - listed.size)
+    out.unlisted = Math.max(0, out.all - listed.size)
     return out
 }
 

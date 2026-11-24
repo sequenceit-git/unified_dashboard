@@ -167,5 +167,7 @@ analytics.details = {
 }
 
 analytics.dailyTraffic = dailyTraffic
+/** Each listing's last-30-day traffic (Listings page views). */
+analytics.listingTraffic = (token, now = new Date()) => trafficRows(token, now)
 
 module.exports = analytics

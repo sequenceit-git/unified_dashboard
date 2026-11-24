@@ -67,3 +67,34 @@ test("plain days with a time zone are that zone's whole days (eBay US: Pacific)"
     assert.ok(s, 'summary uses the zone too (summer time)')
   } finally { restore() }
 })
+
+test('listing views come from a cached 30-day traffic report; a refusal gives no rows', async () => {
+  const cache = new Map()
+  let calls = 0
+  const restore = stubModules({
+    '/models/Order': {},
+    '/models/Product': {},
+    '/models/Listing': {},
+    '/models/Shop': { findOne: () => chain({ _id: 's1', marketplace: 'ebay', status: 'connected' }), find: () => chain([]) },
+    '../manager': { withShopToken: async (s, fn) => fn('tok') },
+    '../../sections/analytics': { listingTraffic: async () => { calls += 1; return [{ listingId: '1', impressions: 10, views: 2 }] } },
+    '/core/cache': { get: async (k) => cache.get(k), set: async (k, v) => { cache.set(k, v) } },
+  })
+  try {
+    const service = freshRequire('marketplaces/ebay/app/services/analytics.js')
+    assert.deepEqual(await service.listingTraffic(admin), { rows: [{ listingId: '1', impressions: 10, views: 2 }] })
+    await service.listingTraffic(admin)
+    assert.equal(calls, 1, 'second visit is served from the cache')
+  } finally { restore() }
+  const restore2 = stubModules({
+    '/models/Order': {}, '/models/Product': {}, '/models/Listing': {},
+    '/models/Shop': { findOne: () => chain({ _id: 's1', marketplace: 'ebay', status: 'connected' }), find: () => chain([]) },
+    '../manager': { withShopToken: async (s, fn) => fn('tok') },
+    '../../sections/analytics': { listingTraffic: async () => { throw Object.assign(new Error('Insufficient permissions'), { status: 403 }) } },
+    '/core/cache': { get: async () => undefined, set: async () => {} },
+  })
+  try {
+    const service = freshRequire('marketplaces/ebay/app/services/analytics.js')
+    assert.deepEqual(await service.listingTraffic(admin), { rows: [], unavailable: true })
+  } finally { restore2() }
+})

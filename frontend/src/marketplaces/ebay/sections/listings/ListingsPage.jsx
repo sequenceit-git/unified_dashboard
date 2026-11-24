@@ -3,6 +3,8 @@ import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import Button from '../../../../components/ui/Button'
 import { useApi } from '../../../../hooks/useApi'
+import { useAuth } from '../../../../auth/AuthContext'
+import { useSyncReload } from '../../../../hooks/useLiveEvents'
 import PageHeader from '../../ui/PageHeader'
 import AttentionStrip from '../../ui/AttentionStrip'
 import StatusPills from '../../ui/StatusPills'
@@ -26,10 +28,15 @@ export default function ListingsPage() {
   const [rowPatch, setRowPatch] = useState(null)
   const [pill, setPill] = useState('all')
   const [restocking, setRestocking] = useState(null)
+  const { user, isAdmin, hasRoute } = useAuth()
   const counts = useApi(`/api/ebay/listings/counts?k=${refreshKey}`)
-  // 30-day views per eBay item, from the same listing traffic as Analytics (left out when not allowed).
-  const analytics = useApi('/api/ebay/sections/analytics')
-  const traffic = trafficByItem((analytics.data?.tables || []).find((t) => t.id === 'traffic')?.rows)
+  useSyncReload('listings', marketplace, () => counts.refetch())
+  // 30-day views per eBay item (cached on the server; left out when not allowed).
+  const views = useApi('/api/ebay/analytics/listing-traffic')
+  const traffic = views.data ? trafficByItem(views.data.rows) : null
+  // Restock changes stock through Inventory: users without it change stock in the product form instead.
+  const sections = Array.isArray(user?.allowedSections) ? user.allowedSections : []
+  const canRestock = hasRoute('inventory') && (isAdmin || !sections.length || sections.includes('inventory') || sections.includes('ebay:inventory'))
   const { session: directSession } = useDirectListing(marketplace)
   const directWork = hasDirectListingWork(marketplace)
 
@@ -86,6 +93,7 @@ export default function ListingsPage() {
         <CatalogTab
           listing={active.listing}
           traffic={traffic}
+          canRestock={canRestock}
           onEdit={setEditing}
           onList={setListing}
           onRestock={setRestocking}

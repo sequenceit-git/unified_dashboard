@@ -102,7 +102,7 @@
         "color": "gray"
       },
       "error": {
-        "label": "Not listed",
+        "label": "Failed to list",
         "color": "red"
       }
     },
