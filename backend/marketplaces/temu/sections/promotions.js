@@ -6,7 +6,7 @@ const crypto = require('crypto')
 const temu = require('../service')
 const { HttpError } = require('../../../utils/httpError')
 const { words, col, tables } = require('../../../services/marketplace/sectionKit')
-const { temuTime } = require('./helpers')
+const { temuTime, temuAmount } = require('./helpers')
 const goodsTitles = require('./goodsTitles')
 
 // Temu documents no page-size limit for bg.promotion.activity.query; a size it refuses answers
@@ -67,9 +67,10 @@ async function promotions(token) {
 }
 
 /**
- * The quantity and SKU prices to send for one goods: Temu's recommendation, or the seller's own
- * (a positive whole quantity; each price a positive whole number, never above Temu's recommended
- * activity price, so a unit mix-up can't raise a price).
+ * The quantity and SKU prices to send for one goods: Temu's recommendation, or the seller's own.
+ * Own prices are in the unit Temu's recommendation comes in and go back in its shape (a number,
+ * or { amount, currency }), so no unit is guessed; a price never goes above that recommendation,
+ * and a SKU without one can only keep Temu's own price.
  */
 function enrolPlan(g, mine) {
   const recommended = (g.skuList || []).map((s) => ({ skuId: s.skuId, activitySupplierPrice: s.recommendActivitySupplierPrice }))
@@ -79,10 +80,14 @@ function enrolPlan(g, mine) {
   const prices = new Map((mine.skus || []).map((s) => [String(s.skuId), Number(s.price)]))
   const skus = []
   for (const s of recommended) {
-    const price = prices.has(String(s.skuId)) ? prices.get(String(s.skuId)) : s.activitySupplierPrice
-    if (!Number.isInteger(price) || price < 1) return { error: `SKU ${s.skuId}: enter a price` }
-    if (s.activitySupplierPrice != null && price > s.activitySupplierPrice) return { error: `SKU ${s.skuId}: price above Temu's recommended activity price` }
-    skus.push({ skuId: s.skuId, activitySupplierPrice: price })
+    if (!prices.has(String(s.skuId))) { skus.push(s); continue }
+    const raw = s.activitySupplierPrice
+    const rec = temuAmount(raw)?.value
+    if (!Number.isFinite(rec)) return { error: `SKU ${s.skuId}: Temu gave no recommended price, so only Temu's own price can be used` }
+    const price = Math.round(prices.get(String(s.skuId)) * 100) / 100
+    if (!Number.isFinite(price) || price <= 0) return { error: `SKU ${s.skuId}: enter a price` }
+    if (price > rec) return { error: `SKU ${s.skuId}: price above Temu's recommended activity price` }
+    skus.push({ skuId: s.skuId, activitySupplierPrice: raw && typeof raw === 'object' ? { ...raw, amount: price.toFixed(2) } : price })
   }
   return { quantity, skus }
 }
@@ -142,10 +147,12 @@ async function promotionsWithActions(token, shop) {
 promotionsWithActions.details = {
   /**
    * Goods Temu allows in an activity, with its recommended activity quantity and price per SKU
-   * (Temu's integer price unit, cents), for the Enrol goods steps.
+   * (the amount as Temu gives it; null when Temu gives none), for the Enrol goods steps.
    */
   candidates: async (token, shop, activityId) => {
-    const goods = (await candidates(token, activityId)).filter((g) => g.isAllowedEnroll)
+    const all = await candidates(token, activityId)
+    const goods = all.filter((g) => g.isAllowedEnroll)
+    goods.info = all.info
     const titles = await goodsTitles(shop, goods.map((g) => String(g.goodsId))).catch(() => new Map())
     return {
       title: goods.info?.activityName || `Activity ${activityId}`,
@@ -153,7 +160,7 @@ promotionsWithActions.details = {
         goodsId: String(g.goodsId),
         title: titles.get(String(g.goodsId)) || '',
         quantity: g.recommendActivityQuantity ?? null,
-        skus: (g.skuList || []).map((s) => ({ skuId: String(s.skuId), price: s.recommendActivitySupplierPrice ?? null })),
+        skus: (g.skuList || []).map((s) => ({ skuId: String(s.skuId), price: temuAmount(s.recommendActivitySupplierPrice)?.value ?? null })),
       })),
     }
   },
@@ -180,7 +187,8 @@ promotionsWithActions.actions = {
    */
   enrol: async (token, shop, activityId, value) => {
     // Each item: a goods id (Temu's recommended price and quantity), or
-    // { goodsId, quantity, skus: [{ skuId, price }] } with your own (price in Temu's unit, cents).
+    // { goodsId, quantity, skus: [{ skuId, price }] } with your own (price in the unit Temu's
+    // recommendation comes in; sent back in that same shape).
     const items = (Array.isArray(value) ? value : [value]).filter(Boolean)
     const own = new Map(items.filter((v) => typeof v === 'object').map((v) => [String(v.goodsId), v]))
     const chosen = [...new Set(items.map((v) => String(typeof v === 'object' ? v.goodsId : v)).filter(Boolean))]

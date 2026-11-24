@@ -209,3 +209,34 @@ test('enrol with your own price per SKU and quantity; never above Temu\'s recomm
     assert.match(res.refused[1].reason, /quantity/i)
   } finally { restore() }
 })
+
+test('own prices keep Temu\'s unit and shape; no recommendation means no own price', async () => {
+  const calls = []
+  const restore = stubModules({
+    '/models/Listing': modelStub(() => []),
+    '/models/Product': modelStub(() => []),
+    '../service': {
+      call: async (type, body) => {
+        calls.push([type, body])
+        if (type === 'bg.promotion.activity.candidate.goods.query') return { activityInfo: { activityName: 'Spring deal' }, goodsList: [
+          { goodsId: 1, isAllowedEnroll: true, recommendActivityQuantity: 5, skuList: [{ skuId: 11, recommendActivitySupplierPrice: { amount: '8.50', currency: 'USD' } }] },
+          { goodsId: 2, isAllowedEnroll: true, recommendActivityQuantity: 5, skuList: [{ skuId: 21, recommendActivitySupplierPrice: null }] },
+        ] }
+        if (type === 'bg.promotion.activity.goods.enroll') return { draftId: 1 }
+        if (type === 'bg.promotion.activity.goods.operation.query') return []
+        throw new Error(`unexpected ${type}`)
+      },
+    },
+  })
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const c = await promotions.details.candidates('tok', {}, '600')
+    assert.equal(c.title, 'Spring deal')
+    assert.deepEqual(c.goods.map((g) => g.skus[0].price), [8.5, null])
+    const res = await promotions.actions.enrol('tok', {}, '600', [{ goodsId: '1', quantity: 3, skus: [{ skuId: '11', price: 7.99 }] }, { goodsId: '2', quantity: 3, skus: [{ skuId: '21', price: 999 }] }])
+    const sent = calls.filter(([t]) => t === 'bg.promotion.activity.goods.enroll').map(([, b]) => b.enrollGoods.enrollSkuList)
+    assert.deepEqual(sent, [[{ skuId: 11, activitySupplierPrice: { amount: '7.99', currency: 'USD' } }]])
+    assert.deepEqual(res.refused.map((r) => r.goodsId), ['2'])
+    assert.match(res.refused[0].reason, /no recommended price/)
+  } finally { restore() }
+})

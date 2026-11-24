@@ -11,22 +11,24 @@ import { Input } from '../../../../components/ui/Input'
 import { EmptyState, ErrorState, Spinner } from '../../../../components/ui/Feedback'
 import StepPanel, { Step } from '../../ui/StepPanel'
 import StepProblems from '../../ui/StepProblems'
-import { bigCuts, enrolItems, enrolProblems, startEdits } from './enrolView'
+import { bigCuts, enrolItems, enrolProblems, shownPrice, startEdits } from './enrolView'
 
 const BASE = '/api/temu/sections/promotions'
 const STEPS = [{ id: 'pick', label: 'Pick goods' }, { id: 'prices', label: 'Quantity & prices' }, { id: 'confirm', label: 'Confirm' }]
-const usd = (c) => (c == null ? '—' : `$${(c / 100).toFixed(2)}`)
+const usd = (v) => (v == null ? 'no price' : `$${Number(v).toFixed(2)}`)
 
 export default function EnrolPanel({ activity, onClose, onDone }) {
   const { token } = useAuth()
   const { data, loading, error, refetch } = useApi(`${BASE}/candidates${queryString({ id: activity.id })}`)
   const goods = useMemo(() => data?.goods || [], [data])
-  const [picked, setPicked] = useState(() => new Set())
+  const [chosenIds, setPicked] = useState(() => new Set())
   const [edited, setEdited] = useState({})
   const [step, setStep] = useState('pick')
   const [tried, setTried] = useState(false)
   const [busy, setBusy] = useState(false)
   const [saveError, setSaveError] = useState('')
+  // Only goods still in Temu's list count as picked.
+  const picked = useMemo(() => new Set(goods.map((g) => g.goodsId).filter((id) => chosenIds.has(id))), [goods, chosenIds])
   const edits = useMemo(() => ({ ...startEdits(goods), ...edited }), [goods, edited])
   const problems = enrolProblems(goods, picked, edits)
   const shown = tried ? problems : []
@@ -49,6 +51,12 @@ export default function EnrolPanel({ activity, onClose, onDone }) {
     }
   }
   const chosen = goods.filter((g) => picked.has(g.goodsId))
+  // Not while submitting; ask before throwing away picks or changes.
+  const close = () => {
+    if (busy) return
+    if ((picked.size || Object.keys(edited).length) && !window.confirm('Close without enrolling? Your picks and changes are lost.')) return
+    onClose()
+  }
 
   return (
     <StepPanel
@@ -57,10 +65,10 @@ export default function EnrolPanel({ activity, onClose, onDone }) {
       active={step}
       onStep={setStep}
       problemSteps={new Set(shown.map((p) => p.step))}
-      onClose={onClose}
+      onClose={close}
       actions={<>
         {saveError && <span className="text-sm text-rose-600 dark:text-rose-400">{saveError}</span>}
-        <Button variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
+        <Button variant="secondary" onClick={close} disabled={busy}>Cancel</Button>
         <Button onClick={submit} disabled={busy || loading || !goods.length}>{busy ? 'Submitting…' : `Enrol ${picked.size || ''} goods`.replace('  ', ' ')}</Button>
       </>}
     >
@@ -94,7 +102,7 @@ export default function EnrolPanel({ activity, onClose, onDone }) {
       <Step id="prices" active={step}>
         <StepProblems problems={shown} step="prices" />
         {!chosen.length && <p className="text-sm text-gray-500 dark:text-slate-400">Pick goods first.</p>}
-        {chosen.length > 0 && <p className="text-xs text-gray-500 dark:text-slate-400">Filled in with Temu's recommendation. You can lower a price or change the quantity; a price can't go above Temu's recommended activity price.</p>}
+        {chosen.length > 0 && <p className="text-xs text-gray-500 dark:text-slate-400">Filled in with Temu's recommendation. You can lower a price or change the quantity; a price can't go above Temu's recommended activity price. A SKU without a Temu price keeps Temu's own.</p>}
         {chosen.map((g) => (
           <div key={g.goodsId} className="space-y-2 rounded-lg border p-3 dark:border-slate-700">
             <div className="flex flex-wrap items-end justify-between gap-2">
@@ -102,9 +110,9 @@ export default function EnrolPanel({ activity, onClose, onDone }) {
               <div className="w-40"><Input label="Activity quantity" type="number" min="1" step="1" value={edits[g.goodsId].quantity} onChange={(e) => change(g.goodsId, { quantity: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {g.skus.map((s) => (
-                <Input key={s.skuId} label={`SKU ${s.skuId} · Temu ${usd(s.price)}`} type="number" min="0.01" step="0.01" max={s.price != null ? (s.price / 100).toFixed(2) : undefined} value={edits[g.goodsId].prices[s.skuId]} onChange={(e) => change(g.goodsId, { prices: { [s.skuId]: e.target.value } })} />
-              ))}
+              {g.skus.map((s) => (s.price == null
+                ? <p key={s.skuId} className="self-end text-xs text-gray-500 dark:text-slate-400">SKU {s.skuId}: Temu gave no price; Temu's own is used.</p>
+                : <Input key={s.skuId} label={`SKU ${s.skuId} · Temu ${usd(s.price)}`} type="number" min="0.01" step="0.01" max={Number(s.price).toFixed(2)} value={edits[g.goodsId].prices[s.skuId]} onChange={(e) => change(g.goodsId, { prices: { [s.skuId]: e.target.value } })} />))}
             </div>
           </div>
         ))}
@@ -113,7 +121,7 @@ export default function EnrolPanel({ activity, onClose, onDone }) {
         {problems.length > 0 && <p className="text-sm text-amber-700 dark:text-amber-300">Fix {problems.length} thing{problems.length === 1 ? '' : 's'} first: {problems[0].message}</p>}
         {cuts.length > 0 && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-            <p className="font-semibold">Check these big cuts:</p>
+            <p className="font-semibold">Check these before enrolling:</p>
             <ul className="list-disc pl-5">{cuts.map((c) => <li key={c}>{c}</li>)}</ul>
           </div>
         )}
@@ -121,7 +129,7 @@ export default function EnrolPanel({ activity, onClose, onDone }) {
           {chosen.map((g) => (
             <li key={g.goodsId} className="px-3 py-2">
               <span className="font-medium">{g.title || `Goods ${g.goodsId}`}</span>
-              <span className="block text-xs text-gray-500 dark:text-slate-400">{edits[g.goodsId].quantity} units · {g.skus.map((s) => `SKU ${s.skuId} $${edits[g.goodsId].prices[s.skuId] || '—'}`).join(' · ')}</span>
+              <span className="block text-xs text-gray-500 dark:text-slate-400">{edits[g.goodsId].quantity} units · {g.skus.map((s) => (s.price == null ? `SKU ${s.skuId} Temu's price` : `SKU ${s.skuId} $${shownPrice(edits[g.goodsId].prices[s.skuId]) || '—'}`)).join(' · ')}</span>
             </li>
           ))}
         </ul>

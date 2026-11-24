@@ -7,8 +7,9 @@ const load = () => server.ssrLoadModule('/src/marketplaces/temu/sections/promoti
 test.after(() => server.close())
 
 const GOODS = [
-  { goodsId: '77', title: 'Phone case', quantity: 30, skus: [{ skuId: '1', price: 850 }, { skuId: '2', price: 900 }] },
-  { goodsId: '88', title: '', quantity: 10, skus: [{ skuId: '5', price: 400 }] },
+  { goodsId: '77', title: 'Phone case', quantity: 30, skus: [{ skuId: '1', price: 8.5 }, { skuId: '2', price: 9 }] },
+  { goodsId: '88', title: '', quantity: 10, skus: [{ skuId: '5', price: 4 }] },
+  { goodsId: '99', title: 'No rec', quantity: 2, skus: [{ skuId: '9', price: null }] },
 ]
 
 test('starts from Temu\'s recommendation, in dollars', async () => {
@@ -21,7 +22,7 @@ test('what is sent: picked goods only, prices in cents', async () => {
   const edits = startEdits(GOODS)
   edits['77'].prices['1'] = '7.99'
   edits['77'].quantity = '12'
-  assert.deepEqual(enrolItems(GOODS, new Set(['77']), edits), [{ goodsId: '77', quantity: 12, skus: [{ skuId: '1', price: 799 }, { skuId: '2', price: 900 }] }])
+  assert.deepEqual(enrolItems(GOODS, new Set(['77']), edits), [{ goodsId: '77', quantity: 12, skus: [{ skuId: '1', price: 7.99 }, { skuId: '2', price: 9 }] }])
 })
 
 test('problems per step: nothing picked, bad quantity, price above Temu or empty', async () => {
@@ -41,4 +42,12 @@ test('a big cut is flagged, not blocked', async () => {
   const edits = startEdits(GOODS)
   edits['88'].prices['5'] = '1.00'
   assert.deepEqual(bigCuts(GOODS, new Set(['77', '88']), edits), ['Goods 88 · SKU 5: $1.00 is 75% below Temu’s $4.00'])
+})
+
+test('no Temu recommendation: the price stays Temu\'s; quantity over twice Temu\'s is flagged', async () => {
+  const { startEdits, enrolItems, bigCuts } = await load()
+  const edits = startEdits(GOODS)
+  assert.deepEqual(enrolItems(GOODS, new Set(['99']), edits), [{ goodsId: '99', quantity: 2, skus: [] }])
+  edits['77'].quantity = '300'
+  assert.deepEqual(bigCuts(GOODS, new Set(['77']), edits), ['Phone case: 300 units is over twice Temu’s 30'])
 })
