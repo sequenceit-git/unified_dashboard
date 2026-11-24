@@ -341,4 +341,89 @@ async function fullAddress(ctx) {
     }
 }
 
-module.exports = { temuDetail, fullAddress, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }
+const unixIso = (t) => (t != null && t !== '' ? new Date(Number(t) * (String(t).length > 11 ? 1 : 1000)).toISOString() : null)
+
+/** Runs Temu calls for an order's shop, each behind the app's granted-method check. */
+function temuRun(shop, fn) {
+    const temu = require('../../service')
+    const { grantAware } = require('../../sections/helpers')
+    return marketplaceManager.withShopToken(shop, (token) => fn((method, params = {}) => grantAware(shop, method, () => temu.call(method, { access_token: token, ...params }))()))
+}
+
+/**
+ * GET /:id/temu-follow-up — after the sale: each package with its tracking events, the buyer's
+ * customisation, and Temu's result for out-of-stock cancellations (codes Temu doesn't document
+ * are shown as "Temu status N").
+ */
+async function temuFollowUp(ctx) {
+    const { order, shop } = await temuOrderFor(ctx)
+    const sn = order.externalOrderId
+    return temuRun(shop, async (call) => {
+      const detail = await call('bg.order.detail.v2.get', { parentOrderSn: sn })
+      const items = new Map((detail.orderList || []).map((l) => [String(l.orderSn), l.goodsName || '']))
+      const [shipments, custom, oos] = await Promise.all([
+        call('bg.logistics.shipment.v2.get', { parentOrderSn: sn }).catch(() => ({ shipmentInfoDTO: [] })),
+        items.size ? call('bg.order.customization.get', { orderSnList: [...items.keys()] }).catch(() => []) : [],
+        call('temu.order.cancel.outofstock.result.get', { parentOrderSn: sn }).catch(() => ({ applyResultInfoList: [] })),
+      ])
+      const seen = new Set()
+      const pkgs = (shipments.shipmentInfoDTO || []).flatMap((s) => [s, ...(s.subPackageShipmentInfoList || [])]).filter((p) => p.packageSn && !seen.has(p.packageSn) && seen.add(p.packageSn))
+      const packages = await Promise.all(pkgs.map(async (p) => {
+        const t = await call('temu.track.trackinginfo.get', { packageSn: p.packageSn }).catch(() => ({ trackingInfo: [] }))
+        return {
+          packageSn: p.packageSn,
+          carrier: p.carrierName || '',
+          trackingNumber: p.trackingNumber || t.trackingNum || '',
+          events: (t.trackingInfo || []).map((e) => ({ status: e.statusText || e.logisticsStatus || '', time: unixIso(e.logisticsUpdatedAt) })).sort((a, b) => String(b.time).localeCompare(String(a.time))),
+        }
+      }))
+      return {
+        items: [...items].map(([orderSn, item]) => ({ orderSn, item })),
+        packages,
+        customizations: (Array.isArray(custom) ? custom : custom?.list || []).map((c) => ({ orderSn: String(c.orderSn), item: items.get(String(c.orderSn)) || '', text: c.customizedText || '', images: (c.previewList || []).map((p) => p.imageUrl).filter(Boolean) })),
+        cancellations: (oos.applyResultInfoList || []).map((r) => ({ orderSn: String(r.orderSn), item: items.get(String(r.orderSn)) || '', status: `Temu status ${r.applyStatus}` })),
+      }
+    })
+}
+
+/** GET /temu-ship-together — Temu's groups of orders that can ship in one package, and unshipped packages. */
+async function shipTogether(ctx) {
+    const { canUseSection } = require('../../../../middleware/auth')
+    if (!canUseSection(ctx.authUser || ctx.user, 'temu', 'orders', 'orders')) throw new HttpError(403, { error: 'You do not have access to Orders on this shop' })
+    const filter = { marketplace: 'temu', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    if (!shop) throw new HttpError(404, { error: 'No connected Temu shop' })
+    return temuRun(shop, async (call) => {
+      const res = await call('bg.order.combinedshipment.list.get')
+      const groups = (res.combinedShippingGroups || []).map((g) => ({ orders: (g.combinedShippingGroup || []).map((o) => ({ parentOrderSn: String(o.parentOrderSn), ordered: unixIso(o.parentOrderTime) })) })).filter((g) => g.orders.length)
+      const sns = groups.flatMap((g) => g.orders.map((o) => o.parentOrderSn)).slice(0, 50)
+      const unshipped = sns.length ? await call('bg.order.unshipped.package.get', { parentOrderSnList: sns, pageNumber: 1, pageSize: 50 }).catch(() => ({ unshippedPackage: [] })) : { unshippedPackage: [] }
+      return {
+        groups,
+        unshippedPackages: (unshipped.unshippedPackage || []).map((p) => ({ packageSn: p.packageSn, carrier: p.carrierName || '', trackingNumber: p.trackingNumber || '', orders: [...new Set((p.packageDetail?.shippableOrders || []).map((o) => String(o.parentOrderSn)))] })),
+      }
+    })
+}
+
+/** POST /:id/verification { items: [{ orderSn, serialNumber?, imeiNumbers? }] } — details Temu asks for before shipping. */
+async function uploadVerification(ctx) {
+    const { order, shop } = await temuOrderFor(ctx)
+    const items = (Array.isArray(ctx.body?.items) ? ctx.body.items : []).map((i) => ({
+      orderSn: String(i.orderSn || ''),
+      serialNumber: String(i.serialNumber || '').trim(),
+      imei: (Array.isArray(i.imeiNumbers) ? i.imeiNumbers : []).map((x) => String(x).trim()).filter(Boolean),
+    })).filter((i) => i.orderSn && (i.serialNumber || i.imei.length))
+    if (!items.length) throw new HttpError(400, { error: 'Enter a serial number or IMEI for at least one item.' })
+    return temuRun(shop, async (call) => {
+      const detail = await call('bg.order.detail.v2.get', { parentOrderSn: order.externalOrderId })
+      const own = new Set((detail.orderList || []).map((l) => String(l.orderSn)))
+      if (items.some((i) => !own.has(i.orderSn))) throw new HttpError(400, { error: 'An item is not part of this order.' })
+      await call('temu.local.order.verification.upload', {
+        orderList: items.map((i) => ({ orderSn: i.orderSn, verificationInfo: [{ ...(i.serialNumber ? { serialNumber: i.serialNumber } : {}), ...(i.imei.length ? { imeiNumberList: i.imei } : {}) }] })),
+      })
+      return { message: 'Verification details sent to Temu.' }
+    })
+}
+
+module.exports = { temuFollowUp, shipTogether, uploadVerification, temuDetail, fullAddress, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }

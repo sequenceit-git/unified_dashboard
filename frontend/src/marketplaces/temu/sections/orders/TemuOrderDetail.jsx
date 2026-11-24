@@ -8,6 +8,7 @@ import { useAuth } from '../../../../auth/AuthContext'
 import { api } from '../../../../lib/api'
 import { useApi } from '../../../../hooks/useApi'
 import Button from '../../../../components/ui/Button'
+import TemuFollowUp from './TemuFollowUp'
 
 const money = (a) => (a ? new Intl.NumberFormat(undefined, { style: 'currency', currency: a.currency || 'USD' }).format(a.value) : '—')
 
@@ -53,6 +54,7 @@ export default function TemuOrderDetail({ orderId }) {
           </ul>
         )}
       </div>
+      <TemuFollowUp orderId={orderId} />
       <div>
         <h3 className="font-semibold text-gray-900 dark:text-slate-100">Buyer's full address</h3>
         {!address && (

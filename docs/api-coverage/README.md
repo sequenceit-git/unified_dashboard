@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 63 | 0 | 70 | 0 | 13 | — |
+| Temu | 133 | 70 | 0 | 63 | 0 | 13 | — |
 
 ## eBay
 
@@ -1615,15 +1615,12 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | low | medium | `temu.local.product.attributes.get` | — | Query Attribute Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.product.variation.get` | — | Query Mandatory And Optional Variations Of Products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 
-#### orders (5)
+#### orders (2)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
 | — | medium | small | `temu.order.cancel.appeal.apply` | — | Merchant initiates order cancellation application interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
 | — | medium | small | `temu.order.cancel.appeal.result.get` | — | Merchant initiates order cancellation result query interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
-| — | medium | small | `temu.order.cancel.outofstock.result.get` | — | Merchant order out of stock cancel result query | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
-| — | low | small | `bg.order.customization.get` | — | Query order customization information | Order customisation details and order verification uploads. |
-| — | low | small | `temu.local.order.verification.upload` | — | Merchants upload verification information before shipping. | Order customisation details and order verification uploads. |
 
 #### price-reviews (1)
 
@@ -1637,7 +1634,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 |---|---|---|---|---|---|---|
 | — | high | medium | `bg.promotion.activity.goods.update` | — | Update Activity Goods Information | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
 
-#### shipping (17)
+#### shipping (13)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
@@ -1648,11 +1645,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | high | large | `bg.logistics.shipment.update` | — | Try buy shipping again api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
 | — | high | large | `bg.logistics.shippingservices.get` | — | Get available shipping services api | Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type. |
 | — | medium | small | `bg.logistics.shipment.sub.confirm` | — | Add additional tracking information in batch api | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
-| — | medium | small | `bg.logistics.shipment.v2.get` | — | Get Order Shipment Information | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
 | — | medium | small | `bg.logistics.shipped.package.confirm` | — | bg logistics shipped package confirm | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
-| — | medium | small | `bg.order.combinedshipment.list.get` | — | Combined Shipment Orders | Orders that can ship together and unshipped packages. |
-| — | medium | small | `bg.order.unshipped.package.get` | — | bg order unshipped package get | Orders that can ship together and unshipped packages. |
-| — | medium | small | `temu.track.trackinginfo.get` | — | temu.track.trackinginfo.get | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
 | — | low | small | `temu.logistics.label.list.get` | — | temu logistics label list get | Carrier pickup reservations, label list and shipping logistics types. |
 | — | low | small | `temu.logistics.shiplogisticstype.get` | — | Get all online ship logistics type | Carrier pickup reservations, label list and shipping logistics types. |
 | — | low | small | `temu.logistics.shipment.pickup.reservation.cancel` | — | Cancel reservationSn api | Carrier pickup reservations, label list and shipping logistics types. |
@@ -1702,19 +1695,19 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Flash (real images) | `bg.flash.open.upload.real.image` | Kaiping real shot picture upload | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
 | missing | Flash (real images) | `bg.flash.open.upload.recognize` | Kaiping real-time image acquisition test result interface | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
 | covered | Order | `bg.order.amount.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP | `marketplaces/temu/orders.js` |
+| covered | Order | `bg.order.combinedshipment.list.get` | Combined Shipment Orders | The bg.order.combinedshipment.list.get interface is designed for merchants to retrieve combined shipping groups including lists of parent orders that can be combined for shipping. | `marketplaces/temu/app/services/orders.js` |
+| covered | Order | `bg.order.customization.get` | Query order customization information | Self developed sellers and third-party ISVs obtain customized product content information in bulk through Open API | `marketplaces/temu/app/services/orders.js` |
 | covered | Order | `bg.order.decryptshippinginfo.get` | Get Order Buyer Sensitive Address Information | bg.order.decryptshippinginfo.get interface is designed to retrieve sensitive shipping address information for a specific order. | `marketplaces/temu/app/services/orders.js` |
 | covered | Order | `bg.order.detail.v2.get` | Get Order Detail information | The bg.order.detail.v2.get interface is designed for merchants to retrieve detailed information about a specific order within their respective stores. This functionality provides merchants with access to comprehensive or | `marketplaces/temu/app/services/orders.js` |
 | covered | Order | `bg.order.list.v2.get` | Batch Get Order Information | The bg.order.list.v2.get interface is designed for support batch return of corresponding order lists based on filtering criteria. | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/shipping.js` |
 | covered | Order | `bg.order.shippinginfo.v2.get` | Get Order Buyer Address Information v2 | The bg.order.shippinginfo.get.V2 interface is designed to retrieve shipping address information for a specific order. This functionality is crucial for merchants and logistics providers to ensure that orders are shipped | `marketplaces/temu/orders.js` |
+| covered | Order | `bg.order.unshipped.package.get` | bg order unshipped package get | The bg.order.unshipped.package.get interface is for sellers to query information about packages that have been fulfilled successfully by Temu-integrated channel. | `marketplaces/temu/app/services/orders.js` |
 | covered | Order | `temu.order.amount.v2.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP. This API is currently available only in select marketplaces. | `marketplaces/temu/app/services/orders.js` |
 | covered | Order | `temu.order.cancel.outofstock.apply` | Merchant order out of stock cancel apply | The user takes the initiative to initiate a stock-out situation, which will be submitted to the risk control department for review. | `marketplaces/temu/orders.js` |
-| missing | Order | `bg.order.combinedshipment.list.get` | Combined Shipment Orders | The bg.order.combinedshipment.list.get interface is designed for merchants to retrieve combined shipping groups including lists of parent orders that can be combined for shipping. |  |
-| missing | Order | `bg.order.customization.get` | Query order customization information | Self developed sellers and third-party ISVs obtain customized product content information in bulk through Open API |  |
-| missing | Order | `bg.order.unshipped.package.get` | bg order unshipped package get | The bg.order.unshipped.package.get interface is for sellers to query information about packages that have been fulfilled successfully by Temu-integrated channel. |  |
+| covered | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface | `marketplaces/temu/app/services/orders.js` |
 | missing | Order | `temu.order.cancel.appeal.apply` | Merchant initiates order cancellation application interface | Support merchants to initiate cancellation requests through the interface |  |
 | missing | Order | `temu.order.cancel.appeal.result.get` | Merchant initiates order cancellation result query interface | Merchant queries the status of cancellation order appeal records |  |
-| missing | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface |  |
-| missing | Order verification | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods. |  |
+| covered | Order verification | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods. | `marketplaces/temu/app/services/orders.js` |
 | covered | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels | `marketplaces/temu/app/services/compliance.js` |
 | covered | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.category.recommend` | Query Recommended Category by Product Name | query recommended category by product name | `marketplaces/temu/app/services/goodsHelpers.js` |
@@ -1792,14 +1785,15 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Shipping | `bg.freight.template.list.query` | Query Freight Template List | query freight template list by Temu seller, use for claim that goods logistics fee rules when listing items | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/sections/shipping.js` |
 | covered | Shipping | `bg.logistics.companies.get` | get logistics companies | Obtain full logistics providers that support shipping at the corresponding regoin | `marketplaces/temu/orders.js` |
 | covered | Shipping | `bg.logistics.shipment.v2.confirm` | Confirm Order Shipment | The bg.logistic.shipment.v2.confirm interface is designed to synchronize and return order fulfillment information through this interface. Switch the order status from pending shipment to shipped. | `marketplaces/temu/orders.js` |
+| covered | Shipping | `bg.logistics.shipment.v2.get` | Get Order Shipment Information | The bg.logistics.shipment.v2.get interface is for sellers to verify shipped info after self-fulfillment. | `marketplaces/temu/app/services/orders.js` |
 | covered | Shipping | `bg.logistics.warehouse.list.get` | Get shipping address api | Sellers can use this API to obtain the shop's warehouse information. | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/shipping.js` |
+| covered | Shipping | `temu.track.trackinginfo.get` | temu.track.trackinginfo.get | Logistics trajectory detail query interface | `marketplaces/temu/app/services/orders.js` |
 | missing | Shipping | `bg.logistics.shipment.create` | Buy shipping api | The bg.logistics.shipment.create interface is for sellers to place online logistics orders and receive package numbers, which enables to effortlessly place logistics orders with selected carriers online. |  |
 | missing | Shipping | `bg.logistics.shipment.document.get` | Print shipping label api | The bg.logistics.shipment.document.get interface is for sellers to obtain the express delivery waybill which has been fulfilled successfully by Temu-integrated channel so as to facilitate the printing of the express deli |  |
 | missing | Shipping | `bg.logistics.shipment.result.get` | Get buy shipping detail api | The bg.logistics.shipment.result.get interface is for sellers to query the result of placing online logistics orders, with the shipping label status including in-progress{0}, successful{1}, and failed{2}. |  |
 | missing | Shipping | `bg.logistics.shipment.shippingtype.update` | Edit shipping information api | The bg.logistics.shipment.shippingtype.update interface is used by sellers to update logistics tracking numbers, supporting the following scenarios: non-integrated logistics updating logistics tracking numbers; Temu-inte |  |
 | missing | Shipping | `bg.logistics.shipment.sub.confirm` | Add additional tracking information in batch api | The bg.logistics.shipment.sub.confirm interface should only be used in scenarios where the smallest sku needs to be shipped as split packages, and can append the sub-parcel information to the main parcel. |  |
 | missing | Shipping | `bg.logistics.shipment.update` | Try buy shipping again api | The bg.logistics.shipment.update interface is for sellers to create shipment logistics orders later, and to re-order online if the order fails. |  |
-| missing | Shipping | `bg.logistics.shipment.v2.get` | Get Order Shipment Information | The bg.logistics.shipment.v2.get interface is for sellers to verify shipped info after self-fulfillment. |  |
 | missing | Shipping | `bg.logistics.shipped.package.confirm` | bg logistics shipped package confirm | The bg.logistics.shipped.package.confirm interface is for sellers to support batch conversion of packages that have been fulfilled successfully by Temu-integrated channel but not shipped to shipped, and will be automatic |  |
 | missing | Shipping | `bg.logistics.shippingservices.get` | Get available shipping services api | The bg.logistics.shippingservices.get interface is for sellers to retrieve supported shipping carriers based on package dimensions and weight, which allows sellers to quickly determine which carriers can handle shipment |  |
 | missing | Shipping | `temu.logistics.label.list.get` | temu logistics label list get | You can use this interface to query the package information that has been fulfilled using the temu shipping form. |  |
@@ -1807,7 +1801,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Shipping | `temu.logistics.shipment.pickup.reservation.cancel` | Cancel reservationSn api | The temu.logistics.shipment.pickup.reservation.cancel API enables sellers to cancel reservationSn. |  |
 | missing | Shipping | `temu.logistics.shipment.pickup.reservation.create` | Create package reservation api | The temu.logistics.shipment.pickup.reservation.create API enables sellers to schedule package pickups. When multiple packages meet the criteria for consolidated pickup appointments, they will be merged into a single rese |  |
 | missing | Shipping | `temu.logistics.shipment.pickup.reservation.result.get` | Get package reservation result api | The temu.logistics.shipment.pickup.reservation.result.get API retrieves reservation details for the current package. When multiple packages correspond to one reservationSn, the response returns all packages under that re |  |
-| missing | Shipping | `temu.track.trackinginfo.get` | temu.track.trackinginfo.get | Logistics trajectory detail query interface |  |
 | missing | Warehouse | `bg.cooperativewarehouse.fulfill.cancel` | Cooperative warehouse fulfill cancel | cooperation warehouse ERP order |  |
 | missing | Warehouse | `bg.cooperativewarehouse.fulfill.query` | Cooperative warehouse fulfill query | cooperate warehouse erp order |  |
 | missing | Warehouse | `bg.cooperativewarehouse.fulfill.submit` | Cooperative warehouse fulfill submit | cooperativewarehouse_fulfill |  |

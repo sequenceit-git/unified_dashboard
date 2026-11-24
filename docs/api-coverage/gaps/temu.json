@@ -65,24 +65,6 @@
     "priority": "low",
     "value": "Upload real product photos (real-shot images)."
   },
-  "bg.order.combinedshipment.list.get": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "medium",
-    "value": "Orders that can ship together and unshipped packages."
-  },
-  "bg.order.customization.get": {
-    "section": "orders",
-    "size": "small",
-    "priority": "low",
-    "value": "Order customisation details and order verification uploads."
-  },
-  "bg.order.unshipped.package.get": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "medium",
-    "value": "Orders that can ship together and unshipped packages."
-  },
   "temu.order.cancel.appeal.apply": {
     "section": "orders",
     "size": "small",
@@ -94,18 +76,6 @@
     "size": "small",
     "priority": "medium",
     "value": "Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals."
-  },
-  "temu.order.cancel.outofstock.result.get": {
-    "section": "orders",
-    "size": "small",
-    "priority": "medium",
-    "value": "Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals."
-  },
-  "temu.local.order.verification.upload": {
-    "section": "orders",
-    "size": "small",
-    "priority": "low",
-    "value": "Order customisation details and order verification uploads."
   },
   "bg.local.goods.category.check": {
     "section": "goods",
@@ -335,12 +305,6 @@
     "priority": "high",
     "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
   },
-  "bg.logistics.shipment.v2.get": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "medium",
-    "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
-  },
   "bg.logistics.shipped.package.confirm": {
     "section": "shipping",
     "size": "small",
@@ -382,12 +346,6 @@
     "size": "small",
     "priority": "low",
     "value": "Carrier pickup reservations, label list and shipping logistics types."
-  },
-  "temu.track.trackinginfo.get": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "medium",
-    "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
   },
   "bg.cooperativewarehouse.fulfill.cancel": {
     "section": "new: cooperative warehouse",

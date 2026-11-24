@@ -13,10 +13,12 @@ import { Select } from '../../../../components/ui/Input'
 import Pagination from '../../../../components/ui/Pagination'
 import SearchInput from '../../../../components/ui/SearchInput'
 import OrderDrawer from './OrderDrawer'
+import ShipTogether from './ShipTogether'
 
 const STATUSES = ['all', 'pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'returned', 'refunded']
 
 export default function OrdersPage() {
+  const [showCombine, setShowCombine] = useState(false)
   const { token } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
@@ -95,9 +97,12 @@ export default function OrdersPage() {
           <h1 className="text-xl sm:text-2xl font-bold">{section.label} orders</h1>
           {syncMessage && <p className="text-xs text-emerald-600 font-medium">{syncMessage}</p>}
         </div>
-        <Button onClick={handleSyncOrders} disabled={syncing} size="sm" className="self-start sm:self-auto">
-          {syncing ? 'Syncing...' : `Sync ${section.label}`}
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button onClick={() => setShowCombine(true)} variant="secondary" size="sm">Ship together</Button>
+          <Button onClick={handleSyncOrders} disabled={syncing} size="sm">
+            {syncing ? 'Syncing...' : `Sync ${section.label}`}
+          </Button>
+        </div>
       </div>
       <Card>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -145,6 +150,7 @@ export default function OrdersPage() {
           }}
         />
       )}
+      {showCombine && <ShipTogether onClose={() => setShowCombine(false)} />}
     </div>
   )
 }

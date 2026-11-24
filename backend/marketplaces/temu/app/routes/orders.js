@@ -42,6 +42,18 @@ function ordersRoutes(shopKey) {
     }
   })
 
+  // Temu order follow-up (services/orders.js): ship-together groups, after-sale details, verification.
+  for (const [method, path, fn] of [['get', '/temu-ship-together', 'shipTogether'], ['get', '/:id/temu-follow-up', 'temuFollowUp'], ['post', '/:id/verification', 'uploadVerification']]) {
+    router[method](path, async (req, res) => {
+      try {
+        res.json(await service[fn](ctxOf(req)))
+      } catch (err) {
+        if (err instanceof HttpError) return res.status(err.status).json(err.body)
+        res.status(502).json({ error: err.message })
+      }
+    })
+  }
+
   // GET /api/<shop>/orders/:id
   router.get('/:id', async (req, res) => {
     try {
