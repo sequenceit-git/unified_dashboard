@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 36 | 0 | 97 | 0 | 21 | — |
+| Temu | 133 | 40 | 0 | 93 | 0 | 17 | — |
 
 ## eBay
 
@@ -1699,14 +1699,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 |---|---|---|---|---|---|---|
 | — | high | small | `temu.local.goods.baseprice.recommend` | — | recommend base price | Temu's recommended and current supplier price per SKU, to price competitively before a price review. |
 
-#### promotions (5)
+#### promotions (1)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | medium | `bg.promotion.activity.candidate.goods.query` | — | paged query for activity candidate products. | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
-| — | high | medium | `bg.promotion.activity.goods.enroll` | — | product Registration the activity | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
-| — | high | medium | `bg.promotion.activity.goods.operation.query` | — | querying the operation result of active goods. | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
-| — | high | medium | `bg.promotion.activity.goods.query` | — | paged query activity products | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
 | — | high | medium | `bg.promotion.activity.goods.update` | — | Update Activity Goods Information | Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results. |
 
 #### shipping (17)
@@ -1843,11 +1839,11 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `temu.local.product.attributes.get` | Query Attribute Template | Query Attribute Template |  |
 | missing | Product | `temu.local.product.variation.get` | Query Mandatory And Optional Variations Of Products | Query Mandatory And Optional variations Of Products |  |
 | missing | Product | `temu.local.sku.list.retrieve` | Get SKU list | local sku list search |  |
+| covered | Promotions | `bg.promotion.activity.candidate.goods.query` | paged query for activity candidate products. | the local to local activity candidate goods | `marketplaces/temu/sections/promotions.js` |
+| covered | Promotions | `bg.promotion.activity.goods.enroll` | product Registration the activity | enroll products in the local to local activity | `marketplaces/temu/sections/promotions.js` |
+| covered | Promotions | `bg.promotion.activity.goods.operation.query` | querying the operation result of active goods. | query the result of operation in the local to local activity | `marketplaces/temu/sections/promotions.js` |
+| covered | Promotions | `bg.promotion.activity.goods.query` | paged query activity products | query the local to local activity goods | `marketplaces/temu/sections/promotions.js` |
 | covered | Promotions | `bg.promotion.activity.query` | paging query activity information | query the local to local activity | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/promotions.js` |
-| missing | Promotions | `bg.promotion.activity.candidate.goods.query` | paged query for activity candidate products. | the local to local activity candidate goods |  |
-| missing | Promotions | `bg.promotion.activity.goods.enroll` | product Registration the activity | enroll products in the local to local activity |  |
-| missing | Promotions | `bg.promotion.activity.goods.operation.query` | querying the operation result of active goods. | query the result of operation in the local to local activity |  |
-| missing | Promotions | `bg.promotion.activity.goods.query` | paged query activity products | query the local to local activity goods |  |
 | missing | Promotions | `bg.promotion.activity.goods.update` | Update Activity Goods Information | update activity goods information in the local to local activity |  |
 | covered | Returns and after-sales | `bg.aftersales.aftersales.list.get` | Query sub after-sales order information | This interface is designed for use in an e-commerce platform, specifically for handling after-sales service requests related to product returns and refunds. The interface allows merchants or administrators to retrieve a | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `bg.aftersales.cancel.agree` | Agree cancel order | Agree cancel order | `marketplaces/temu/orders.js` |

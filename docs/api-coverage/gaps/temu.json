@@ -395,30 +395,6 @@
     "priority": "high",
     "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
   },
-  "bg.promotion.activity.candidate.goods.query": {
-    "section": "promotions",
-    "size": "medium",
-    "priority": "high",
-    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
-  },
-  "bg.promotion.activity.goods.enroll": {
-    "section": "promotions",
-    "size": "medium",
-    "priority": "high",
-    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
-  },
-  "bg.promotion.activity.goods.operation.query": {
-    "section": "promotions",
-    "size": "medium",
-    "priority": "high",
-    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
-  },
-  "bg.promotion.activity.goods.query": {
-    "section": "promotions",
-    "size": "medium",
-    "priority": "high",
-    "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
-  },
   "bg.promotion.activity.goods.update": {
     "section": "promotions",
     "size": "medium",
