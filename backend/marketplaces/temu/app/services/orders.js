@@ -42,6 +42,11 @@ async function list(ctx) {
       filter.shopId = ctx.query.shopId
     }
     if (ctx.query.status && ctx.query.status !== 'all') filter.status = ctx.query.status
+    // Late: still to ship and past Temu's ship-by date.
+    if (ctx.query.late === '1') {
+      filter.status = 'paid'
+      filter['shipping.shipBy'] = { $lt: new Date() }
+    }
     if (ctx.query.from || ctx.query.to) {
       filter.placedAt = {}
       if (ctx.query.from) filter.placedAt.$gte = new Date(ctx.query.from)
@@ -72,6 +77,26 @@ async function list(ctx) {
     const pg = paging(ctx)
     const out = await paged(Order, filter, pg, sortOf(ctx, SORTABLE, '-placedAt'))
     return out
+}
+
+/**
+ * GET /counts — Temu orders per state for the status pills, and the late ones (to ship, past
+ * Temu's ship-by date): `{ all, toShip, late, shipped, delivered, cancelled, unpaid }`.
+ */
+async function counts(ctx, { now = new Date() } = {}) {
+    const base = { ...shopFilter(ctx, Order), marketplace: 'temu' }
+    const rows = await Order.aggregate([{ $match: base }, { $group: { _id: '$status', n: { $sum: 1 } } }])
+    const by = Object.fromEntries(rows.map((r) => [r._id, r.n]))
+    const late = await Order.countDocuments({ ...base, status: 'paid', 'shipping.shipBy': { $lt: now } })
+    return {
+      all: rows.reduce((t, r) => t + r.n, 0),
+      toShip: by.paid || 0,
+      late,
+      shipped: by.shipped || 0,
+      delivered: by.delivered || 0,
+      cancelled: by.cancelled || 0,
+      unpaid: by.pending || 0,
+    }
 }
 
 /** GET /:id */
@@ -427,4 +452,4 @@ async function uploadVerification(ctx) {
     })
 }
 
-module.exports = { temuOrderFor, temuRun, temuFollowUp, shipTogether, uploadVerification, temuDetail, fullAddress, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }
+module.exports = { counts, temuOrderFor, temuRun, temuFollowUp, shipTogether, uploadVerification, temuDetail, fullAddress, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }

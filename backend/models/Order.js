@@ -69,6 +69,8 @@ const orderSchema = new mongoose.Schema(
       trackingNumber: { type: String },
       shippedAt: { type: Date },
       deliveredAt: { type: Date },
+      // The marketplace's latest ship time for the order, when it gives one.
+      shipBy: { type: Date },
       // True once the tracking number/carrier/date came from the marketplace's shipment record.
       trackingVerified: { type: Boolean },
     },

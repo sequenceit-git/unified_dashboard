@@ -80,6 +80,16 @@ function ordersRoutes(shopKey) {
   }
 
   // GET /api/<shop>/orders/:id
+  // GET /api/<shop>/orders/counts — orders per Temu state and the late ones (status pills, needs attention)
+  router.get('/counts', async (req, res) => {
+    try {
+      res.json(await service.counts(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   router.get('/:id', async (req, res) => {
     try {
       res.json(await service.get(ctxOf(req)))

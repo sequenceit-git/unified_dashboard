@@ -33,12 +33,14 @@ module.exports = {
         const firstLine = lines[0] || {}
         const trackingNumber = parent.trackingNumber || firstLine.trackingNumber || parent.waybillSn || ''
         const carrier = parent.shippingCompanyName || parent.carrierName || firstLine.shippingCompanyName || ''
-        const shipping = (trackingNumber || carrier || parent.shippingTime || parent.deliveryTime)
+        const shipBy = parent.expectShipLatestTime ? temuDate(parent.expectShipLatestTime) : null
+        const shipping = (trackingNumber || carrier || parent.shippingTime || parent.deliveryTime || shipBy)
           ? {
               ...(carrier ? { carrier } : {}),
               ...(trackingNumber ? { trackingNumber: String(trackingNumber) } : {}),
               ...(parent.shippingTime ? { shippedAt: temuDate(parent.shippingTime) } : {}),
               ...(parent.deliveryTime ? { deliveredAt: temuDate(parent.deliveryTime) } : {}),
+              ...(shipBy ? { shipBy } : {}),
             }
           : undefined
         orders.push({

@@ -194,6 +194,7 @@
       "GET /orders/temu-ship-together",
       "GET /orders/:id/temu-follow-up",
       "POST /orders/:id/verification",
+      "GET /orders/counts",
       "GET /orders/:id",
       "POST /orders/sync",
       "PATCH /orders/:id/status",

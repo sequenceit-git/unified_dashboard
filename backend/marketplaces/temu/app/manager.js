@@ -340,6 +340,7 @@ class Manager {
                   trackingNumber: ord.shipping.trackingNumber,
                   shippedAt: ord.shipping.shippedAt || prev.shippedAt,
                   deliveredAt: ord.shipping.deliveredAt || prev.deliveredAt,
+                  shipBy: ord.shipping.shipBy || prev.shipBy,
                   trackingVerified: true,
                 }
               : {
@@ -348,6 +349,7 @@ class Manager {
                   trackingNumber: prev.trackingNumber || ord.shipping.trackingNumber,
                   shippedAt: prev.shippedAt || ord.shipping.shippedAt,
                   deliveredAt: ord.shipping.deliveredAt || prev.deliveredAt,
+                  shipBy: ord.shipping.shipBy || prev.shipBy,
                 }
           }
           if (Array.isArray(ord.returns) && ord.returns.length > 0) {
