@@ -269,83 +269,17 @@
     "priority": "medium",
     "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
   },
-  "bg.logistics.shipment.create": {
-    "section": "shipping",
-    "size": "large",
-    "priority": "high",
-    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
-  },
-  "bg.logistics.shipment.document.get": {
-    "section": "shipping",
-    "size": "large",
-    "priority": "high",
-    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
-  },
-  "bg.logistics.shipment.result.get": {
-    "section": "shipping",
-    "size": "large",
-    "priority": "high",
-    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
-  },
-  "bg.logistics.shipment.shippingtype.update": {
-    "section": "shipping",
-    "size": "large",
-    "priority": "high",
-    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
-  },
   "bg.logistics.shipment.sub.confirm": {
     "section": "shipping",
     "size": "small",
     "priority": "medium",
     "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
   },
-  "bg.logistics.shipment.update": {
-    "section": "shipping",
-    "size": "large",
-    "priority": "high",
-    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
-  },
   "bg.logistics.shipped.package.confirm": {
     "section": "shipping",
     "size": "small",
     "priority": "medium",
     "value": "Shipment information, extra tracking numbers, confirm shipped packages, tracking events."
-  },
-  "bg.logistics.shippingservices.get": {
-    "section": "shipping",
-    "size": "large",
-    "priority": "high",
-    "value": "Buy Temu shipping labels: available services, buy, print the label, retry and change shipping type."
-  },
-  "temu.logistics.label.list.get": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "low",
-    "value": "Carrier pickup reservations, label list and shipping logistics types."
-  },
-  "temu.logistics.shiplogisticstype.get": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "low",
-    "value": "Carrier pickup reservations, label list and shipping logistics types."
-  },
-  "temu.logistics.shipment.pickup.reservation.cancel": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "low",
-    "value": "Carrier pickup reservations, label list and shipping logistics types."
-  },
-  "temu.logistics.shipment.pickup.reservation.create": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "low",
-    "value": "Carrier pickup reservations, label list and shipping logistics types."
-  },
-  "temu.logistics.shipment.pickup.reservation.result.get": {
-    "section": "shipping",
-    "size": "small",
-    "priority": "low",
-    "value": "Carrier pickup reservations, label list and shipping logistics types."
   },
   "bg.cooperativewarehouse.fulfill.cancel": {
     "section": "new: cooperative warehouse",

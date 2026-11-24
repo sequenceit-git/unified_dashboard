@@ -42,6 +42,31 @@ function ordersRoutes(shopKey) {
     }
   })
 
+  // Temu buy-shipping (services/labels.js): services, buy, retry, own carrier, pickups; the label file itself.
+  const labels = require('../services/labels')
+  for (const [method, path, fn] of [['get', '/:id/label-services', 'services'], ['post', '/:id/buy-label', 'buy'], ['post', '/:id/label-retry', 'retry'], ['post', '/:id/own-carrier', 'ownCarrier'], ['post', '/:id/pickup', 'pickup'], ['get', '/:id/pickup', 'pickupStatus'], ['post', '/:id/pickup-cancel', 'cancelPickup']]) {
+    router[method](path, async (req, res) => {
+      try {
+        res.json(await labels[fn](ctxOf(req)))
+      } catch (err) {
+        if (err instanceof HttpError) return res.status(err.status).json(err.body)
+        res.status(502).json({ error: err.message })
+      }
+    })
+  }
+  router.get('/:id/label', async (req, res) => {
+    res.set('Cache-Control', 'no-store')
+    try {
+      const file = await labels.labelFile(ctxOf(req))
+      res.set('Content-Type', file.contentType)
+      res.set('Content-Disposition', `inline; filename="${file.name}"`)
+      res.send(file.buffer)
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // Temu order follow-up (services/orders.js): ship-together groups, after-sale details, verification.
   for (const [method, path, fn] of [['get', '/temu-ship-together', 'shipTogether'], ['get', '/:id/temu-follow-up', 'temuFollowUp'], ['post', '/:id/verification', 'uploadVerification']]) {
     router[method](path, async (req, res) => {

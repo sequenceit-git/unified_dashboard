@@ -1,9 +1,12 @@
 /** Temu "fulfillment" section: its tables (subsections) for the shop section page. */
 const temu = require('../service')
 const { col, tables, firstList } = require('../../../services/marketplace/sectionKit')
-const { temuTime } = require('./helpers')
+const { temuTime, grantAware } = require('./helpers')
 
-async function fulfillment(token) {
+const LABEL_STATUS = { 0: 'Buying', 1: 'Bought', 2: 'Failed' }
+
+async function fulfillment(token, shop, { now = new Date() } = {}) {
+  const end = Math.floor(now.getTime() / 1000)
   const list = await tables([
     {
       id: 'unshipped',
@@ -43,6 +46,29 @@ async function fulfillment(token) {
         id: row.templateId || row.freightTemplateId || row.id,
         name: row.templateName || row.freightTemplateName || row.name || '',
       })),
+    },
+    {
+      id: 'labels',
+      tab: 'Labels',
+      title: 'Temu labels (last 30 days)',
+      note: 'Labels bought with Temu. Open an order to buy, print or retry a label.',
+      columns: [col('packageSn', 'Package'), col('orders', 'Orders'), col('carrier', 'Carrier'), col('tracking', 'Tracking'), col('status', 'Label', 'status'), col('printed', 'Printed'), col('created', 'Bought', 'date')],
+      load: grantAware(shop, 'temu.logistics.label.list.get', async () => ((await temu.call('temu.logistics.label.list.get', { access_token: token, createAtStart: end - 30 * 86400, createAtEnd: end, pageNumber: 1, pageSize: 100 })).shippingLabelInfoList || []).map((l) => ({
+        packageSn: l.packageSn,
+        orders: [...new Set((l.orderInfoList || []).map((o) => o.parentOrderSn))].join(', '),
+        carrier: l.trackingInfoList?.[0]?.shippingCompanyName || '',
+        tracking: l.trackingInfoList?.[0]?.trackingNumber || '',
+        status: LABEL_STATUS[l.shippingLabelStatus] || `Temu status ${l.shippingLabelStatus}`,
+        printed: l.labelPrintStatus ? 'Yes' : 'No',
+        created: temuTime(l.createTime),
+      }))),
+    },
+    {
+      id: 'carriers',
+      tab: 'Labels',
+      title: 'Temu US carriers and services',
+      columns: [col('carrier', 'Carrier'), col('service', 'Service')],
+      load: grantAware(shop, 'temu.logistics.shiplogisticstype.get', async () => ((await temu.call('temu.logistics.shiplogisticstype.get', { access_token: token, regionId: 211 })).shipLogisticsTypeInfoDTOList || []).map((c) => ({ carrier: c.shippingCompanyName || '', service: c.shipLogisticsType || '' }))),
     },
   ])
   return {

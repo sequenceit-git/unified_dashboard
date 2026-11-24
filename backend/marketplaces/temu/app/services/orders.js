@@ -426,4 +426,4 @@ async function uploadVerification(ctx) {
     })
 }
 
-module.exports = { temuFollowUp, shipTogether, uploadVerification, temuDetail, fullAddress, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }
+module.exports = { temuOrderFor, temuRun, temuFollowUp, shipTogether, uploadVerification, temuDetail, fullAddress, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }
