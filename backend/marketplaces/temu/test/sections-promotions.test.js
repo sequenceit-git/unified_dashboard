@@ -117,3 +117,34 @@ test('candidates and enrolled goods are read across every page', async () => {
     assert.equal(detail.tables[0].rows.length, 150)
   } finally { restore() }
 })
+
+test('a page size Temu refuses as "parameter is illegal" is retried smaller', async () => {
+  const sizes = []
+  const restore = stubModules({
+    '../service': {
+      call: async (type, body) => {
+        if (type !== 'bg.promotion.activity.query') return { goodsList: [] }
+        sizes.push(body.pageSize ?? 'none')
+        if (body.pageSize > 20) throw Object.assign(new Error('parameter is illegal'), { code: 220010001 })
+        return { activityList: body.onlyQueryJoinedActivity ? [ACTIVITY(500, true)] : [ACTIVITY(500, true), ACTIVITY(600, false)] }
+      },
+    },
+  })
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const { tables } = await promotions('tok', {})
+    assert.equal(tables.find((t) => t.id === 'joined').rows.length, 1)
+    assert.equal(tables.find((t) => t.id === 'available').rows.length, 2)
+    assert.deepEqual([...new Set(sizes)], [50, 20])
+  } finally { restore() }
+})
+
+test('when every size is refused, the table says so with what to check', async () => {
+  const restore = stubModules({ '../service': { call: async () => { throw Object.assign(new Error('parameter is illegal'), { code: 220010001 }) } } })
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const t = (await promotions('tok', {})).tables.find((x) => x.id === 'joined')
+    assert.match(t.error, /parameter is illegal/)
+    assert.match(t.error, /temu-probe/)
+  } finally { restore() }
+})

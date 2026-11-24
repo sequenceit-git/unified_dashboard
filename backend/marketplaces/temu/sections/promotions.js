@@ -8,6 +8,25 @@ const { HttpError } = require('../../../utils/httpError')
 const { words, col, tables } = require('../../../services/marketplace/sectionKit')
 const { temuTime } = require('./helpers')
 
+// Temu documents no page-size limit for bg.promotion.activity.query; a size it refuses answers
+// 220010001 "parameter is illegal", so smaller sizes (then no paging at all) are tried in turn.
+const PAGE_TRIES = [{ pageNumber: 1, pageSize: 50 }, { pageNumber: 1, pageSize: 20 }, { pageNumber: 1, pageSize: 10 }, {}]
+const illegal = (err) => Number(err?.code) === 220010001 || /parameter is illegal/i.test(err?.message || '')
+
+/** Temu's activities (read-only), trying smaller pages while Temu calls the parameters illegal. */
+async function activityQuery(token, extra = {}) {
+  let last
+  for (const paging of PAGE_TRIES) {
+    try {
+      return await temu.call('bg.promotion.activity.query', { access_token: token, ...paging, ...extra })
+    } catch (err) {
+      if (!illegal(err)) throw err
+      last = err
+    }
+  }
+  throw new Error(`${last.message} (Temu refused every page size). Run "npm run temu-probe -- bg.promotion.activity.query" on the server and send the output.`)
+}
+
 async function promotions(token) {
   const activityRow = (row) => ({
     id: String(row.activityId),
@@ -24,23 +43,14 @@ async function promotions(token) {
       id: 'joined',
       title: 'Promotions you joined',
       columns,
-      load: async () => ((await temu.call('bg.promotion.activity.query', {
-        access_token: token,
-        pageNumber: 1,
-        pageSize: 50,
-        onlyQueryJoinedActivity: true,
-      })).activityList || []).map(activityRow),
+      load: async () => ((await activityQuery(token, { onlyQueryJoinedActivity: true })).activityList || []).map(activityRow),
     },
     {
       id: 'available',
       title: 'Temu promotions',
       note: "Enrol goods with Temu's recommended activity price and quantity. Activities without an Enrol button have no goods Temu allows in them.",
       columns,
-      load: async () => ((await temu.call('bg.promotion.activity.query', {
-        access_token: token,
-        pageNumber: 1,
-        pageSize: 50,
-      })).activityList || []).map(activityRow),
+      load: async () => ((await activityQuery(token)).activityList || []).map(activityRow),
     },
   ])
   return {
