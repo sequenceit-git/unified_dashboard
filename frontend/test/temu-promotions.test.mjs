@@ -30,3 +30,26 @@ test('when an activity ends', async () => {
   assert.equal(endsText({ ends: at(20) }, NOW), 'ended')
   assert.equal(endsText({}, NOW), '')
 })
+
+test('unchecked activities, no end date, Temu ended status, joined only in available', async () => {
+  const { splitActivities } = await load()
+  const s = splitActivities({ tables: [
+    { id: 'joined', rows: [] },
+    { id: 'available', rows: [
+      { id: 'a', joined: 'Yes', ends: at(28) },
+      { id: 'b', joined: '', checked: true, actions: [] },
+      { id: 'c', joined: '' },
+      { id: 'd', joined: '', status: 'Ended' },
+    ] },
+  ] }, NOW)
+  assert.deepEqual(s.joined.map((x) => x.id), ['a'])
+  assert.deepEqual(s.open.map((x) => [x.id, x.checked]), [['b', true], ['c', false]])
+  assert.deepEqual(s.ended.map((x) => x.id), ['d'])
+})
+
+test('a table Temu failed to load gives no count', async () => {
+  const { splitActivities } = await load()
+  const s = splitActivities({ tables: [{ id: 'joined', rows: [{ id: '1', joined: 'Yes' }] }, { id: 'available', rows: [], error: 'denied' }] }, NOW)
+  assert.equal(s.failed.available, true)
+  assert.equal(s.failed.joined, false)
+})

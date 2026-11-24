@@ -94,8 +94,15 @@ async function promotionsWithActions(token, shop) {
   const data = await promotions(token, shop)
   const [joined, available] = data.tables
   for (const row of joined.rows) row.actions = [{ id: 'enrolled', label: 'Enrolled goods', detail: true }]
-  await Promise.all(available.rows.slice(0, CANDIDATE_LOOKUPS).map(async (row) => {
-    const goods = (await candidates(token, row.id).catch(() => [])).filter((g) => g.isAllowedEnroll)
+  // Lookups go to activities not joined yet; a row marked `checked` had its candidates read from Temu.
+  await Promise.all(available.rows.filter((row) => !row.joined).slice(0, CANDIDATE_LOOKUPS).map(async (row) => {
+    let goods
+    try {
+      goods = (await candidates(token, row.id)).filter((g) => g.isAllowedEnroll)
+    } catch {
+      return
+    }
+    row.checked = true
     row.actions = goods.length ? [{
       id: 'enrol',
       label: 'Enrol goods',

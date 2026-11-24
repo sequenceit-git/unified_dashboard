@@ -44,23 +44,26 @@ function Promotions() {
   const [fresh, setFresh] = useState(0)
   const [viewing, setViewing] = useState(null)
   const [notice, setNotice] = useState({ text: '', error: false })
-  const [now] = useState(() => new Date())
+  const [now, setNow] = useState(() => new Date())
   const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
   if (!section) return <RequireShopSection />
 
   const split = splitActivities(data, now)
-  const reload = () => setFresh((n) => n + 1)
+  const reload = () => { setNow(new Date()); setFresh((n) => n + 1) }
   const onRun = async (action, id, value) => {
     try {
       const res = await api.post(`${BASE}/${action.id}`, { id, ...(value !== undefined ? { value } : {}) }, token)
-      setNotice({ text: res?.message || `${action.label}: done.`, error: false })
+      setNotice({ text: res?.message || `${action.label}: done.`, error: (res?.refused || []).length > 0 })
       reload()
       return { ok: true }
     } catch (err) {
       return { error: err.message }
     }
   }
-  const tableError = (data?.tables || []).find((t) => t.error)?.error
+  const tableErrors = (data?.tables || []).filter((t) => t.error)
+  // Open and ended come from Temu's full list; joined from either list.
+  const unknown = { open: split.failed.available, joined: split.failed.joined && split.failed.available, ended: split.failed.available }
+  const countOf = (key) => (data && !unknown[key] ? split[key].length : null)
   const list = split[pill] || []
   const note = (data?.tables || []).find((t) => t.id === 'available')?.note
 
@@ -68,16 +71,16 @@ function Promotions() {
     <div className="space-y-3">
       <PageHeader
         title="Temu promotions"
-        summary={data ? [`${split.joined.length} joined`, `${split.open.length} open to join`, data.loadedAt && `updated ${new Date(data.loadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`].filter(Boolean).join(' · ') : ''}
+        summary={data ? [countOf('joined') != null && `${split.joined.length} joined`, countOf('open') != null && `${split.open.length} open to join`, data.loadedAt && `updated ${new Date(data.loadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`].filter(Boolean).join(' · ') : ''}
         actions={<Button variant="secondary" disabled={loading} onClick={reload}>{loading ? 'Refreshing…' : 'Refresh'}</Button>}
       />
       {error && <ErrorState message={error} onRetry={refetch} />}
-      {tableError && <p className="text-sm text-rose-600 dark:text-rose-400">{tableError}</p>}
+      {tableErrors.map((t) => <p key={t.id} className="text-sm text-rose-600 dark:text-rose-400">{t.title}: {t.error}</p>)}
       <StatusPills
         pills={[
-          { key: 'open', label: 'Open to join', count: data ? split.open.length : null },
-          { key: 'joined', label: 'Joined', count: data ? split.joined.length : null },
-          { key: 'ended', label: 'Ended', count: data ? split.ended.length : null },
+          { key: 'open', label: 'Open to join', count: countOf('open') },
+          { key: 'joined', label: 'Joined', count: countOf('joined') },
+          { key: 'ended', label: 'Ended', count: countOf('ended') },
         ]}
         active={pill}
         onChange={setPill}
@@ -85,7 +88,7 @@ function Promotions() {
       {pill === 'open' && note && <p className="text-xs text-gray-500 dark:text-slate-400">{note}</p>}
       {notice.text && <p className={`text-sm ${notice.error ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{notice.text}</p>}
       {loading && !data && <Spinner />}
-      {data && !list.length && <EmptyState message={pill === 'open' ? 'No Temu promotions open to join right now.' : pill === 'joined' ? "You haven't joined a running promotion." : 'No ended promotions.'} />}
+      {data && !list.length && !unknown[pill] && <EmptyState message={pill === 'open' ? 'No Temu promotions open to join right now.' : pill === 'joined' ? "You haven't joined a running promotion." : 'No ended promotions.'} />}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {list.map((a) => {
           const enrol = (a.actions || []).find((x) => x.id === 'enrol')
@@ -106,7 +109,7 @@ function Promotions() {
               <div className="mt-auto flex flex-wrap gap-2">
                 {a.isJoined && <Button size="sm" variant="secondary" onClick={() => setViewing(a)}>Enrolled goods</Button>}
                 {enrol && pill !== 'ended' && <ActionButton action={enrol} rowId={a.id} onRun={onRun} onDetail={() => {}} />}
-                {!a.isJoined && !enrol && pill === 'open' && <span className="text-xs text-gray-500 dark:text-slate-400">Temu allows none of your goods in it yet.</span>}
+                {!a.isJoined && !enrol && pill === 'open' && <span className="text-xs text-gray-500 dark:text-slate-400">{a.checked ? 'Temu allows none of your goods in it yet.' : 'Not checked yet: the dashboard looks up goods for the first 10 open promotions. Enrol in Temu Seller Center.'}</span>}
               </div>
             </article>
           )

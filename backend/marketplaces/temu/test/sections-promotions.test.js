@@ -169,3 +169,16 @@ test('activities are asked with the activity type Temu US accepts (2)', async ()
     assert.ok(seen.every((b) => b.activityType === 2))
   } finally { restore() }
 })
+
+test('only open (not joined) activities use the candidate lookups, and checked rows are marked', async () => {
+  const calls = []
+  const restore = load(calls)
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const rows = (await promotions('tok', {})).tables.find((t) => t.id === 'available').rows
+    const looked = calls.filter(([t]) => t === 'bg.promotion.activity.candidate.goods.query').map(([, b]) => b.activityId)
+    assert.deepEqual(looked, [600], 'a joined activity does not use up a lookup')
+    assert.equal(rows.find((r) => r.id === '600').checked, true)
+    assert.equal(rows.find((r) => r.id === '500').checked, undefined)
+  } finally { restore() }
+})
