@@ -1,82 +1,93 @@
+/**
+ * TikTok Shop analytics: shop health first, then sales against the previous period, then why —
+ * where sales come from, traffic, top products and today by hour.
+ */
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
+import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { queryString } from '../../../../lib/api'
-import { StatCard } from '../../../../components/ui/Card'
 import { Select } from '../../../../components/ui/Input'
 import { useApi } from '../../../../hooks/useApi'
-import MarketplaceChart from './MarketplaceChart'
+import ShopHealth from './ShopHealth'
+import ResultTiles from './ResultTiles'
 import RevenueChart from './RevenueChart'
-import TopProducts from './TopProducts'
-import SectionView from '../../SectionView'
+import ChannelShare from './ChannelShare'
+import TrafficChart from './TrafficChart'
+import TopSkus from './TopSkus'
+import TodayByHour from './TodayByHour'
+import DetailModal from './DetailModal'
+import { PERIODS, channelShare, healthView, periodRanges, totals, trafficRows, withPrevious } from './analyticsView'
 
-const RANGES = [
-  { value: '30', label: 'Last 30 days' },
-  { value: '60', label: 'Last 60 days' },
-]
-
-function rangeParams(days) {
-  const end = new Date()
-  end.setHours(23, 59, 59, 999)
-  const start = new Date(end.getTime() - (Number(days) - 1) * 86400000)
-  start.setHours(0, 0, 0, 0)
-  return {
-    from: start.toISOString(),
-    to: end.toISOString(),
-  }
-}
-
-/** Sales charts from the dashboard's own orders: the first tab of TikTok Shop Analytics. */
-function SalesCharts() {
+export default function AnalyticsPage() {
   const { token } = useAuth()
   const section = useShopSection()
-  const marketplace = section?.marketplace
   const [days, setDays] = useState('30')
+  const [detail, setDetail] = useState(null)
+  const { current, previous } = useMemo(() => periodRanges(days), [days])
+  const url = (path, range) => (token ? `/api/tiktok/analytics/${path}${queryString({ from: range.from, to: range.to })}` : null)
 
-  const { from, to } = useMemo(() => rangeParams(days), [days])
+  const perf = useApi(url('performance', current))
+  const prevPerf = useApi(url('performance', previous))
+  const summary = useApi(url('summary', current))
+  const prevSummary = useApi(url('summary', previous))
+  const loader = useApi(token ? '/api/tiktok/sections/analytics' : null)
 
-  const summary = useApi(token ? `/api/tiktok/analytics/summary${queryString({ from, to })}` : null)
-  const revenue = useApi(token ? `/api/tiktok/analytics/revenue${queryString({ from, to })}` : null)
-  const markets = useApi(token ? `/api/tiktok/analytics/marketplaces${queryString({ from, to })}` : null)
-  const top = useApi(token ? `/api/tiktok/analytics/products${queryString({ from, to, limit: 10 })}` : null)
-  const inv = useApi(token && marketplace ? `/api/tiktok/analytics/inventory` : null)
+  if (!section) return <RequireShopSection />
+
+  const now = totals(perf.data?.days)
+  const before = totals(prevPerf.data?.days)
+  const fromTikTok = perf.data?.source === 'tiktok'
+  const traffic = trafficRows(perf.data?.days)
+  const health = healthView(loader.data)
+  const table = (id) => (loader.data?.tables || []).find((t) => t.id === id)
+  const perfLoading = perf.loading || prevPerf.loading
+  const perfError = perf.error || prevPerf.error || ''
+  const retryPerf = () => { perf.refetch(); prevPerf.refetch() }
 
   return (
-    <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
-      <div className="flex justify-end">
+    <div className="max-w-full min-w-0 space-y-4 overflow-x-hidden">
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-xl font-bold sm:text-2xl">{section.label} analytics</h1>
+          {perf.data?.latestDate && <p className="text-xs text-gray-500">TikTok data up to {perf.data.latestDate}</p>}
+          {perf.data && !fromTikTok && <p className="text-xs text-gray-500">TikTok isn't sharing its analytics: figures come from the dashboard's orders.</p>}
+        </div>
         <div className="w-full sm:w-44">
-          <Select
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            options={RANGES}
-            aria-label="Analytics period"
-          />
+          <Select value={days} onChange={(e) => setDays(e.target.value)} options={PERIODS} aria-label="Analytics period" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 min-w-0">
-        <StatCard label="Revenue" value={summary.loading ? '…' : `$${(summary.data?.revenue ?? 0).toFixed(2)}`} />
-        <StatCard label="Orders" value={summary.loading ? '…' : (summary.data?.orders ?? 0)} />
-        <StatCard label="Avg order" value={summary.loading ? '…' : `$${(summary.data?.avgOrder ?? 0).toFixed(2)}`} />
-        <StatCard
-          label="Profit"
-          value={summary.loading ? '…' : `$${(summary.data?.profit ?? 0).toFixed(2)}`}
-          sub="Sell price − base price"
-        />
-        <StatCard label="Low stock" value={inv.loading ? '…' : (inv.data?.lowCount ?? 0)} sub={inv.data ? `${inv.data.outCount ?? 0} out of stock` : ''} />
+      <ShopHealth health={health} loading={loader.loading} error={loader.error} onRetry={loader.refetch} onDiagnose={(id) => setDetail({ action: 'metric', id })} />
+
+      <ResultTiles
+        now={now}
+        before={before}
+        profit={summary.data?.profit ?? null}
+        prevProfit={prevSummary.data?.profit ?? null}
+        loading={perfLoading || summary.loading || prevSummary.loading}
+        error={perfError}
+        onRetry={retryPerf}
+        traffic={fromTikTok && traffic.length > 0}
+      />
+
+      <RevenueChart
+        data={perf.data ? withPrevious(perf.data.days, prevPerf.data?.days, days, current.from) : null}
+        loading={perfLoading}
+        error={perfError}
+        onRetry={retryPerf}
+      />
+
+      <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+        <ChannelShare channels={channelShare(perf.data?.days)} />
+        <TrafficChart rows={traffic} />
       </div>
 
-      <RevenueChart data={revenue.data} />
+      <TopSkus table={table('skus')} loading={loader.loading} error={loader.error} onRetry={loader.refetch} onDetails={(id) => setDetail({ action: 'sku', id })} />
 
-      <div className="grid gap-3 lg:grid-cols-2 min-w-0">
-        <MarketplaceChart data={markets.data} />
-        <TopProducts rows={top.data} loading={top.loading} error={top.error} onRetry={top.refetch} />
-      </div>
+      <TodayByHour table={table('hourly')} />
+
+      {detail && <DetailModal action={detail.action} id={detail.id} onClose={() => setDetail(null)} />}
     </div>
   )
-}
-
-/** TikTok Shop Analytics: sales charts, then TikTok's product, shop-health and hourly analytics. */
-export default function AnalyticsPage() {
-  return <SectionView sectionId="analytics" extraTabs={[{ id: 'sales', label: 'Sales', render: () => <SalesCharts /> }]} />
 }
