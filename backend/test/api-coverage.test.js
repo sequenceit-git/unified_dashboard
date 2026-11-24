@@ -123,7 +123,7 @@ test('the report lists every gap', () => {
   for (const key of ['ebay', 'tiktok_shop', 'temu']) {
     for (const r of shopCoverage(key).filter((x) => x.status === 'missing')) assert.ok(md.includes(`\`${r.id}\``), `${key} gap ${r.id}`)
   }
-  assert.match(md, /`GET \/sell\/analytics\/v1\/traffic_report`/)
+  assert.match(md, /`GET \/sell\/analytics\/v1\/seller_standards_profile\/\{program\}\/\{cycle\}`/)
 })
 
 test('the README in the repo is up to date', () => {
@@ -167,7 +167,8 @@ test('the report shows which gaps the app can call now', () => {
 // ---- Final review fixes
 test('the gap list shows the scope each endpoint needs', () => {
   const md = require('../scripts/apiCoverage/report').buildReport()
-  assert.match(md, /`GET \/sell\/analytics\/v1\/traffic_report` \| sell\.analytics\.readonly \|/)
+  // An analytics endpoint wave 1 doesn't call (traffic_report is covered since then).
+  assert.match(md, /`GET \/sell\/analytics\/v1\/seller_standards_profile\/\{program\}\/\{cycle\}` \| sell\.analytics\.readonly \|/)
 })
 
 test('a call that matches no catalog endpoint fails the comparison', () => {

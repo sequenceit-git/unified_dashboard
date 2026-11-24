@@ -623,29 +623,11 @@
     "priority": "low",
     "value": "Account settings: sales tax tables, shipping rate tables, combined-shipping rules, payout split and selling preferences."
   },
-  "GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "medium",
-    "value": "Item-not-received and not-as-described rates benchmarked against peer sellers in the same categories."
-  },
-  "GET /sell/analytics/v1/seller_standards_profile": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected."
-  },
   "GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}": {
     "section": "analytics",
     "size": "small",
     "priority": "high",
     "value": "Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected."
-  },
-  "GET /sell/analytics/v1/traffic_report": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Listing-level traffic: impressions, page views, click-through rate, sales conversion rate and quantity sold per listing and per day (eBay Seller Hub \"Traffic\" report)."
   },
   "GET /sell/feed/v1/order_task": {
     "section": "new: bulk feeds",

@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 429 | 42 | 0 | 378 | 9 | 102 | — |
+| eBay | 429 | 45 | 0 | 375 | 9 | 100 | — |
 | TikTok Shop | 365 | 41 | 11 | 272 | 41 | 53 | 126 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
@@ -20,14 +20,11 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 
 ### eBay — gaps by section
 
-#### analytics (7)
+#### analytics (4)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `GET /sell/analytics/v1/seller_standards_profile` | sell.analytics.readonly | findSellerStandardsProfiles | Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected. |
 | — | high | small | `GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}` | sell.analytics.readonly | getSellerStandardsProfile | Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected. |
-| — | high | small | `GET /sell/analytics/v1/traffic_report` | sell.analytics.readonly | getTrafficReport | Listing-level traffic: impressions, page views, click-through rate, sales conversion rate and quantity sold per listing and per day (eBay Seller Hub "Traffic" report). |
-| — | medium | small | `GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}` | sell.analytics.readonly | getCustomerServiceMetric | Item-not-received and not-as-described rates benchmarked against peer sellers in the same categories. |
 | — | low | medium | `GET /sell/feed/v1/customer_service_metric_task` | sell.analytics.readonly | getCustomerServiceMetricTasks | Download the customer-service metric report as a file. |
 | — | low | medium | `GET /sell/feed/v1/customer_service_metric_task/{task_id}` | sell.analytics.readonly | getCustomerServiceMetricTask | Download the customer-service metric report as a file. |
 | — | low | medium | `POST /sell/feed/v1/customer_service_metric_task` | sell.analytics.readonly | createCustomerServiceMetricTask | Download the customer-service metric report as a file. |
@@ -535,10 +532,10 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Account v2 API | `POST /sell/account/v2/combined_shipping_rules/update_promotional_shipping_rule` | updatePromotionalShippingRule | This method updates an existing promotional shipping rule to adjust discount thresholds, eligibility criteria, or duration for the seller. |  |
 | missing | Account v2 API | `POST /sell/account/v2/payout_settings/update_percentage` | updatePayoutPercentage | Important! Split-payout functionality is only available to mainland China sellers, who can split payouts between their Payoneer account and bank account. |  |
 | missing | Account v2 API | `POST /sell/account/v2/rate_table/{rate_table_id}/update_shipping_cost` | updateShippingCost | This method allows sellers to update shippingCost and/or additionalCost information for an existing shipping rate table identified by the rate_table_id path parameter.A successful call returns an HTTP status code of 204 |  |
-| missing | Analytics API | `GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}` | getCustomerServiceMetric | Use this method to retrieve a seller's performance and rating for the customer service metric. |  |
-| missing | Analytics API | `GET /sell/analytics/v1/seller_standards_profile` | findSellerStandardsProfiles | This call retrieves all the standards profiles for the associated seller. |  |
+| covered | Analytics API | `GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}` | getCustomerServiceMetric | Use this method to retrieve a seller's performance and rating for the customer service metric. | `marketplaces/ebay/sections/analytics.js` |
+| covered | Analytics API | `GET /sell/analytics/v1/seller_standards_profile` | findSellerStandardsProfiles | This call retrieves all the standards profiles for the associated seller. | `marketplaces/ebay/sections/analytics.js` |
+| covered | Analytics API | `GET /sell/analytics/v1/traffic_report` | getTrafficReport | This method returns a report that details the user traffic received by a seller's listings. | `marketplaces/ebay/sections/analytics.js` |
 | missing | Analytics API | `GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}` | getSellerStandardsProfile | This call retrieves a single standards profile for the associated seller. |  |
-| missing | Analytics API | `GET /sell/analytics/v1/traffic_report` | getTrafficReport | This method returns a report that details the user traffic received by a seller's listings. |  |
 | not for sellers | Browse API | `GET /buy/browse/v1/item_summary/search` | search | This method searches for eBay items by various query parameters and retrieves summaries of the items. | `marketplaces/ebay/listings.js` |
 | not for sellers | Browse API | `GET /buy/browse/v1/item/get_item_by_legacy_id` | getItemByLegacyId | This method is a bridge between the eBay legacy APIs, such as Shopping and Finding, and the eBay Buy APIs. | `marketplaces/ebay/importItem.js`, `marketplaces/ebay/listings.js` |
 | missing | Catalog API | `GET /commerce/catalog/v1_beta/product_summary/search` | search | This method searches for and retrieves summaries of one or more products in the eBay catalog that match the search criteria provided by a seller. |  |

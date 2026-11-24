@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
-import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { queryString } from '../../../../lib/api'
 import { StatCard } from '../../../../components/ui/Card'
@@ -9,7 +8,7 @@ import { useApi } from '../../../../hooks/useApi'
 import MarketplaceChart from './MarketplaceChart'
 import RevenueChart from './RevenueChart'
 import TopProducts from './TopProducts'
-import ReconnectNotice from '../../ReconnectNotice'
+import SectionView from '../../SectionView'
 
 const RANGES = [
   { value: '30', label: 'Last 30 days' },
@@ -27,7 +26,8 @@ function rangeParams(days) {
   }
 }
 
-export default function AnalyticsPage() {
+/** The sales charts (dashboard orders): the first tab of eBay Analytics. */
+function SalesTab() {
   const { token } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
@@ -41,13 +41,9 @@ export default function AnalyticsPage() {
   const top = useApi(token ? `/api/ebay/analytics/products${queryString({ from, to, limit: 10 })}` : null)
   const inv = useApi(token && marketplace ? `/api/ebay/analytics/inventory` : null)
 
-  if (!section) return <RequireShopSection />
-
   return (
     <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
-      <ReconnectNotice />
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <h1 className="text-xl sm:text-2xl font-bold">{section.label} analytics</h1>
+      <div className="flex justify-end">
         <div className="w-full sm:w-44">
           <Select
             value={days}
@@ -57,7 +53,6 @@ export default function AnalyticsPage() {
           />
         </div>
       </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 min-w-0">
         <StatCard label="Revenue" value={summary.loading ? '…' : `$${(summary.data?.revenue ?? 0).toFixed(2)}`} />
         <StatCard label="Orders" value={summary.loading ? '…' : (summary.data?.orders ?? 0)} />
@@ -78,4 +73,9 @@ export default function AnalyticsPage() {
       </div>
     </div>
   )
+}
+
+/** eBay Analytics: sales charts, then listing traffic and seller level from eBay's Analytics API. */
+export default function AnalyticsPage() {
+  return <SectionView sectionId="analytics" reconnectNotice extraTabs={[{ id: 'sales', label: 'Sales', render: () => <SalesTab /> }]} />
 }
