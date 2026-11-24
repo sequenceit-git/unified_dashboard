@@ -208,6 +208,13 @@ export default function AdjustModal({ product, onClose, onSaved }) {
           {projectedStock < 0 && (
             <p className="mt-1 text-red-600 font-medium">Resulting stock cannot be less than 0.</p>
           )}
+          {projectedStock >= 0 && (
+            <p className="mt-1 text-indigo-800 dark:text-indigo-200">
+              {product.shopListing?.externalListingId
+                ? `Temu gets ${projectedStock} for this goods when you save.`
+                : 'This goods is not on Temu yet: only the dashboard changes.'}
+            </p>
+          )}
         </div>
 
         <Select

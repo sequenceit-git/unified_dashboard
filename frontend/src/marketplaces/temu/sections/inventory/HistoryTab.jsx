@@ -9,7 +9,8 @@ import Pagination from '../../../../components/ui/Pagination'
 
 const REASONS = ['all', 'sale', 'return', 'manual', 'sync', 'restock']
 
-export default function HistoryTab({ marketplace, refreshKey }) {
+/** Stock changes; `initialQ` starts it searched for one goods (the History drawer). */
+export default function HistoryTab({ marketplace, refreshKey, initialQ = '' }) {
   const { token } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -17,7 +18,7 @@ export default function HistoryTab({ marketplace, refreshKey }) {
   const [error, setError] = useState('')
   const [reason, setReason] = useState('all')
   const [direction, setDirection] = useState('all')
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(initialQ)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
