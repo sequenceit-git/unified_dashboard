@@ -840,7 +840,49 @@ async function relistListing(token, itemId, { quantity, price, title, descriptio
   return { status: 'live', externalListingId: doc.ItemID ? String(doc.ItemID) : itemId }
 }
 
+const asList = (value) => (value == null ? [] : Array.isArray(value) ? value : [value])
+
+/** Active Best Offers buyers made on the seller's listings, one entry per offer. */
+async function getBestOffers(token) {
+  const doc = await call(token, 'GetBestOffers', '<BestOfferStatus>Active</BestOfferStatus><DetailLevel>ReturnAll</DetailLevel>')
+  const groups = doc.ItemBestOffersArray
+    ? asList(doc.ItemBestOffersArray.ItemBestOffers)
+    : [{ Item: doc.Item, BestOfferArray: doc.BestOfferArray }]
+  return groups.flatMap((group) => {
+    const item = asList(group.Item)[0] || {}
+    return asList(group.BestOfferArray?.BestOffer).map((offer) => ({
+      itemId: String(text(item.ItemID)),
+      title: String(text(item.Title) || ''),
+      offerId: String(text(offer.BestOfferID)),
+      buyer: String(text(offer.Buyer?.UserID) || ''),
+      price: { value: Number(text(offer.Price)), currency: offer.Price?.['@currencyID'] || 'USD' },
+      quantity: Number(text(offer.Quantity) || 1),
+      expires: text(offer.ExpirationTime) || null,
+      message: String(text(offer.BuyerMessage) || ''),
+      status: String(text(offer.Status) || ''),
+    }))
+  })
+}
+
+/** Accepts, declines or counters one Best Offer. A counter needs a positive price. */
+async function respondToBestOffer(token, { itemId, offerId, action, counterPrice, currency = 'USD' }) {
+  const fail = (message) => { throw Object.assign(new Error(message), { status: 400 }) }
+  if (!itemId || !offerId) fail('itemId and offerId are required')
+  if (!['Accept', 'Decline', 'Counter'].includes(action)) fail(`Unknown Best Offer action ${action}`)
+  const price = Number(counterPrice)
+  if (action === 'Counter' && !(Number.isFinite(price) && price > 0)) fail('Enter a counter price above 0.')
+  const parts = [
+    `<ItemID>${escapeXml(itemId)}</ItemID>`,
+    `<BestOfferID>${escapeXml(offerId)}</BestOfferID>`,
+    `<Action>${action}</Action>`,
+    action === 'Counter' ? `<CounterOfferPrice currencyID="${escapeXml(currency)}">${price.toFixed(2)}</CounterOfferPrice><CounterOfferQuantity>1</CounterOfferQuantity>` : '',
+  ]
+  return call(token, 'RespondToBestOffer', parts.join(''))
+}
+
 module.exports = {
+  getBestOffers,
+  respondToBestOffer,
   getUser,
   setNotificationPreferences,
   getItem,

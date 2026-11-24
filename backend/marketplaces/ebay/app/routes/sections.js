@@ -72,6 +72,16 @@ function sectionsRoutes(shopKey) {
     }
   })
 
+  // POST /api/<shop>/sections/offers/<offer-accept|offer-decline|offer-counter> — answer a buyer's Best Offer
+  router.post('/offers/:actionId', sectionGuard('offers'), async (req, res) => {
+    try {
+      res.json(await service.offerAction(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(400).json({ error: err.message })
+    }
+  })
+
   // POST /api/<shop>/sections/buyers/reply — reply to a buyer's feedback on eBay
   router.post('/buyers/reply', sectionGuard('buyers'), async (req, res) => {
     try {

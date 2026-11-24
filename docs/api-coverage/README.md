@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 429 | 61 | 0 | 359 | 9 | 85 | — |
+| eBay | 429 | 63 | 0 | 357 | 9 | 83 | — |
 | TikTok Shop | 365 | 41 | 11 | 272 | 41 | 53 | 126 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
@@ -173,12 +173,10 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | medium | small | `Trading:ReviseMyMessagesFolders` | — | ReviseMyMessagesFolders | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
 | — | medium | small | `Trading:SetMessagePreferences` | — | SetMessagePreferences | Trading API messaging: eBay inbox folders, reading/flagging/deleting messages, answering listing questions, Ask-a-Question subjects. |
 
-#### offers (5)
+#### offers (3)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `Trading:GetBestOffers` | — | GetBestOffers | Best Offers buyers sent on listings: see them and accept, decline or counter. |
-| — | high | small | `Trading:RespondToBestOffer` | — | RespondToBestOffer | Best Offers buyers sent on listings: see them and accept, decline or counter. |
 | — | low | small | `Trading:AddSecondChanceItem` | — | AddSecondChanceItem | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
 | — | low | small | `Trading:GetAllBidders` | — | GetAllBidders | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
 | — | low | small | `Trading:VerifyAddSecondChanceItem` | — | VerifyAddSecondChanceItem | Auctions: bidders on a listing and Second Chance Offers to non-winning bidders. |
@@ -821,11 +819,13 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Taxonomy API | `GET /commerce/taxonomy/v1/get_default_category_tree_id` | getDefaultCategoryTreeId | Get a Default Category Tree ID |  |
 | covered | Trading API | `Trading:AddFixedPriceItem` | AddFixedPriceItem | AddFixedPriceItem | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:EndFixedPriceItem` | EndFixedPriceItem | EndFixedPriceItem | `marketplaces/ebay/trading.js` |
+| covered | Trading API | `Trading:GetBestOffers` | GetBestOffers | GetBestOffers | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:GetCategoryFeatures` | GetCategoryFeatures | Retired: not in the current Trading API WSDL, yet still called by the dashboard. | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:GetItem` | GetItem | GetItem | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:GetMyeBaySelling` | GetMyeBaySelling | GetMyeBaySelling | `marketplaces/ebay/profile.js`, `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:GetUser` | GetUser | GetUser | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:RelistFixedPriceItem` | RelistFixedPriceItem | RelistFixedPriceItem | `marketplaces/ebay/trading.js` |
+| covered | Trading API | `Trading:RespondToBestOffer` | RespondToBestOffer | RespondToBestOffer | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:ReviseFixedPriceItem` | ReviseFixedPriceItem | ReviseFixedPriceItem | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:ReviseInventoryStatus` | ReviseInventoryStatus | ReviseInventoryStatus | `marketplaces/ebay/trading.js` |
 | covered | Trading API | `Trading:SetNotificationPreferences` | SetNotificationPreferences | SetNotificationPreferences | `marketplaces/ebay/trading.js` |
@@ -846,7 +846,6 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Trading API | `Trading:FetchToken` | FetchToken | FetchToken |  |
 | missing | Trading API | `Trading:GetAccount` | GetAccount | GetAccount |  |
 | missing | Trading API | `Trading:GetAllBidders` | GetAllBidders | GetAllBidders |  |
-| missing | Trading API | `Trading:GetBestOffers` | GetBestOffers | GetBestOffers |  |
 | missing | Trading API | `Trading:GetDescriptionTemplates` | GetDescriptionTemplates | GetDescriptionTemplates |  |
 | missing | Trading API | `Trading:GeteBayDetails` | GeteBayDetails | GeteBayDetails |  |
 | missing | Trading API | `Trading:GetFeedback` | GetFeedback | GetFeedback |  |
@@ -871,7 +870,6 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Trading API | `Trading:GetUserPreferences` | GetUserPreferences | GetUserPreferences |  |
 | missing | Trading API | `Trading:LeaveFeedback` | LeaveFeedback | LeaveFeedback |  |
 | missing | Trading API | `Trading:RelistItem` | RelistItem | RelistItem |  |
-| missing | Trading API | `Trading:RespondToBestOffer` | RespondToBestOffer | RespondToBestOffer |  |
 | missing | Trading API | `Trading:RespondToFeedback` | RespondToFeedback | RespondToFeedback |  |
 | missing | Trading API | `Trading:ReviseItem` | ReviseItem | ReviseItem |  |
 | missing | Trading API | `Trading:ReviseMyMessages` | ReviseMyMessages | ReviseMyMessages |  |

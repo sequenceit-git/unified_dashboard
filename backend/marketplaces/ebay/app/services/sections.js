@@ -145,6 +145,31 @@ async function replyToFeedback(ctx) {
     return { message: 'Reply posted on eBay.' }
 }
 
+/** POST /sections/offers/<offer-accept|offer-decline|offer-counter> — answers one Best Offer. */
+async function offerAction(ctx) {
+    const marketplace = 'ebay'
+    const ACTION = { 'offer-accept': 'Accept', 'offer-decline': 'Decline', 'offer-counter': 'Counter' }[ctx.params.actionId]
+    if (!ACTION) throw new HttpError(404, { error: 'No such action' })
+    const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === 'offers')
+    if (!section || !canUseSection(ctx.authUser || ctx.user, marketplace, section.id, section.route)) {
+      throw new HttpError(403, { error: `You do not have access to ${section?.label || 'Best offers'} on this shop` })
+    }
+    const [itemId, offerId] = String(ctx.body?.id || '').split(':')
+    if (!itemId || !offerId) throw new HttpError(400, { error: 'id must be <itemId>:<offerId>' })
+    const shop = await connectedShop(ctx, marketplace)
+    const trading = require('../../trading')
+    const args = { itemId, offerId, action: ACTION, ...(ACTION === 'Counter' ? { counterPrice: Number(ctx.body.value) } : {}) }
+    try {
+      await marketplaceManager.withShopToken(shop, (token) => trading.respondToBestOffer(token, args))
+    } catch (err) {
+      if (err.status === 400) throw new HttpError(400, { error: err.message })
+      throw err
+    }
+    await cache.del(`shop:${shop._id}:section:offers`)
+    const done = { Accept: 'accepted', Decline: 'declined', Counter: `countered at ${Number(ctx.body.value).toFixed(2)}` }[ACTION]
+    return { message: `Offer ${done}.` }
+}
+
 /** POST /sections/cancellations/decide */
 async function decideCancellation(ctx) {
     const marketplace = 'ebay'
@@ -354,4 +379,4 @@ async function finances(ctx) {
     return finances || {}
 }
 
-module.exports = { connectedShop, section, caseAction, replyToFeedback, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}
+module.exports = { connectedShop, section, caseAction, replyToFeedback, offerAction, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}

@@ -1823,12 +1823,6 @@
     "priority": "low",
     "value": "Auctions: bidders on a listing and Second Chance Offers to non-winning bidders."
   },
-  "Trading:GetBestOffers": {
-    "section": "offers",
-    "size": "small",
-    "priority": "high",
-    "value": "Best Offers buyers sent on listings: see them and accept, decline or counter."
-  },
   "Trading:GetDescriptionTemplates": {
     "section": "listings",
     "size": "small",
@@ -1972,12 +1966,6 @@
     "size": "small",
     "priority": "low",
     "value": "Non-fixed-price and bulk listing calls (auctions, up to 5/10 at once, listing change events, site details); fixed-price listing calls are already used."
-  },
-  "Trading:RespondToBestOffer": {
-    "section": "offers",
-    "size": "small",
-    "priority": "high",
-    "value": "Best Offers buyers sent on listings: see them and accept, decline or counter."
   },
   "Trading:RespondToFeedback": {
     "section": "buyers",
