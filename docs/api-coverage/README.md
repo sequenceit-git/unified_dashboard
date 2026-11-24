@@ -9,7 +9,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
-| TikTok Shop | 365 | 63 | 11 | 250 | 41 | 33 | 104 |
+| TikTok Shop | 365 | 64 | 11 | 249 | 41 | 32 | 103 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
@@ -943,12 +943,6 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | needs scope: Customer Engagement - Read | medium | medium | `POST /customer_engagement/202412/performances` | Customer Engagement - Read | Get Engagement Task Performances | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
 | needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202502/engagement_tasks/custom` | Customer Engagement - Write | Create Custom Engagement Task | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
 
-#### inventory (1)
-
-| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
-|---|---|---|---|---|---|---|
-| available now | high | small | `POST /product/202309/inventory/search` | Product Basic | Inventory Search | Stock per SKU and per warehouse for many products at once (check that stock sync is right). |
-
 #### orders (5)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
@@ -1488,6 +1482,7 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | covered | Products | `POST /product/202309/categories/recommend` | Recommend Category | Retrieve the recommended category for a candidate product based on its title, description, and images. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/files/upload` | Upload Product File | Upload non-image files, such as PDF or video to TikTok Shop. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/images/upload` | Upload Product Image | Upload a local image to TikTok Shop for use as a product image, variant image, size chart, certification image, or another supported image use case. | `marketplaces/tiktok_shop/listings.js` |
+| covered | Products | `POST /product/202309/inventory/search` | Inventory Search | Retrieve inventory information for multiple products or SKUs. | `marketplaces/tiktok_shop/app/services/inventory.js` |
 | covered | Products | `POST /product/202309/products` | Create Product | Create and list products intended for sale exclusively in local shops. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/products/{product_id}/inventory/update` | Update Inventory | Update the inventory quantity of SKUs belonging to a product. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/products/{product_id}/prices/update` | Update Price | Update the price of multiple SKUs belonging to a product in the `ACTIVATE` status and not included in any ongoing promotions. | `marketplaces/tiktok_shop/listings.js` |
@@ -1524,7 +1519,6 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Products | `POST /product/202309/global_products` | Create Global Product | Create global products to be sold in one or multiple shops outside of the seller's base country. |  |
 | missing | Products | `POST /product/202309/global_products/{global_product_id}/inventory/update` | Update Global Inventory | Update the inventory of a global product in `DRAFT`, `UNPUBLISHED`, or `PUBLISHED` status. |  |
 | missing | Products | `POST /product/202309/global_products/{global_product_id}/publish` | Publish Global Product | Publish and convert a global product to local products in one or multiple shops in supported markets. |  |
-| missing | Products | `POST /product/202309/inventory/search` | Inventory Search | Retrieve inventory information for multiple products or SKUs. |  |
 | missing | Products | `POST /product/202309/products/listing_check` | Check Product Listing | Identify any issues with your product properties in advance to ensure your product is ready for listing. |  |
 | missing | Products | `POST /product/202312/global_products/search` | Search Global Products | Retrieve a list of global products that meet the specified conditions. |  |
 | missing | Products | `POST /product/202404/images/optimize` | Optimize Images | Optimize images used in your TikTok Shop by changing the background to white. |  |

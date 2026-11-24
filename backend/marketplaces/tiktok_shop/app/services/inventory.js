@@ -220,4 +220,50 @@ async function sync(ctx) {
     return { success: true, synced: successCount, failed: failCount }
 }
 
-module.exports = { lowStock, logs, adjust, sync }
+/**
+ * GET /tiktok-stock — stock TikTok holds per SKU (and per warehouse) next to the dashboard's stock
+ * for the same SKU. Mismatches first, then matches, then SKUs the dashboard doesn't know.
+ */
+async function tiktokStock(ctx) {
+    const Shop = require('../../../../models/Shop')
+    const filter = { marketplace: 'tiktok_shop', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    if (!shop) throw new HttpError(404, { error: 'No connected TikTok Shop' })
+    const listings = await Listing.find({ shopId: shop._id, marketplace: 'tiktok_shop', externalListingId: { $exists: true, $ne: '' } }).select('externalListingId productId').lean()
+    const products = await Product.find({ _id: { $in: listings.map((l) => l.productId) } }).select('title sku stock variants').lean()
+    const productById = new Map(products.map((p) => [String(p._id), p]))
+    const productByTikTokId = new Map(listings.map((l) => [String(l.externalListingId), productById.get(String(l.productId))]))
+    const ids = [...new Set(listings.map((l) => String(l.externalListingId)))]
+    const tiktok = require('../../service')
+    const inventory = []
+    await marketplaceManager.withShopToken(shop, async (token) => {
+      for (let i = 0; i < ids.length; i += 50) {
+        const res = await tiktok.call(token, 'POST', '/product/202309/inventory/search', { shop, body: { product_ids: ids.slice(i, i + 50) } })
+        inventory.push(...(res.inventory || []))
+      }
+    })
+    const rows = inventory.flatMap((item) => {
+      const product = productByTikTokId.get(String(item.product_id))
+      return (item.skus || []).map((sku) => {
+        const variant = product?.variants?.find((v) => v.sku && v.sku === sku.seller_sku)
+        const single = product && !(product.variants || []).length
+        const dashboardStock = variant ? variant.stock ?? 0 : single ? product.stock ?? 0 : null
+        const tiktokTotal = sku.total_available_quantity ?? 0
+        return {
+          sku: sku.seller_sku || sku.id,
+          tiktokSkuId: sku.id,
+          productId: String(item.product_id),
+          product: product?.title || '',
+          warehouses: (sku.warehouse_inventory || []).map((w) => ({ name: w.warehouse_id, available: w.available_quantity ?? 0 })),
+          tiktokTotal,
+          dashboardStock,
+          mismatch: dashboardStock != null && dashboardStock !== tiktokTotal,
+        }
+      })
+    })
+    const rank = (r) => (r.mismatch ? 0 : r.dashboardStock == null ? 2 : 1)
+    return rows.map((r, i) => [r, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([r]) => r)
+}
+
+module.exports = { lowStock, logs, adjust, sync, tiktokStock }

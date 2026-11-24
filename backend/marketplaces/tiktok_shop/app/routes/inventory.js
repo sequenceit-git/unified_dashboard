@@ -21,6 +21,16 @@ function inventoryRoutes(shopKey) {
   })
 
   // GET /api/<shop>/inventory/logs?productId=&shopId=&reason=&direction=&q=&from=&to=&page=&limit=
+  // GET /api/<shop>/inventory/tiktok-stock — TikTok's stock per SKU and warehouse vs the dashboard's
+  router.get('/tiktok-stock', async (req, res) => {
+    try {
+      res.json(await service.tiktokStock(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   router.get('/logs', async (req, res) => {
     try {
       res.json(await service.logs(ctxOf(req)))

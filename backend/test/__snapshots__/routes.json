@@ -94,6 +94,7 @@
       "PATCH /products/:id/sync",
       "PATCH /products/:id/price",
       "GET /inventory/low-stock",
+      "GET /inventory/tiktok-stock",
       "GET /inventory/logs",
       "POST /inventory/adjust",
       "POST /inventory/sync",

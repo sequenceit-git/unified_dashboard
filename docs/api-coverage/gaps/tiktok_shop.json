@@ -1217,12 +1217,6 @@
     "priority": "low",
     "value": "Global (cross-border) products: one product published to several regional shops."
   },
-  "POST /product/202309/inventory/search": {
-    "section": "inventory",
-    "size": "small",
-    "priority": "high",
-    "value": "Stock per SKU and per warehouse for many products at once (check that stock sync is right)."
-  },
   "POST /product/202309/products/listing_check": {
     "section": "products",
     "size": "small",
