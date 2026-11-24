@@ -1,6 +1,118 @@
-/** Temu promotions: activities, enrolled goods, and enrolling goods. */
-import SectionView from '../../SectionView'
+/**
+ * Temu promotions: activities open to join (Enrol goods at Temu's recommended activity price and
+ * quantity), the ones you joined (their enrolled goods in a drawer), and ended ones.
+ */
+import { useState } from 'react'
+import { useAuth } from '../../../../auth/AuthContext'
+import { api, queryString } from '../../../../lib/api'
+import { useApi } from '../../../../hooks/useApi'
+import RequireShopSection from '../../../../components/RequireShopSection'
+import ShopSectionGate from '../../../../components/ShopSectionGate'
+import { useShopSection } from '../../../../hooks/useShopSection'
+import Badge from '../../../../components/ui/Badge'
+import Button from '../../../../components/ui/Button'
+import { EmptyState, ErrorState, Spinner } from '../../../../components/ui/Feedback'
+import PageHeader from '../../ui/PageHeader'
+import StatusPills from '../../ui/StatusPills'
+import Drawer from '../../ui/Drawer'
+import ActionButton from '../../ActionButton'
+import SectionTable from '../../SectionTable'
+import { endsText, splitActivities } from './promotionsView'
+
+const BASE = '/api/temu/sections/promotions'
+const date = (v) => (v ? new Date(v).toLocaleDateString() : '—')
 
 export default function PromotionsPage() {
-  return <SectionView sectionId="promotions" />
+  return <ShopSectionGate sectionId="promotions"><Promotions /></ShopSectionGate>
+}
+
+function Enrolled({ activity, onClose }) {
+  const { data, loading, error, refetch } = useApi(`${BASE}/enrolled${queryString({ id: activity.id })}`)
+  return (
+    <Drawer title={activity.name || `Activity ${activity.id}`} subtitle="Your goods in this promotion" onClose={onClose} footer={<span className="ml-auto"><Button variant="secondary" onClick={onClose}>Close</Button></span>}>
+      {loading && <Spinner />}
+      {error && <ErrorState message={error} onRetry={refetch} />}
+      {(data?.tables || []).map((t) => <SectionTable key={t.id} table={t} canAct={false} />)}
+    </Drawer>
+  )
+}
+
+function Promotions() {
+  const section = useShopSection()
+  const { token } = useAuth()
+  const [pill, setPill] = useState('open')
+  const [fresh, setFresh] = useState(0)
+  const [viewing, setViewing] = useState(null)
+  const [notice, setNotice] = useState({ text: '', error: false })
+  const [now] = useState(() => new Date())
+  const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
+  if (!section) return <RequireShopSection />
+
+  const split = splitActivities(data, now)
+  const reload = () => setFresh((n) => n + 1)
+  const onRun = async (action, id, value) => {
+    try {
+      const res = await api.post(`${BASE}/${action.id}`, { id, ...(value !== undefined ? { value } : {}) }, token)
+      setNotice({ text: res?.message || `${action.label}: done.`, error: false })
+      reload()
+      return { ok: true }
+    } catch (err) {
+      return { error: err.message }
+    }
+  }
+  const tableError = (data?.tables || []).find((t) => t.error)?.error
+  const list = split[pill] || []
+  const note = (data?.tables || []).find((t) => t.id === 'available')?.note
+
+  return (
+    <div className="space-y-3">
+      <PageHeader
+        title="Temu promotions"
+        summary={data ? [`${split.joined.length} joined`, `${split.open.length} open to join`, data.loadedAt && `updated ${new Date(data.loadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`].filter(Boolean).join(' · ') : ''}
+        actions={<Button variant="secondary" disabled={loading} onClick={reload}>{loading ? 'Refreshing…' : 'Refresh'}</Button>}
+      />
+      {error && <ErrorState message={error} onRetry={refetch} />}
+      {tableError && <p className="text-sm text-rose-600 dark:text-rose-400">{tableError}</p>}
+      <StatusPills
+        pills={[
+          { key: 'open', label: 'Open to join', count: data ? split.open.length : null },
+          { key: 'joined', label: 'Joined', count: data ? split.joined.length : null },
+          { key: 'ended', label: 'Ended', count: data ? split.ended.length : null },
+        ]}
+        active={pill}
+        onChange={setPill}
+      />
+      {pill === 'open' && note && <p className="text-xs text-gray-500 dark:text-slate-400">{note}</p>}
+      {notice.text && <p className={`text-sm ${notice.error ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{notice.text}</p>}
+      {loading && !data && <Spinner />}
+      {data && !list.length && <EmptyState message={pill === 'open' ? 'No Temu promotions open to join right now.' : pill === 'joined' ? "You haven't joined a running promotion." : 'No ended promotions.'} />}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {list.map((a) => {
+          const enrol = (a.actions || []).find((x) => x.id === 'enrol')
+          const ends = endsText(a, now)
+          return (
+            <article key={a.id} className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="font-semibold">{a.name || `Activity ${a.id}`}</h3>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">{a.type || 'Promotion'}</p>
+                </div>
+                {a.isJoined ? <Badge color="green">Joined</Badge> : a.status ? <Badge color="blue">{a.status}</Badge> : null}
+              </div>
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                {date(a.starts)} – {date(a.ends)}
+                {ends && <span className={`ml-2 text-xs ${/today|in [1-3] day/.test(ends) ? 'font-semibold text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-slate-400'}`}>{ends}</span>}
+              </p>
+              <div className="mt-auto flex flex-wrap gap-2">
+                {a.isJoined && <Button size="sm" variant="secondary" onClick={() => setViewing(a)}>Enrolled goods</Button>}
+                {enrol && pill !== 'ended' && <ActionButton action={enrol} rowId={a.id} onRun={onRun} onDetail={() => {}} />}
+                {!a.isJoined && !enrol && pill === 'open' && <span className="text-xs text-gray-500 dark:text-slate-400">Temu allows none of your goods in it yet.</span>}
+              </div>
+            </article>
+          )
+        })}
+      </div>
+      {viewing && <Enrolled activity={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  )
 }
