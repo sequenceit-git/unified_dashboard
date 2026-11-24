@@ -1,82 +1,71 @@
+/**
+ * Temu analytics: is anything wrong (Needs attention), then how the shop sells (results vs the
+ * previous period, revenue by day, top goods), store health, and ads once Temu Ads is on.
+ */
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { queryString } from '../../../../lib/api'
-import { StatCard } from '../../../../components/ui/Card'
 import { Select } from '../../../../components/ui/Input'
 import { useApi } from '../../../../hooks/useApi'
-import MarketplaceChart from './MarketplaceChart'
 import RevenueChart from './RevenueChart'
 import TopProducts from './TopProducts'
-import SectionView from '../../SectionView'
-
-const RANGES = [
-  { value: '30', label: 'Last 30 days' },
-  { value: '60', label: 'Last 60 days' },
-]
-
-function rangeParams(days) {
-  const end = new Date()
-  end.setHours(23, 59, 59, 999)
-  const start = new Date(end.getTime() - (Number(days) - 1) * 86400000)
-  start.setHours(0, 0, 0, 0)
-  return {
-    from: start.toISOString(),
-    to: end.toISOString(),
-  }
-}
+import NeedsAttention from './NeedsAttention'
+import ResultTiles from './ResultTiles'
+import StoreHealth from './StoreHealth'
+import AdsPanel from './AdsPanel'
+import { PERIODS, attentionItems, insights, periodRanges, trafficByGoods, withPrevious } from './analyticsView'
 
 export default function AnalyticsPage() {
   const { token } = useAuth()
   const section = useShopSection()
-  const marketplace = section?.marketplace
   const [days, setDays] = useState('30')
+  const { current, previous } = useMemo(() => periodRanges(days), [days])
+  const url = (path, range, extra = {}) => (token ? `/api/temu/analytics/${path}${queryString({ from: range.from, to: range.to, ...extra })}` : null)
 
-  const { from, to } = useMemo(() => rangeParams(days), [days])
-
-  const summary = useApi(token ? `/api/temu/analytics/summary${queryString({ from, to })}` : null)
-  const revenue = useApi(token ? `/api/temu/analytics/revenue${queryString({ from, to })}` : null)
-  const markets = useApi(token ? `/api/temu/analytics/marketplaces${queryString({ from, to })}` : null)
-  const top = useApi(token ? `/api/temu/analytics/products${queryString({ from, to, limit: 10 })}` : null)
-  const inv = useApi(token && marketplace ? `/api/temu/analytics/inventory` : null)
+  const summary = useApi(url('summary', current))
+  const prevSummary = useApi(url('summary', previous))
+  const revenue = useApi(url('revenue', current))
+  const prevRevenue = useApi(url('revenue', previous))
+  const top = useApi(url('products', current, { limit: 10 }))
+  const inv = useApi(token ? '/api/temu/analytics/inventory' : null)
+  const temu = useApi(token ? '/api/temu/sections/analytics' : null)
 
   if (!section) return <RequireShopSection />
 
-  // The page's own sales charts stay the first tab; Temu's insights follow from the section loader.
-  const sales = (
-    <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
+  const health = insights(temu.data)
+  const returnsPer100 = health.tile('returns-per-100')
+  const items = attentionItems({ traffic: health.traffic, inventory: inv.data, returnsPer100 })
+
+  return (
+    <div className="max-w-full min-w-0 space-y-4 overflow-x-hidden">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <span />
+        <h1 className="text-xl font-bold sm:text-2xl">{section.label} analytics</h1>
         <div className="w-full sm:w-44">
-          <Select
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            options={RANGES}
-            aria-label="Analytics period"
-          />
+          <Select value={days} onChange={(e) => setDays(e.target.value)} options={PERIODS} aria-label="Analytics period" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 min-w-0">
-        <StatCard label="Revenue" value={summary.loading ? '…' : `$${(summary.data?.revenue ?? 0).toFixed(2)}`} />
-        <StatCard label="Orders" value={summary.loading ? '…' : (summary.data?.orders ?? 0)} />
-        <StatCard label="Avg order" value={summary.loading ? '…' : `$${(summary.data?.avgOrder ?? 0).toFixed(2)}`} />
-        <StatCard
-          label="Profit"
-          value={summary.loading ? '…' : `$${(summary.data?.profit ?? 0).toFixed(2)}`}
-          sub="Sell price − base price"
+      <NeedsAttention items={items} loading={temu.loading || inv.loading} />
+
+      <ResultTiles current={summary.data} previous={prevSummary.data} loading={summary.loading} returnsPer100={returnsPer100} />
+
+      <RevenueChart data={revenue.data ? withPrevious(revenue.data, prevRevenue.data, days, current.from) : null} />
+
+      <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+        <TopProducts rows={top.data} loading={top.loading} error={top.error} onRetry={top.refetch} traffic={trafficByGoods(health.traffic)} />
+        <StoreHealth
+          tags={health.tags}
+          tagsError={health.tagsError}
+          cancelsPer100={health.tile('cancels-per-100')}
+          loading={temu.loading}
+          error={temu.error}
+          onRetry={temu.refetch}
         />
-        <StatCard label="Low stock" value={inv.loading ? '…' : (inv.data?.lowCount ?? 0)} sub={inv.data ? `${inv.data.outCount ?? 0} out of stock` : ''} />
       </div>
 
-      <RevenueChart data={revenue.data} />
-
-      <div className="grid gap-3 lg:grid-cols-2 min-w-0">
-        <MarketplaceChart data={markets.data} />
-        <TopProducts rows={top.data} loading={top.loading} error={top.error} onRetry={top.refetch} />
-      </div>
+      {health.adsShown && <AdsPanel spend={health.tile('ad-spend')} share={health.tile('ad-share')} />}
     </div>
   )
-  return <SectionView sectionId="analytics" title={`${section.label} analytics`} ownTabs={[{ id: 'sales', label: 'Sales', render: () => sales }]} />
 }
