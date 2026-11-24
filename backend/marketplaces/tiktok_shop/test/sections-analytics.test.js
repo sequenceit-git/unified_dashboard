@@ -152,14 +152,14 @@ test('other shop health failures still show as errors', async () => {
 })
 
 test('Audience (ACC) and Off-site & pixels tabs populate tiles and tables', async () => {
-  const { analytics, restore } = load({
+  const { analytics, calls, restore } = load({
     '/analytics/202610/acc/overview': { total_customers: 4200 },
     '/analytics/202610/acc/penetration': { penetration_rate: 18.5 },
     '/analytics/202610/acc/preferences/summary': { top_category: 'Home & Kitchen' },
     '/analytics/202610/acc/preferences': { preferences: [{ name: 'Repeat buyers', dimension: 'Loyalty', share: 42, orders: 120, gmv: MONEY(3200) }] },
     '/analytics/202610/acc/preferences/product/categories': { categories: [{ category_name: 'Kitchen', affinity_index: '1.4', share: 60, gmv: MONEY(2100) }] },
     '/analytics/202610/acc/preferences/live/factors': { factors: [{ factor_name: 'Live demos', impact: 'High', description: 'Boosts conversion' }] },
-    '/analytics/202610/acc/brands': { brands: [{ brand_name: 'BrandA', affinity_index: '1.2', share: 30 }] },
+    '/analytics/202610/acc/brands': { brands: [{ brand_id: 'B1', industry_id: 'I1', brand_name: 'BrandA', affinity_index: '1.2', share: 30 }] },
     '/analytics/202610/off_site/overview': { gmv: MONEY(950), orders: 24, visits: 800 },
     '/analytics/202610/off_site/details': { details: [{ channel_name: 'Search Ads', visits: 500, orders: 15, gmv: MONEY(600), roas: '3.2' }] },
     '/analytics/202610/off_site/insights': { insights: [{ title: 'Evening peak', type: 'Timing', metric_value: '+22%', summary: 'Higher ROAS after 6pm' }] },
@@ -176,5 +176,23 @@ test('Audience (ACC) and Off-site & pixels tabs populate tiles and tables', asyn
     assert.equal(data.tables.find((t) => t.id === 'offSiteDetails').rows[0].roas, '3.2x')
     assert.equal(data.tables.find((t) => t.id === 'offSiteInsights').rows[0].title, 'Evening peak')
     assert.equal(data.tables.find((t) => t.id === 'offSitePixels').rows[0].pixelId, 'PX1')
+    assert.deepEqual(calls.find(([p]) => p === '/analytics/202610/acc/overview')?.[1], { brand_id: 'B1', industry_id: 'I1' })
+    assert.equal(calls.find(([p]) => p === '/analytics/202610/acc/preferences')?.[1]?.audience_type, 'CONVERSION')
+    assert.equal(calls.find(([p]) => p === '/analytics/202610/off_site/overview')?.[1]?.pixel_id, 'PX1')
+    assert.equal(calls.find(([p]) => p === '/analytics/202610/off_site/details')?.[1]?.attribution_setting, 'CLICK_14D_OR_VIEW_1D')
+  } finally { restore() }
+})
+
+test('ACC and Off-site tabs skip dependent queries cleanly when shop has no brand or pixel', async () => {
+  const { analytics, calls, restore } = load({
+    '/analytics/202610/acc/brands': { brands: [] },
+    '/analytics/202610/off_site/pixels': { pixels: [] },
+  })
+  try {
+    const data = await analytics('tok', {}, { now: NOW })
+    assert.ok(data.summary.some((s) => s.tab === 'Audience (ACC)' && s.value === 'No authorized ACC brand'))
+    assert.ok(data.summary.some((s) => s.tab === 'Off-site & pixels' && s.value === '0 connected'))
+    assert.equal(calls.some(([p]) => p === '/analytics/202610/acc/overview'), false)
+    assert.equal(calls.some(([p]) => p === '/analytics/202610/off_site/overview'), false)
   } finally { restore() }
 })

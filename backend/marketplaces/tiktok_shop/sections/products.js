@@ -91,20 +91,32 @@ async function products(token, shop) {
       note: 'High-demand items TikTok buyers are searching for that your shop can supply.',
       columns: [
         col('id', 'Opportunity ID'),
+        col('type', 'Type'),
         col('title', 'Product / Keyword'),
         col('category', 'Category'),
         col('status', 'Status', 'status'),
       ],
       load: scopeAware(async () => {
-        const res = await ttPost(token, shop, '/product/202604/opportunities/query', {}, { page_size: 50 })
-        return (res.opportunities || res.items || []).map((row) => ({
+        const [prodOpp, kwOpp] = await Promise.all([
+          ttPost(token, shop, '/product/202604/opportunities/query', { opportunity_type: 'PRODUCT' }, { page_size: 50 }),
+          ttPost(token, shop, '/product/202604/opportunities/query', { opportunity_type: 'KEYWORD' }, { page_size: 50 }).catch(() => ({})),
+        ])
+        const extract = (r, fallbackType) => (r?.data?.opportunities || r?.opportunities || r?.items || []).map((row) => ({ ...row, _type: row.opportunity_type || fallbackType }))
+        const seen = new Set()
+        return [...extract(prodOpp, 'PRODUCT'), ...extract(kwOpp, 'KEYWORD')].filter((row) => {
+          const oid = String(row.id || row.opportunity_id || '')
+          if (!oid || seen.has(oid)) return false
+          seen.add(oid)
+          return true
+        }).map((row) => ({
           id: String(row.id || row.opportunity_id),
+          type: words(row._type),
           title: row.title || row.keyword || row.product_name || row.id,
-          category: row.category_name || row.category?.name || '',
-          status: words(row.status || row.opportunity_type || 'OPEN'),
+          category: [row.category_name_level_1, row.category_name_level_2, row.category_name_level_3].filter(Boolean).join(' › ') || row.category_name || row.category?.name || '',
+          status: words(row.status || (row.is_collected ? 'COLLECTED' : 'ACTIVE')),
           actions: [
             { id: 'opportunity', label: 'Details', detail: true },
-            { id: 'submit-opportunity', label: 'Submit product', input: { label: 'TikTok Product ID to submit' } },
+            ...(row._type !== 'CATEGORY' ? [{ id: 'submit-opportunity', label: 'Submit product', input: { label: 'TikTok Product ID to submit' } }] : []),
           ],
         }))
       }, 'Product Basic'),
@@ -194,20 +206,36 @@ products.details = {
   opportunity: scopeAware(async (token, shop, id) => {
     const opp = await ttGet(token, shop, `/product/202604/opportunities/${enc(id)}`)
     const detail = opp.opportunity || opp
+    const basic = detail.basic_info || {}
+    const market = detail.market_data || {}
+    const content = detail.content_data || {}
+    const criteria = detail.listing_criteria || {}
+    const category = [basic.category_name_level_1, basic.category_name_level_2, basic.category_name_level_3].filter(Boolean).join(' › ') || detail.category_name || '—'
     const items = detail.reference_products || detail.items || []
+    const metricRows = [
+      detail.action_type && { name: 'Recommended action', value: words(detail.action_type) },
+      market.market_buzz && { name: 'Market buzz', value: words(market.market_buzz) },
+      market.est_market_sales_volume && { name: 'Est. 30d sales volume', value: String(market.est_market_sales_volume) },
+      market.est_market_gmv && { name: 'Est. 30d market GMV', value: `$${market.est_market_gmv}` },
+      market.search_volume && { name: 'Search volume', value: String(market.search_volume) },
+      market.search_keyword && { name: 'Search keywords', value: market.search_keyword },
+      content.trending_hashtag && { name: 'Trending hashtag', value: content.trending_hashtag },
+      criteria.keywords && { name: 'Required keywords', value: criteria.keywords },
+      criteria.product_brand && { name: 'Required brand', value: criteria.product_brand },
+    ].filter(Boolean)
     return {
-      title: detail.title || detail.keyword || `Opportunity ${id}`,
+      title: basic.title || detail.title || detail.keyword || `Opportunity ${id}`,
       summary: [
-        { label: 'Category', value: detail.category_name || '—', type: 'text' },
-        { label: 'Status', value: words(detail.status || 'OPEN'), type: 'text' },
+        { label: 'Category', value: category, type: 'text' },
+        { label: 'Status', value: words(basic.status || detail.status || 'ACTIVE'), type: 'text' },
       ],
       tables: [{
         id: 'refs',
         title: 'Opportunity details',
         columns: [col('name', 'Item / Attribute'), col('value', 'Details')],
         rows: items.length
-          ? items.map((x) => ({ name: x.title || x.name || 'Reference', value: x.price || x.description || x.url || '' }))
-          : [{ name: 'Description', value: detail.description || detail.reason || 'No extra notes returned by TikTok.' }],
+          ? [...metricRows, ...items.map((x) => ({ name: x.title || x.name || 'Reference', value: x.price || x.description || x.url || '' }))]
+          : (metricRows.length ? metricRows : [{ name: 'Description', value: detail.description || detail.reason || 'No extra notes returned by TikTok.' }]),
       }],
     }
   }, 'Product Basic'),

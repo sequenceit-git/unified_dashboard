@@ -40,7 +40,7 @@ function load(overrides = {}) {
         calls.push(['POST', path, body, query])
         if (overrides.post?.[path]) return overrides.post[path](body, query)
         if (path === '/product/202606/skpps/search') return { skpps: [{ product_id: 'P-100', skpp_status: 'QUALIFIED' }] }
-        if (path === '/product/202604/opportunities/query') return { opportunities: [{ id: 'OPP-1', title: 'Desk Lamp', category_name: 'Lighting', status: 'OPEN' }] }
+        if (path === '/product/202604/opportunities/query') return { data: { opportunities: [{ id: 'OPP-1', title: 'Desk Lamp', category_name_level_1: 'Home', category_name_level_2: 'Lighting', status: 'ACTIVE' }] } }
         if (path === '/product/202404/images/optimize') return { images: [{ optimize_status: 'SUCCESS', url: 'https://img/opt.jpg' }] }
         if (path === '/product/202411/products/diagnose_optimize') return { diagnoses: [{ field: 'TITLE', diagnosis_results: [{ how_to_solve: 'Include brand' }] }], listing_quality: { current_tier: 'GOOD' } }
         if (path === '/product/202604/opportunities/OPP-1/submit') return { submission_id: 'SUB-2' }
@@ -59,7 +59,7 @@ function load(overrides = {}) {
 }
 
 test('products section builds quality, opportunities, submissions, and readiness tables', async () => {
-  const { products, restore } = load()
+  const { products, calls, restore } = load()
   try {
     const res = await products('tok', { _id: 'shop1' })
     assert.deepEqual(res.tables.map((t) => [t.id, t.tab]), [
@@ -70,7 +70,10 @@ test('products section builds quality, opportunities, submissions, and readiness
     ])
     assert.equal(res.tables[0].rows[0].product, 'Phone stand')
     assert.equal(res.tables[1].rows[0].title, 'Desk Lamp')
+    assert.equal(res.tables[1].rows[0].category, 'Home › Lighting')
     assert.equal(res.tables[3].rows[0].status, 'Ready')
+    const oppQuery = calls.find(([m, p]) => m === 'POST' && p === '/product/202604/opportunities/query')
+    assert.equal(oppQuery?.[2]?.opportunity_type, 'PRODUCT')
   } finally { restore() }
 })
 

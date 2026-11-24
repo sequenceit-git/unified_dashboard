@@ -75,10 +75,30 @@ const soft = (err) => {
 }
 
 async function analytics(token, shop, { now = new Date() } = {}) {
-  const range = ttRange(30, now)
   let healthTiles = []
   let accTiles = []
   let offSiteTiles = []
+
+  let accBrandsPromise
+  const getAccBrands = () => (accBrandsPromise ||= ttGet(token, shop, '/analytics/202610/acc/brands').catch(soft))
+  const getAccContext = async () => {
+    const res = await getAccBrands()
+    const first = (res.brands || firstList(res))[0]
+    return {
+      brandsRes: res,
+      brandId: String(first?.brand_id || first?.id || ''),
+      industryId: String(first?.industry_id || ''),
+    }
+  }
+
+  let pixelsPromise
+  const getPixels = () => (pixelsPromise ||= ttGet(token, shop, '/analytics/202610/off_site/pixels').catch(soft))
+  const getPixelContext = async () => {
+    const res = await getPixels()
+    const first = (res.pixels || firstList(res))[0]
+    return { pixelsRes: res, pixelId: String(first?.pixel_id || first?.id || '') }
+  }
+
   const list = await tables([
     {
       id: 'skus',
@@ -128,11 +148,18 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'Audience segments & preferences',
       columns: [col('name', 'Preference / segment'), col('group', 'Dimension'), col('share', 'Share'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
       load: scopeAware(async () => {
+        const { brandId, industryId } = await getAccContext()
+        if (!brandId || !industryId) {
+          accTiles = [{ tab: 'Audience (ACC)', label: 'ACC brand status', value: 'No authorized ACC brand', type: 'text', sub: 'TikTok ACC audience metrics require an authorized brand on this shop.' }]
+          return []
+        }
+        const accBrand = { brand_id: brandId, industry_id: industryId }
+        const accPref = { ...accBrand, trend_days: 30, audience_type: 'CONVERSION' }
         const [ov, pen, prefSum, prefs] = await Promise.all([
-          ttGet(token, shop, '/analytics/202610/acc/overview', range).catch(soft),
-          ttGet(token, shop, '/analytics/202610/acc/penetration', range).catch(soft),
-          ttGet(token, shop, '/analytics/202610/acc/preferences/summary', range).catch(soft),
-          ttGet(token, shop, '/analytics/202610/acc/preferences', range).catch(soft),
+          ttGet(token, shop, '/analytics/202610/acc/overview', accBrand).catch(soft),
+          ttGet(token, shop, '/analytics/202610/acc/penetration', { ...accBrand, trend_days: 30 }).catch(soft),
+          ttGet(token, shop, '/analytics/202610/acc/preferences/summary', accPref).catch(soft),
+          ttGet(token, shop, '/analytics/202610/acc/preferences', { ...accPref, entity_type: 'PRODUCT' }).catch(soft),
         ])
         const audienceVal = ov.total_customers ?? ov.audience_size ?? ov.active_customers ?? null
         const penRate = pen.penetration_rate ?? pen.rate ?? null
@@ -157,7 +184,9 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'Product category affinity',
       columns: [col('category', 'Category'), col('affinity', 'Affinity index'), col('share', 'Buyer share'), col('gmv', 'GMV', 'money')],
       load: scopeAware(async () => {
-        const res = await ttGet(token, shop, '/analytics/202610/acc/preferences/product/categories', range).catch(soft)
+        const { brandId, industryId } = await getAccContext()
+        if (!brandId || !industryId) return []
+        const res = await ttGet(token, shop, '/analytics/202610/acc/preferences/product/categories', { brand_id: brandId, industry_id: industryId, trend_days: 30, audience_type: 'CONVERSION' }).catch(soft)
         return (res.categories || firstList(res)).map((c) => ({
           category: c.category_name || c.name || c.title || '',
           affinity: c.affinity_index ?? c.index ?? c.score ?? '',
@@ -172,7 +201,9 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'LIVE audience & conversion factors',
       columns: [col('factor', 'Factor'), col('impact', 'Impact / score'), col('signal', 'Signal')],
       load: scopeAware(async () => {
-        const res = await ttGet(token, shop, '/analytics/202610/acc/preferences/live/factors', range).catch(soft)
+        const { brandId, industryId } = await getAccContext()
+        if (!brandId || !industryId) return []
+        const res = await ttGet(token, shop, '/analytics/202610/acc/preferences/live/factors', { brand_id: brandId, industry_id: industryId, trend_days: 30, audience_type: 'CONVERSION' }).catch(soft)
         return (res.factors || firstList(res)).map((f) => ({
           factor: f.factor_name || f.name || f.title || '',
           impact: f.impact ?? f.score ?? f.value ?? '',
@@ -186,8 +217,8 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'Brand affinity',
       columns: [col('brand', 'Brand'), col('affinity', 'Affinity index'), col('share', 'Audience share')],
       load: scopeAware(async () => {
-        const res = await ttGet(token, shop, '/analytics/202610/acc/brands', range).catch(soft)
-        return (res.brands || firstList(res)).map((b) => ({
+        const { brandsRes } = await getAccContext()
+        return (brandsRes.brands || firstList(brandsRes)).map((b) => ({
           brand: b.brand_name || b.name || '',
           affinity: b.affinity_index ?? b.index ?? b.score ?? '',
           share: b.share != null ? `${b.share}%` : (b.percentage || ''),
@@ -200,9 +231,15 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'Off-site channel performance',
       columns: [col('channel', 'Channel / campaign'), col('visits', 'Visits', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money'), col('roas', 'ROAS')],
       load: scopeAware(async () => {
+        const { pixelId } = await getPixelContext()
+        if (!pixelId) {
+          offSiteTiles = [{ tab: 'Off-site & pixels', label: 'Off-site pixels', value: '0 connected', type: 'text', sub: 'Connect a TikTok Pixel to track off-site attribution.' }]
+          return []
+        }
+        const offSiteQuery = { pixel_id: pixelId, attribution_setting: 'CLICK_14D_OR_VIEW_1D' }
         const [ov, det] = await Promise.all([
-          ttGet(token, shop, '/analytics/202610/off_site/overview', range).catch(soft),
-          ttGet(token, shop, '/analytics/202610/off_site/details', range).catch(soft),
+          ttGet(token, shop, '/analytics/202610/off_site/overview', offSiteQuery).catch(soft),
+          ttGet(token, shop, '/analytics/202610/off_site/details', { ...offSiteQuery, content_type: 'PRODUCT' }).catch(soft),
         ])
         const gmvObj = ov.gmv?.amount != null ? ov.gmv : (ov.off_site_gmv?.amount != null ? ov.off_site_gmv : null)
         offSiteTiles = [
@@ -225,7 +262,9 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'Off-site attribution insights',
       columns: [col('title', 'Insight'), col('type', 'Type'), col('metric', 'Metric'), col('detail', 'Summary')],
       load: scopeAware(async () => {
-        const res = await ttGet(token, shop, '/analytics/202610/off_site/insights', range).catch(soft)
+        const { pixelId } = await getPixelContext()
+        if (!pixelId) return []
+        const res = await ttGet(token, shop, '/analytics/202610/off_site/insights', { pixel_id: pixelId, attribution_setting: 'CLICK_14D_OR_VIEW_1D' }).catch(soft)
         return (res.insights || firstList(res)).map((i) => ({
           title: i.title || i.name || i.insight_name || '',
           type: i.type || i.category || '',
@@ -240,8 +279,8 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'Tracking pixels',
       columns: [col('pixelId', 'Pixel ID'), col('name', 'Name'), col('status', 'Status', 'status'), col('events', 'Events', 'number')],
       load: scopeAware(async () => {
-        const res = await ttGet(token, shop, '/analytics/202610/off_site/pixels').catch(soft)
-        return (res.pixels || firstList(res)).map((p) => ({
+        const { pixelsRes } = await getPixelContext()
+        return (pixelsRes.pixels || firstList(pixelsRes)).map((p) => ({
           id: String(p.pixel_id || p.id || ''),
           pixelId: String(p.pixel_id || p.id || ''),
           name: p.pixel_name || p.name || '',
