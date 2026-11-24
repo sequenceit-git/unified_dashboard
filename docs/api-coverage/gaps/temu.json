@@ -233,37 +233,7 @@
     "priority": "high",
     "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
   },
-  "bg.aftersales.parentreturnorder.get": {
-    "section": "after-sales",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
-  },
-  "temu.aftersales.carrier.get": {
-    "section": "after-sales",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
-  },
-  "temu.aftersales.returnaddress.get": {
-    "section": "after-sales",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
-  },
-  "temu.aftersales.returnlabel.prepare.get": {
-    "section": "after-sales",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
-  },
   "temu.aftersales.signature.get": {
-    "section": "after-sales",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
-  },
-  "temu.aftersales.upload.returnlabel": {
     "section": "after-sales",
     "size": "medium",
     "priority": "medium",

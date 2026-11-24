@@ -83,3 +83,9 @@ test('the form keeps values after a refused add', async () => {
   const errs = validate({ catId: 1, title: 'Tee', images: ['x'], shippingTemplateId: 'T1', attributes: {}, variants: [] }, TEMU_TEMPLATE)
   assert.deepEqual(Object.keys(errs), ['attributes.1000', 'variants'])
 })
+
+test('a Temu file field gives name, type, size and a data URL', async () => {
+  const { readFileValue } = await load('/src/marketplaces/temu/fileField.js')
+  class Reader { readAsDataURL(f) { this.result = `data:${f.type};base64,JVBERg==`; this.onload() } }
+  assert.deepEqual(await readFileValue({ name: 'label.pdf', type: 'application/pdf', size: 4 }, Reader), { name: 'label.pdf', type: 'application/pdf', size: 4, dataUrl: 'data:application/pdf;base64,JVBERg==' })
+})

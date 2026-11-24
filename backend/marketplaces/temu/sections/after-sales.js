@@ -4,9 +4,15 @@
  */
 const temu = require('../service')
 const { col, tables, words } = require('../../../services/marketplace/sectionKit')
-const { AFTERSALES_GROUP, temuTime, TEMU_AFTERSALES_STATUS, temuAmount } = require('./helpers')
+const { AFTERSALES_GROUP, temuTime, TEMU_AFTERSALES_STATUS, temuAmount, temuFile } = require('./helpers')
+
+// Temu US: the return warehouse region for return carriers.
+const US_REGION = 211
+const CLOSED = /refunded|rejected|cancelled/i
 
 async function returns(token) {
+  const carriers = ((await temu.call('temu.aftersales.carrier.get', { access_token: token, returnWarehouseRegionId1: US_REGION }).catch(() => ({}))).carrierDTOList || [])
+    .map((c) => ({ value: String(c.carrierId), label: c.carrierName }))
   const end = Math.floor(Date.now() / 1000)
   const start = end - 90 * 24 * 3600
   const list = await tables([
@@ -32,7 +38,17 @@ async function returns(token) {
         opened: temuTime(row.createAt),
         updated: temuTime(row.updateAt),
         respondBy: temuTime(row.operateExpireTimeMs),
-        actions: [{ id: 'aftersales', label: 'Details', detail: true }],
+        actions: [
+          { id: 'aftersales', label: 'Details', detail: true },
+          ...(CLOSED.test(AFTERSALES_GROUP[row.afterSalesStatusGroup] || '') ? [] : [
+            { id: 'return-address', label: "Buyer's address", detail: true },
+            { id: 'return-label', label: 'Upload return label', input: { fields: [
+              carriers.length ? { name: 'carrierId', label: 'Carrier', options: carriers } : { name: 'carrierId', label: 'Carrier id' },
+              { name: 'trackingNumber', label: 'Tracking number' },
+              { name: 'file', label: 'Label (PDF, JPEG or PNG)', type: 'file', accept: 'application/pdf,image/jpeg,image/png' },
+            ] } },
+          ]),
+        ],
       })) || [],
     },
     {
@@ -73,9 +89,10 @@ returns.details = {
   /** id = "<parentAfterSalesSn>|<parentOrderSn>": each line of the request and its record. */
   aftersales: async (token, shop, id) => {
     const [sn, orderSn] = String(id).split('|')
-    const [lines, detail] = await Promise.all([
+    const [lines, detail, ship] = await Promise.all([
       temu.call('bg.aftersales.aftersales.list.get', { access_token: token, pageNo: 1, pageSize: 50, parentAfterSalesSnList: [sn] }),
       temu.call('temu.aftersales.parentaftersales.detail.get', { access_token: token, parentAfterSalesSn: sn, ...(orderSn ? { parentOrderSn: orderSn } : {}) }),
+      temu.call('bg.aftersales.parentreturnorder.get', { access_token: token, parentAfterSalesSn: sn }).catch(() => ({ logisticsInfoList: [] })),
     ])
     const byLine = new Map((detail.afterSalesList || []).map((l) => [String(l.afterSalesSn), l]))
     const refund = detail.refundSummary || {}
@@ -105,6 +122,12 @@ returns.details = {
           }),
         },
         {
+          id: 'shipment',
+          title: 'Return shipment',
+          columns: [col('carrier', 'Carrier'), col('tracking', 'Tracking'), col('to', 'Returns to')],
+          rows: (ship.logisticsInfoList || []).map((l) => ({ carrier: l.carrierName || '', tracking: l.trackingNumber || '', to: l.returnWarehouseRegion1Name || '' })),
+        },
+        {
           id: 'history',
           title: 'Record',
           columns: [col('what', 'What'), col('value', 'Value')],
@@ -117,6 +140,51 @@ returns.details = {
         },
       ],
     }
+  },
+}
+
+/** The buyer's pickup address for a return, shown only when asked (never stored or cached). */
+returns.details['return-address'] = async (token, shop, id) => {
+  const [sn] = String(id).split('|')
+  const a = await temu.call('temu.aftersales.returnaddress.get', { access_token: token, parentAfterSalesSn: sn })
+  const address = a.addressLineAll || [a.addressLine1, a.addressLine2, a.addressLine3, a.regionName3, a.regionName2, a.postCode, a.regionName1].filter(Boolean).join(', ')
+  return {
+    title: `Buyer's return address (${sn})`,
+    summary: [
+      { label: 'Name', value: a.receiptName || '—', type: 'text' },
+      { label: 'Phone', value: a.mobile || '—', type: 'text' },
+      { label: 'Address', value: address || '—', type: 'text' },
+    ],
+    tables: [],
+  }
+}
+
+/** Row actions. */
+returns.actions = {
+  /**
+   * The seller's own return label: the file goes to Temu's file upload, then the label is sent with
+   * the carrier, tracking, the first return warehouse Temu offers and the buyer's chosen pickup time.
+   */
+  'return-label': async (token, shop, id, value = {}) => {
+    const [sn, orderSn] = String(id).split('|')
+    const trackingNumber = String(value.trackingNumber || '').trim()
+    const carrierId = Number(value.carrierId)
+    if (!trackingNumber || !Number.isInteger(carrierId)) throw Object.assign(new Error('Choose the carrier and enter the tracking number.'), { status: 400, body: { error: 'Choose the carrier and enter the tracking number.' } })
+    const file = temuFile(value.file, 10)
+    const prep = await temu.call('temu.aftersales.returnlabel.prepare.get', { access_token: token, parentAfterSalesSn: sn, parentOrderSn: orderSn })
+    const warehouse = (prep.availableReturnWarehouseList || [])[0]
+    if (!warehouse) throw Object.assign(new Error('Temu offers no return warehouse for this request.'), { status: 400, body: { error: 'Temu offers no return warehouse for this request.' } })
+    const { url } = await temu.call('bg.arbok.open.upload.uploadFile', { access_token: token, base64File: file.dataUrl })
+    const time = (prep.userSelectedPickUpTimeList || [])[0]
+    await temu.call('temu.aftersales.upload.returnlabel', {
+      access_token: token,
+      parentAfterSalesSn: sn,
+      parentOrderSn: orderSn,
+      returnLabelDTOList: [{ mallWarehouseId: warehouse.warehouseId, carrierId, trackingNumber, returnLabelUrl: url }],
+      ...(time ? { startTimestamp: time.startTimestamp, endTimestamp: time.endTimestamp } : {}),
+      ...(prep.merchantLatestPickUpTime ? { latestTimestamp: prep.merchantLatestPickUpTime } : {}),
+    })
+    return { message: `Return label sent to Temu for ${sn} (${trackingNumber}).` }
   },
 }
 

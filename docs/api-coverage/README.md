@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 81 | 0 | 52 | 0 | 7 | — |
+| Temu | 133 | 86 | 0 | 47 | 0 | 7 | — |
 
 ## eBay
 
@@ -1571,16 +1571,11 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | medium | `temu.searchrec.ad.modify` | — | Advertisement modify interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
 | — | medium | medium | `temu.searchrec.ad.roas.pred` | — | Advertising roas prediction interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
 
-#### after-sales (6)
+#### after-sales (1)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | medium | medium | `bg.aftersales.parentreturnorder.get` | — | Query after-sales reverse logistics information. | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.carrier.get` | — | Query return carrier information | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.returnaddress.get` | — | Get Return Order Buyer Address Information | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.returnlabel.prepare.get` | — | Query return label preparation information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 | — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
-| — | medium | medium | `temu.aftersales.upload.returnlabel` | — | Upload return label | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
 #### goods (28)
 
@@ -1677,7 +1672,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Compliance | `bg.arbok.open.cert.queryNeedUploadItems` | bg.arbok.open.cert.queryNeedUploadItems | ￼External key customers have their own development capabilities and can call APIs to query the content to be uploaded | `marketplaces/temu/app/services/compliance.js` |
 | covered | Compliance | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | External key customers have their own development capabilities and can call APIs to submit qualifications | `marketplaces/temu/app/services/compliance.js` |
 | covered | Compliance | `bg.arbok.open.product.cert.query` | query product cert | Some large stores with R&D capabilities, after using the Kaiping interface to upload qualifications in batches, need to query the reasons for the rejection of product qualifications in batches | `marketplaces/temu/app/services/compliance.js` |
-| covered | Compliance | `bg.arbok.open.upload.uploadFile` | bg.arbok.open.upload.uploadFile | Large external customers have their own development capabilities and can call APIs to upload files | `marketplaces/temu/app/services/compliance.js` |
+| covered | Compliance | `bg.arbok.open.upload.uploadFile` | bg.arbok.open.upload.uploadFile | Large external customers have their own development capabilities and can call APIs to upload files | `marketplaces/temu/app/services/compliance.js`, `marketplaces/temu/sections/after-sales.js` |
 | covered | Compliance | `bg.local.compliance.goods.list.query` | Product compliance list query | Product management attribute list query | `marketplaces/temu/app/services/compliance.js` |
 | missing | Compliance | `bg.compliance.edit` | edit_compliance | edit compliance info |  |
 | missing | Compliance | `bg.compliance.metadata.get` | query_compliance_metadata | query compliance metadata |  |
@@ -1763,14 +1758,14 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Returns and after-sales | `bg.aftersales.cancel.agree` | Agree cancel order | Agree cancel order | `marketplaces/temu/orders.js` |
 | covered | Returns and after-sales | `bg.aftersales.cancel.list.get` | Query cancel order after-sales information | Query cancel order after-sales information | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `bg.aftersales.parentaftersales.list.get` | Query the information of parent after-sales orders | This interface is designed to provide real-time updates on the current after-sales status of an order within an e-commerce platform. It allows merchants and buyers to retrieve detailed information about the progress of a | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/after-sales.js` |
+| covered | Returns and after-sales | `bg.aftersales.parentreturnorder.get` | Query after-sales reverse logistics information. | This interface is designed to provide merchants or administrators within an e-commerce platform with detailed return logistics information for a set of after-sales service requests. | `marketplaces/temu/sections/after-sales.js` |
+| covered | Returns and after-sales | `temu.aftersales.carrier.get` | Query return carrier information | This interface is designed to query return carrier information. | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `temu.aftersales.parentaftersales.detail.get` | query aftersales detail | This interface is designed to provide detailed information on after-sales orders in real time | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `temu.aftersales.refund.issue` | issue refund | This interface is designed to enable merchants to efficiently process refund requests within the e-commerce platform. | `marketplaces/temu/orders.js` |
-| missing | Returns and after-sales | `bg.aftersales.parentreturnorder.get` | Query after-sales reverse logistics information. | This interface is designed to provide merchants or administrators within an e-commerce platform with detailed return logistics information for a set of after-sales service requests. |  |
-| missing | Returns and after-sales | `temu.aftersales.carrier.get` | Query return carrier information | This interface is designed to query return carrier information. |  |
-| missing | Returns and after-sales | `temu.aftersales.returnaddress.get` | Get Return Order Buyer Address Information | temu.aftersales.returnaddress.get interface is designed to retrieve sensitive shipping address information for a specific return order. |  |
-| missing | Returns and after-sales | `temu.aftersales.returnlabel.prepare.get` | Query return label preparation information | This interface is designed to query return label preparation information. |  |
+| covered | Returns and after-sales | `temu.aftersales.returnaddress.get` | Get Return Order Buyer Address Information | temu.aftersales.returnaddress.get interface is designed to retrieve sensitive shipping address information for a specific return order. | `marketplaces/temu/sections/after-sales.js` |
+| covered | Returns and after-sales | `temu.aftersales.returnlabel.prepare.get` | Query return label preparation information | This interface is designed to query return label preparation information. | `marketplaces/temu/sections/after-sales.js` |
+| covered | Returns and after-sales | `temu.aftersales.upload.returnlabel` | Upload return label | This interface is designed to upload return label. | `marketplaces/temu/sections/after-sales.js` |
 | missing | Returns and after-sales | `temu.aftersales.signature.get` | Query signature information | This interface is designed to query signature information. |  |
-| missing | Returns and after-sales | `temu.aftersales.upload.returnlabel` | Upload return label | This interface is designed to upload return label. |  |
 | covered | Shipping | `bg.freight.template.list.query` | Query Freight Template List | query freight template list by Temu seller, use for claim that goods logistics fee rules when listing items | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/sections/shipping.js` |
 | covered | Shipping | `bg.logistics.companies.get` | get logistics companies | Obtain full logistics providers that support shipping at the corresponding regoin | `marketplaces/temu/orders.js` |
 | covered | Shipping | `bg.logistics.shipment.create` | Buy shipping api | The bg.logistics.shipment.create interface is for sellers to place online logistics orders and receive package numbers, which enables to effortlessly place logistics orders with selected carriers online. | `marketplaces/temu/app/services/labels.js` |

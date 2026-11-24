@@ -91,6 +91,23 @@ async function temuAdReport(token, days, period = {}) {
  * one isn't among them, says how to enable it instead of calling Temu. Shops without a recorded
  * list (connected before it was stored) are not blocked.
  */
+/**
+ * A file sent from the dashboard (`{ name, dataUrl }`) for Temu: PDF, JPEG or PNG by its own
+ * bytes, up to `maxMb`; returns `{ name, dataUrl }` with the type it really is. Never stored.
+ */
+function temuFile(file, maxMb = 10) {
+  const m = /^data:[^;,]*;base64,(.*)$/s.exec(String(file?.dataUrl || ''))
+  const bad = (error) => Object.assign(new Error(error), { status: 400, body: { error } })
+  if (!m) throw bad('Choose the file (PDF, JPEG or PNG).')
+  const buf = Buffer.from(m[1], 'base64')
+  const kind = buf.subarray(0, 4).toString('latin1') === '%PDF' ? 'application/pdf'
+    : buf[0] === 0xff && buf[1] === 0xd8 ? 'image/jpeg'
+      : buf.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])) ? 'image/png' : null
+  if (!kind) throw bad('Temu takes PDF, JPEG or PNG files.')
+  if (buf.length > maxMb * 1024 * 1024) throw bad(`The file is larger than ${maxMb} MB.`)
+  return { name: String(file.name || '').replace(/[^\w.\- ]/g, '').slice(0, 100) || 'file', dataUrl: `data:${kind};base64,${m[1]}` }
+}
+
 function grantAware(shop, method, load) {
   return async (...args) => {
     const granted = shop?.grantedScopes
@@ -102,4 +119,4 @@ function grantAware(shop, method, load) {
 }
 
 module.exports = {
-  grantAware, AFTERSALES_GROUP, temuTime, temuAmount, temuGoodsRows, TEMU_AFTERSALES_STATUS, adVal, adMoney, temuAdReport }
+  temuFile, grantAware, AFTERSALES_GROUP, temuTime, temuAmount, temuGoodsRows, TEMU_AFTERSALES_STATUS, adVal, adMoney, temuAdReport }

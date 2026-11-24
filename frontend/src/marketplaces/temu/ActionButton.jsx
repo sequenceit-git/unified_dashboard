@@ -8,10 +8,20 @@ import { useState } from 'react'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import { actionState } from './actionState'
+import { readFileValue } from './fileField'
 
 const inFlight = actionState()
 
 function InputField({ id, field, value, onChange }) {
+  if (field.type === 'file') {
+    return (
+      <label className="block text-sm" htmlFor={id}>
+        <span className="mb-1 block font-medium">{field.label}</span>
+        <input id={id} className="block w-full text-sm" type="file" accept={field.accept} onChange={async (e) => { const f = e.target.files?.[0]; onChange(f ? await readFileValue(f) : undefined) }} />
+        {value?.name && <span className="mt-1 block text-xs text-gray-500">{value.name} ({Math.ceil(value.size / 1024)} KB)</span>}
+      </label>
+    )
+  }
   if (field.options && field.multiple) {
     const chosen = new Set(value || [])
     return (
