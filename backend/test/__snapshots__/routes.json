@@ -116,6 +116,7 @@
       "GET /customers/:id",
       "PATCH /customers/:id",
       "GET /analytics/summary",
+      "GET /analytics/performance",
       "GET /analytics/revenue",
       "GET /analytics/marketplaces",
       "GET /analytics/products",

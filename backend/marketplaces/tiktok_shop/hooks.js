@@ -143,8 +143,41 @@ function intervalSales(interval) {
   }
 }
 
+const CHANNELS = { VIDEO: 'video', LIVE: 'live', PRODUCT_CARD: 'productCard' }
+const num = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v))
+
+/** One TikTok day: sales, where they came from (video / LIVE / product card) and traffic; missing parts are null. */
+function dayPerformance(interval) {
+  const sales = interval?.sales || {}
+  const traffic = interval?.traffic || null
+  const breakdowns = sales.gmv?.breakdowns
+  let channels = null
+  if (Array.isArray(breakdowns) && breakdowns.length) {
+    channels = { video: 0, live: 0, productCard: 0 }
+    for (const b of breakdowns) if (CHANNELS[b.type]) channels[CHANNELS[b.type]] = +money(b.gmv).toFixed(2)
+  }
+  return {
+    date: interval.start_date || interval.end_date,
+    gmv: +money(sales.gmv).toFixed(2),
+    orders: Number(sales.orders_count || 0),
+    items: Number(sales.items_sold || 0),
+    refunds: sales.refunds ? +money(sales.refunds).toFixed(2) : null,
+    customers: num(sales.avg_customers_count),
+    pageViews: traffic ? num(traffic.avg_page_views) : null,
+    visitors: traffic ? num(traffic.avg_visitors) : null,
+    conversion: traffic ? num(traffic.avg_conversation_rate) : null,
+    channels,
+  }
+}
+
 /** TikTok's own figures for Analytics (Data Analytics API), used instead of the order totals. */
 const analytics = {
+  /** `{ latestDate, days }`: every daily figure TikTok gives for the page (see dayPerformance). */
+  async dailyPerformance(manager, shop, { from, to }) {
+    const service = require('./service')
+    const { intervals, latestDate } = await manager.withShopToken(shop, (token) => service.shopPerformanceData(token, { shop, from, to }))
+    return { latestDate, days: intervals.map(dayPerformance) }
+  },
   async salesIntervals(manager, shop, { from, to }) {
     const service = require('./service')
     const intervals = await manager.withShopToken(shop, (token) => service.shopPerformance(token, { shop, from, to }))
@@ -167,4 +200,4 @@ const analytics = {
   },
 }
 
-module.exports = { listingImages, fetchOrders, promotionTargets, analytics }
+module.exports = { listingImages, fetchOrders, promotionTargets, analytics, dayPerformance }

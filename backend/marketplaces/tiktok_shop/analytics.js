@@ -2,7 +2,12 @@
 const { dateOnly, nextDate } = require('./format')
 
 module.exports = {
-  async shopPerformance(accessToken, { shop, from, to } = {}) {
+  async shopPerformance(accessToken, opts = {}) {
+    return (await this.shopPerformanceData(accessToken, opts)).intervals
+  },
+
+  /** Daily shop performance (sales, channels, traffic) and the last date TikTok has data for. */
+  async shopPerformanceData(accessToken, { shop, from, to } = {}) {
     const data = await this.call(accessToken, 'GET', '/analytics/202509/shop/performance', {
       shop,
       query: {
@@ -12,7 +17,7 @@ module.exports = {
         currency: 'USD',
       },
     })
-    return data.performance?.intervals || []
+    return { intervals: data.performance?.intervals || [], latestDate: data.latest_available_date || null }
   },
 
   async productPerformance(accessToken, { shop, from, to, limit = 10 } = {}) {

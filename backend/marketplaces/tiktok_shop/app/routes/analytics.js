@@ -21,6 +21,16 @@ function analyticsRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/analytics/performance?from=&to= — daily sales, channels and traffic for the page
+  router.get('/performance', async (req, res) => {
+    try {
+      res.json(await service.performance(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/analytics/revenue?from=&to=&marketplace=
   router.get('/revenue', async (req, res) => {
     try {

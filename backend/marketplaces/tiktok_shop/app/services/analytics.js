@@ -260,4 +260,41 @@ async function inventory(ctx) {
     return { lowCount: low.length, outCount: out, low }
 }
 
-module.exports = { summary, revenue, marketplaces, products, inventory }
+/**
+ * GET /performance — every daily figure for the TikTok analytics page: sales, channels, traffic and
+ * TikTok's latest date. When TikTok won't share it, the dashboard's own orders (no traffic or channels).
+ */
+async function performance(ctx) {
+    const shop = await nativeShop(ctx)
+    if (shop) {
+      try {
+        const { from, to } = dates(ctx)
+        const { latestDate, days } = await ADAPTER.hooks.analytics.dailyPerformance(marketplaceManager, shop, { from, to })
+        return { source: 'tiktok', latestDate: latestDate || null, days }
+      } catch (error) {
+        console.warn(`[analytics] ${shop.marketplace} performance failed:`, error.message)
+      }
+    }
+    const rows = await Order.aggregate([
+      { $match: match(ctx, { ...marketplaceFilter(ctx), status: { $nin: ['cancelled', 'refunded'] } }) },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$placedAt' } },
+          revenue: { $sum: '$totals.total' },
+          orders: { $sum: 1 },
+          items: { $sum: { $sum: '$items.quantity' } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ])
+    return {
+      source: 'orders',
+      latestDate: null,
+      days: rows.map((r) => ({
+        date: r._id, gmv: +r.revenue.toFixed(2), orders: r.orders, items: r.items || 0,
+        refunds: null, customers: null, pageViews: null, visitors: null, conversion: null, channels: null,
+      })),
+    }
+}
+
+module.exports = { summary, revenue, marketplaces, products, inventory, performance }

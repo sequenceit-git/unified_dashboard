@@ -89,13 +89,13 @@ async function analytics(token, shop, { now = new Date() } = {}) {
         ])
         if (overview) {
           healthTiles = [
-            { tab: 'Shop health', label: 'Shop performance score', value: overview.sps_score ?? '—', type: 'text', sub: overview.sps_tier_text || '' },
-            ...(overview.peer_percentile ? [{ tab: 'Shop health', label: 'Better than peers', value: `${overview.peer_percentile}%`, type: 'text' }] : []),
-            ...(overview.dimensions || []).map((d) => ({ tab: 'Shop health', label: d.name, value: d.score ?? '—', type: 'text', sub: d.status_text || '' })),
+            { id: 'sps-score', tab: 'Shop health', label: 'Shop performance score', value: overview.sps_score ?? '—', type: 'text', sub: overview.sps_tier_text || '' },
+            ...(overview.peer_percentile ? [{ id: 'peers', tab: 'Shop health', label: 'Better than peers', value: `${overview.peer_percentile}%`, type: 'text' }] : []),
+            ...(overview.dimensions || []).map((d) => ({ id: 'dimension', tab: 'Shop health', label: d.name, value: d.score ?? '—', type: 'text', sub: d.status_text || '' })),
           ]
         }
         const unlocked = (benefits?.benefits || []).filter((b) => b.is_unlocked).length
-        if (benefits?.benefits?.length) healthTiles.push({ tab: 'Shop health', label: 'Benefits unlocked', value: `${unlocked} of ${benefits.benefits.length}`, type: 'text' })
+        if (benefits?.benefits?.length) healthTiles.push({ id: 'benefits', tab: 'Shop health', label: 'Benefits unlocked', value: `${unlocked} of ${benefits.benefits.length}`, type: 'text' })
         return rows
       }, SCOPE),
     },
