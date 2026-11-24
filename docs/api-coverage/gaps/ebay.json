@@ -1061,31 +1061,13 @@
     "priority": "high",
     "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
   },
-  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_listing_id": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
   "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_inventory_reference": {
     "section": "new: promoted listings",
     "size": "large",
     "priority": "high",
     "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
   },
-  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_listing_id": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
   "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_inventory_reference": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
-  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_listing_id": {
     "section": "new: promoted listings",
     "size": "large",
     "priority": "high",
@@ -1098,12 +1080,6 @@
     "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
   },
   "POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_update_ads_status_by_listing_id": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
-  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad": {
     "section": "new: promoted listings",
     "size": "large",
     "priority": "high",
@@ -1218,12 +1194,6 @@
     "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
   },
   "GET /sell/marketing/v1/ad_campaign/suggest_budget": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
-  "GET /sell/marketing/v1/ad_campaign/{campaign_id}/suggest_items": {
     "section": "new: promoted listings",
     "size": "large",
     "priority": "high",
@@ -1618,12 +1588,6 @@
     "size": "small",
     "priority": "low",
     "value": "Marketplace rules for listing: allowed item conditions, return/shipping options, regulatory and hazmat labels, handling times, carriers."
-  },
-  "POST /sell/recommendation/v1/find": {
-    "section": "listings",
-    "size": "small",
-    "priority": "high",
-    "value": "eBay's own per-listing recommendations (e.g. suggested Promoted Listings ad rate)."
   },
   "GET /sell/stores/v1/store/categories": {
     "section": "new: store",
