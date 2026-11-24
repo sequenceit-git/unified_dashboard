@@ -105,3 +105,17 @@ test('Put on sale / Take off sale updates every SKU row of that goods', async ()
     assert.equal(update.$set.status, 'live')
   } finally { restore() }
 })
+
+test('Inventory: low stock means some left, and listed=1 keeps it to goods on Temu', async () => {
+  const { service, seen, restore } = load({ listings: [{ productId: 'a', status: 'live' }] })
+  try {
+    await service.list({ ...admin, query: { stock: 'low', listed: '1' } })
+    const f = seen.productFilters.at(-1)
+    assert.deepEqual(f.stock, { $gt: 0 })
+    assert.ok(f.$expr, 'stock at or under the low-stock alert')
+    assert.deepEqual(f._id, { $in: ['a'] })
+    await service.list({ ...admin, query: { stock: 'out' } })
+    assert.equal(seen.productFilters.at(-1).stock, 0)
+    assert.equal(seen.productFilters.at(-1)._id, undefined, 'without listed=1 nothing changes for the Goods page')
+  } finally { restore() }
+})

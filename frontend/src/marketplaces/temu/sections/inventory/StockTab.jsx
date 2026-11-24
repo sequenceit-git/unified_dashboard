@@ -31,11 +31,13 @@ export default function StockTab({ marketplace, stock = 'all', onAdjust, onHisto
     if (!quiet) setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/temu/goods${queryString({ q, sort, page, limit: 15, ...(stock !== 'all' ? { stock } : {}) })}`, token)
+      const res = await api.get(`/api/temu/goods${queryString({ q, sort, page, limit: 15, listed: 1, ...(stock !== 'all' ? { stock } : {}) })}`, token)
       if (id !== requestId.current) return
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
       if (stock === 'all' && !q) onTotal?.(res.total)
+      // A row that left the filter (e.g. restocked) can empty the last page: go back one.
+      if (res.page > 1 && !res.data.length) setPage(Math.max(1, res.pages))
     } catch (e) {
       if (id !== requestId.current) return
       setError(e.message)

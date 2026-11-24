@@ -6,6 +6,7 @@ import { useState } from 'react'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { useApi } from '../../../../hooks/useApi'
+import { useSyncReload } from '../../../../hooks/useLiveEvents'
 import PageHeader from '../../ui/PageHeader'
 import AttentionStrip from '../../ui/AttentionStrip'
 import StatusPills from '../../ui/StatusPills'
@@ -25,6 +26,7 @@ export default function InventoryPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [total, setTotal] = useState(null)
   const stock = useApi(`/api/temu/analytics/inventory?k=${refreshKey}`)
+  useSyncReload(['listings', 'orders'], marketplace, () => stock.refetch())
 
   const saved = () => {
     setAdjusting(null)
@@ -47,7 +49,7 @@ export default function InventoryPage() {
       {adjusting && <AdjustModal product={adjusting} onClose={() => setAdjusting(null)} onSaved={saved} />}
       {history && (
         <Drawer title={`Stock history · ${history.sku}`} subtitle={history.title} onClose={() => setHistory(null)}>
-          <HistoryTab marketplace={marketplace} refreshKey={refreshKey} initialQ={history.sku} />
+          <HistoryTab marketplace={marketplace} refreshKey={refreshKey} productId={history._id} />
         </Drawer>
       )}
     </div>
