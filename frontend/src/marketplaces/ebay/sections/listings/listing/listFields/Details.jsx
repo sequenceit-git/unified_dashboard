@@ -3,10 +3,11 @@ import { DISPATCH_TIMES, isNewCondition } from '../rules'
 import { Input, Select } from '../../../../../../components/ui/Input'
 import EbayIdentifierField from '../IdentifierField'
 import EbayBestOfferField from '../BestOfferField'
+import EbayShippingPayerField from '../ShippingPayerField'
 import VariantEditor from '../../components/VariantEditor'
 
 export default function Details({ ctx }) {
-  const { activeVariants, bestOffer, brand, condition, conditionDescription, dispatchTimeMax, ebayConditionOptions, ebayRules, identifierCode, images, mpn, price, product, salesAttributes, sellerSku, setBestOffer, setBrand, setCondition, setConditionDescription, setDispatchTimeMax, setIdentifierCode, setMpn, setSellerSku, setVariants, shopId, stock, summaryPrice, variants } = ctx
+  const { activeVariants, ebayShipping, setEbayShipping, bestOffer, brand, condition, conditionDescription, dispatchTimeMax, ebayConditionOptions, ebayRules, identifierCode, images, mpn, price, product, salesAttributes, sellerSku, setBestOffer, setBrand, setCondition, setConditionDescription, setDispatchTimeMax, setIdentifierCode, setMpn, setSellerSku, setVariants, shopId, stock, summaryPrice, variants } = ctx
   return (
     <>
       <>
@@ -79,6 +80,7 @@ export default function Details({ ctx }) {
               minPrice={activeVariants.length > 0 ? summaryPrice : Number(price)}
             />
           )}
+          <EbayShippingPayerField value={ebayShipping} onChange={setEbayShipping} />
           <div className="rounded-lg border border-gray-200 bg-white p-3">
             <Select
               label="Handling time"

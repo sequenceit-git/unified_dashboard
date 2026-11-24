@@ -15,6 +15,7 @@ import {
   validateVariantsForEbay,
 } from '../listing/rules'
 import { CONDITIONS } from '../listingConditions'
+import { cleanShippingPayer, shippingPayerFrom, validateShippingPayer } from '../listing/shippingPayer'
 
 function useDebounced(value, ms) {
   const [debounced, setDebounced] = useState(value)
@@ -56,6 +57,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
     autoAcceptPrice: product.bestOffer?.autoAcceptPrice ?? '',
     minOfferPrice: product.bestOffer?.minOfferPrice ?? '',
   })
+  const [ebayShipping, setEbayShipping] = useState(() => shippingPayerFrom(product))
   const [sellerSku, setSellerSku] = useState(product.sku || '')
   const [identifierCode, setIdentifierCode] = useState(product.identifierCode?.code ? product.identifierCode : { type: '', code: '' })
   const [variants, setVariants] = useState(() => (Array.isArray(product.variants) ? product.variants.map((v) => ({ ...v })) : []))
@@ -206,6 +208,9 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
       if (boErr) return setError(boErr)
     }
 
+    const shipErr = validateShippingPayer(ebayShipping)
+    if (shipErr) return setError(shipErr)
+
     if (missingRequired.length) return setError(`Fill in: ${missingRequired.map((a) => a.name).join(', ')}.`)
 
     setBusy(true)
@@ -272,6 +277,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
             ...(normalizedVariants ? { variants: normalizedVariants } : {}),
             ...(dispatchTimeMax !== '' ? { dispatchTimeMax: Number(dispatchTimeMax) } : {}),
             bestOffer: cleanBestOffer,
+            ...(cleanShippingPayer(ebayShipping) ? { ebayShipping: cleanShippingPayer(ebayShipping) } : {}),
           }),
           ...(categoryId ? { categoryId } : {}),
           ...(Object.keys(filled).length ? { aspects: filled } : {}),
@@ -298,6 +304,8 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   // State and setters the shop-specific parts of this dialog read (src/marketplaces/<key>/listing/listFields/).
   const slotCtx = {
     activeVariants,
+    ebayShipping,
+    setEbayShipping,
     aspects,
     bestOffer,
     brand,

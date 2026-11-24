@@ -2,6 +2,7 @@
 import { DISPATCH_TIMES } from '../rules'
 import { Select } from '../../../../../../components/ui/Input'
 import EbayBestOfferField from '../BestOfferField'
+import EbayShippingPayerField from '../ShippingPayerField'
 
 export default function PricingExtras({ ctx }) {
   const { form, set, setForm, variants } = ctx
@@ -15,6 +16,7 @@ export default function PricingExtras({ ctx }) {
             ? Math.min(...(variants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)))
             : Number(form.basePrice)}
         />
+        <EbayShippingPayerField value={form.ebayShipping} onChange={(val) => setForm((prev) => ({ ...prev, ebayShipping: val }))} />
         <Select
           label="Handling time"
           value={form.dispatchTimeMax}

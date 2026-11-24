@@ -15,6 +15,7 @@ import ProductMpn from './listing/productFields/Mpn'
 import ProductConditionDescription from './listing/productFields/ConditionDescription'
 import ProductIdentifier from './listing/productFields/Identifier'
 import ProductPricingExtras from './listing/productFields/PricingExtras'
+import { cleanShippingPayer, shippingPayerChanged, shippingPayerFrom, validateShippingPayer } from './listing/shippingPayer'
 
 // Bookkeeping keys kept in `attributes` that aren't item specifics.
 const HIDDEN_ATTRIBUTES = new Set(['targetMarketplace', 'sourceUrl', 'gtin', 'aiOpportunityScore', 'listingUrl', 'estimatedCost'])
@@ -38,6 +39,7 @@ const EMPTY = {
   conditionDescription: '',
   dispatchTimeMax: '',
   bestOffer: { enabled: false, autoAcceptPrice: '', minOfferPrice: '' },
+  ebayShipping: { paidBy: 'buyer', cost: '', type: 'Flat', policy: '' },
   basePrice: '',
   listPrice: '',
   costPrice: '',
@@ -77,6 +79,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
         autoAcceptPrice: product.bestOffer?.autoAcceptPrice ?? '',
         minOfferPrice: product.bestOffer?.minOfferPrice ?? '',
       },
+      ebayShipping: shippingPayerFrom(product),
       brandId: product.brandId || '',
       listPrice: product.listPrice ?? '',
       identifierCode: product.identifierCode?.code ? product.identifierCode : { type: '', code: '' },
@@ -129,6 +132,9 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
       const floorPrice = variants.length > 0 && positiveVarPrices.length ? Math.min(...positiveVarPrices) : Number(form.basePrice)
       const boErr = validateBestOffer(form.bestOffer, floorPrice)
       if (boErr) return setError(boErr)
+      const shipChanged = shippingPayerChanged(shippingPayerFrom(product), form.ebayShipping)
+      const shipErr = shipChanged ? validateShippingPayer(form.ebayShipping) : ''
+      if (shipErr) return setError(shipErr)
 
     setBusy(true)
     setError('')
@@ -174,6 +180,8 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
           mpn: String(form.mpn || '').trim(),
           dispatchTimeMax: form.dispatchTimeMax === '' || form.dispatchTimeMax == null ? undefined : Number(form.dispatchTimeMax),
           bestOffer: cleanBestOffer,
+          // Sent only when changed: the edit then changes who pays shipping on the live eBay listing.
+          ebayShipping: shipChanged ? { ...cleanShippingPayer(form.ebayShipping), type: form.ebayShipping.type, ...(form.ebayShipping.policy ? { policy: form.ebayShipping.policy } : {}) } : undefined,
         }),
         ...(attributes ? { attributes } : {}),
         ...(normalizedVariants !== undefined ? { variants: normalizedVariants } : {}),

@@ -4,10 +4,11 @@ import { Input, Select } from '../../../../../../components/ui/Input'
 import ImageDropzone from '../../../../../../components/ui/ImageDropzone'
 import EbayIdentifierField from '../IdentifierField'
 import EbayBestOfferField from '../BestOfferField'
+import EbayShippingPayerField from '../ShippingPayerField'
 import VariantEditor from '../../components/VariantEditor'
 
 export default function DraftFields({ ctx }) {
-  const { activeVariants, bestOffer, categoryField, conditionDescription, dispatchTimeMax, draft, ebayConditionOptions, identifierCode, layout, maxImages, mpn, packageFields, parsedEbayRules, salesSchema, sellerSku, set, setDraftImages, specificsFields, stock, subtitle, subtitleMax, summaryPrice, summaryStock, textareaClass, titleField, update } = ctx
+  const { activeVariants, ebayShipping, bestOffer, categoryField, conditionDescription, dispatchTimeMax, draft, ebayConditionOptions, identifierCode, layout, maxImages, mpn, packageFields, parsedEbayRules, salesSchema, sellerSku, set, setDraftImages, specificsFields, stock, subtitle, subtitleMax, summaryPrice, summaryStock, textareaClass, titleField, update } = ctx
   return (
     <>
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
@@ -96,6 +97,7 @@ export default function DraftFields({ ctx }) {
                 minPrice={activeVariants.length > 0 ? summaryPrice : Number(draft.price)}
               />
             )}
+            <EbayShippingPayerField value={ebayShipping} onChange={(val) => update({ ebayShipping: val })} />
             <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
               <Select
                 label="Handling time"

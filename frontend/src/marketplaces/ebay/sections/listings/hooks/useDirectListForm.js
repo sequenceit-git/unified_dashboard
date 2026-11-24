@@ -15,6 +15,7 @@ import {
 import { listingFormFor, useShopProfile } from '../../../../../hooks/useShopProfiles'
 import { clearDirectListing, startDirectFetch, useDirectListing } from './useDirectListing'
 import { useApi } from '../../../../../hooks/useApi'
+import { cleanShippingPayer, validateShippingPayer } from '../listing/shippingPayer'
 
 const HIDDEN = new Set(['targetMarketplace', 'sourceUrl', 'gtin', 'aiOpportunityScore', 'listingUrl', 'estimatedCost'])
 
@@ -65,7 +66,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
   const { session, update } = useDirectListing(marketplace)
   const {
     url, useAi, fetching, draft, stock, listPrice, sellerSku, brandId,
-    subtitle, conditionDescription, mpn, dispatchTimeMax, bestOffer,
+    subtitle, conditionDescription, mpn, dispatchTimeMax, bestOffer, ebayShipping,
     identifierCode, variants, sizeChart, saveMode, weight, length, width, height,
     schema, aspects, extras, categories, categoryId, categorySearch, categoryState,
     fillingAttributes, ebayRules, error, saving,
@@ -242,6 +243,9 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
       if (boErr) return update({ error: boErr })
     }
 
+    const shipErr = validateShippingPayer(ebayShipping)
+    if (shipErr) return update({ error: shipErr })
+
     if (!draft.images.length) return update({ error: 'Add at least one image.' })
     if (packageRequired && !(Number(weight) > 0)) return update({ error: `${shopLabel} needs the package weight and size.` })
     if (layout.category === 'search' && layout.canList && !categoryId) return update({ error: `Pick a ${shopLabel} category.` })
@@ -287,6 +291,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
           mpn: String(mpn || '').trim(),
           ...(dispatchTimeMax !== '' ? { dispatchTimeMax: Number(dispatchTimeMax) } : {}),
           bestOffer: cleanBestOffer,
+          ...(cleanShippingPayer(ebayShipping) ? { ebayShipping: cleanShippingPayer(ebayShipping) } : {}),
         }),
         description: draft.description,
         brand: draft.brand.trim() || named.Brand || 'Unbranded',
@@ -354,6 +359,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
             ...(normalizedVariants ? { variants: normalizedVariants } : {}),
             ...(dispatchTimeMax !== '' ? { dispatchTimeMax: Number(dispatchTimeMax) } : {}),
             bestOffer: cleanBestOffer,
+            ...(cleanShippingPayer(ebayShipping) ? { ebayShipping: cleanShippingPayer(ebayShipping) } : {}),
           }),
           ...(categoryId ? { categoryId } : {}),
           aspects: Object.fromEntries(aspectEntries),
@@ -383,6 +389,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
     mpn,
     dispatchTimeMax,
     bestOffer,
+    ebayShipping,
     identifierCode,
     variants,
     sizeChart,

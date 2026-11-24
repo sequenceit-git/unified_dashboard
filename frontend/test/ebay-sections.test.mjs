@@ -84,3 +84,26 @@ test('no file under marketplaces/ebay imports from temu or tiktok_shop', async (
   walk(root)
   assert.deepEqual(bad, [])
 })
+
+test('buyer pays needs a cost on a flat listing', async () => {
+  const { validateShippingPayer } = await load('/src/marketplaces/ebay/sections/listings/listing/shippingPayer.js')
+  assert.equal(validateShippingPayer({ paidBy: 'buyer', cost: '' }, 'Flat'), 'Enter the shipping cost the buyer pays.')
+  assert.equal(validateShippingPayer({ paidBy: 'buyer', cost: '0' }, 'Flat'), 'Enter the shipping cost the buyer pays.')
+  assert.equal(validateShippingPayer({ paidBy: 'buyer', cost: '' }, 'Calculated'), '')
+  assert.equal(validateShippingPayer({ paidBy: 'buyer', cost: '4.99' }, 'Flat'), '')
+  assert.equal(validateShippingPayer({ paidBy: 'seller' }, 'Flat'), '')
+  assert.equal(validateShippingPayer(undefined, 'Flat'), '')
+})
+
+test('free shipping drops the cost', async () => {
+  const { cleanShippingPayer } = await load('/src/marketplaces/ebay/sections/listings/listing/shippingPayer.js')
+  assert.deepEqual(cleanShippingPayer({ paidBy: 'seller', cost: '5' }), { paidBy: 'seller' })
+  assert.equal(cleanShippingPayer({}), undefined)
+})
+
+test('cost is sent as a number', async () => {
+  const { cleanShippingPayer, shippingPayerFrom } = await load('/src/marketplaces/ebay/sections/listings/listing/shippingPayer.js')
+  assert.deepEqual(cleanShippingPayer({ paidBy: 'buyer', cost: '6.50' }), { paidBy: 'buyer', cost: 6.5 })
+  assert.deepEqual(shippingPayerFrom({ ebayShipping: { paidBy: 'seller', cost: 0, type: 'Flat', policy: 'Std' } }), { paidBy: 'seller', cost: '', type: 'Flat', policy: 'Std' })
+  assert.deepEqual(shippingPayerFrom({}), { paidBy: 'buyer', cost: '', type: 'Flat', policy: '' })
+})
