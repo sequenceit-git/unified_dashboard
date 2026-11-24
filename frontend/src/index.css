@@ -29,7 +29,8 @@ body {
   margin: 0;
   min-width: 320px;
   max-width: 100vw;
-  overflow-x: hidden;
+  /* clip, not hidden: hidden makes a scroll box and the sticky sidebar/top bar stop sticking */
+  overflow-x: clip;
   background:
     radial-gradient(circle at 85% -10%, rgb(81 70 229 / 0.08), transparent 30rem),
     var(--canvas);
