@@ -10,6 +10,9 @@ const { temuTime } = require('./helpers')
 
 // Temu documents no page-size limit for bg.promotion.activity.query; a size it refuses answers
 // 220010001 "parameter is illegal", so smaller sizes (then no paging at all) are tried in turn.
+// activityType is required in practice: probed on the live Temu US local shop (2026-11-24),
+// no type and types 1, 3, 4 answer "parameter is illegal"; type 2 works.
+const ACTIVITY_TYPE = 2
 const PAGE_TRIES = [{ pageNumber: 1, pageSize: 50 }, { pageNumber: 1, pageSize: 20 }, { pageNumber: 1, pageSize: 10 }, {}]
 const illegal = (err) => Number(err?.code) === 220010001 || /parameter is illegal/i.test(err?.message || '')
 
@@ -18,7 +21,7 @@ async function activityQuery(token, extra = {}) {
   let last
   for (const paging of PAGE_TRIES) {
     try {
-      return await temu.call('bg.promotion.activity.query', { access_token: token, ...paging, ...extra })
+      return await temu.call('bg.promotion.activity.query', { access_token: token, activityType: ACTIVITY_TYPE, ...paging, ...extra })
     } catch (err) {
       if (!illegal(err)) throw err
       last = err

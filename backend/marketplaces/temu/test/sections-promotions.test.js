@@ -148,3 +148,24 @@ test('when every size is refused, the table says so with what to check', async (
     assert.match(t.error, /temu-probe/)
   } finally { restore() }
 })
+
+test('activities are asked with the activity type Temu US accepts (2)', async () => {
+  const seen = []
+  const restore = stubModules({
+    '../service': {
+      call: async (type, body) => {
+        if (type !== 'bg.promotion.activity.query') return { goodsList: [] }
+        seen.push(body)
+        // Live Temu US local: no type, or types 1, 3, 4 → 220010001; type 2 works.
+        if (body.activityType !== 2) throw Object.assign(new Error('parameter is illegal'), { code: 220010001 })
+        return { activityList: body.onlyQueryJoinedActivity ? [ACTIVITY(500, true)] : [ACTIVITY(500, true), ACTIVITY(600, false)] }
+      },
+    },
+  })
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const { tables } = await promotions('tok', {})
+    assert.equal(tables.find((t) => t.id === 'available').rows.length, 2)
+    assert.ok(seen.every((b) => b.activityType === 2))
+  } finally { restore() }
+})
