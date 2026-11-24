@@ -16,12 +16,8 @@ const shopProductUrl = (id) => (id ? `https://shop.tiktok.com/view/product/${enc
 function opportunityUrl(row) {
   const extId = row?.external_product_id ? enc(String(row.external_product_id)) : ''
   const src = String(row?.reference_source || '')
-  if (extId) {
-    if (src === '5' || /TTS|TIKTOK/i.test(src)) return `https://shop.tiktok.com/view/product/${extId}`
-    if (src === '2' || /AMAZON/i.test(src)) return `https://www.amazon.com/dp/${extId}`
-    if (src === '4' || /WALMART/i.test(src)) return `https://www.walmart.com/ip/${extId}`
-    if (src === '9' || /TEMU/i.test(src)) return `https://www.temu.com/goods.html?goods_id=${extId}`
-    if (src === '17' || /EBAY/i.test(src)) return `https://www.ebay.com/itm/${extId}`
+  if (extId && (src === '5' || /TTS|TIKTOK/i.test(src))) {
+    return `https://shop.tiktok.com/view/product/${extId}`
   }
   const q = row?.title || row?.keyword || row?.product_name || row?.query_words?.split(',')[0]?.trim()
   return q ? `https://www.tiktok.com/search?q=${enc(String(q))}` : ''

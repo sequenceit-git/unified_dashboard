@@ -71,7 +71,7 @@ test('products section builds quality, opportunities, submissions, and readiness
     assert.equal(res.tables[0].rows[0].product, 'Phone stand')
     assert.equal(res.tables[0].rows[0].url, 'https://shop.tiktok.com/view/product/P-100')
     assert.equal(res.tables[1].rows[0].title, 'Desk Lamp')
-    assert.equal(res.tables[1].rows[0].url, 'https://www.amazon.com/dp/B08LAMP')
+    assert.equal(res.tables[1].rows[0].url, 'https://www.tiktok.com/search?q=Desk%20Lamp')
     assert.equal(res.tables[1].rows[0].category, 'Home › Lighting')
     assert.equal(res.tables[2].rows[0].url, 'https://shop.tiktok.com/view/product/P-100')
     assert.equal(res.tables[3].rows[0].status, 'Ready')
