@@ -40,7 +40,8 @@ export default function StepPanel({ title, steps, active, onStep, problemSteps, 
         </nav>
         <div className="min-w-0 flex-1">{children}</div>
       </div>
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3 dark:border-slate-800">
+      {/* Stays at the bottom of the panel however long the step is. */}
+      <div className="sticky -bottom-4 z-10 -mx-4 mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 bg-white px-4 py-3 sm:-bottom-5 sm:-mx-6 sm:px-6 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex gap-2">
           {prev && <Button type="button" variant="secondary" onClick={() => onStep(prev.id)}>← Back</Button>}
           {next && <Button type="button" variant="secondary" onClick={() => onStep(next.id)}>Next →</Button>}

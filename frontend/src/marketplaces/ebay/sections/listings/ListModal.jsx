@@ -82,7 +82,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
         </>
       )}
     >
-      <form id="ebay-list-form" noValidate onSubmit={submit}>
+      <form id="ebay-list-form" noValidate onSubmit={submit} onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault() }}>
         {failed && (
           <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200">
             <strong>eBay refused the last try:</strong> {product.shopListing.syncError}
@@ -107,12 +107,18 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
                 onChange={(e) => handleShopChange(e.target.value)}
                 options={[
                   { value: '', label: 'Choose a shop…' },
-                  ...shops.map((s) => ({ value: s._id, label: `${s.name}${s.listing?.canList ? '' : ' · listing not available'}` })),
+                  ...shops.map((s) => ({ value: s._id, label: `${s.name}${sectionMarketplace ? '' : ` (${marketplaceLabel(s.marketplace)})`}${s.listing?.canList ? '' : ' · listing not available'}` })),
                 ]}
               />
             ) : selectedShop ? (
-              <p className="text-sm text-gray-600 dark:text-slate-300">Listing on <strong>{selectedShop.name}</strong></p>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Listing on <strong>{selectedShop.name}</strong> ({marketplaceLabel(selectedShop.marketplace)})</p>
             ) : null}
+            {ready && (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
+                {caps.apiName && <span className="rounded bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-200">{caps.apiName}</span>}
+                {caps.note && <span>{caps.note}</span>}
+              </div>
+            )}
             <div>
               <div className="flex items-center justify-between">
                 <span className="mb-1 text-xs font-semibold text-gray-700 dark:text-slate-300">Listing title *</span>
@@ -122,6 +128,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                maxLength={titleMax}
               />
             </div>
             <ListSubtitle ctx={slotCtx} />

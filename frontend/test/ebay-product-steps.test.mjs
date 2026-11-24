@@ -38,3 +38,10 @@ test('step status: which steps have problems', async () => {
   const { stepsWithProblems } = await load()
   assert.deepEqual([...stepsWithProblems([{ step: 'basics' }, { step: 'price' }, { step: 'basics' }])].sort(), ['basics', 'price'])
 })
+
+test('whole stock, cents and package sizes of at least 0.1', async () => {
+  const { productProblems } = await load()
+  assert.deepEqual(productProblems({ ...OK, stock: '2.5' }, [], {}).map((x) => x.message), ['Stock must be a whole number.'])
+  assert.deepEqual(productProblems({ ...OK, basePrice: '9.999' }, [], {}).map((x) => x.message), ['Price can have at most 2 decimals.'])
+  assert.deepEqual(productProblems({ ...OK, length: 0.05 }, [], { packageRequired: true }).map((x) => x.field), ['length'])
+})

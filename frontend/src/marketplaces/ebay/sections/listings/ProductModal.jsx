@@ -97,7 +97,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [step, setStep] = useState(product ? 'basics' : 'photos')
-  const [problems, setProblems] = useState([])
+  const [tried, setTried] = useState(false)
   const listingStatus = listingBadge(profile, shopListing)
   const listingActions = listingActionsFor(profile, shopListing)
   const variantsLocked = Boolean(product && shopListing?.externalListingId)
@@ -123,8 +123,8 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
   const save = async (e) => {
     e.preventDefault()
     const shipChanged = shippingPayerChanged(shippingPayerFrom(product), form.ebayShipping)
+    setTried(true)
     const found = productProblems(form, variants, { titleMax, subtitleMax, packageRequired, shippingChanged: shipChanged })
-    setProblems(found)
     if (found.length) {
       setStep(found[0].step)
       return
@@ -220,6 +220,8 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
 
   // State the shop-specific parts of this form read (src/marketplaces/<key>/listing/productFields/).
   const slotCtx = { form, set, setForm, subtitleMax, variants }
+  // After the first try, problems follow every edit (fixed ones disappear at once).
+  const problems = tried ? productProblems(form, variants, { titleMax, subtitleMax, packageRequired, shippingChanged: shippingPayerChanged(shippingPayerFrom(product), form.ebayShipping) }) : []
   const badSteps = stepsWithProblems(problems)
   const margin = Number(form.basePrice) > 0 && form.costPrice !== '' && form.costPrice != null
     ? { amount: Number(form.basePrice) - Number(form.costPrice), pct: Math.round(((Number(form.basePrice) - Number(form.costPrice)) / Number(form.basePrice)) * 1000) / 10 }
@@ -241,7 +243,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
         </>
       )}
     >
-      <form id="ebay-product-form" noValidate onSubmit={save}>
+      <form id="ebay-product-form" noValidate onSubmit={save} onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault() }}>
         <Step id="photos" active={step}>
           <div className={card}>
             <ImageDropzone images={form.images} onChange={setImages} maxImages={shopForm.maxImages || 12} label="Photos (drag to reorder; the first is the main photo)" />

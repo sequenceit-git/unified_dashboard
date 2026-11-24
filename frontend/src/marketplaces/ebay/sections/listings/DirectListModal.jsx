@@ -24,6 +24,7 @@ const textareaClass = 'w-full rounded-lg border border-gray-200 bg-white px-3 py
  */
 export default function DirectListModal({ shopLabel, marketplace, onClose, onCreated }) {
   const [step, setStep] = useState('link')
+  const [advance, setAdvance] = useState(false)
   const {
     url,
     useAi,
@@ -78,7 +79,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   const categoryField = (
     <>
       {layout.category === 'search' ? (
-        <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+        <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/70 p-3 dark:border-slate-700 dark:bg-slate-800/50">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Input
                 label="Search eBay categories (optional)"
@@ -143,9 +144,9 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
   )
 
   const packageFields = (
-    <div className={`space-y-2 rounded-lg p-3 ${packageRequired ? 'border border-indigo-200 bg-indigo-50/50' : 'border border-gray-200 bg-gray-50/70'}`}>
+    <div className={`space-y-2 rounded-lg p-3 ${packageRequired ? 'border border-indigo-200 bg-indigo-50/50 dark:border-indigo-900 dark:bg-indigo-950/30' : 'border border-gray-200 bg-gray-50/70 dark:border-slate-700 dark:bg-slate-800/50'}`}>
       <div>
-        <p className="text-xs font-semibold text-gray-700">Package{packageRequired ? ' *' : ''}</p>
+        <p className="text-xs font-semibold text-gray-700 dark:text-slate-200">Package{packageRequired ? ' *' : ''}</p>
         <p className="text-[11px] text-gray-500">{layout.packageNote}</p>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -254,7 +255,12 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     titleField,
     update,
   }
-  // Once the page is read, start where the work is: checking what was found.
+  // A successful read started on this step moves on to checking what was found (React's documented
+  // pattern for adjusting state from new data during render); a failed one stays here.
+  if (advance && !fetching && (draft || error)) {
+    setAdvance(false)
+    if (draft && !error && step === 'link') setStep('found')
+  }
   const current = !draft && step !== 'link' ? 'link' : step
   const badSteps = new Set(problems.map((p) => p.step))
   const card = 'space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900'
@@ -289,7 +295,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           {layout.note && <p className="mt-1">{layout.note}</p>}
           {layout.apiName && <p className="mt-1 text-[11px]">Uses {layout.apiName}</p>}
         </div>
-        <form onSubmit={async (e) => { await fetchDetails(e); setStep('found') }} className={card}>
+        <form onSubmit={(e) => { setAdvance(true); fetchDetails(e) }} className={card}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1">
               <Input

@@ -1,6 +1,9 @@
 /** The List on eBay form's steps and its publish checks, each pointing to the step that fixes it. */
 import { validateBestOffer, validateEbayIdentifierCode, validateVariantsForEbay } from './rules'
 import { validateShippingPayer } from './shippingPayer'
+import { centsError, inStepOrder, wholeStockError } from './stepRules'
+
+export { inStepOrder }
 
 export const LIST_STEPS = [
   { id: 'details', label: 'Details' },
@@ -26,11 +29,13 @@ export function listProblems(s) {
     add('price', validateVariantsForEbay(s.variants, { requireStock: true }))
   } else {
     if (!(Number(s.price) > 0)) add('price', 'Set a price above 0.')
+    else add('price', centsError(s.price))
     if (!(Number(s.stock) >= 1)) add('price', 'Stock must be at least 1 to list a product.')
+    else add('price', wholeStockError(s.stock))
     if (s.upcRequired && !String(s.identifierCode?.code || '').trim()) add('price', 'This eBay category requires a product identifier (or click "Does not apply").')
     else add('price', validateEbayIdentifierCode(s.identifierCode))
   }
   if (s.bestOfferAllowed) add('price', validateBestOffer(s.bestOffer, s.variants?.length ? s.summaryPrice : Number(s.price)))
   add('shipping', validateShippingPayer(s.ebayShipping))
-  return out
+  return inStepOrder(out, LIST_STEPS)
 }

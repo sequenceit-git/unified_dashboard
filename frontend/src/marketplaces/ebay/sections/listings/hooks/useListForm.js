@@ -86,7 +86,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   aspectsNow.current = aspects
 
   const [error, setError] = useState('')
-  const [problems, setProblems] = useState([])
+  const [tried, setTried] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const titleMax = caps.titleMax || 255
@@ -184,31 +184,35 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   const summaryPrice = positiveVariantPrices.length ? Math.min(...positivePricesList(positiveVariantPrices)) : 0
   const summaryStock = activeVariants.reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v.stock) || 0)), 0)
 
+  // After the first try, problems follow every edit (fixed ones disappear at once).
+  const checkNow = () => listProblems({
+    hasShop: Boolean(selectedShop),
+    canList: caps.canList,
+    canListNote: caps.note,
+    title,
+    titleMax,
+    subtitle,
+    subtitleMax,
+    variants: activeVariants,
+    price,
+    stock,
+    upcRequired: ebayRules.upcEnabled === 'Required',
+    identifierCode,
+    bestOfferAllowed: ebayRules.bestOfferEnabled !== false,
+    bestOffer,
+    summaryPrice,
+    ebayShipping,
+    needsCategory: Boolean(caps.categorySearch),
+    categoryId,
+    missingRequired: missingRequired.map((a) => a.name),
+    images: images.length,
+  })
+  const problems = tried ? checkNow() : []
+
   const submit = async (e) => {
     e.preventDefault()
-    const found = listProblems({
-      hasShop: Boolean(selectedShop),
-      canList: caps.canList,
-      canListNote: caps.note,
-      title,
-      titleMax,
-      subtitle,
-      subtitleMax,
-      variants: activeVariants,
-      price,
-      stock,
-      upcRequired: ebayRules.upcEnabled === 'Required',
-      identifierCode,
-      bestOfferAllowed: ebayRules.bestOfferEnabled !== false,
-      bestOffer,
-      summaryPrice,
-      ebayShipping,
-      needsCategory: Boolean(caps.categorySearch),
-      categoryId,
-      missingRequired: missingRequired.map((a) => a.name),
-      images: images.length,
-    })
-    setProblems(found)
+    setTried(true)
+    const found = checkNow()
     if (found.length) {
       setError('')
       onBlocked?.(found[0].step)

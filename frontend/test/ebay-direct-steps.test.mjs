@@ -32,3 +32,9 @@ test('the same save checks as before, each on its step', async () => {
   assert.deepEqual(at({ packageRequired: true, weight: 0 }), [['price', 'eBay needs the package weight and size.']])
   assert.deepEqual(at({ hasShop: false }), [['review', 'Connect eBay in Settings first.']])
 })
+
+test('Direct listing: whole stock and cents', async () => {
+  const { directProblems } = await load()
+  assert.deepEqual(directProblems({ ...OK, stock: '2.5' }).map((p) => p.message), ['Stock must be a whole number.'])
+  assert.deepEqual(directProblems({ ...OK, price: '9.999' }).map((p) => p.message), ['Price can have at most 2 decimals.'])
+})

@@ -37,3 +37,12 @@ test("the same checks as before, each on the step that fixes it", async () => {
   assert.deepEqual(at({ upcRequired: true }), [['price', 'This eBay category requires a product identifier (or click "Does not apply").']])
   assert.equal(listProblems({ ...OK, canList: false, canListNote: 'Not available' })[0].message, 'Not available')
 })
+
+test('numbers the browser used to stop: whole stock, cents, and problems in step order', async () => {
+  const { listProblems, inStepOrder, LIST_STEPS } = await load()
+  const at = (patch) => listProblems({ ...OK, ...patch }).map((p) => p.message)
+  assert.deepEqual(at({ stock: '2.5' }), ['Stock must be a whole number.'])
+  assert.deepEqual(at({ price: '9.999' }), ['Price can have at most 2 decimals.'])
+  const mixed = inStepOrder([{ step: 'shipping' }, { step: 'price' }, { step: 'category' }], LIST_STEPS)
+  assert.deepEqual(mixed.map((p) => p.step), ['category', 'price', 'shipping'])
+})

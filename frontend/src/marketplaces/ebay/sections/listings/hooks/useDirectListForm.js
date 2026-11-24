@@ -51,7 +51,7 @@ function attributeMap(raw) {
  */
 
 export function useDirectListForm({ shopLabel, marketplace, onCreated, onBlocked }) {
-  const [problems, setProblems] = useState([])
+  const [tried, setTried] = useState(false)
   const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const shopsRes = useApi('/api/shops')
@@ -79,6 +79,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated, onBlocked
   const fetchDetails = async (e) => {
     e.preventDefault()
     if (!url.trim() || fetching) return
+    setTried(false)
     await startDirectFetch(marketplace, { url, useAi, token, titleMax, attributeMap })
   }
 
@@ -212,32 +213,36 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated, onBlocked
     ...Object.fromEntries(extras.map((row) => [row.name.trim(), asText(row.value)]).filter(([name, value]) => name && value)),
   })
 
+  // After the first try, problems follow every edit (fixed ones disappear at once).
+  const checkNow = () => directProblems({
+    shopLabel,
+    title: draft.title,
+    titleMax,
+    subtitle,
+    subtitleMax,
+    variants: activeVariants,
+    price: draft.price,
+    stock,
+    canList: layout.canList,
+    upcRequired: parsedEbayRules.upcEnabled === 'Required',
+    identifierCode,
+    bestOfferAllowed: parsedEbayRules.bestOfferEnabled !== false,
+    bestOffer,
+    summaryPrice,
+    ebayShipping,
+    images: draft.images.length,
+    packageRequired,
+    weight,
+    needsCategory: layout.category === 'search' && layout.canList,
+    categoryId,
+    missingRequired: required.filter((attr) => !hasAspectValue(aspects[attr.id])).map((attr) => attr.name),
+    hasShop: Boolean(shop?._id),
+  })
+  const problems = tried && draft ? checkNow() : []
+
   const create = async () => {
-    const found = directProblems({
-      shopLabel,
-      title: draft.title,
-      titleMax,
-      subtitle,
-      subtitleMax,
-      variants: activeVariants,
-      price: draft.price,
-      stock,
-      canList: layout.canList,
-      upcRequired: parsedEbayRules.upcEnabled === 'Required',
-      identifierCode,
-      bestOfferAllowed: parsedEbayRules.bestOfferEnabled !== false,
-      bestOffer,
-      summaryPrice,
-      ebayShipping,
-      images: draft.images.length,
-      packageRequired,
-      weight,
-      needsCategory: layout.category === 'search' && layout.canList,
-      categoryId,
-      missingRequired: required.filter((attr) => !hasAspectValue(aspects[attr.id])).map((attr) => attr.name),
-      hasShop: Boolean(shop?._id),
-    })
-    setProblems(found)
+    setTried(true)
+    const found = checkNow()
     if (found.length) {
       update({ error: '' })
       onBlocked?.(found[0].step)

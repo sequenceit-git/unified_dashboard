@@ -106,11 +106,11 @@ export function ShippingFields({ ctx }) {
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <EbayShippingPayerField value={ebayShipping} onChange={(val) => update({ ebayShipping: val })} />
-        <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+        <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3 dark:border-slate-700 dark:bg-slate-800/50">
           <Select label="Handling time" value={dispatchTimeMax || ''} onChange={(e) => update({ dispatchTimeMax: e.target.value })} options={DISPATCH_TIMES} />
         </div>
       </div>
-      {layout.package === 'optional' && <details><summary className="cursor-pointer text-xs font-semibold text-gray-700">Package for calculated shipping (optional)</summary><div className="mt-2">{packageFields}</div></details>}
+      {layout.package === 'optional' && <details><summary className="cursor-pointer text-xs font-semibold text-gray-700 dark:text-slate-200">Package for calculated shipping (optional)</summary><div className="mt-2">{packageFields}</div></details>}
       {layout.package === 'required' && packageFields}
     </div>
   )

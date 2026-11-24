@@ -1,6 +1,7 @@
 /** The Direct listing steps and its save checks (the same as before), each on the step that fixes it. */
 import { validateBestOffer, validateEbayIdentifierCode, validateVariantsForEbay } from './rules'
 import { validateShippingPayer } from './shippingPayer'
+import { centsError, inStepOrder, wholeStockError } from './stepRules'
 
 export const DIRECT_STEPS = [
   { id: 'link', label: 'Product link' },
@@ -21,7 +22,9 @@ export function directProblems(s) {
     add('price', validateVariantsForEbay(s.variants, { requireStock: true }))
   } else {
     if (!(Number(s.price) > 0)) add('price', 'Set your selling price.')
+    else add('price', centsError(s.price))
     if (s.canList && !(Number(s.stock) >= 1)) add('price', 'Set stock to at least 1 before listing.')
+    else add('price', wholeStockError(s.stock))
     if (s.upcRequired && !String(s.identifierCode?.code || '').trim()) add('price', 'This eBay category requires a product identifier (or click "Does not apply").')
     else add('price', validateEbayIdentifierCode(s.identifierCode))
   }
@@ -31,5 +34,5 @@ export function directProblems(s) {
   if (s.needsCategory && !s.categoryId) add('category', `Pick a ${s.shopLabel} category.`)
   if (s.missingRequired?.length) add('category', `Fill in: ${s.missingRequired.join(', ')}.`)
   if (s.canList && !s.hasShop) add('review', `Connect ${s.shopLabel} in Settings first.`)
-  return out
+  return inStepOrder(out, DIRECT_STEPS)
 }

@@ -1,6 +1,7 @@
 /** The eBay product form's steps and every problem it has, each pointing to the step that fixes it. */
 import { validateBestOffer, validateEbayIdentifierCode, validateVariantsForEbay } from './rules'
 import { validateShippingPayer } from './shippingPayer'
+import { centsError, inStepOrder, wholeStockError } from './stepRules'
 
 export const PRODUCT_STEPS = [
   { id: 'photos', label: 'Photos' },
@@ -30,17 +31,19 @@ export function productProblems(form, variants = [], opts = {}) {
   } else {
     add('basics', 'identifierCode', validateEbayIdentifierCode(form.identifierCode))
     if (empty(form.basePrice)) add('price', 'basePrice', 'Enter a price.')
+    else add('price', 'basePrice', centsError(form.basePrice))
     if (empty(form.stock)) add('price', 'stock', 'Enter the stock quantity.')
+    else add('price', 'stock', wholeStockError(form.stock))
   }
   const prices = variants.map((v) => Number(v.price)).filter((p) => Number.isFinite(p) && p > 0)
   add('price', 'bestOffer', validateBestOffer(form.bestOffer, variants.length && prices.length ? Math.min(...prices) : Number(form.basePrice)))
   if (opts.shippingChanged) add('shipping', 'ebayShipping', validateShippingPayer(form.ebayShipping))
   if (opts.packageRequired) {
     for (const [field, label] of [['weight', 'weight'], ['length', 'length'], ['width', 'width'], ['height', 'height']]) {
-      if (!(Number(form[field]) > 0)) add('shipping', field, `Enter the package ${label}.`)
+      if (!(Number(form[field]) >= 0.1)) add('shipping', field, `Enter the package ${label} (at least 0.1).`)
     }
   }
-  return out
+  return inStepOrder(out, PRODUCT_STEPS)
 }
 
 export function stepsWithProblems(problems) {
