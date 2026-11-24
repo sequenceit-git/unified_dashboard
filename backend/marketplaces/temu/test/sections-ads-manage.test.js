@@ -88,3 +88,39 @@ test('ad rows offer edit and details; the table offers new ads for listed goods 
     assert.deepEqual(create.input.fields.find((f) => f.name === 'goods').options, [{ value: '88', label: 'Cup (88)' }])
   } finally { restore() }
 })
+
+test('ad rows carry the product title; New ads goods list Temu-listed goods not advertised yet', async () => {
+  const { ads, restore } = load({
+    'temu.searchrec.ad.reports.mall.query': { reportsItemList: [{ goodsId: 77, adSpend: { val: 10 } }] },
+    'temu.searchrec.ad.reports.goods.query': { reportInfo: { summary: {} } },
+  }, [], { listings: [{ externalListingId: '77:1', productId: 'p1' }, { externalListingId: '88:5', productId: 'p2' }], products: [{ _id: 'p1', title: 'Phone case' }, { _id: 'p2', title: 'Mug' }] })
+  try {
+    const { tables } = await ads('tok', { _id: 's1' })
+    assert.equal(tables[0].rows[0].title, 'Phone case')
+    assert.equal(tables[1].rows[0].title, 'Phone case')
+    assert.deepEqual(tables[0].actions[0].input.fields[0].options.map((o) => o.value), ['88'])
+  } finally { restore() }
+})
+
+test('the New ads review asks Temu which goods can advertise and its predicted ROAS (read only)', async () => {
+  const { ads, restore, calls } = load({
+    'temu.searchrec.ad.goods.create.query': { goodsInfoList: [{ goodsId: 77, grayReason: [] }, { goodsId: 88, grayReason: [{ reason: 'No sales yet' }] }] },
+    'temu.searchrec.ad.roas.pred': { queryAdBidResult: [{ goodsId: 77, predList: [{ roas: '4.5' }] }] },
+  })
+  try {
+    const res = await ads.details.eligibility('tok', {}, '77,88,abc')
+    assert.deepEqual(res, { eligible: [{ goodsId: '77', roas: 4.5 }], refused: [{ goodsId: '88', reason: 'No sales yet' }] })
+    assert.deepEqual(calls[0][1].goodsIdList, [77, 88])
+    assert.ok(!calls.some(([t]) => t === 'temu.searchrec.ad.create'))
+  } finally { restore() }
+})
+
+test('a connection without Temu ad reports: Ads is off, no Temu calls', async () => {
+  const { ads, restore, calls } = load({})
+  try {
+    const res = await ads('tok', { _id: 's1', grantedScopes: ['bg.local.goods.list.query'] })
+    assert.equal(res.adsOff, true)
+    assert.deepEqual(res.tables, [])
+    assert.equal(calls.length, 0)
+  } finally { restore() }
+})

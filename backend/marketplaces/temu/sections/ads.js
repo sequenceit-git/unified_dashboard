@@ -4,7 +4,7 @@
  */
 const temu = require('../service')
 const { col, tables } = require('../../../services/marketplace/sectionKit')
-const { adVal, adMoney, temuAdReport } = require('./helpers')
+const { adVal, adMoney, temuAdReport, allowedMethod } = require('./helpers')
 const Listing = require('../../../models/Listing')
 const Product = require('../../../models/Product')
 
@@ -41,6 +41,10 @@ async function eligibility(token, goodsIds) {
 const positive = (v) => v !== undefined && v !== null && String(v).trim() !== '' && Number(v) > 0
 
 async function ads(token, shop) {
+  // Temu Ads not allowed for this connection: say so, without calling Temu.
+  if (!allowedMethod(shop, 'temu.searchrec.ad.reports.mall.query')) return { adsOff: true, summary: [], tables: [] }
+  const shopList = await shopGoods(shop).catch(() => [])
+  const titles = new Map(shopList.map((g) => [g.goodsId, g.title]))
   let report = null
   const period = {}
   const list = await tables([
@@ -53,6 +57,7 @@ async function ads(token, shop) {
         report = await temuAdReport(token, 30, period)
         return (report?.reportsItemList || []).map((row) => ({
           goodsId: row.goodsId,
+          title: titles.get(String(row.goodsId)) || '',
           spend: adMoney(row.adSpend),
           sales: adMoney(row.orderPayAmt),
           orders: adVal(row.orderPayCnt),
@@ -69,7 +74,7 @@ async function ads(token, shop) {
     },
   ])
   const advertised = new Set(list[0].rows.map((r) => String(r.goodsId)))
-  const goods = (await shopGoods(shop).catch(() => [])).filter((g) => !advertised.has(g.goodsId))
+  const goods = shopList.filter((g) => !advertised.has(g.goodsId))
   if (goods.length) {
     list[0].actions = [{ id: 'create-ad', label: '+ New ads', input: { fields: [
       { name: 'goods', label: 'Goods to advertise', options: goods.map((g) => ({ value: g.goodsId, label: `${g.title || 'Goods'} (${g.goodsId})` })), multiple: true },
@@ -95,6 +100,7 @@ async function ads(token, shop) {
         const ctr = ad('ctr')
         return {
           goodsId: String(item.goodsId),
+          title: titles.get(String(item.goodsId)) || '',
           impressions: ad('imprCnt'),
           clicks: ad('clkCnt'),
           ctr: ctr == null ? null : Math.round(ctr * 1000) / 10,
@@ -128,6 +134,15 @@ async function ads(token, shop) {
 
 /** Read-only drill-downs. */
 ads.details = {
+  /**
+   * For the New ads review: which of the goods (comma list, up to 50) Temu lets advertise, with
+   * its predicted ROAS, and why the others can't. Read only: nothing is created.
+   */
+  eligibility: async (token, shop, id) => {
+    const goods = [...new Set(String(id).split(',').map((g) => g.trim()).filter((g) => /^\d+$/.test(g)))].slice(0, 50)
+    if (!goods.length) throw bad('Choose at least one goods.')
+    return eligibility(token, goods)
+  },
   /** An ad: its budget, target ROAS and 30-day results, and its change log. */
   ad: async (token, shop, id) => {
     const goodsId = Number(id)
