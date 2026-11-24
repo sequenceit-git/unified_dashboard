@@ -33,22 +33,26 @@ export default function ListModal({ product, onClose, onSaved }) {
   const [templates, setTemplates] = useState([])
   // Errors Temu or a load gave (cleared on the next try); the form's own checks follow every edit after a try.
   const [server, setServer] = useState({})
+  // Errors loading Temu's shipping templates or the category template: kept until the load works.
+  const [loadErrors, setLoadErrors] = useState({})
+  const [priceNote, setPriceNote] = useState('')
   const [tried, setTried] = useState(false)
   const [step, setStep] = useState('basics')
   const [checkNote, setCheckNote] = useState('')
   const [busy, setBusy] = useState('')
   const [done, setDone] = useState('')
 
-  const set = (patch) => setForm((f) => ({ ...f, ...patch }))
+  // Temu's answers describe the last try: any change clears them (the form's own checks stay live).
+  const set = (patch) => { setServer({}); setForm((f) => ({ ...f, ...patch })) }
   useEffect(() => {
-    api.get('/api/temu/goods/helpers/shipping-templates', token).then(setTemplates).catch((err) => setServer((e) => ({ ...e, shippingTemplateId: err.message })))
+    api.get('/api/temu/goods/helpers/shipping-templates', token).then(setTemplates).catch((err) => setLoadErrors((e) => ({ ...e, shippingTemplateId: err.message })))
   }, [token])
   useEffect(() => {
     if (!form.catId) return
     let stop = false
     api.get(`/api/temu/goods/helpers/template${queryString({ catId: form.catId })}`, token)
-      .then((t) => { if (!stop) setTemplate(t) })
-      .catch((err) => { if (!stop) setServer((e) => ({ ...e, catId: err.message })) })
+      .then((t) => { if (!stop) { setTemplate(t); setLoadErrors((e) => ({ ...e, catId: undefined })) } })
+      .catch((err) => { if (!stop) setLoadErrors((e) => ({ ...e, catId: err.message })) })
     return () => { stop = true }
   }, [form.catId, token])
 
@@ -82,9 +86,9 @@ export default function ListModal({ product, onClose, onSaved }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template, form.catId])
 
-  const setAttr = (pid, value) => setForm((f) => ({ ...f, attributes: { ...f.attributes, [pid]: value } }))
-  const setGroups = (variantGroups) => setForm((f) => ({ ...f, variantGroups, variants: skusFor(variantGroups.map((g) => g.values), f.variants, f) }))
-  const setSku = (i, patch) => setForm((f) => ({ ...f, variants: f.variants.map((s, j) => (j === i ? { ...s, ...patch } : s)) }))
+  const setAttr = (pid, value) => setServer({}) || setForm((f) => ({ ...f, attributes: { ...f.attributes, [pid]: value } }))
+  const setGroups = (variantGroups) => setServer({}) || setForm((f) => ({ ...f, variantGroups, variants: skusFor(variantGroups.map((g) => g.values), f.variants, f) }))
+  const setSku = (i, patch) => setServer({}) || setForm((f) => ({ ...f, variants: f.variants.map((s, j) => (j === i ? { ...s, ...patch } : s)) }))
   const chooseCategory = (catId, catPath) => {
     setTemplate(null)
     set({ catId, catPath, attributes: {}, variantGroups: [], variants: [] })
@@ -107,7 +111,7 @@ export default function ListModal({ product, onClose, onSaved }) {
   /** Temu's recommended base price per SKU (needs category, variant values and each SKU's weight/size). */
   const suggest = async () => {
     setBusy('suggest')
-    setCheckNote('')
+    setPriceNote('')
     try {
       const list = await api.post('/api/temu/goods/helpers/price-suggestion', {
         catId: form.catId,
@@ -116,9 +120,9 @@ export default function ListModal({ product, onClose, onSaved }) {
       }, token)
       const byKey = new Map(list.map((x) => [x.specIds.join(','), x.price]))
       setForm((f) => ({ ...f, variants: f.variants.map((v) => { const p = byKey.get(v.specs.map((s) => s.specId).join(',')); return p ? { ...v, basePrice: String(p.value) } : v }) }))
-      setCheckNote(list.some((x) => x.price) ? "Temu's suggested prices are filled in; change them if you like." : 'Temu has no price suggestion for these SKUs.')
+      setPriceNote(list.some((x) => x.price) ? "Temu's suggested prices are filled in; change them if you like." : 'Temu has no price suggestion for these SKUs.')
     } catch (err) {
-      setCheckNote(err.message)
+      setPriceNote(err.message)
     } finally {
       setBusy('')
     }
@@ -165,7 +169,8 @@ export default function ListModal({ product, onClose, onSaved }) {
     }
   }
 
-  const errors = { ...(tried ? validate(form, template || {}) : {}), ...server }
+  const live = tried ? validate(form, template || {}) : {}
+  const errors = { ...loadErrors, ...live, ...Object.fromEntries(Object.entries(server).map(([k, v]) => [k === '_' && live._ ? 'temu' : k, v])) }
   const problems = problemsFrom(errors)
   const badSteps = new Set(problems.map((p) => p.step))
   const card = 'space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900'
@@ -253,7 +258,7 @@ export default function ListModal({ product, onClose, onSaved }) {
                 <Button variant="secondary" type="button" size="sm" disabled={Boolean(busy) || !form.variants.length} onClick={suggest}>{busy === 'suggest' ? 'Asking Temu…' : 'Suggest prices'}</Button>
                 <span className="text-xs text-gray-500">Temu's recommended price per SKU (needs each SKU's weight and size).</span>
               </div>
-              {checkNote && <p className="text-xs text-gray-700 dark:text-slate-300">{checkNote}</p>}
+              {priceNote && <p className="text-xs text-gray-700 dark:text-slate-300">{priceNote}</p>}
             </div>
           ) : <p className="text-sm text-gray-500">Choose a category first: Temu's variant types come from it.</p>}
         </Step>
@@ -291,7 +296,7 @@ export default function ListModal({ product, onClose, onSaved }) {
               <dt className="text-gray-500">Title</dt><dd className="truncate">{form.title || '—'}</dd>
               <dt className="text-gray-500">Category</dt><dd className="truncate">{form.catPath || '—'}</dd>
               <dt className="text-gray-500">SKUs</dt><dd>{form.variants.length}</dd>
-              <dt className="text-gray-500">From</dt><dd>{form.variants.length ? `$${Math.min(...form.variants.map((v) => Number(v.basePrice) || Infinity)).toFixed(2)}` : '—'}</dd>
+              <dt className="text-gray-500">From</dt><dd>{(() => { const p = form.variants.map((v) => Number(v.basePrice)).filter((n) => n > 0); return p.length ? `$${Math.min(...p).toFixed(2)}` : '—' })()}</dd>
               <dt className="text-gray-500">Stock</dt><dd>{form.variants.reduce((t, v) => t + Number(v.quantity || 0), 0)}</dd>
             </dl>
           </div>

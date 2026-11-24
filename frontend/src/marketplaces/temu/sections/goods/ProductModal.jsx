@@ -217,6 +217,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
         </>
       )}
     >
+      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
       <form id="temu-product-form" noValidate onSubmit={save} onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault() }}>
         <Step id="photos" active={step}>
           <div className={card}>
@@ -331,7 +332,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                   <a href={shopListing.listingUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-indigo-600 hover:underline">Open on Temu</a>
                 )}
               </div>
-              {shopListing?.syncError && <p className="text-xs text-amber-700">Temu: {shopListing.syncError}</p>}
+              {shopListing?.syncError && <p className="text-xs text-amber-700 dark:text-amber-300">Temu: {shopListing.syncError}</p>}
               {listingActions.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {listingActions.map((action) => (
@@ -365,7 +366,6 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
           )}
         </Step>
 
-        {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
       </form>
     </StepPanel>
   )

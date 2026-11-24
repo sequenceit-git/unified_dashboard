@@ -44,7 +44,7 @@ function attributeMap(raw) {
  * Paste a product link, then review it in that shop's own listing format.
  */
 
-export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
+export function useDirectListForm({ shopLabel, marketplace, onCreated, onBlocked }) {
   const [tried, setTried] = useState(false)
   const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
@@ -206,6 +206,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
     const found = checkNow()
     if (found.length) {
       update({ error: '' })
+      onBlocked?.('found')
       return
     }
     const named = namedValues()

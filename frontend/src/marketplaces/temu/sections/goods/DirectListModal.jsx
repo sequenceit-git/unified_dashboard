@@ -43,9 +43,10 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     setDraftImages,
     selectedCategory,
     create,
-  } = useDirectListForm({ shopLabel, marketplace, onCreated })
-  const [step, setStep] = useState('link')
-  const [advance, setAdvance] = useState(false)
+  } = useDirectListForm({ shopLabel, marketplace, onCreated, onBlocked: (s) => setStep(s) })
+  // Reopened with a draft ready: start on checking it; still reading: move on when it's done.
+  const [step, setStep] = useState(() => (draft && !fetching ? 'found' : 'link'))
+  const [advance, setAdvance] = useState(() => Boolean(fetching))
   const categoryField = (
     <>
       {layout.category === 'search' ? (
@@ -175,7 +176,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
             Use AI (GPT-5 mini) to clean up the title and description, and look the page up if the site blocks it
           </label>
           {fetching && <p className="text-xs text-gray-500">✨ Reading the page. You can close this window — the request keeps running, and the draft waits here.</p>}
-          {draft && !fetching && <p className="text-xs text-emerald-700">Done. <button type="button" className="underline" onClick={() => setStep('found')}>Check what was found →</button></p>}
+          {draft && !fetching && <p className="text-xs text-emerald-700 dark:text-emerald-400">Done. <button type="button" className="underline" onClick={() => setStep('found')}>Check what was found →</button></p>}
         </form>
       </Step>
 
@@ -184,12 +185,12 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
           <>
             <StepProblems problems={problems} step="found" />
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700">{SOURCE_LABEL[draft.source] || draft.source}</span>
-              {draft.aiUsed && <span className="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-700">✨ AI suggested the wording</span>}
+              <span className="rounded bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-200">{SOURCE_LABEL[draft.source] || draft.source}</span>
+              {draft.aiUsed && <span className="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-200">✨ AI suggested the wording</span>}
               <a href={draft.sourceUrl} target="_blank" rel="noreferrer" className="truncate text-indigo-600 hover:underline">{draft.sourceUrl}</a>
             </div>
             {draft.warnings?.length > 0 && (
-              <ul className="space-y-1 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
+              <ul className="space-y-1 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900 dark:bg-yellow-950/40 dark:text-yellow-200">
                 {draft.warnings.map((warning) => <li key={warning}>{warning}</li>)}
               </ul>
             )}
