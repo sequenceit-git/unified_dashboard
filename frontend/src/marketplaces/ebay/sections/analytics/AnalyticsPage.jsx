@@ -1,81 +1,92 @@
+/**
+ * eBay analytics: what needs attention, then sales and traffic against the previous period, then
+ * why — revenue and traffic by day, each listing's traffic, and the seller level.
+ */
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
+import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { queryString } from '../../../../lib/api'
-import { StatCard } from '../../../../components/ui/Card'
 import { Select } from '../../../../components/ui/Input'
 import { useApi } from '../../../../hooks/useApi'
-import MarketplaceChart from './MarketplaceChart'
+import ReconnectNotice from '../../ReconnectNotice'
+import NeedsAttention from './NeedsAttention'
+import { SalesTiles, TrafficTiles } from './ResultTiles'
 import RevenueChart from './RevenueChart'
-import TopProducts from './TopProducts'
-import SectionView from '../../SectionView'
+import TrafficChart from './TrafficChart'
+import ListingsTable from './ListingsTable'
+import SellerLevel from './SellerLevel'
+import DetailModal from './DetailModal'
+import { PERIODS, attentionItems, periodRanges, trafficTotals, viewerZone, withPrevious, yesterday } from './analyticsView'
 
-const RANGES = [
-  { value: '30', label: 'Last 30 days' },
-  { value: '60', label: 'Last 60 days' },
-]
+const TZ = viewerZone()
 
-function rangeParams(days) {
-  const end = new Date()
-  end.setHours(23, 59, 59, 999)
-  const start = new Date(end.getTime() - (Number(days) - 1) * 86400000)
-  start.setHours(0, 0, 0, 0)
-  return {
-    from: start.toISOString(),
-    to: end.toISOString(),
-  }
-}
-
-/** The sales charts (dashboard orders): the first tab of eBay Analytics. */
-function SalesTab() {
+export default function AnalyticsPage() {
   const { token } = useAuth()
   const section = useShopSection()
-  const marketplace = section?.marketplace
   const [days, setDays] = useState('30')
+  const [detail, setDetail] = useState(null)
+  // Whole days ending yesterday (eBay's traffic has no today), moved to eBay's last traffic day if earlier.
+  const [endDay, setEndDay] = useState(() => yesterday())
+  const { current, previous } = useMemo(() => periodRanges(days, endDay), [days, endDay])
+  const url = (path, range, extra = {}) => (token ? `/api/ebay/analytics/${path}${queryString({ from: range.from, to: range.to, ...extra })}` : null)
 
-  const { from, to } = useMemo(() => rangeParams(days), [days])
+  const summary = useApi(url('summary', current))
+  const prevSummary = useApi(url('summary', previous))
+  const revenue = useApi(url('revenue', current, { tz: TZ }))
+  const prevRevenue = useApi(url('revenue', previous, { tz: TZ }))
+  const traffic = useApi(url('traffic', current))
+  const prevTraffic = useApi(url('traffic', previous))
+  const inv = useApi(token ? '/api/ebay/analytics/inventory' : null)
+  const loader = useApi(token ? '/api/ebay/sections/analytics' : null)
 
-  const summary = useApi(token ? `/api/ebay/analytics/summary${queryString({ from, to })}` : null)
-  const revenue = useApi(token ? `/api/ebay/analytics/revenue${queryString({ from, to })}` : null)
-  const markets = useApi(token ? `/api/ebay/analytics/marketplaces${queryString({ from, to })}` : null)
-  const top = useApi(token ? `/api/ebay/analytics/products${queryString({ from, to, limit: 10 })}` : null)
-  const inv = useApi(token && marketplace ? `/api/ebay/analytics/inventory` : null)
+  // Adjusting state from fetched data during render (React's documented pattern); it only moves earlier.
+  const latest = traffic.data?.latestDate || null
+  if (latest && latest < endDay) setEndDay(latest)
+
+  if (!section) return <RequireShopSection />
+
+  const table = (id) => (loader.data?.tables || []).find((t) => t.id === id)
+  const standards = table('standards')
+  const service = table('service')
+  const items = attentionItems({ standards: standards?.rows, service: service?.rows, inventory: inv.data })
+  const checkError = loader.error || standards?.error || inv.error || ''
+  const salesLoading = summary.loading || prevSummary.loading
+  const trafficLoading = traffic.loading || prevTraffic.loading || Boolean(latest && latest < endDay)
+  const trafficError = traffic.error || prevTraffic.error || ''
 
   return (
-    <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
-      <div className="flex justify-end">
+    <div className="max-w-full min-w-0 space-y-4 overflow-x-hidden">
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-xl font-bold sm:text-2xl">{section.label} analytics</h1>
+          <p className="text-xs text-gray-500">{current.from} to {current.to}{latest && <> · eBay traffic up to {latest}</>}</p>
+        </div>
         <div className="w-full sm:w-44">
-          <Select
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            options={RANGES}
-            aria-label="Analytics period"
-          />
+          <Select value={days} onChange={(e) => setDays(e.target.value)} options={PERIODS} aria-label="Analytics period" />
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 min-w-0">
-        <StatCard label="Revenue" value={summary.loading ? '…' : `$${(summary.data?.revenue ?? 0).toFixed(2)}`} />
-        <StatCard label="Orders" value={summary.loading ? '…' : (summary.data?.orders ?? 0)} />
-        <StatCard label="Avg order" value={summary.loading ? '…' : `$${(summary.data?.avgOrder ?? 0).toFixed(2)}`} />
-        <StatCard
-          label="Profit"
-          value={summary.loading ? '…' : `$${(summary.data?.profit ?? 0).toFixed(2)}`}
-          sub="Sell price − base price"
-        />
-        <StatCard label="Low stock" value={inv.loading ? '…' : (inv.data?.lowCount ?? 0)} sub={inv.data ? `${inv.data.outCount ?? 0} out of stock` : ''} />
-      </div>
 
-      <RevenueChart data={revenue.data} />
+      <ReconnectNotice />
 
-      <div className="grid gap-3 lg:grid-cols-2 min-w-0">
-        <MarketplaceChart data={markets.data} />
-        <TopProducts rows={top.data} loading={top.loading} error={top.error} onRetry={top.refetch} />
-      </div>
+      <NeedsAttention items={items} loading={loader.loading || inv.loading} error={checkError} onRetry={() => { loader.refetch(); inv.refetch() }} onDetail={setDetail} />
+
+      <SalesTiles now={summary.data} before={prevSummary.data} loading={salesLoading} error={summary.error || prevSummary.error || ''} onRetry={() => { summary.refetch(); prevSummary.refetch() }} />
+      <TrafficTiles now={trafficTotals(traffic.data?.days)} before={trafficTotals(prevTraffic.data?.days)} loading={trafficLoading} error={trafficError} />
+
+      <RevenueChart
+        data={revenue.data ? withPrevious(revenue.data, prevRevenue.data, days, current.from) : null}
+        loading={revenue.loading || prevRevenue.loading}
+        error={revenue.error || prevRevenue.error || ''}
+        onRetry={() => { revenue.refetch(); prevRevenue.refetch() }}
+      />
+      <TrafficChart days={traffic.data?.days} loading={trafficLoading} error={trafficError} />
+
+      <ListingsTable table={table('traffic')} loading={loader.loading} error={loader.error} onRetry={loader.refetch} />
+
+      <SellerLevel standards={standards} service={service} loading={loader.loading} error={loader.error} onRetry={loader.refetch} onDetail={setDetail} />
+
+      {detail && <DetailModal action={detail.action} id={detail.id} onClose={() => setDetail(null)} />}
     </div>
   )
-}
-
-/** eBay Analytics: sales charts, then listing traffic and seller level from eBay's Analytics API. */
-export default function AnalyticsPage() {
-  return <SectionView sectionId="analytics" reconnectNotice extraTabs={[{ id: 'sales', label: 'Sales', render: () => <SalesTab /> }]} />
 }
