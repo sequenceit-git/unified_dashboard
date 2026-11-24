@@ -135,3 +135,26 @@ test("eBay's last traffic day is the last day it returned, not the end of the as
     assert.equal((await analytics.dailyTraffic('tok', '2026-11-17', '2026-11-23')).latestDate, '2026-11-22')
   } finally { restore() }
 })
+
+test("service metrics: one row per category with the rate, its counts and eBay's rating", async () => {
+  const SVC = { dimensionMetrics: [
+    { dimension: { name: 'Health & Beauty' }, metrics: [
+      { metricKey: 'RATE', value: '7.87', benchmark: { rating: 'VERY_HIGH', metadata: { average: '0.69' } } },
+      { metricKey: 'COUNT', value: '27' },
+      { metricKey: 'TRANSACTION_COUNT', value: '343' },
+    ] },
+    { dimension: { name: 'Home & Garden' }, metrics: [
+      { metricKey: 'RATE', value: '0', benchmark: { rating: 'NOT_APPLICABLE' } },
+      { metricKey: 'COUNT', value: '0' },
+      { metricKey: 'TRANSACTION_COUNT', value: '1' },
+    ] },
+  ] }
+  const { analytics, restore } = load((url) => (url.includes('traffic_report') ? traffic(ORDER) : url.includes('seller_standards') ? STANDARDS : SVC))
+  try {
+    const rows = (await analytics('tok', {}, { now: NOW })).tables.find((t) => t.id === 'service').rows
+    const hb = rows.find((r) => r.metric === 'Not as described' && r.category === 'Health & Beauty')
+    assert.deepEqual([hb.yourRate, hb.peerRate, hb.problems, hb.orders, hb.ratingCode], ['7.87%', '0.69%', 27, 343, 'VERY_HIGH'])
+    assert.equal(rows.filter((r) => r.metric === 'Not as described' && r.category === 'Health & Beauty').length, 1, 'one row per category')
+    assert.ok(!rows.some((r) => /^(27|343)%$/.test(r.yourRate)), 'counts are never shown as rates')
+  } finally { restore() }
+})

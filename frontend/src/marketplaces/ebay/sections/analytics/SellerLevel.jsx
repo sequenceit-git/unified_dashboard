@@ -2,6 +2,7 @@
 import Card from '../../../../components/ui/Card'
 import Button from '../../../../components/ui/Button'
 import { ErrorState, Spinner } from '../../../../components/ui/Feedback'
+import ServiceRates from './ServiceRates'
 
 const LEVEL_STYLE = {
   TOP_RATED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200',
@@ -34,22 +35,8 @@ export default function SellerLevel({ standards, service, loading, error, onRetr
             </ul>
           )}
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Returns and not-received vs similar sellers</p>
-            {service?.error && <p className="text-rose-600">{service.error}</p>}
-            {!service?.error && (
-              (service?.rows || []).length
-                ? (
-                  <ul className="space-y-1">
-                    {service.rows.map((m) => (
-                      <li key={`${m.metric}:${m.category}`} className="flex flex-wrap justify-between gap-2">
-                        <span>{m.metric}{m.category && <span className="text-gray-500"> · {m.category}</span>}</span>
-                        <span className={['HIGH', 'VERY_HIGH'].includes(m.ratingCode) ? 'font-semibold text-rose-600' : ''}>{m.yourRate || '—'} vs {m.peerRate || '—'} · {m.rating || '—'}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )
-                : <p className="text-gray-500">No rates from eBay yet</p>
-            )}
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Your rates vs similar sellers</p>
+            {service?.error ? <p className="text-rose-600">{service.error}</p> : <ServiceRates rows={service?.rows} />}
           </div>
         </div>
       )}

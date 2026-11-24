@@ -93,14 +93,26 @@ async function serviceRows(token) {
   const all = await Promise.all(types.map(async ([type, label]) => {
     const evaluation = 'CURRENT'
     const res = await ebayGet(token, `/sell/analytics/v1/customer_service_metric/${type}/${evaluation}?evaluation_marketplace_id=${MARKETPLACE}`)
-    return (res.dimensionMetrics || []).flatMap((d) => (d.metrics || []).map((m) => ({
-      metric: label,
-      category: d.dimension?.name || d.dimension?.value || '',
-      rating: words(m.benchmark?.rating),
-      ratingCode: m.benchmark?.rating || '',
-      yourRate: rate(m.value),
-      peerRate: rate(m.benchmark?.metadata?.average),
-    })))
+    // eBay sends several metrics per category: the rate (with its benchmark), the count of problem
+    // orders and the number of orders. One row per category, the counts kept as counts.
+    return (res.dimensionMetrics || []).map((d) => {
+      const list = d.metrics || []
+      const rateMetric = list.find((m) => /rate/i.test(m.metricKey || '')) || list.find((m) => m.benchmark) || list[0] || {}
+      const count = (test) => {
+        const m = list.find((x) => x !== rateMetric && test(String(x.metricKey || '')))
+        return m ? num(m.value) : null
+      }
+      return {
+        metric: label,
+        category: d.dimension?.name || d.dimension?.value || '',
+        rating: words(rateMetric.benchmark?.rating),
+        ratingCode: rateMetric.benchmark?.rating || '',
+        yourRate: rate(rateMetric.value),
+        peerRate: rate(rateMetric.benchmark?.metadata?.average),
+        problems: count((k) => /count/i.test(k) && !/transaction/i.test(k)),
+        orders: count((k) => /transaction/i.test(k)),
+      }
+    })
   }))
   return all.flat()
 }
@@ -126,7 +138,7 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       id: 'service',
       tab: 'Seller level',
       title: 'Returns and not-received rates vs similar sellers',
-      columns: [col('metric', 'Metric'), col('category', 'Category'), col('rating', 'Rating', 'status'), col('yourRate', 'Your rate'), col('peerRate', 'Similar sellers')],
+      columns: [col('metric', 'Metric'), col('category', 'Category'), col('yourRate', 'Your rate'), col('peerRate', 'Similar sellers'), col('problems', 'Problem orders', 'number'), col('orders', 'Orders', 'number'), col('rating', 'Rating', 'status')],
       load: scopeAware(() => serviceRows(token), 'seller level'),
     },
   ])
