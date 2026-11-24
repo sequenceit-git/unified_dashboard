@@ -146,9 +146,9 @@ async function caseAction(ctx) {
     const id = String(ctx.body?.id || '').trim()
     if (!id) throw new HttpError(400, { error: 'id is required' })
     const shop = await connectedShop(ctx, marketplace)
-    const { ebaySend } = require('../../client')
+    const { ebaySend, ebayUpload } = require('../../client')
     const { ebayApiz } = require('../../sections/helpers')
-    const client = { postOrder: (...args) => SERVICE.postOrder(...args), ebaySend, apiz: ebayApiz() }
+    const client = { postOrder: (...args) => SERVICE.postOrder(...args), ebaySend, upload: ebayUpload, apiz: ebayApiz() }
     const result = await marketplaceManager.withShopToken(shop, (token) => action.run(client, token, id, ctx.body.value))
     await cache.del(`shop:${shop._id}:section:returns-cases`)
     return result

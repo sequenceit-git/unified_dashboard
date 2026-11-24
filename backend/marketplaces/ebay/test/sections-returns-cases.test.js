@@ -55,8 +55,9 @@ test('dispute rows offer Accept only while open', async () => {
   try {
     const disputes = (await section('tok')).tables.find((t) => t.id === 'disputes')
     assert.equal(disputes.tab, 'Payment disputes')
-    assert.deepEqual(disputes.rows.map((r) => [r.id, r.actions.map((a) => a.id)]), [['D1', ['dispute-accept']], ['D2', []]])
-    assert.ok(disputes.rows[0].actions[0].confirm)
+    // Every dispute opens its Details; answering (evidence, contest, accept) only while open.
+    assert.deepEqual(disputes.rows.map((r) => [r.id, r.actions.map((a) => a.id)]), [['D1', ['dispute', 'dispute-evidence', 'dispute-contest', 'dispute-accept']], ['D2', ['dispute']]])
+    assert.ok(disputes.rows[0].actions.find((a) => a.id === 'dispute-accept').confirm)
   } finally { restore() }
 })
 

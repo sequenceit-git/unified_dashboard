@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 429 | 87 | 0 | 333 | 9 | 59 | — |
+| eBay | 429 | 91 | 0 | 329 | 9 | 55 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
 | Temu | 133 | 40 | 0 | 93 | 0 | 17 | — |
 
@@ -222,7 +222,7 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | medium | medium | `PUT /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | updateItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `PUT /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | updateItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 
-#### returns-cases (23)
+#### returns-cases (19)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
@@ -239,10 +239,6 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | high | medium | `POST /post-order/v2/return/{returnId}/escalate` | — | escalateReturn | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
 | — | high | medium | `POST /post-order/v2/return/{returnId}/file/upload` | — | uploadReturnFile | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
 | — | high | medium | `POST /post-order/v2/return/{returnId}/send_message` | — | sendReturnMessage | Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence` | sell.payment.dispute | addEvidence | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest` | sell.payment.dispute | contestPaymentDispute | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence` | sell.payment.dispute | updateEvidence | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
-| — | high | medium | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file` | sell.payment.dispute | uploadEvidenceFile | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
 | — | low | small | `DELETE /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | removePostOrderDocument | Upload and manage documents attached to returns and cases. |
 | — | low | small | `GET /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | downloadPostOrderDocument | Upload and manage documents attached to returns and cases. |
 | — | low | small | `GET /post-order/v2/return/preference` | — | getReturnPreferences | Read and set return preferences (automatic return rules). |
@@ -543,17 +539,17 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}` | getOrder | Use this call to retrieve the contents of an order based on its unique identifier, orderId. | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment` | getShippingFulfillments | Use this call to retrieve the contents of all fulfillments currently defined for a specified order based on the order's unique identifier, orderId. | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute_summary` | getPaymentDisputeSummaries | Search Payment Dispute by Filters | `marketplaces/ebay/sections/returns-cases.js` |
-| covered | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}` | getPaymentDispute | Get Payment Dispute Details | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}` | getPaymentDispute | Get Payment Dispute Details | `marketplaces/ebay/sections/returns-cases.js`, `marketplaces/ebay/sections/returnsActions.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/order/{order_id}/issue_refund` | issueRefund | Issue Refund | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment` | createShippingFulfillment | When you group an order's line items into one or more packages, each package requires a corresponding plan for handling, addressing, and shipping; this is a shipping fulfillment. | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept` | acceptPaymentDispute | Accept Payment Dispute | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence` | addEvidence | Add an Evidence File | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest` | contestPaymentDispute | Contest Payment Dispute | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence` | updateEvidence | Update evidence | `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file` | uploadEvidenceFile | Upload an Evidence File | `marketplaces/ebay/sections/returnsActions.js` |
 | missing | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment/{fulfillmentId}` | getShippingFulfillment | Use this call to retrieve the contents of a fulfillment based on its unique identifier, fulfillmentId (combined with the associated order's orderId). |  |
 | missing | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity` | getActivities | Get Payment Dispute Activity |  |
 | missing | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content` | fetchEvidenceContent | Get Payment Dispute Evidence File |  |
-| missing | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence` | addEvidence | Add an Evidence File |  |
-| missing | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest` | contestPaymentDispute | Contest Payment Dispute |  |
-| missing | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence` | updateEvidence | Update evidence |  |
-| missing | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file` | uploadEvidenceFile | Upload an Evidence File |  |
 | missing | Identity API | `GET /commerce/identity/v1/user` | getUser | This method retrieves the account profile information for an authenticated user, which requires a User access token. |  |
 | covered | Inventory API | `DELETE /sell/inventory/v1/inventory_item/{sku}` | deleteInventoryItem | This call is used to delete an inventory item record associated with a specified SKU. | `marketplaces/ebay/listings.js` |
 | covered | Inventory API | `GET /sell/inventory/v1/inventory_item` | getInventoryItems | This call retrieves all inventory item records defined for the seller's account. | `marketplaces/ebay/listings.js` |

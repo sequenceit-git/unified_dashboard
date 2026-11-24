@@ -791,30 +791,6 @@
     "priority": "high",
     "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
   },
-  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
-  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
-  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
-  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
   "POST /sell/inventory/v1/bulk_create_or_replace_inventory_item": {
     "section": "listings",
     "size": "medium",

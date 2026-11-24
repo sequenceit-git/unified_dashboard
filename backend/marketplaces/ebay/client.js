@@ -248,4 +248,22 @@ async function ebayFetchBuffer(token, url) {
   return Buffer.from(await res.arrayBuffer())
 }
 
-module.exports = { EbayClient, ebayFetch, ebaySend, ebayFetchBuffer }
+/** A multipart file upload (field `file`), e.g. payment dispute evidence; returns eBay's JSON answer. */
+async function ebayUpload(token, url, { name, type, buffer }) {
+  const form = new FormData()
+  form.append('file', new Blob([buffer], { type }), name)
+  const res = await fetch(url.startsWith('http') ? url : `${config.apiBaseUrl}${url}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US' },
+    body: form,
+  })
+  const payload = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const error = new Error(payload.errors?.[0]?.message || `eBay returned ${res.status}`)
+    error.status = res.status
+    throw error
+  }
+  return payload
+}
+
+module.exports = { EbayClient, ebayFetch, ebaySend, ebayFetchBuffer, ebayUpload }

@@ -5,7 +5,7 @@
  */
 const { money, words, col, tables } = require('../../../services/marketplace/sectionKit')
 const { ebayGet, ebayApiz, scopeAware } = require('./helpers')
-const { CARRIERS } = require('./returnsActions')
+const { CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS } = require('./returnsActions')
 
 const CLOSED = /closed|refunded|cancel|resolved|complete/i
 // Any refund already started or issued (REFUND_INITIATED, …_PENDING_CONFIRMATION, LESS_THAN_A_FULL_REFUND_ISSUED).
@@ -111,11 +111,25 @@ async function returnsCases(token) {
         amount: money(row.amount),
         respondBy: row.respondByDate || null,
         opened: row.openDate || null,
-        actions: OPEN_DISPUTE.test(row.paymentDisputeStatus || '') ? [{ id: 'dispute-accept', label: 'Accept', confirm: `Accept payment dispute ${row.paymentDisputeId}? eBay refunds the buyer.` }] : [],
+        actions: [
+          { id: 'dispute', label: 'Details', detail: true },
+          ...(OPEN_DISPUTE.test(row.paymentDisputeStatus || '') ? [
+            { id: 'dispute-evidence', label: 'Add evidence', input: { fields: [
+              { name: 'evidenceType', label: 'What the photo proves', options: Object.entries(EVIDENCE_TYPES).map(([value, label]) => ({ value, label })) },
+              { name: 'file', label: 'Photo (JPEG or PNG, up to 5 MB)', type: 'file', accept: 'image/jpeg,image/png' },
+            ] } },
+            { id: 'dispute-contest', label: 'Contest', confirm: `Contest payment dispute ${row.paymentDisputeId}? Add all your evidence first: eBay doesn't take more after you contest.`, input: { fields: [
+              { name: 'note', label: 'Note to eBay', type: 'textarea', maxLength: 1000, optional: true },
+              ...(row.reason === 'SIGNIFICANTLY_NOT_AS_DESCRIBED' ? ADDRESS_FIELDS : []),
+            ] } },
+            { id: 'dispute-accept', label: 'Accept', confirm: `Accept payment dispute ${row.paymentDisputeId}? eBay refunds the buyer.` },
+          ] : []),
+        ],
       })) || [], 'payment disputes'),
     },
   ])
   const byId = Object.fromEntries(list.map((t) => [t.id, t.rows]))
+  const canAnswer = (r) => r.actions.some((a) => a.id === 'dispute-accept')
   const open = (rows) => (rows || []).filter((row) => !CLOSED.test(row.status)).length
   return {
     summary: [
@@ -123,10 +137,49 @@ async function returnsCases(token) {
       { label: 'Open cancellations', value: open(byId.cancellations), type: 'number' },
       { label: 'Open inquiries', value: open(byId.inquiries), type: 'number' },
       { label: 'Open cases', value: open(byId.cases), type: 'number' },
-      { label: 'Open disputes', value: (byId.disputes || []).filter((r) => r.actions.length).length, type: 'number' },
+      { label: 'Open disputes', value: (byId.disputes || []).filter(canAnswer).length, type: 'number' },
     ],
     tables: list,
   }
+}
+
+/** Read-only drill-downs: `details[name](token, shop, id) → { title, summary, tables }`. */
+returnsCases.details = {
+  /** A payment dispute: what eBay asks for, the evidence on file, and what happened. */
+  dispute: async (token, shop, id) => {
+    const base = `${ebayApiz()}/sell/fulfillment/v1/payment_dispute/${encodeURIComponent(id)}`
+    const [d, history] = await Promise.all([ebayGet(token, base), ebayGet(token, `${base}/activity`).catch(() => ({ activity: [] }))])
+    const typeOf = (t) => EVIDENCE_TYPES[t] || words(t)
+    return {
+      title: `Payment dispute ${id}`,
+      summary: [
+        { label: 'Status', value: words(d.paymentDisputeStatus), type: 'text' },
+        { label: 'Reason', value: words(d.reason), type: 'text' },
+        { label: 'Amount', value: money(d.amount), type: 'money' },
+        { label: 'Respond by', value: d.respondByDate ? d.respondByDate.slice(0, 10) : '—', type: 'text' },
+      ],
+      tables: [
+        {
+          id: 'requests',
+          title: 'Evidence eBay asks for',
+          columns: [col('type', 'Evidence'), col('requested', 'Asked', 'date'), col('respondBy', 'Respond by', 'date')],
+          rows: (d.evidenceRequests || []).map((e) => ({ type: typeOf(e.evidenceType), requested: e.requestDate || null, respondBy: e.respondByDate || null })),
+        },
+        {
+          id: 'evidence',
+          title: 'Evidence you sent',
+          columns: [col('type', 'Evidence'), col('files', 'Files'), col('provided', 'Sent', 'date')],
+          rows: (d.evidence || []).map((e) => ({ type: typeOf(e.evidenceType), files: (e.files || []).map((f) => f.name || f.fileId).join(', '), provided: e.providedDate || null })),
+        },
+        {
+          id: 'activity',
+          title: 'History',
+          columns: [col('when', 'When', 'date'), col('what', 'What'), col('who', 'By')],
+          rows: (history.activity || []).map((a) => ({ when: a.activityDate || null, what: words(a.activityType), who: words(a.actor) })),
+        },
+      ],
+    }
+  },
 }
 
 module.exports = returnsCases
