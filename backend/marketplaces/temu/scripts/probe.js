@@ -25,7 +25,7 @@ async function main() {
   try {
     const result = await manager.withShopToken(shop, (token) => temu.call(method, { access_token: token, ...params }))
     console.log('success: true')
-    console.log(JSON.stringify(result, null, 2).slice(0, 4000))
+    console.log(JSON.stringify(result, null, 2).slice(0, 20000))
   } catch (err) {
     console.log('success: false')
     console.log(`errorCode: ${err.code ?? '—'}`)
