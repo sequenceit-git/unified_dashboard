@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getShop } from '../../..'
 import { useAuth } from '../../../../auth/AuthContext'
-import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { api, queryString } from '../../../../lib/api'
 import Card from '../../../../components/ui/Card'
@@ -9,9 +8,10 @@ import DataTable from '../../../../components/ui/DataTable'
 import Pagination from '../../../../components/ui/Pagination'
 import SearchInput from '../../../../components/ui/SearchInput'
 import CustomerDrawer from './CustomerDrawer'
-import ReconnectNotice from '../../ReconnectNotice'
+import SectionView from '../../SectionView'
 
-export default function BuyersPage() {
+/** The buyer list built from orders: the first tab of eBay Buyers. */
+function BuyerList() {
   const { token } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
@@ -49,12 +49,8 @@ export default function BuyersPage() {
     setSelected(await api.get(`/api/ebay/buyers/${row._id}`, token))
   }
 
-  if (!section) return <RequireShopSection />
-
   return (
     <div className="space-y-4">
-      <ReconnectNotice />
-      <h1 className="text-xl sm:text-2xl font-bold">{section.label} customers</h1>
       <Card>
         <div className="mb-3">
           <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search name, email, phone…" />
@@ -142,4 +138,9 @@ export default function BuyersPage() {
       )}
     </div>
   )
+}
+
+/** eBay Buyers: the buyer list, then feedback received (with replies) from eBay's Feedback API. */
+export default function BuyersPage() {
+  return <SectionView sectionId="buyers" reconnectNotice extraTabs={[{ id: 'buyers', label: 'Buyers', render: () => <BuyerList /> }]} />
 }

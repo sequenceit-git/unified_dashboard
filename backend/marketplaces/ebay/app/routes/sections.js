@@ -72,6 +72,16 @@ function sectionsRoutes(shopKey) {
     }
   })
 
+  // POST /api/<shop>/sections/buyers/reply — reply to a buyer's feedback on eBay
+  router.post('/buyers/reply', sectionGuard('buyers'), async (req, res) => {
+    try {
+      res.json(await service.replyToFeedback(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(400).json({ error: err.message })
+    }
+  })
+
   // POST /api/<shop>/sections/returns-cases/<action> — mark received, refund, inquiry refund/tracking, accept dispute
   router.post('/returns-cases/:actionId', sectionGuard('returns-cases'), async (req, res) => {
     try {

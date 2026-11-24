@@ -118,6 +118,33 @@ async function caseAction(ctx) {
     return result
 }
 
+/** POST /sections/buyers/reply — replies to one feedback; the buyer comes from eBay, not the browser. */
+async function replyToFeedback(ctx) {
+    const marketplace = 'ebay'
+    const { MAX_REPLY } = require('../../sections/buyers')
+    const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === 'buyers')
+    if (!section || !canUseSection(ctx.authUser || ctx.user, marketplace, section.id, section.route)) {
+      throw new HttpError(403, { error: `You do not have access to ${section?.label || 'Buyers'} on this shop` })
+    }
+    const feedbackId = String(ctx.body?.id || '').trim()
+    const text = String(ctx.body?.value || '').trim()
+    if (!feedbackId) throw new HttpError(400, { error: 'id is required' })
+    if (!text) throw new HttpError(400, { error: 'Write a reply first.' })
+    if (text.length > MAX_REPLY) throw new HttpError(400, { error: `eBay allows replies of up to ${MAX_REPLY} characters.` })
+    const shop = await connectedShop(ctx, marketplace)
+    if (!shop.accountUsername) throw new HttpError(400, { error: 'Reconnect eBay in Settings so the dashboard knows your eBay user name.' })
+    const { ebayGet } = require('../../sections/helpers')
+    const { ebaySend } = require('../../client')
+    await marketplaceManager.withShopToken(shop, async (token) => {
+      const found = await ebayGet(token, `/commerce/feedback/v1/feedback?user_id=${encodeURIComponent(shop.accountUsername)}&feedback_type=FEEDBACK_RECEIVED&feedback_id=${encodeURIComponent(feedbackId)}`)
+      const recipient = found.feedbackEntries?.find((f) => f.feedbackId === feedbackId)?.providerUserDetail?.userId
+      if (!recipient) throw new HttpError(404, { error: 'eBay has no such feedback for this shop.' })
+      await ebaySend(token, 'POST', '/commerce/feedback/v1/respond_to_feedback', { feedbackId, recipientUserId: recipient, responseText: text, responseType: 'REPLY' })
+    })
+    await cache.del(`shop:${shop._id}:section:buyers`)
+    return { message: 'Reply posted on eBay.' }
+}
+
 /** POST /sections/cancellations/decide */
 async function decideCancellation(ctx) {
     const marketplace = 'ebay'
@@ -327,4 +354,4 @@ async function finances(ctx) {
     return finances || {}
 }
 
-module.exports = { connectedShop, section, caseAction, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}
+module.exports = { connectedShop, section, caseAction, replyToFeedback, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}

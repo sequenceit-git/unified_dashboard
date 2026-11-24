@@ -29,25 +29,7 @@
     "priority": "high",
     "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
   },
-  "GET /commerce/feedback/v1/feedback": {
-    "section": "buyers",
-    "size": "medium",
-    "priority": "high",
-    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
-  },
   "POST /commerce/feedback/v1/feedback": {
-    "section": "buyers",
-    "size": "medium",
-    "priority": "high",
-    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
-  },
-  "GET /commerce/feedback/v1/feedback_rating_summary": {
-    "section": "buyers",
-    "size": "medium",
-    "priority": "high",
-    "value": "Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers."
-  },
-  "POST /commerce/feedback/v1/respond_to_feedback": {
     "section": "buyers",
     "size": "medium",
     "priority": "high",
