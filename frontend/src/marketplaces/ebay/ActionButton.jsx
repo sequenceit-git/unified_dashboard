@@ -1,11 +1,15 @@
 /**
- * A row action of an eBay section table: `{ id, label, confirm?, input? }` from the section
- * loader. Posts `/api/ebay/sections/<sectionId>/<id>` with `{ id: row.id, value }`. Confirm and
- * input steps use the dashboard Modal (no browser dialogs); a running action can't be sent twice.
+ * An action of an eBay section table: `{ id, label, confirm?, detail?, input? }` from the section
+ * loader. Posts `/api/ebay/sections/<sectionId>/<id>` with `{ id: row.id, value }`; `detail: true`
+ * opens a read-only view instead. Inputs are `input.fields` ([{ name, label, type?, options?,
+ * multiple?, optional?, accept? }]) or one `input` value. Confirm and input steps use the dashboard
+ * Modal (no browser dialogs); a running action can't be sent twice, and a failed one keeps its
+ * dialog open with what was typed and the error.
  */
 import { useState } from 'react'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
+import { dialogAfter, fileValue, isFilled, toggleOption } from './actionFields'
 
 /** Which actions are running, so a double click sends one request. */
 export function actionState() {
@@ -18,67 +22,100 @@ export function actionState() {
 }
 
 const running = actionState()
+const box = 'w-full rounded-md border px-2 py-1.5 dark:bg-gray-900'
 
-export default function ActionButton({ action, row, run }) {
+function Field({ field, id, value, onChange }) {
+  if (field.multiple) {
+    const chosen = Array.isArray(value) ? value : []
+    const all = field.options.map((o) => o.value)
+    return (
+      <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border p-2">
+        <label className="flex items-center gap-2 text-xs font-medium">
+          <input type="checkbox" checked={chosen.length === all.length && all.length > 0} onChange={(e) => onChange(e.target.checked ? all : [])} />
+          Select all ({all.length})
+        </label>
+        {field.options.map((o) => (
+          <label key={o.value} className="flex items-center gap-2">
+            <input type="checkbox" checked={chosen.includes(o.value)} onChange={() => onChange(toggleOption(chosen, o.value))} />
+            <span>{o.label}</span>
+          </label>
+        ))}
+      </div>
+    )
+  }
+  if (field.options) {
+    return (
+      <select id={id} className={box} value={value || ''} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Choose…</option>
+        {field.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    )
+  }
+  if (field.type === 'file') {
+    return (
+      <>
+        <input id={id} className="block w-full text-sm" type="file" accept={field.accept} onChange={async (e) => { const file = e.target.files?.[0]; onChange(file ? await fileValue(file) : undefined) }} />
+        {value?.name && <span className="mt-1 block text-xs text-gray-500">{value.name} ({Math.ceil(value.size / 1024)} KB)</span>}
+      </>
+    )
+  }
+  if (field.type === 'textarea') {
+    return <textarea id={id} className={box} rows={4} maxLength={field.maxLength} value={value || ''} onChange={(e) => onChange(e.target.value)} />
+  }
+  return <input id={id} className={box} type={field.type || 'text'} maxLength={field.maxLength} step={field.type === 'number' ? '0.01' : undefined} value={value || ''} onChange={(e) => onChange(e.target.value)} />
+}
+
+export default function ActionButton({ action, row, run, onDetail }) {
   const key = `${row.id}:${action.id}`
+  const input = action.input
+  const fields = input?.fields || (input ? [{ ...input, name: 'value' }] : [])
   const [open, setOpen] = useState(false)
-  const fields = action.input?.fields
-  const [value, setValue] = useState(fields ? {} : '')
+  const [value, setValue] = useState({})
   const [busy, setBusy] = useState(false)
-  const needsStep = Boolean(action.confirm || action.input)
+  const [failure, setFailure] = useState('')
+  const needsStep = Boolean(action.confirm || input)
 
   const send = async () => {
     if (!running.start(key)) return
     setBusy(true)
+    setFailure('')
     try {
-      await run(action, row, action.input ? value : undefined)
-      setOpen(false)
-      setValue(fields ? {} : '')
+      if (action.detail) {
+        await onDetail?.(action, row)
+        return
+      }
+      const sent = input ? (input.fields ? value : value.value) : undefined
+      const next = dialogAfter(await run(action, row, sent))
+      setFailure(next.error)
+      setOpen(next.open)
+      if (!next.open) setValue({})
     } finally {
       running.done(key)
       setBusy(false)
     }
   }
+  const close = () => { if (!busy) { setOpen(false); setFailure('') } }
+  const valid = fields.every((f) => isFilled(f, value[f.name]))
 
-  const input = action.input
-  const valid = !input || (fields ? fields.every((f) => String(value[f.name] || '').trim() !== '') : String(value).trim() !== '')
   return (
     <>
-      <Button size="sm" variant={action.danger ? 'secondary' : undefined} disabled={busy} onClick={() => (needsStep ? setOpen(true) : send())}>
-        {busy ? '…' : action.label}
+      <Button size="sm" variant={action.danger || action.detail ? 'secondary' : undefined} disabled={busy} onClick={() => (needsStep && !action.detail ? setOpen(true) : send())}>
+        {busy && !open ? '…' : action.label}
       </Button>
       {open && (
-        <Modal title={action.label} onClose={() => !busy && setOpen(false)}>
+        <Modal title={action.label} onClose={close}>
           <div className="space-y-3">
             {action.confirm && <p className="text-sm">{typeof action.confirm === 'string' ? action.confirm : `${action.label}?`}</p>}
-            {fields && fields.map((f) => (
+            {fields.map((f) => (
               <label key={f.name} className="block text-sm">
-                <span className="mb-1 block font-medium">{f.label}</span>
-                {f.options ? (
-                  <select id={`action-${key}-${f.name}`} className="w-full rounded-md border px-2 py-1.5" value={value[f.name] || ''} onChange={(e) => setValue({ ...value, [f.name]: e.target.value })}>
-                    <option value="">Choose…</option>
-                    {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                ) : (
-                  <input id={`action-${key}-${f.name}`} className="w-full rounded-md border px-2 py-1.5" type={f.type || 'text'} value={value[f.name] || ''} onChange={(e) => setValue({ ...value, [f.name]: e.target.value })} />
-                )}
+                <span className="mb-1 block font-medium">{f.label}{f.optional ? <span className="font-normal text-gray-500"> (optional)</span> : null}</span>
+                <Field field={f} id={`action-${key}-${f.name}`} value={value[f.name]} onChange={(v) => setValue((old) => ({ ...old, [f.name]: v }))} />
+                {f.hint && <span className="mt-1 block text-xs text-gray-500">{f.hint}</span>}
               </label>
             ))}
-            {input && !fields && (
-              <label className="block text-sm">
-                <span className="mb-1 block font-medium">{input.label}</span>
-                {input.options ? (
-                  <select id={`action-${key}`} className="w-full rounded-md border px-2 py-1.5" value={value} onChange={(e) => setValue(e.target.value)}>
-                    <option value="">Choose…</option>
-                    {input.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                ) : (
-                  <input id={`action-${key}`} className="w-full rounded-md border px-2 py-1.5" type={input.type || 'text'} maxLength={input.maxLength} step={input.type === 'number' ? '0.01' : undefined} value={value} onChange={(e) => setValue(e.target.value)} />
-                )}
-              </label>
-            )}
+            {failure && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{failure}</p>}
             <div className="flex justify-end gap-2">
-              <Button size="sm" variant="secondary" disabled={busy} onClick={() => setOpen(false)}>Cancel</Button>
+              <Button size="sm" variant="secondary" disabled={busy} onClick={close}>Cancel</Button>
               <Button size="sm" disabled={busy || !valid} onClick={send}>{busy ? 'Working…' : action.label}</Button>
             </div>
           </div>

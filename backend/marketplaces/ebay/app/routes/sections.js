@@ -172,6 +172,26 @@ function sectionsRoutes(shopKey) {
       res.status(400).json({ error: err.message })
     }
   })
+  // GET /api/<shop>/sections/:sectionId/:actionId?id= — a section file's own drill-down (after every named route).
+  router.get('/:sectionId/:actionId', async (req, res) => {
+    try {
+      res.json(await service.sectionDetail(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  // POST /api/<shop>/sections/:sectionId/:actionId {id, value} — a section file's own action.
+  router.post('/:sectionId/:actionId', async (req, res) => {
+    try {
+      res.json(await service.sectionAction(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(err.status && err.status < 500 ? err.status : 400).json({ error: err.message })
+    }
+  })
+
   return router
 }
 

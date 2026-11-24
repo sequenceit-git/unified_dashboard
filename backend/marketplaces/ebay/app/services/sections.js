@@ -49,6 +49,42 @@ async function section(ctx) {
     return { id: section.id, label: section.label, shopName: shop.name, ...data }
 }
 
+/** A section file's own detail/action by name: never a name inherited from Object.prototype. */
+function own(map, name) {
+    return map && Object.hasOwn(map, name) && typeof map[name] === 'function' ? map[name] : null
+}
+
+/** The section (access checked) and its file's own detail or action; 404/403 before any eBay call. */
+async function sectionPart(ctx, kind) {
+    const marketplace = 'ebay'
+    const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === ctx.params.sectionId)
+    const file = section && require('../../sections')[section.id]
+    const run = own(file?.[kind], ctx.params.actionId)
+    if (!run) throw new HttpError(404, { error: 'No such action' })
+    if (!canUseSection(ctx.authUser || ctx.user, marketplace, section.id, section.route)) {
+      throw new HttpError(403, { error: `You do not have access to ${section.label} on this shop` })
+    }
+    const id = String((kind === 'details' ? ctx.query?.id : ctx.body?.id) ?? '').trim()
+    return { section, run, id, shop: await connectedShop(ctx, marketplace) }
+}
+
+/** GET /sections/:sectionId/:actionId?id= — a read-only drill-down the section file exports. */
+async function sectionDetail(ctx) {
+    const { run, id, shop } = await sectionPart(ctx, 'details')
+    if (!id) throw new HttpError(400, { error: 'id is required' })
+    return marketplaceManager.withShopToken(shop, (token) => run(token, shop, id))
+}
+
+/** POST /sections/:sectionId/:actionId {id, value} — a row/table action the section file exports. */
+async function sectionAction(ctx) {
+    const { section, run, id, shop } = await sectionPart(ctx, 'actions')
+    try {
+      return await marketplaceManager.withShopToken(shop, (token) => run(token, shop, id, ctx.body?.value))
+    } finally {
+      await cache.del(`shop:${shop._id}:section:${section.id}`)
+    }
+}
+
 /** POST /sections/offers/send */
 async function sendOffer(ctx) {
     const marketplace = 'ebay'
@@ -379,4 +415,4 @@ async function finances(ctx) {
     return finances || {}
 }
 
-module.exports = { connectedShop, section, caseAction, replyToFeedback, offerAction, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}
+module.exports = { connectedShop, section, sectionDetail, sectionAction, caseAction, replyToFeedback, offerAction, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}

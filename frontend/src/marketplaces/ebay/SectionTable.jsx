@@ -10,7 +10,7 @@ import Button from '../../components/ui/Button'
 import ActionButton from './ActionButton'
 import { PAGE_SIZE, formatCell } from './sectionFormat'
 
-export default function SectionTable({ table, tableActions, onAction, runAction, canAct = true, marketplace = 'ebay' }) {
+export default function SectionTable({ table, tableActions, onAction, runAction, onDetail, canAct = true, marketplace = 'ebay' }) {
   const [page, setPage] = useState(1)
   const pages = Math.max(1, Math.ceil(table.rows.length / PAGE_SIZE))
   const rows = table.rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((row, index) => ({ ...row, _key: `${page}-${index}` }))
@@ -26,7 +26,7 @@ export default function SectionTable({ table, tableActions, onAction, runAction,
       render: (row) => (
         <div className="flex flex-wrap items-center gap-1.5">
           {legacy && legacy(row, { onAction, marketplace })}
-          {(row.actions || []).map((action) => <ActionButton key={action.id} action={action} row={row} run={runAction} />)}
+          {(row.actions || []).map((action) => <ActionButton key={action.id} action={action} row={row} run={runAction} onDetail={onDetail} />)}
         </div>
       ),
     }]
@@ -36,7 +36,10 @@ export default function SectionTable({ table, tableActions, onAction, runAction,
     <Card>
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="text-base font-semibold">{table.title}</h2>
-        <span className="text-xs text-gray-500">{table.rows.length} total</span>
+        <div className="flex items-center gap-2">
+          {canAct && runAction && (table.actions || []).map((action) => <ActionButton key={action.id} action={action} row={{ id: table.id }} run={runAction} onDetail={onDetail} />)}
+          <span className="text-xs text-gray-500">{table.rows.length} total</span>
+        </div>
       </div>
       {table.note && <p className="mb-3 text-xs text-gray-500">{table.note}</p>}
       {table.error ? <ErrorState message={table.error} /> : <DataTable rowKey="_key" rows={rows} columns={columns} />}

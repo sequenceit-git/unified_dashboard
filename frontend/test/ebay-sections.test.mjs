@@ -42,3 +42,45 @@ test('tiles whose tab has no table show on the first tab', async () => {
   const tabs = sectionTabs({ summary: [{ label: 'Available', tab: 'Funds' }, { label: 'Paid out', tab: 'Payouts' }], tables: [{ id: 'p', tab: 'Payouts' }, { id: 'e', tab: 'Order earnings' }] })
   assert.deepEqual(tabs.map((t) => t.summary.map((s) => s.label)), [['Available', 'Paid out'], []])
 })
+
+test('a multiple field returns the chosen values as an array', async () => {
+  const { toggleOption, isFilled } = await load('/src/marketplaces/ebay/actionFields.js')
+  let v = toggleOption(undefined, '11')
+  v = toggleOption(v, '22')
+  assert.deepEqual(v, ['11', '22'])
+  assert.deepEqual(toggleOption(v, '11'), ['22'])
+  assert.equal(isFilled({ name: 'ids', multiple: true, options: [] }, []), false)
+  assert.equal(isFilled({ name: 'ids', multiple: true, options: [] }, ['1']), true)
+  assert.equal(isFilled({ name: 'note', optional: true }, ''), true)
+})
+
+test('a file field gives name, type, size and a data URL', async () => {
+  const { fileValue, isFilled } = await load('/src/marketplaces/ebay/actionFields.js')
+  class Reader { readAsDataURL(f) { this.result = `data:${f.type};base64,QUJD`; this.onload() } }
+  const value = await fileValue({ name: 'proof.png', type: 'image/png', size: 3 }, Reader)
+  assert.deepEqual(value, { name: 'proof.png', type: 'image/png', size: 3, dataUrl: 'data:image/png;base64,QUJD' })
+  assert.equal(isFilled({ name: 'file', type: 'file' }, value), true)
+  assert.equal(isFilled({ name: 'file', type: 'file' }, undefined), false)
+})
+
+test('a failed action keeps the dialog open with its values', async () => {
+  const { dialogAfter } = await load('/src/marketplaces/ebay/actionFields.js')
+  assert.deepEqual(dialogAfter({ error: 'eBay said no' }), { open: true, error: 'eBay said no' })
+  assert.deepEqual(dialogAfter({ message: 'Done' }), { open: false, error: '' })
+})
+
+test('no file under marketplaces/ebay imports from temu or tiktok_shop', async () => {
+  const { readdirSync, readFileSync, statSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const root = new URL('../src/marketplaces/ebay', import.meta.url).pathname
+  const bad = []
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name)
+      if (statSync(p).isDirectory()) walk(p)
+      else if (/\.(jsx?|mjs)$/.test(name) && /from\s+['"][^'"]*(temu|tiktok_shop)[/'"]/.test(readFileSync(p, 'utf8'))) bad.push(p)
+    }
+  }
+  walk(root)
+  assert.deepEqual(bad, [])
+})

@@ -15,6 +15,7 @@ import { api, queryString } from '../../lib/api'
 import { StatCard } from '../../components/ui/Card'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import Button from '../../components/ui/Button'
+import Modal from '../../components/ui/Modal'
 import Tabs from '../../components/ui/Tabs'
 import SectionTable from './SectionTable'
 import ReconnectNotice from './ReconnectNotice'
@@ -31,6 +32,7 @@ export default function SectionView({ sectionId, title, extraTabs = [], tableAct
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('')
+  const [detail, setDetail] = useState(null)
 
   const isAllowed =
     isAdmin ||
@@ -54,6 +56,7 @@ export default function SectionView({ sectionId, title, extraTabs = [], tableAct
   const reload = () => load({ refresh: true })
   const ctx = { token, reload, setError, setLoading, setNotice, isAllowed: isAdmin || isAllowed }
 
+  /** Posts a loader action; `{ error }` keeps its dialog open (with what was typed). */
   const runAction = async (action, row, value) => {
     setError('')
     setNotice('')
@@ -61,10 +64,31 @@ export default function SectionView({ sectionId, title, extraTabs = [], tableAct
       const result = await api.post(`/api/ebay/sections/${sectionId}/${action.id}`, { id: row.id, ...(value !== undefined ? { value } : {}) }, token)
       setNotice(result?.message || `${action.label}: done.`)
       await reload()
+      return result || {}
+    } catch (err) {
+      return { error: err.message }
+    }
+  }
+  /** Opens a read-only drill-down (`{ title, summary, tables }`). */
+  const onDetail = async (action, row) => {
+    setError('')
+    try {
+      setDetail(await api.get(`/api/ebay/sections/${sectionId}/${action.id}${queryString({ id: row.id })}`, token))
     } catch (err) {
       setError(err.message)
     }
   }
+  const tiles = (items) => items?.length > 0 && (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {items.map((item) => (
+        <StatCard
+          key={item.label}
+          label={item.label}
+          value={item.type === 'money' ? formatMoney(item.value) : item.type === 'percent' ? `${Number(item.value || 0).toFixed(1)}%` : item.type === 'text' ? String(item.value ?? '—') : Number(item.value || 0).toLocaleString()}
+        />
+      ))}
+    </div>
+  )
 
   useEffect(() => {
     setData(null)
@@ -107,17 +131,7 @@ export default function SectionView({ sectionId, title, extraTabs = [], tableAct
       {!current?.extra && !data && loading && <Spinner />}
       {!current?.extra && current && (
         <>
-          {current.summary.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {current.summary.map((item) => (
-                <StatCard
-                  key={item.label}
-                  label={item.label}
-                  value={item.type === 'money' ? formatMoney(item.value) : item.type === 'percent' ? `${Number(item.value || 0).toFixed(1)}%` : item.type === 'text' ? String(item.value ?? '—') : Number(item.value || 0).toLocaleString()}
-                />
-              ))}
-            </div>
-          )}
+          {tiles(current.summary)}
           {current.tables.map((table) => (
             <SectionTable
               key={table.id}
@@ -125,11 +139,20 @@ export default function SectionView({ sectionId, title, extraTabs = [], tableAct
               tableActions={tableActions}
               onAction={(type, row) => onAction?.(type, row, ctx)}
               runAction={runAction}
+              onDetail={onDetail}
               canAct={ctx.isAllowed}
               marketplace={shopSection.marketplace}
             />
           ))}
         </>
+      )}
+      {detail && (
+        <Modal title={detail.title || 'Details'} wide onClose={() => setDetail(null)}>
+          <div className="space-y-4">
+            {tiles(detail.summary)}
+            {(detail.tables || []).map((table) => <SectionTable key={table.id} table={table} canAct={false} />)}
+          </div>
+        </Modal>
       )}
       {children?.(ctx)}
     </div>
