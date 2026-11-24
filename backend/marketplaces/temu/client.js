@@ -75,8 +75,14 @@ class TemuClient {
     })
     const body = await response.json().catch(() => ({}))
     if (!response.ok || body.success === false) {
-      const err = new Error(body.errorMsg || body.error_msg || `Temu ${type} failed`)
+      const raw = body.errorMsg || body.error_msg || `Temu ${type} failed`
+      // Temu only answers calls from server IPs listed for the app: say where to add it.
+      const ipBlocked = /NOT_IN_IP_WHITE_LIST/i.test(raw)
+      const err = new Error(ipBlocked
+        ? "Temu blocked this server's IP (NOT_IN_IP_WHITE_LIST). Add the server's public IP to your app's IP whitelist in the Temu Partner Platform."
+        : raw)
       err.code = body.errorCode ?? body.error_code
+      if (ipBlocked) err.ipBlocked = true
       throw err
     }
     return body.result || body
