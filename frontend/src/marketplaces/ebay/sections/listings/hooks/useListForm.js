@@ -1,22 +1,19 @@
 /** List dialog state: shop and category lookups, attributes, variants, validation and publishing (moved from ListModal). */
 import { useEffect, useRef, useState } from 'react'
 import { applyAiFill, missingForAi } from '../listing/aiFill'
+import { listProblems } from '../listing/listSteps'
 import { useAuth } from '../../../../../auth/AuthContext'
 import { api } from '../../../../../lib/api'
 import { useApi } from '../../../../../hooks/useApi'
-import { marketplaceLabel } from '../../../..'
 import { matchAspects } from '../components/AttributeField'
 import { hasAspectValue, isAttributeRequired } from '../listing/attributes'
 import {
   isNewCondition,
   normalizeEbayCategoryRules,
   resolveEbayCondition,
-  validateBestOffer,
-  validateEbayIdentifierCode,
-  validateVariantsForEbay,
 } from '../listing/rules'
 import { CONDITIONS } from '../listingConditions'
-import { cleanShippingPayer, shippingPayerFrom, validateShippingPayer } from '../listing/shippingPayer'
+import { cleanShippingPayer, shippingPayerFrom } from '../listing/shippingPayer'
 
 function useDebounced(value, ms) {
   const [debounced, setDebounced] = useState(value)
@@ -27,7 +24,7 @@ function useDebounced(value, ms) {
   return debounced
 }
 
-export function useListForm({ product, marketplace: sectionMarketplace, prefill = null, onSaved }) {
+export function useListForm({ product, marketplace: sectionMarketplace, prefill = null, onSaved, onBlocked }) {
   const { token } = useAuth()
   const shopsRes = useApi('/api/shops')
   const [chosenShopId, setChosenShopId] = useState('')
@@ -89,6 +86,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   aspectsNow.current = aspects
 
   const [error, setError] = useState('')
+  const [problems, setProblems] = useState([])
   const [busy, setBusy] = useState(false)
 
   const titleMax = caps.titleMax || 255
@@ -188,39 +186,34 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!selectedShop) return setError('Choose a shop to list on.')
-    if (!caps.canList) return setError(caps.note || 'Listing on this shop is not available.')
-    if (!title.trim()) return setError('Title is required.')
-    if (title.length > titleMax) return setError(`${marketplaceLabel(marketplace)} titles can be at most ${titleMax} characters.`)
-    if (subtitle.length > subtitleMax) return setError(`eBay subtitles can be at most ${subtitleMax} characters.`)
-
-    if (activeVariants.length > 0) {
-      const varErr = validateVariantsForEbay(activeVariants, { requireStock: true })
-      if (varErr) return setError(varErr)
-    } else {
-      const numPrice = Number(price)
-      if (!(numPrice > 0)) {
-        return setError('Set a price above 0.')
-      }
-      if (!(Number(stock) >= 1)) {
-        return setError('Stock must be at least 1 to list a product.')
-      }
-      if (ebayRules.upcEnabled === 'Required' && !String(identifierCode?.code || '').trim()) {
-          return setError('This eBay category requires a product identifier (or click "Does not apply").')
-        }
-        const idErr = validateEbayIdentifierCode(identifierCode)
-        if (idErr) return setError(idErr)
+    const found = listProblems({
+      hasShop: Boolean(selectedShop),
+      canList: caps.canList,
+      canListNote: caps.note,
+      title,
+      titleMax,
+      subtitle,
+      subtitleMax,
+      variants: activeVariants,
+      price,
+      stock,
+      upcRequired: ebayRules.upcEnabled === 'Required',
+      identifierCode,
+      bestOfferAllowed: ebayRules.bestOfferEnabled !== false,
+      bestOffer,
+      summaryPrice,
+      ebayShipping,
+      needsCategory: Boolean(caps.categorySearch),
+      categoryId,
+      missingRequired: missingRequired.map((a) => a.name),
+      images: images.length,
+    })
+    setProblems(found)
+    if (found.length) {
+      setError('')
+      onBlocked?.(found[0].step)
+      return
     }
-
-    if (ebayRules.bestOfferEnabled !== false) {
-      const boErr = validateBestOffer(bestOffer, activeVariants.length > 0 ? summaryPrice : Number(price))
-      if (boErr) return setError(boErr)
-    }
-
-    const shipErr = validateShippingPayer(ebayShipping)
-    if (shipErr) return setError(shipErr)
-
-    if (missingRequired.length) return setError(`Fill in: ${missingRequired.map((a) => a.name).join(', ')}.`)
 
     setBusy(true)
     setError('')
@@ -392,6 +385,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
 
   return {
     aiFill,
+    problems,
     token,
     shopsRes,
     chosenShopId,
