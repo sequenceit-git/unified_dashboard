@@ -1,6 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const { stubModules, freshRequire } = require('../../../test/helpers/stub')
+const { stubModules, freshRequire, modelStub } = require('../../../test/helpers/stub')
 
 const ACTIVITY = (id, joined) => ({ activityId: id, activityName: `Deal ${id}`, activityType: 1, activityStatus: 2, isJoinedActivity: joined, activityStartTime: 1764000000, activityEndTime: 1766000000 })
 const CANDIDATES = { goodsList: [
@@ -12,6 +12,8 @@ const CANDIDATES = { goodsList: [
 function load(calls, { failFor = [] } = {}) {
   let draft = 0
   return stubModules({
+    '/models/Listing': modelStub(() => [{ externalListingId: '77:1', productId: 'p1' }]),
+    '/models/Product': modelStub(() => [{ _id: 'p1', title: 'Phone case' }]),
     '../service': {
       call: async (type, body) => {
         calls.push([type, body])
@@ -180,5 +182,30 @@ test('only open (not joined) activities use the candidate lookups, and checked r
     assert.deepEqual(looked, [600], 'a joined activity does not use up a lookup')
     assert.equal(rows.find((r) => r.id === '600').checked, true)
     assert.equal(rows.find((r) => r.id === '500').checked, undefined)
+  } finally { restore() }
+})
+
+test('enrol candidates: allowed goods with Temu\'s recommended quantity and SKU prices', async () => {
+  const restore = load([])
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const res = await promotions.details.candidates('tok', { _id: 's1' }, '600')
+    assert.deepEqual(res.goods.map((g) => [g.goodsId, g.quantity, g.skus.map((s) => [s.skuId, s.price])]), [['77', 30, [['1', 850], ['2', 900]]], ['88', 10, [['5', 400]]]])
+  } finally { restore() }
+})
+
+test('enrol with your own price per SKU and quantity; never above Temu\'s recommendation', async () => {
+  const calls = []
+  const restore = load(calls)
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    await promotions.actions.enrol('tok', {}, '600', [{ goodsId: '77', quantity: 12, skus: [{ skuId: '1', price: 800 }, { skuId: '2', price: 900 }] }])
+    const body = calls.find(([t]) => t === 'bg.promotion.activity.goods.enroll')[1].enrollGoods
+    assert.equal(body.activityQuantity, 12)
+    assert.deepEqual(body.enrollSkuList, [{ skuId: 1, activitySupplierPrice: 800 }, { skuId: 2, activitySupplierPrice: 900 }])
+    const res = await promotions.actions.enrol('tok', {}, '600', [{ goodsId: '77', quantity: 5, skus: [{ skuId: '1', price: 851 }] }, { goodsId: '88', quantity: 0 }])
+    assert.deepEqual(res.refused.map((r) => r.goodsId), ['77', '88'])
+    assert.match(res.refused[0].reason, /above Temu's recommended/)
+    assert.match(res.refused[1].reason, /quantity/i)
   } finally { restore() }
 })

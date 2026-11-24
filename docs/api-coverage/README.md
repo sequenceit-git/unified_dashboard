@@ -1648,7 +1648,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Compliance | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | External key customers have their own development capabilities and can call APIs to submit qualifications | `marketplaces/temu/app/services/compliance.js` |
 | covered | Compliance | `bg.arbok.open.product.cert.query` | query product cert | Some large stores with R&D capabilities, after using the Kaiping interface to upload qualifications in batches, need to query the reasons for the rejection of product qualifications in batches | `marketplaces/temu/app/services/compliance.js` |
 | covered | Compliance | `bg.arbok.open.upload.uploadFile` | bg.arbok.open.upload.uploadFile | Large external customers have their own development capabilities and can call APIs to upload files | `marketplaces/temu/app/services/compliance.js`, `marketplaces/temu/sections/after-sales.js` |
-| covered | Compliance | `bg.local.compliance.goods.list.query` | Product compliance list query | Product management attribute list query | `marketplaces/temu/app/services/compliance.js` |
+| covered | Compliance | `bg.local.compliance.goods.list.query` | Product compliance list query | Product management attribute list query | `marketplaces/temu/app/services/compliance.js`, `marketplaces/temu/app/services/goodsSignals.js` |
 | missing | Compliance | `bg.compliance.edit` | edit_compliance | edit compliance info |  |
 | missing | Compliance | `bg.compliance.metadata.get` | query_compliance_metadata | query compliance metadata |  |
 | missing | Flash (real images) | `bg.flash.open.upload.real.image` | Kaiping real shot picture upload | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
@@ -1679,7 +1679,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `bg.local.goods.out.sn.check` | Check if contribution ID for goods is repeated | Check if contribution ID for goods is repeated | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.partial.update` | Partial Edit Product | Edit a subset of the product properties (e.g. description, brand, images, attributes). | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.priceorder.change.sku.price` | Batch change SKU base price | Support merchants within the white list to modify sku base prices in batches. | `marketplaces/temu/listings.js` |
-| covered | Product | `bg.local.goods.priceorder.query` | Query price offer Info | Support merchants within the white list to query the price offer list. | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
+| covered | Product | `bg.local.goods.priceorder.query` | Query price offer Info | Support merchants within the white list to query the price offer list. | `marketplaces/temu/app/services/goodsSignals.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.publish.status.get` | Batch Query Product Publication Status | Batch Query Product Publication Status | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sale.status.set` | Modify The Listing Status Of Products | Support goods/SKU dimension for listing and delisting operations | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.size.element.get` | Query Size Chart Element Information | Check size chart/image upload limits and requirements for this category. | `marketplaces/temu/app/services/goodsHelpers.js` |
@@ -1696,7 +1696,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `temu.local.goods.brand.trademark.V2.get` | Query trademarks and properties | Query trademarks and properties | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.delete` | Product deletion | Product deletion | `marketplaces/temu/listings.js` |
 | covered | Product | `temu.local.goods.illegal.vocabulary.check` | check illeagl vocabulary | check illegal vocabulary | `marketplaces/temu/app/services/goodsHelpers.js` |
-| covered | Product | `temu.local.goods.list.retrieve` | Product list Retrieve | local goods list search | `marketplaces/temu/sections/analytics.js` |
+| covered | Product | `temu.local.goods.list.retrieve` | Product list Retrieve | local goods list search | `marketplaces/temu/app/services/goodsSignals.js`, `marketplaces/temu/sections/analytics.js` |
 | covered | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |

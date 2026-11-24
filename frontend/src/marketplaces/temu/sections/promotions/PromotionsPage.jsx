@@ -3,8 +3,7 @@
  * quantity), the ones you joined (their enrolled goods in a drawer), and ended ones.
  */
 import { useState } from 'react'
-import { useAuth } from '../../../../auth/AuthContext'
-import { api, queryString } from '../../../../lib/api'
+import { queryString } from '../../../../lib/api'
 import { useApi } from '../../../../hooks/useApi'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import ShopSectionGate from '../../../../components/ShopSectionGate'
@@ -15,9 +14,9 @@ import { EmptyState, ErrorState, Spinner } from '../../../../components/ui/Feedb
 import PageHeader from '../../ui/PageHeader'
 import StatusPills from '../../ui/StatusPills'
 import Drawer from '../../ui/Drawer'
-import ActionButton from '../../ActionButton'
 import SectionTable from '../../SectionTable'
 import { endsText, splitActivities } from './promotionsView'
+import EnrolPanel from './EnrolPanel'
 
 const BASE = '/api/temu/sections/promotions'
 const date = (v) => (v ? new Date(v).toLocaleDateString() : '—')
@@ -39,10 +38,10 @@ function Enrolled({ activity, onClose }) {
 
 function Promotions() {
   const section = useShopSection()
-  const { token } = useAuth()
   const [pill, setPill] = useState('open')
   const [fresh, setFresh] = useState(0)
   const [viewing, setViewing] = useState(null)
+  const [enrolling, setEnrolling] = useState(null)
   const [notice, setNotice] = useState({ text: '', error: false })
   const [now, setNow] = useState(() => new Date())
   const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
@@ -50,15 +49,10 @@ function Promotions() {
 
   const split = splitActivities(data, now)
   const reload = () => { setNow(new Date()); setFresh((n) => n + 1) }
-  const onRun = async (action, id, value) => {
-    try {
-      const res = await api.post(`${BASE}/${action.id}`, { id, ...(value !== undefined ? { value } : {}) }, token)
-      setNotice({ text: res?.message || `${action.label}: done.`, error: (res?.refused || []).length > 0 })
-      reload()
-      return { ok: true }
-    } catch (err) {
-      return { error: err.message }
-    }
+  const enrolled = (res) => {
+    setEnrolling(null)
+    setNotice({ text: res?.message || 'Submitted to Temu.', error: (res?.refused || []).length > 0 })
+    reload()
   }
   const tableErrors = (data?.tables || []).filter((t) => t.error)
   // Open and ended come from Temu's full list; joined from either list.
@@ -108,13 +102,14 @@ function Promotions() {
               </p>
               <div className="mt-auto flex flex-wrap gap-2">
                 {a.isJoined && <Button size="sm" variant="secondary" onClick={() => setViewing(a)}>Enrolled goods</Button>}
-                {enrol && pill !== 'ended' && <ActionButton action={enrol} rowId={a.id} onRun={onRun} onDetail={() => {}} />}
+                {enrol && pill !== 'ended' && <Button size="sm" onClick={() => setEnrolling(a)}>Enrol goods</Button>}
                 {!a.isJoined && !enrol && pill === 'open' && <span className="text-xs text-gray-500 dark:text-slate-400">{a.checked ? 'Temu allows none of your goods in it yet.' : 'Not checked yet: the dashboard looks up goods for the first 10 open promotions. Enrol in Temu Seller Center.'}</span>}
               </div>
             </article>
           )
         })}
       </div>
+      {enrolling && <EnrolPanel activity={enrolling} onClose={() => setEnrolling(null)} onDone={enrolled} />}
       {viewing && <Enrolled activity={viewing} onClose={() => setViewing(null)} />}
     </div>
   )

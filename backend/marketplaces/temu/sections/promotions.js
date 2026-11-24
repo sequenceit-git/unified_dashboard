@@ -7,6 +7,7 @@ const temu = require('../service')
 const { HttpError } = require('../../../utils/httpError')
 const { words, col, tables } = require('../../../services/marketplace/sectionKit')
 const { temuTime } = require('./helpers')
+const goodsTitles = require('./goodsTitles')
 
 // Temu documents no page-size limit for bg.promotion.activity.query; a size it refuses answers
 // 220010001 "parameter is illegal", so smaller sizes (then no paging at all) are tried in turn.
@@ -65,6 +66,27 @@ async function promotions(token) {
   }
 }
 
+/**
+ * The quantity and SKU prices to send for one goods: Temu's recommendation, or the seller's own
+ * (a positive whole quantity; each price a positive whole number, never above Temu's recommended
+ * activity price, so a unit mix-up can't raise a price).
+ */
+function enrolPlan(g, mine) {
+  const recommended = (g.skuList || []).map((s) => ({ skuId: s.skuId, activitySupplierPrice: s.recommendActivitySupplierPrice }))
+  if (!mine) return { quantity: g.recommendActivityQuantity, skus: recommended }
+  const quantity = Number(mine.quantity)
+  if (!Number.isInteger(quantity) || quantity < 1) return { error: 'the activity quantity must be a whole number of at least 1' }
+  const prices = new Map((mine.skus || []).map((s) => [String(s.skuId), Number(s.price)]))
+  const skus = []
+  for (const s of recommended) {
+    const price = prices.has(String(s.skuId)) ? prices.get(String(s.skuId)) : s.activitySupplierPrice
+    if (!Number.isInteger(price) || price < 1) return { error: `SKU ${s.skuId}: enter a price` }
+    if (s.activitySupplierPrice != null && price > s.activitySupplierPrice) return { error: `SKU ${s.skuId}: price above Temu's recommended activity price` }
+    skus.push({ skuId: s.skuId, activitySupplierPrice: price })
+  }
+  return { quantity, skus }
+}
+
 const CANDIDATE_LOOKUPS = 10 // activities whose candidate goods are looked up per load
 
 /** Goods Temu allows in an activity, with its recommended activity price and quantity per goods. */
@@ -118,6 +140,23 @@ async function promotionsWithActions(token, shop) {
 
 /** Read-only drill-downs. */
 promotionsWithActions.details = {
+  /**
+   * Goods Temu allows in an activity, with its recommended activity quantity and price per SKU
+   * (Temu's integer price unit, cents), for the Enrol goods steps.
+   */
+  candidates: async (token, shop, activityId) => {
+    const goods = (await candidates(token, activityId)).filter((g) => g.isAllowedEnroll)
+    const titles = await goodsTitles(shop, goods.map((g) => String(g.goodsId))).catch(() => new Map())
+    return {
+      title: goods.info?.activityName || `Activity ${activityId}`,
+      goods: goods.map((g) => ({
+        goodsId: String(g.goodsId),
+        title: titles.get(String(g.goodsId)) || '',
+        quantity: g.recommendActivityQuantity ?? null,
+        skus: (g.skuList || []).map((s) => ({ skuId: String(s.skuId), price: s.recommendActivitySupplierPrice ?? null })),
+      })),
+    }
+  },
   /** The goods the shop has in an activity, with the activity quantity left. */
   enrolled: async (token, shop, activityId) => {
     const goods = await allPages((pageNumber) => temu.call('bg.promotion.activity.goods.query', { access_token: token, activityId: Number(activityId), pageNumber, pageSize: 100 }))
@@ -140,7 +179,11 @@ promotionsWithActions.actions = {
    * not taken from the page), then asks Temu for each result.
    */
   enrol: async (token, shop, activityId, value) => {
-    const chosen = [...new Set((Array.isArray(value) ? value : [value]).map(String).filter(Boolean))]
+    // Each item: a goods id (Temu's recommended price and quantity), or
+    // { goodsId, quantity, skus: [{ skuId, price }] } with your own (price in Temu's unit, cents).
+    const items = (Array.isArray(value) ? value : [value]).filter(Boolean)
+    const own = new Map(items.filter((v) => typeof v === 'object').map((v) => [String(v.goodsId), v]))
+    const chosen = [...new Set(items.map((v) => String(typeof v === 'object' ? v.goodsId : v)).filter(Boolean))]
     if (!chosen.length) throw new HttpError(400, { error: 'Choose at least one goods to enrol.' })
     const byId = new Map((await candidates(token, activityId)).map((g) => [String(g.goodsId), g]))
     const refused = []
@@ -148,6 +191,8 @@ promotionsWithActions.actions = {
     for (const goodsId of chosen) {
       const g = byId.get(goodsId)
       if (!g?.isAllowedEnroll) { refused.push({ goodsId, reason: 'Temu does not allow this goods in the activity' }); continue }
+      const plan = enrolPlan(g, own.get(goodsId))
+      if (plan.error) { refused.push({ goodsId, reason: plan.error }); continue }
       // One goods refused by Temu (success:false) must not stop the others.
       let res
       try {
@@ -157,8 +202,8 @@ promotionsWithActions.actions = {
         enrollGoods: {
           traceCode: crypto.randomUUID(),
           goodsId: Number(goodsId),
-          activityQuantity: g.recommendActivityQuantity,
-          enrollSkuList: (g.skuList || []).map((s) => ({ skuId: s.skuId, activitySupplierPrice: s.recommendActivitySupplierPrice })),
+          activityQuantity: plan.quantity,
+          enrollSkuList: plan.skus,
         },
         })
       } catch (err) {
