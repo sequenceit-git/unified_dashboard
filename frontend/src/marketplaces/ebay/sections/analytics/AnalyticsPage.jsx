@@ -9,6 +9,7 @@ import { useApi } from '../../../../hooks/useApi'
 import MarketplaceChart from './MarketplaceChart'
 import RevenueChart from './RevenueChart'
 import TopProducts from './TopProducts'
+import ReconnectNotice from '../../ReconnectNotice'
 
 const RANGES = [
   { value: '30', label: 'Last 30 days' },
@@ -44,6 +45,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
+      <ReconnectNotice />
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <h1 className="text-xl sm:text-2xl font-bold">{section.label} analytics</h1>
         <div className="w-full sm:w-44">

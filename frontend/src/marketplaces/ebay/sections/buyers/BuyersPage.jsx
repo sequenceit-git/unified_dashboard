@@ -9,6 +9,7 @@ import DataTable from '../../../../components/ui/DataTable'
 import Pagination from '../../../../components/ui/Pagination'
 import SearchInput from '../../../../components/ui/SearchInput'
 import CustomerDrawer from './CustomerDrawer'
+import ReconnectNotice from '../../ReconnectNotice'
 
 export default function BuyersPage() {
   const { token } = useAuth()
@@ -52,6 +53,7 @@ export default function BuyersPage() {
 
   return (
     <div className="space-y-4">
+      <ReconnectNotice />
       <h1 className="text-xl sm:text-2xl font-bold">{section.label} customers</h1>
       <Card>
         <div className="mb-3">

@@ -18,7 +18,8 @@ module.exports = {
   },
   tokenEndpoint: '/identity/v1/oauth2/token',
   accessToken: process.env.EBAY_ACCESS_TOKEN || '',
-  scopes: [
+  /** Scopes every eBay shop has granted since it first connected. */
+  baseScopes: [
     'https://api.ebay.com/oauth/api_scope/sell.inventory',
     'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
     'https://api.ebay.com/oauth/api_scope/sell.account',
@@ -28,4 +29,17 @@ module.exports = {
     'https://api.ebay.com/oauth/api_scope/sell.marketing',
     'https://api.ebay.com/oauth/api_scope/commerce.message',
   ],
+  /**
+   * Scopes added later (analytics, order earnings, payment disputes, feedback). Shops connected
+   * before them must reconnect once. EBAY_EXTRA_SCOPES (space- or comma-separated) replaces this
+   * list; EBAY_EXTRA_SCOPES="" asks for none, e.g. if the eBay keyset refuses one, since a refused
+   * scope breaks the consent page for everyone.
+   */
+  extraScopes: (process.env.EBAY_EXTRA_SCOPES === undefined
+    ? ['sell.analytics.readonly', 'sell.finances.earnings.read', 'sell.payment.dispute', 'commerce.feedback']
+    : process.env.EBAY_EXTRA_SCOPES.split(/[\s,]+/).filter(Boolean)
+  ).map((s) => (s.startsWith('https://') ? s : `https://api.ebay.com/oauth/api_scope/${s}`)),
+  get scopes() {
+    return [...this.baseScopes, ...this.extraScopes]
+  },
 }

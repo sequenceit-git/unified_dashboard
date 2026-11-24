@@ -11,6 +11,7 @@ import Button from '../../../../components/ui/Button'
 
 import { formatMoney } from './sectionFormat'
 import SectionTable from './components/SectionTable'
+import ReconnectNotice from '../../ReconnectNotice'
 
 export default function ReturnsCasesPage() {
   const sectionId = 'returns-cases'
@@ -141,6 +142,7 @@ export default function ReturnsCasesPage() {
 
   return (
     <div className="space-y-4">
+      <ReconnectNotice />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold">{profile.label} {section.label.toLowerCase()}</h1>
         <div className="flex items-center gap-3">

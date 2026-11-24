@@ -70,7 +70,8 @@ class EbayClient {
       throw new Error(`eBay Token Error: ${err.error_description || response.statusText}`)
     }
 
-    return response.json()
+    // eBay's reply doesn't list scopes; the seller just consented to exactly these.
+    return { ...(await response.json()), grantedScopes: [...config.scopes] }
   }
 
   /**

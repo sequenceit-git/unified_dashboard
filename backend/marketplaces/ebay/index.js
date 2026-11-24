@@ -31,6 +31,24 @@ module.exports = {
     environment: config.environment || 'PRODUCTION',
     ruNameConfigured: Boolean(config.ruName),
   }),
+  /**
+   * Added scopes this shop hasn't granted yet, with the feature each turns on: a reconnect asks for
+   * them. A shop connected before scopes were recorded holds the base ones.
+   */
+  missingScopes(shop) {
+    const config = require('./config')
+    const held = new Set(shop?.grantedScopes?.length ? shop.grantedScopes : config.baseScopes)
+    const FEATURES = {
+      'sell.analytics.readonly': 'Listing traffic and seller level',
+      'sell.finances.earnings.read': 'Order earnings',
+      'sell.payment.dispute': 'Payment disputes',
+      'commerce.feedback': 'Feedback',
+    }
+    return config.extraScopes.filter((scope) => !held.has(scope)).map((scope) => {
+      const short = scope.replace('https://api.ebay.com/oauth/api_scope/', '')
+      return { scope: short, feature: FEATURES[short] || short }
+    })
+  },
   capabilities: {
     inbox: true,
     inboxNeedsAccountUsername: true,

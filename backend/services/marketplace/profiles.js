@@ -37,6 +37,7 @@ function describe(marketplace, shop) {
     connected: shop?.status === 'connected',
     accessCheckedAt: shop?.apiAccessCheckedAt || null,
     grantedScopes: shop?.grantedScopes || [],
+    missingScopes: shop ? registry.get(marketplace).missingScopes?.(shop) || [] : [],
     sections: profile.sections.map(({ probe, ...section }) => {
       const result = access[section.id]
       const available = !shop || shop.status !== 'connected' ? null : result ? result.ok : null
