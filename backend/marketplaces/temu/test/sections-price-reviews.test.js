@@ -12,6 +12,7 @@ function load(calls) {
         calls.push([type, body])
         if (type === 'bg.local.goods.sku.list.price.query') return { openapiGoodsSupplierPriceDTOList: body.querySupplierPriceBaseList.map((g) => ({ goodsId: g.goodsId, openapiSkuSupplierPriceDTOList: g.skuIdList.map((id) => ({ skuId: id, supplierPrice: USD({ 1: 12, 2: 10, 5: 8 }[id]) })) })) }
         if (type === 'temu.local.goods.recommendedprice.query') return { goodsList: [{ goodsId: 77, skuList: [{ skuId: 1, recommendedSupplyPrice: USD(10) }, { skuId: 2, recommendedSupplyPrice: USD(10) }] }, { goodsId: 88, skuList: [{ skuId: 5, recommendedSupplyPrice: USD(10) }] }] }
+        if (type === 'bg.local.goods.sku.list.query') return { skuList: [] } // nothing extra on Temu: listings only
         if (type === 'bg.local.goods.priceorder.query') return { list: [{ priceOrderId: 'PO1', goodsId: 77, status: 'PENDING' }] }
         if (type === 'bg.local.goods.list.query') return { goodsList: [] }
         throw new Error(`unexpected ${type}`)
@@ -53,5 +54,29 @@ test('a method not granted leaves the other tables loading', async () => {
     assert.match(tables[0].error, /temu\.local\.goods\.recommendedprice\.query/)
     assert.equal(tables[1].rows.length, 1)
     assert.ok(!calls.some(([t]) => t === 'temu.local.goods.recommendedprice.query'))
+  } finally { restore() }
+})
+
+test('SKUs on Temu but not in the dashboard are in the price guide', async () => {
+  const calls = []
+  const restore = stubModules({
+    '/models/Listing': modelStub(() => [{ externalListingId: '77:1', productId: 'p1' }]),
+    '/models/Product': modelStub(() => [{ _id: 'p1', title: 'Phone case' }]),
+    '../service': {
+      call: async (type, body) => {
+        calls.push([type, body])
+        if (type === 'bg.local.goods.sku.list.query') return { skuList: [{ goodsId: 77, skuId: 1 }, { goodsId: 77, skuId: 3 }] }
+        if (type === 'bg.local.goods.sku.list.price.query') return { openapiGoodsSupplierPriceDTOList: body.querySupplierPriceBaseList.map((g) => ({ goodsId: g.goodsId, openapiSkuSupplierPriceDTOList: g.skuIdList.map((id) => ({ skuId: id, supplierPrice: USD(10) })) })) }
+        if (type === 'temu.local.goods.recommendedprice.query') return { goodsList: [] }
+        if (type === 'bg.local.goods.priceorder.query') return { list: [] }
+        if (type === 'bg.local.goods.list.query') return { goodsList: [] }
+        throw new Error(`unexpected ${type}`)
+      },
+    },
+  })
+  try {
+    const prices = freshRequire('marketplaces/temu/sections/price-reviews.js')
+    const rows = (await prices('tok', { _id: 's1' })).tables[0].rows
+    assert.deepEqual(rows.map((r) => [r.skuId, r.product]).sort(), [['1', 'Phone case'], ['3', '']])
   } finally { restore() }
 })

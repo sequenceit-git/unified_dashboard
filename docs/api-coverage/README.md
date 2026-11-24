@@ -1790,7 +1790,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `bg.local.goods.publish.status.get` | Batch Query Product Publication Status | Batch Query Product Publication Status | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sale.status.set` | Modify The Listing Status Of Products | Support goods/SKU dimension for listing and delisting operations | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.sku.list.price.query` | Batch query latest supplier price of SKUs. | This is an API for batch querying the latest supply prices of SKUs for local-to-local goods. | `marketplaces/temu/sections/price-reviews.js` |
-| covered | Product | `bg.local.goods.sku.list.query` | Get sku list | Get sku list, as well as get Variants | `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.sku.list.query` | Get sku list | Get sku list, as well as get Variants | `marketplaces/temu/app/services/products.js`, `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Check if contribution ID for SKU is duplicate | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sku.out.sn.set` | Set contribution ID for SKU | Set contribution ID for SKU | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js` |

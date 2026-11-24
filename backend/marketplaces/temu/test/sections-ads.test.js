@@ -47,3 +47,22 @@ test('no ads means an empty report', async () => {
     assert.ok(!calls.some(([t]) => t === 'temu.searchrec.ad.reports.goods.query'))
   } finally { restore() }
 })
+
+test('one failing product leaves the others in the product report', async () => {
+  const restore = stubModules({
+    '../service': {
+      call: async (type, body) => {
+        if (type === 'temu.searchrec.ad.reports.mall.query') return { reportsItemList: [{ goodsId: 77, adSpend: { val: 10 } }, { goodsId: 88, adSpend: { val: 40 } }] }
+        if (body.goodsId === 88) throw new Error('rate limited')
+        return goodsReport(77, 10, 50)
+      },
+    },
+  })
+  try {
+    const ads = freshRequire('marketplaces/temu/sections/ads.js')
+    const report = (await ads('tok', {})).tables.find((t) => t.id === 'goodsReport')
+    assert.equal(report.error, undefined)
+    assert.deepEqual(report.rows.map((r) => r.goodsId), ['77'])
+    assert.match(report.note, /1 product could not be read/)
+  } finally { restore() }
+})

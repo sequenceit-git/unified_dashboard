@@ -15,8 +15,18 @@ async function priceGuide(token, shop) {
   const listings = (await Listing.find({ shopId: shop?._id, marketplace: 'temu', externalListingId: /^\d+:\d+$/ }).select('externalListingId productId').lean())
     .map((l) => { const [goodsId, skuId] = String(l.externalListingId).split(':'); return { goodsId, skuId, productId: String(l.productId) } })
   const titles = new Map((await Product.find({ _id: { $in: [...new Set(listings.map((l) => l.productId))] } }).select('title').lean()).map((p) => [String(p._id), p.title]))
+  const listingBySku = new Map(listings.map((l) => [l.skuId, l]))
+  // Every SKU Temu has for the shop (Seller Center additions too), not only the dashboard's listings.
+  const temuSkus = []
+  for (let pageNo = 1; pageNo <= 20; pageNo += 1) {
+    const res = await temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo, pageSize: 100, skuSearchType: 'ALL' })
+    temuSkus.push(...(res.skuList || []))
+    if (!(res.skuList || []).length || temuSkus.length >= (res.total ?? temuSkus.length)) break
+  }
+  const skus = (temuSkus.length ? temuSkus.map((s) => ({ goodsId: String(s.goodsId), skuId: String(s.skuId) })) : listings)
+    .map((s) => ({ ...s, productId: listingBySku.get(s.skuId)?.productId }))
   const goods = new Map()
-  for (const l of listings) goods.set(l.goodsId, [...(goods.get(l.goodsId) || []), l])
+  for (const l of skus) goods.set(l.goodsId, [...(goods.get(l.goodsId) || []), l])
   const ids = [...goods.keys()]
   const current = new Map()
   const recommended = new Map()
@@ -29,7 +39,7 @@ async function priceGuide(token, shop) {
     for (const g of now.openapiGoodsSupplierPriceDTOList || []) for (const k of g.openapiSkuSupplierPriceDTOList || []) current.set(String(k.skuId), temuAmount(k.supplierPrice))
     for (const g of rec.goodsList || []) for (const k of g.skuList || []) recommended.set(String(k.skuId), temuAmount(k.recommendedSupplyPrice))
   }
-  return listings
+  return skus
     .map((l) => {
       const now = current.get(l.skuId) || null
       const rec = recommended.get(l.skuId) || null

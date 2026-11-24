@@ -56,8 +56,24 @@ const CANDIDATE_LOOKUPS = 10 // activities whose candidate goods are looked up p
 
 /** Goods Temu allows in an activity, with its recommended activity price and quantity per goods. */
 async function candidates(token, activityId) {
-  const res = await temu.call('bg.promotion.activity.candidate.goods.query', { access_token: token, activityId: Number(activityId), pageNumber: 1, pageSize: 100 })
-  return res.goodsList || []
+  return allPages((pageNumber) => temu.call('bg.promotion.activity.candidate.goods.query', { access_token: token, activityId: Number(activityId), pageNumber, pageSize: 100 }))
+}
+
+const MAX_PAGES = 20
+
+/** Every goods of a paged Temu list (`{ goodsList, total }`), up to 20 pages of 100. */
+async function allPages(fetchPage) {
+  const all = []
+  let first = null
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const res = await fetchPage(page)
+    if (!first) first = res
+    const rows = res.goodsList || []
+    all.push(...rows)
+    if (!rows.length || all.length >= (res.total ?? all.length)) break
+  }
+  all.info = first?.activityInfo
+  return all
 }
 
 /** The section loader, plus the actions activity rows offer. */
@@ -84,14 +100,14 @@ async function promotionsWithActions(token, shop) {
 promotionsWithActions.details = {
   /** The goods the shop has in an activity, with the activity quantity left. */
   enrolled: async (token, shop, activityId) => {
-    const res = await temu.call('bg.promotion.activity.goods.query', { access_token: token, activityId: Number(activityId), pageNumber: 1, pageSize: 100 })
+    const goods = await allPages((pageNumber) => temu.call('bg.promotion.activity.goods.query', { access_token: token, activityId: Number(activityId), pageNumber, pageSize: 100 }))
     return {
-      title: res.activityInfo?.activityName || `Activity ${activityId}`,
+      title: goods.info?.activityName || `Activity ${activityId}`,
       tables: [{
         id: 'goods',
         title: 'Enrolled goods',
         columns: [col('goodsId', 'Goods'), col('skus', 'SKUs', 'number'), col('quantity', 'Activity quantity', 'number'), col('remaining', 'Left', 'number')],
-        rows: (res.goodsList || []).map((g) => ({ goodsId: String(g.goodsId), skus: (g.skuList || []).length, quantity: g.activityQuantity ?? 0, remaining: g.remainingActivityQuantity ?? 0 })),
+        rows: goods.map((g) => ({ goodsId: String(g.goodsId), skus: (g.skuList || []).length, quantity: g.activityQuantity ?? 0, remaining: g.remainingActivityQuantity ?? 0 })),
       }],
     }
   },
@@ -112,7 +128,10 @@ promotionsWithActions.actions = {
     for (const goodsId of chosen) {
       const g = byId.get(goodsId)
       if (!g?.isAllowedEnroll) { refused.push({ goodsId, reason: 'Temu does not allow this goods in the activity' }); continue }
-      const res = await temu.call('bg.promotion.activity.goods.enroll', {
+      // One goods refused by Temu (success:false) must not stop the others.
+      let res
+      try {
+        res = await temu.call('bg.promotion.activity.goods.enroll', {
         access_token: token,
         activityId: Number(activityId),
         enrollGoods: {
@@ -121,7 +140,11 @@ promotionsWithActions.actions = {
           activityQuantity: g.recommendActivityQuantity,
           enrollSkuList: (g.skuList || []).map((s) => ({ skuId: s.skuId, activitySupplierPrice: s.recommendActivitySupplierPrice })),
         },
-      })
+        })
+      } catch (err) {
+        refused.push({ goodsId, reason: err.message || 'Temu refused it' })
+        continue
+      }
       if (res.failReason) refused.push({ goodsId, reason: res.failReason })
       else if (res.draftId != null) drafts.push({ goodsId, draftId: res.draftId })
     }
@@ -134,9 +157,10 @@ promotionsWithActions.actions = {
       }
     }
     refused.sort((a, b) => chosen.indexOf(a.goodsId) - chosen.indexOf(b.goodsId))
-    const enrolled = chosen.length - refused.length
+    // Temu reviews enrolments: they are submitted, not yet confirmed.
+    const submitted = chosen.length - refused.length
     return {
-      message: `Enrolled ${enrolled} goods.${refused.length ? ` Not enrolled: ${refused.map((r) => `${r.goodsId} (${r.reason})`).join(', ')}.` : ''}`,
+      message: `Submitted ${submitted} goods to Temu.${refused.length ? ` Not enrolled: ${refused.map((r) => `${r.goodsId} (${r.reason})`).join(', ')}.` : ''}`,
       refused,
     }
   },

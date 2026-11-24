@@ -235,20 +235,22 @@ async function temuStock(ctx) {
       .map((l) => { const [goodsId, skuId] = String(l.externalListingId).split(':'); return { goodsId, skuId, productId: String(l.productId) } })
     const products = new Map((await Product.find({ _id: { $in: [...new Set(listings.map((l) => l.productId))] } }).select('title sku stock variants').lean()).map((p) => [String(p._id), p]))
     const bySku = new Map(listings.map((l) => [l.skuId, l]))
+    const byGoods = new Map(listings.map((l) => [l.goodsId, l]))
     const temu = require('../../service')
     const stocks = []
+    // Asked per listed goods, so SKUs that exist only on Temu (added in Seller Center) show too.
     await marketplaceManager.withShopToken(shop, async (token) => {
-      const ids = [...bySku.keys()]
-      for (let i = 0; i < ids.length; i += 50) {
-        const res = await temu.call('temu.local.goods.sku.stock.query', { access_token: token, skuIdList: ids.slice(i, i + 50).map(Number) })
+      for (const goodsId of byGoods.keys()) {
+        const res = await temu.call('temu.local.goods.sku.stock.query', { access_token: token, goodsId: Number(goodsId) })
         for (const goods of res.stockList || []) for (const sku of goods.skuStockInfoList || []) stocks.push({ goodsId: String(goods.goodsId), ...sku })
       }
     })
     const rows = stocks.map((sku) => {
       const listing = bySku.get(String(sku.skuId))
-      const product = listing && products.get(listing.productId)
+      const product = products.get((listing || byGoods.get(sku.goodsId))?.productId)
       const variant = product?.variants?.find((v) => v.sku && v.sku === sku.outSkuSn)
-      const dashboardStock = variant ? variant.stock ?? 0 : product && !(product.variants || []).length ? product.stock ?? 0 : null
+      // A product's own stock only counts for a SKU the dashboard lists.
+      const dashboardStock = variant ? variant.stock ?? 0 : listing && product && !(product.variants || []).length ? product.stock ?? 0 : null
       const temuStock = sku.selfOrdinaryStock?.stock ?? 0
       return {
         sku: sku.outSkuSn || String(sku.skuId),

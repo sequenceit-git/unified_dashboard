@@ -32,6 +32,7 @@ async function ads(token) {
     },
   ])
   // Per-product reports for the goods with the most spend, over the same period as the shop report.
+  let unreadable = 0
   const [byProduct] = await tables([{
     id: 'goodsReport',
     tab: 'By product',
@@ -41,7 +42,7 @@ async function ads(token) {
     load: async () => {
       const top = [...(report?.reportsItemList || [])].sort((a, b) => (adVal(b.adSpend) || 0) - (adVal(a.adSpend) || 0)).slice(0, TOP_GOODS)
       if (!top.length || period.startTs == null) return []
-      const rows = await Promise.all(top.map(async (item) => {
+      const settled = await Promise.allSettled(top.map(async (item) => {
         const res = await temu.call('temu.searchrec.ad.reports.goods.query', { access_token: token, goodsId: Number(item.goodsId), startTs: period.startTs, endTs: period.endTs })
         const s = res?.reportInfo?.summary || {}
         const ad = (key) => adVal(s[key]?.ad)
@@ -58,9 +59,12 @@ async function ads(token) {
           roas: ad('roas'),
         }
       }))
+      const rows = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value)
+      unreadable = settled.length - rows.length
       return rows.sort((a, b) => (b.spend?.value || 0) - (a.spend?.value || 0))
     },
   }])
+  if (unreadable) byProduct.note = `${byProduct.note} ${unreadable} product${unreadable === 1 ? '' : 's'} could not be read from Temu this time.`
   list.push(byProduct)
   const totals = report?.reportsSummary || {}
   const summary = report?.summary || {}

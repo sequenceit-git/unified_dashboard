@@ -64,7 +64,56 @@ test('partial enrol reports each refused goods', async () => {
     ])
     assert.ok(enrolls.every((b) => b.enrollGoods.traceCode))
     assert.deepEqual(res.refused, [{ goodsId: '88', reason: 'Price above the activity limit' }, { goodsId: '99', reason: 'Temu does not allow this goods in the activity' }])
-    assert.equal(res.message, 'Enrolled 1 goods. Not enrolled: 88 (Price above the activity limit), 99 (Temu does not allow this goods in the activity).')
+    assert.equal(res.message, 'Submitted 1 goods to Temu. Not enrolled: 88 (Price above the activity limit), 99 (Temu does not allow this goods in the activity).')
     await assert.rejects(promotions.actions.enrol('tok', {}, '600', []), (e) => e.status === 400)
+  } finally { restore() }
+})
+
+test('a Temu error on one goods is reported and the others still enrol', async () => {
+  const calls = []
+  let draft = 0
+  const restore = stubModules({
+    '../service': {
+      call: async (type, body) => {
+        calls.push([type, body])
+        if (type === 'bg.promotion.activity.candidate.goods.query') return CANDIDATES
+        if (type === 'bg.promotion.activity.goods.enroll') {
+          if (body.enrollGoods.goodsId === 77) throw Object.assign(new Error('parameter is illegal'), { code: 220010001 })
+          draft += 1
+          return { draftId: draft }
+        }
+        if (type === 'bg.promotion.activity.goods.operation.query') return body.draftIdList.map((id) => ({ draftId: id, operationStatus: 1 }))
+        throw new Error(`unexpected ${type}`)
+      },
+    },
+  })
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const res = await promotions.actions.enrol('tok', {}, '600', ['77', '88'])
+    assert.ok(calls.some(([t, b]) => t === 'bg.promotion.activity.goods.enroll' && b.enrollGoods.goodsId === 88), '88 is still tried')
+    assert.deepEqual(res.refused, [{ goodsId: '77', reason: 'parameter is illegal' }])
+    assert.equal(res.message, 'Submitted 1 goods to Temu. Not enrolled: 77 (parameter is illegal).')
+  } finally { restore() }
+})
+
+test('candidates and enrolled goods are read across every page', async () => {
+  const restore = stubModules({
+    '../service': {
+      call: async (type, body) => {
+        const page = body.pageNumber
+        const goods = (from, n, extra = {}) => Array.from({ length: n }, (_, i) => ({ goodsId: from + i, isAllowedEnroll: true, skuList: [], ...extra }))
+        if (type === 'bg.promotion.activity.candidate.goods.query') return { total: 250, goodsList: page === 1 ? goods(1, 100) : page === 2 ? goods(101, 100) : goods(201, 50) }
+        if (type === 'bg.promotion.activity.goods.query') return { total: 150, goodsList: page === 1 ? goods(1, 100, { activityQuantity: 1 }) : goods(101, 50, { activityQuantity: 1 }) }
+        if (type === 'bg.promotion.activity.query') return { activityList: body.onlyQueryJoinedActivity ? [] : [ACTIVITY(600, false)] }
+        throw new Error(`unexpected ${type}`)
+      },
+    },
+  })
+  try {
+    const promotions = freshRequire('marketplaces/temu/sections/promotions.js')
+    const row = (await promotions('tok', {})).tables.find((t) => t.id === 'available').rows[0]
+    assert.equal(row.actions[0].input.options.length, 250)
+    const detail = await promotions.details.enrolled('tok', {}, '500')
+    assert.equal(detail.tables[0].rows.length, 150)
   } finally { restore() }
 })
