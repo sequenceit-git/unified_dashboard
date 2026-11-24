@@ -72,6 +72,16 @@ function sectionsRoutes(shopKey) {
     }
   })
 
+  // POST /api/<shop>/sections/returns-cases/<action> — mark received, refund, inquiry refund/tracking, accept dispute
+  router.post('/returns-cases/:actionId', sectionGuard('returns-cases'), async (req, res) => {
+    try {
+      res.json(await service.caseAction(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(400).json({ error: err.message })
+    }
+  })
+
   // POST /api/<shop>/sections/cancellations/decide — approve or reject cancellation request on eBay/TikTok
   router.post('/cancellations/decide', sectionGuard('returns-cases'), async (req, res) => {
     try {

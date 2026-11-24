@@ -63,6 +63,7 @@
       "GET /sections/:sectionId",
       "POST /sections/offers/send",
       "POST /sections/returns-cases/decide",
+      "POST /sections/returns-cases/:actionId",
       "POST /sections/cancellations/decide",
       "POST /sections/promotions/create",
       "POST /sections/promotions/:id/pause",

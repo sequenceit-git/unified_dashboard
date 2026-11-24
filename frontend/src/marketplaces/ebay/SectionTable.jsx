@@ -22,9 +22,13 @@ export default function SectionTable({ table, tableActions, onAction, runAction,
     columns = [...columns, {
       key: '_action',
       label: 'Action',
-      render: (row) => (legacy
-        ? legacy(row, { onAction, marketplace })
-        : <div className="flex flex-wrap items-center gap-1.5">{(row.actions || []).map((action) => <ActionButton key={action.id} action={action} row={row} run={runAction} />)}</div>),
+      // The page's own buttons first, then the loader's row actions.
+      render: (row) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {legacy && legacy(row, { onAction, marketplace })}
+          {(row.actions || []).map((action) => <ActionButton key={action.id} action={action} row={row} run={runAction} />)}
+        </div>
+      ),
     }]
   }
 

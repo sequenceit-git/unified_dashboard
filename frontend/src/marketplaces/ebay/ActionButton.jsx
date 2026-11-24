@@ -22,7 +22,8 @@ const running = actionState()
 export default function ActionButton({ action, row, run }) {
   const key = `${row.id}:${action.id}`
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState('')
+  const fields = action.input?.fields
+  const [value, setValue] = useState(fields ? {} : '')
   const [busy, setBusy] = useState(false)
   const needsStep = Boolean(action.confirm || action.input)
 
@@ -32,7 +33,7 @@ export default function ActionButton({ action, row, run }) {
     try {
       await run(action, row, action.input ? value : undefined)
       setOpen(false)
-      setValue('')
+      setValue(fields ? {} : '')
     } finally {
       running.done(key)
       setBusy(false)
@@ -40,7 +41,7 @@ export default function ActionButton({ action, row, run }) {
   }
 
   const input = action.input
-  const valid = !input || String(value).trim() !== ''
+  const valid = !input || (fields ? fields.every((f) => String(value[f.name] || '').trim() !== '') : String(value).trim() !== '')
   return (
     <>
       <Button size="sm" variant={action.danger ? 'secondary' : undefined} disabled={busy} onClick={() => (needsStep ? setOpen(true) : send())}>
@@ -50,7 +51,20 @@ export default function ActionButton({ action, row, run }) {
         <Modal title={action.label} onClose={() => !busy && setOpen(false)}>
           <div className="space-y-3">
             {action.confirm && <p className="text-sm">{typeof action.confirm === 'string' ? action.confirm : `${action.label}?`}</p>}
-            {input && (
+            {fields && fields.map((f) => (
+              <label key={f.name} className="block text-sm">
+                <span className="mb-1 block font-medium">{f.label}</span>
+                {f.options ? (
+                  <select id={`action-${key}-${f.name}`} className="w-full rounded-md border px-2 py-1.5" value={value[f.name] || ''} onChange={(e) => setValue({ ...value, [f.name]: e.target.value })}>
+                    <option value="">Choose…</option>
+                    {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                ) : (
+                  <input id={`action-${key}-${f.name}`} className="w-full rounded-md border px-2 py-1.5" type={f.type || 'text'} value={value[f.name] || ''} onChange={(e) => setValue({ ...value, [f.name]: e.target.value })} />
+                )}
+              </label>
+            ))}
+            {input && !fields && (
               <label className="block text-sm">
                 <span className="mb-1 block font-medium">{input.label}</span>
                 {input.options ? (

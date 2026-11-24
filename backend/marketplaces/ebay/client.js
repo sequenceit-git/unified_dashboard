@@ -212,4 +212,26 @@ async function ebayFetch(token, url, { iaf = false, headers = {} } = {}) {
   return body
 }
 
-module.exports = { EbayClient, ebayFetch }
+/** A REST call with any method and a JSON body (Bearer token); returns the parsed body, {} for 204. */
+async function ebaySend(token, method, url, body) {
+  const res = await fetch(url.startsWith('http') ? url : `${config.apiBaseUrl}${url}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': 'en-US',
+      'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const payload = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const error = new Error(payload.errors?.[0]?.message || `eBay returned ${res.status}`)
+    error.status = res.status
+    throw error
+  }
+  return payload
+}
+
+module.exports = { EbayClient, ebayFetch, ebaySend }

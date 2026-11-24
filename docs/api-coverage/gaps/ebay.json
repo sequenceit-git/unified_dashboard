@@ -797,12 +797,6 @@
     "priority": "low",
     "value": "Read one shipment (tracking number, carrier, line items) of an order; the list call is already used."
   },
-  "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
   "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content": {
     "section": "returns-cases",
     "size": "medium",
@@ -815,19 +809,7 @@
     "priority": "high",
     "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
   },
-  "GET /sell/fulfillment/v1/payment_dispute_summary": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
   "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
-  "POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept": {
     "section": "returns-cases",
     "size": "medium",
     "priority": "high",
@@ -2129,24 +2111,6 @@
     "priority": "high",
     "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
   },
-  "POST /post-order/v2/inquiry/{inquiryId}/issue_refund": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
-  },
-  "POST /post-order/v2/inquiry/{inquiryId}/provide_shipment_info": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
-  },
-  "GET /post-order/v2/inquiry/search": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
-  },
   "POST /post-order/v2/inquiry/{inquiryId}/send_message": {
     "section": "returns-cases",
     "size": "medium",
@@ -2171,12 +2135,6 @@
     "priority": "high",
     "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
   },
-  "GET /post-order/v2/return/{returnId}": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
-  },
   "GET /post-order/v2/return/{returnId}/files": {
     "section": "returns-cases",
     "size": "medium",
@@ -2190,18 +2148,6 @@
     "value": "Read and set return preferences (automatic return rules)."
   },
   "GET /post-order/v2/return/{returnId}/tracking": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
-  },
-  "POST /post-order/v2/return/{returnId}/issue_refund": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Return details and actions: files, tracking, shipping label, mark received, refund, escalate and message the buyer."
-  },
-  "POST /post-order/v2/return/{returnId}/mark_as_received": {
     "section": "returns-cases",
     "size": "medium",
     "priority": "high",

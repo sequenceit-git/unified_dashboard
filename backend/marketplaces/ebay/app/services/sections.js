@@ -93,6 +93,31 @@ async function decideReturn(ctx) {
     return { success: true, result }
 }
 
+/**
+ * POST /sections/returns-cases/:actionId — one-click Returns & cases actions (mark received,
+ * refund, inquiry refund/tracking, accept a payment dispute). Checks the section itself too, not
+ * only the route guard.
+ */
+async function caseAction(ctx) {
+    const marketplace = 'ebay'
+    const { ACTIONS } = require('../../sections/returnsActions')
+    const action = ACTIONS[ctx.params.actionId]
+    if (!action) throw new HttpError(404, { error: 'No such action' })
+    const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === 'returns-cases')
+    if (!section || !canUseSection(ctx.authUser || ctx.user, marketplace, section.id, section.route)) {
+      throw new HttpError(403, { error: `You do not have access to ${section?.label || 'Returns & cases'} on this shop` })
+    }
+    const id = String(ctx.body?.id || '').trim()
+    if (!id) throw new HttpError(400, { error: 'id is required' })
+    const shop = await connectedShop(ctx, marketplace)
+    const { ebaySend } = require('../../client')
+    const { ebayApiz } = require('../../sections/helpers')
+    const client = { postOrder: (...args) => SERVICE.postOrder(...args), ebaySend, apiz: ebayApiz() }
+    const result = await marketplaceManager.withShopToken(shop, (token) => action.run(client, token, id, ctx.body.value))
+    await cache.del(`shop:${shop._id}:section:returns-cases`)
+    return result
+}
+
 /** POST /sections/cancellations/decide */
 async function decideCancellation(ctx) {
     const marketplace = 'ebay'
@@ -302,4 +327,4 @@ async function finances(ctx) {
     return finances || {}
 }
 
-module.exports = { connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}
+module.exports = { connectedShop, section, caseAction, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}
