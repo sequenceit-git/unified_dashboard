@@ -10,6 +10,22 @@ const { ttGet, ttPost, scopeAware } = require('./helpers')
 
 const enc = encodeURIComponent
 const tiktokId = (externalListingId) => String(externalListingId || '').split(':')[0].trim()
+const linkCol = (key, label, urlKey = 'url') => ({ ...col(key, label), urlKey })
+const shopProductUrl = (id) => (id ? `https://shop.tiktok.com/view/product/${enc(String(id))}` : '')
+
+function opportunityUrl(row) {
+  const extId = row?.external_product_id ? enc(String(row.external_product_id)) : ''
+  const src = String(row?.reference_source || '')
+  if (extId) {
+    if (src === '5' || /TTS|TIKTOK/i.test(src)) return `https://shop.tiktok.com/view/product/${extId}`
+    if (src === '2' || /AMAZON/i.test(src)) return `https://www.amazon.com/dp/${extId}`
+    if (src === '4' || /WALMART/i.test(src)) return `https://www.walmart.com/ip/${extId}`
+    if (src === '9' || /TEMU/i.test(src)) return `https://www.temu.com/goods.html?goods_id=${extId}`
+    if (src === '17' || /EBAY/i.test(src)) return `https://www.ebay.com/itm/${extId}`
+  }
+  const q = row?.title || row?.keyword || row?.product_name || row?.query_words?.split(',')[0]?.trim()
+  return q ? `https://www.tiktok.com/search?q=${enc(String(q))}` : ''
+}
 
 async function listedProductIds(shop) {
   if (!shop?._id) return []
@@ -34,8 +50,8 @@ async function products(token, shop) {
       title: 'Listing quality & diagnoses',
       note: 'SKPP quality checks and TikTok Product Optimization findings for your listed products.',
       columns: [
-        col('product', 'Product'),
-        col('id', 'TikTok ID'),
+        linkCol('product', 'Product'),
+        linkCol('id', 'TikTok ID'),
         col('qualityStatus', 'Quality status', 'status'),
         col('issuesCount', 'Issues', 'number'),
         col('topFinding', 'Top finding'),
@@ -73,6 +89,7 @@ async function products(token, shop) {
           return {
             id: pid,
             product: titles.get(pid)?.title || diag.title || skpp.product_name || pid,
+            url: shopProductUrl(pid),
             qualityStatus: words(rawTier),
             issuesCount: diagItems.length,
             topFinding: firstIssue,
@@ -92,7 +109,7 @@ async function products(token, shop) {
       columns: [
         col('id', 'Opportunity ID'),
         col('type', 'Type'),
-        col('title', 'Product / Keyword'),
+        linkCol('title', 'Product / Keyword'),
         col('category', 'Category'),
         col('status', 'Status', 'status'),
       ],
@@ -112,6 +129,7 @@ async function products(token, shop) {
           id: String(row.id || row.opportunity_id),
           type: words(row._type),
           title: row.title || row.keyword || row.product_name || row.id,
+          url: opportunityUrl(row),
           category: [row.category_name_level_1, row.category_name_level_2, row.category_name_level_3].filter(Boolean).join(' › ') || row.category_name || row.category?.name || '',
           status: words(row.status || (row.is_collected ? 'COLLECTED' : 'ACTIVE')),
           actions: [
@@ -128,17 +146,21 @@ async function products(token, shop) {
       columns: [
         col('id', 'Submission'),
         col('opportunityId', 'Opportunity ID'),
-        col('productId', 'Product ID'),
+        linkCol('productId', 'Product ID'),
         col('status', 'Status', 'status'),
       ],
       load: scopeAware(async () => {
         const res = await ttGet(token, shop, '/product/202604/opportunities/submissions', { page_size: 50 })
-        return (res.submissions || res.records || []).map((row) => ({
-          id: String(row.id || row.submission_id || `${row.opportunity_id}-${row.product_id}`),
-          opportunityId: row.opportunity_id || '',
-          productId: row.product_id || (row.product_ids || []).join(', '),
-          status: words(row.status || row.audit_status),
-        }))
+        return (res.submissions || res.records || []).map((row) => {
+          const firstPid = row.product_id || row.product_ids?.[0] || ''
+          return {
+            id: String(row.id || row.submission_id || `${row.opportunity_id}-${row.product_id}`),
+            opportunityId: row.opportunity_id || '',
+            productId: row.product_id || (row.product_ids || []).join(', '),
+            url: shopProductUrl(firstPid),
+            status: words(row.status || row.audit_status),
+          }
+        })
       }, 'Product Basic'),
     },
     {
