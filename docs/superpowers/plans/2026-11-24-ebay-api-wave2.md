@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Finish the eBay integration's high-value gaps: a Promoted Listings section (campaigns, ads, ad rates, reports, eBay's ad-rate advice), answering payment disputes, returns, inquiries and cases with messages, evidence files, escalations and appeals, and the remaining small gaps in Buyers, Analytics, Payouts and Promotions.
+**Goal:** Finish the eBay integration's high-value gaps: a Promoted Listings section (campaigns, ads, ad rates, reports, eBay's ad-rate advice), answering payment disputes, returns, inquiries and cases with messages, evidence files, escalations and appeals, the remaining small gaps in Buyers, Analytics, Payouts and Promotions, and a "who pays shipping" choice (buyer pays / free shipping) on new and already-listed eBay products.
 
 **Architecture:** eBay gets its own generic section drill-down/action routes (`details` / `actions` exported by a section file, own-name lookup), re-implemented in eBay's folder — not imported from Temu or TikTok. Promoted Listings is a new eBay section (`advertising`) with its own loader, page and actions. Post-order and dispute actions extend the existing `sections/returnsActions.js` map. Evidence files travel from the browser as data URLs inside the JSON body and are sent on to eBay as multipart or base64, never stored.
 
@@ -29,6 +29,7 @@
 3. An evidence file that isn't JPEG/PNG (disputes) or is over 5 MB is refused before eBay is called, with the dialog still open. (Task 6 test `a PDF or a 6 MB file is refused before eBay is called`.)
 4. A dispute already contested, or whose `availableChoices` has no `CONTEST`, offers no Add evidence / Contest buttons. (Task 6 test.)
 5. A sub-admin without the section gets 403 on every new route; `GET /api/ebay/sections/advertising/constructor` is 404 and never reaches eBay. (Task 1 tests.)
+6. A listing that uses an eBay shipping business policy (`SellerProfiles.SellerShippingProfile`) is not revised with inline shipping: the edit is refused before anything is sent to eBay, telling the seller to change that policy in Seller Hub (the form keeps what they typed). (Task 11 test `a listing on a shipping policy is refused with the policy's name`.)
 
 ---
 
@@ -207,13 +208,51 @@
 - [ ] **Step 4: Run** — Expected: pass.
 - [ ] **Step 5: Commit** `eBay: seller standards, payout detail, promotion items`.
 
-### Task 11: Coverage pin and docs
+### Task 11: Who pays shipping — eBay listing backend
+
+**Files:**
+- Modify: `backend/marketplaces/ebay/trading.js` (`parseItem`, `listingTemplate`, `shippingXml`, `addListing`, `reviseListing`), `backend/marketplaces/ebay/app/services/products.js` (pass `ebayShipping` through list and edit), `backend/models/Product.js` (field `ebayShipping: { paidBy: { type: String, enum: ['buyer', 'seller'] }, cost: Number }`, optional — products without it keep today's behaviour)
+- Test: `backend/marketplaces/ebay/test/shipping-payer.test.js`
+
+**Interfaces:**
+- Produces: `ebayShipping = { paidBy: 'buyer' | 'seller', cost?: number }` on the list request (`opts.ebayShipping`), the edit request (`changes.ebayShipping`) and the product. `parseItem(item).shipping = { paidBy, cost, type: 'Flat' | 'Calculated', policy: string | null }` read from eBay's listing: `paidBy = 'seller'` when the first domestic service (priority 1) has `FreeShipping=true`, else `'buyer'`; `cost` = that service's `ShippingServiceCost`; `policy` = `SellerProfiles.SellerShippingProfile.ShippingProfileName` when present.
+- Rules (eBay's): free shipping is set on the first domestic service only (`<FreeShipping>true</FreeShipping>`, cost `0.00`); other services and international options keep their own costs. Buyer pays on a **Flat** listing needs a cost ≥ 0.01 (written to the first service's `ShippingServiceCost`); on a **Calculated** listing the buyer pays eBay's calculated rate and no cost is taken. No `ebayShipping` given → the template/listing's shipping is sent unchanged (today's behaviour).
+
+- [ ] **Step 1: Write the failing tests:**
+  - `a new listing with free shipping marks only the first service free` (template with two Flat services $4.99 / $9.99 → XML has `FreeShipping` and cost `0.00` on priority 1, $9.99 kept on priority 2).
+  - `a new listing where the buyer pays uses the given cost` (`{ paidBy:'buyer', cost: 6.5 }` → priority-1 cost `6.50`, no `FreeShipping`).
+  - `buyer pays on a Flat listing without a cost is refused before eBay` (400 `Enter the shipping cost the buyer pays.`).
+  - `buyer pays on a Calculated listing sends no cost`.
+  - `editing a listed product changes only who pays shipping` (`reviseListing(token, id, { ebayShipping })` reads the listing's current `ShippingDetails` with `GetItem`, rewrites priority 1, and sends `ReviseFixedPriceItem` with `<ShippingDetails>` (all services kept) — no title, price or quantity tags).
+  - `a listing on a shipping policy is refused with the policy's name` (GetItem has `SellerProfiles.SellerShippingProfile.ShippingProfileName = 'Std'` → 400 `This listing uses your eBay shipping policy "Std". Change who pays shipping in that policy in Seller Hub.`; no ReviseFixedPriceItem call).
+  - `the listing's current payer is read from eBay` (`parseItem` → `shipping.paidBy/cost/type/policy`), and a listings sync saves it to `product.ebayShipping` (`paidBy`, `cost`).
+- [ ] **Step 2: Run** `cd backend && node --test marketplaces/ebay/test/shipping-payer.test.js` — Expected: FAIL.
+- [ ] **Step 3: Implement.** `shippingXml(template, product, opts)` applies `opts.ebayShipping ?? product.ebayShipping` to a copy of `template.shippingOptions`; `reviseListing` adds the shipping part only when `changes.ebayShipping` is given (combined into the same `ReviseFixedPriceItem` call as other changed fields).
+- [ ] **Step 4: Run** the test, then `npm test` — Expected: pass.
+- [ ] **Step 5: Commit** `eBay listings: who pays shipping (backend)`.
+
+### Task 12: Who pays shipping — listing forms
+
+**Files:**
+- Create: `frontend/src/marketplaces/ebay/sections/listings/listing/ShippingPayerField.jsx`, `frontend/src/marketplaces/ebay/sections/listings/listing/shippingPayer.js` (`validateShippingPayer(value, type) → string | ''`, `cleanShippingPayer(value) → { paidBy, cost? }`)
+- Modify: `hooks/useListForm.js` + `ListModal.jsx` (list a dashboard product), `hooks/useDirectListing.js` + `DirectListModal.jsx` (new listing straight to eBay), `ProductModal.jsx` (edit a listed product)
+- Test: `frontend/test/ebay-sections.test.mjs`
+
+**Interfaces:** Consumes Task 11's `ebayShipping` and `shipping` (from the product / listing). The field: two radio buttons **Buyer pays shipping** / **Free shipping (I pay)**; with Buyer pays on a Flat listing, a **Shipping cost ($)** input. On a Calculated listing it says *Buyer pays eBay's calculated rate*. When the listing is on a shipping policy, the field is read-only and names the policy.
+
+- [ ] **Step 1: Write the failing tests:** `buyer pays needs a cost on a flat listing` (`validateShippingPayer({paidBy:'buyer', cost:''}, 'Flat')` → `'Enter the shipping cost the buyer pays.'`; `'Calculated'` → `''`); `free shipping drops the cost` (`cleanShippingPayer({paidBy:'seller', cost:'5'})` → `{ paidBy: 'seller' }`); `cost is sent as a number` (`{paidBy:'buyer', cost:'6.50'}` → `{ paidBy:'buyer', cost: 6.5 }`).
+- [ ] **Step 2: Run** `cd frontend && npm test` — Expected: FAIL.
+- [ ] **Step 3: Implement** the helpers and field; wire it into the three forms next to the Best Offer field, defaulting to the product's `ebayShipping` (list/edit) or **Buyer pays** with an empty cost (direct new listing). The edit form sends `ebayShipping` only when the seller changed it.
+- [ ] **Step 4: Run** `npm test && npm run build` (frontend) and backend `npm test` — Expected: pass.
+- [ ] **Step 5: Commit** `eBay listings: who pays shipping (forms)`.
+
+### Task 13: Coverage pin and docs
 
 **Files:** Modify `backend/test/api-coverage.test.js`, `backend/marketplaces/README.md` (eBay part).
 
 - [ ] **Step 1: Write the test** `eBay wave 2 endpoints are covered` listing every endpoint named in Tasks 2–10 (as `METHOD /path` ids from `shopCoverage('ebay')`) and asserting each status starts with `covered`.
 - [ ] **Step 2: Run** `npm run -s api-coverage && node --test test/api-coverage.test.js` — Expected: PASS (if one fails, its call site is missing the full path).
-- [ ] **Step 3: Document** in the README: the eBay generic detail/action routes, Promoted Listings, the evidence download route, and that uploads aren't stored.
+- [ ] **Step 3: Document** in the README: the eBay generic detail/action routes, Promoted Listings, the evidence download route, that uploads aren't stored, and the `ebayShipping` rules.
 - [ ] **Step 4: Run** both full suites and the build — Expected: green.
 - [ ] **Step 5: Commit** `eBay wave 2: coverage and docs`.
 
@@ -222,6 +261,7 @@
 ## Decided here (you may change these at review)
 
 - **Priority (cost-per-click) campaigns:** listed, paused/resumed/ended, budget and name changed, ads shown — but **creating** them and keyword / ad-group management (suggest bids, suggest keywords, negative keywords) are left for later: they need a keyword-research screen of their own. General (cost-per-sale) campaigns are fully managed.
+- **Who pays shipping** covers the delivery charge only. Who pays **return** shipping stays as it is today (copied from your listing's return policy); it can be added the same way if the client wants it.
 - **Ad reports** use eBay's report tasks (eBay builds them in the background); the page shows their status and opens a finished one as a table. No automatic polling.
 - **Evidence files** go through the dashboard to eBay without being saved. Limit 5 MB, JPEG/PNG (eBay disputes accept only those).
 - **Not in this wave (wave 3, on request):** business policies, notification subscriptions, bulk feed tasks, media/video uploads, parts compatibility, eBay shipping labels (Logistics API, US-only beta), Trading member messages, catalog/taxonomy pre-fill, order earnings per order (eBay refuses the scope).
