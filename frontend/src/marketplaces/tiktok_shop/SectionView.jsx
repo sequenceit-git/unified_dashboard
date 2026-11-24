@@ -22,7 +22,7 @@ import Modal from '../../components/ui/Modal'
 import Tabs from '../../components/ui/Tabs'
 import SectionTable from './SectionTable'
 import { formatMoney } from './sectionFormat'
-import { sectionTabs } from './sectionTabs'
+import { pageMode, sectionTabs } from './sectionTabs'
 
 function tileValue(item) {
   if (item.type === 'money') return formatMoney(item.value)
@@ -54,7 +54,8 @@ export default function SectionView({ sectionId, title, extraTabs = [], renderRo
 
   const isAllowed = isAdmin || !Array.isArray(user?.allowedSections) || user.allowedSections.length === 0
     || user.allowedSections.includes(sectionId) || user.allowedSections.includes(`${shopSection?.marketplace}:${sectionId}`)
-  const canOpen = section && hasRoute(section.route) && section.available !== false && isAllowed
+  const mode = pageMode(section, extraTabs)
+  const canOpen = section && hasRoute(section.route) && mode === 'full' && isAllowed
   const base = `/api/tiktok/sections/${sectionId}`
 
   const load = async ({ refresh = false } = {}) => {
@@ -109,7 +110,7 @@ export default function SectionView({ sectionId, title, extraTabs = [], renderRo
   if (!profile) return <Spinner />
   if (!section) return <EmptyState message={`${profile.label} doesn't have this section.`} />
   if (!hasRoute(section.route) || !isAllowed) return <EmptyState message={`You don't have access to ${section.label}.`} />
-  if (section.available === false) return <EmptyState message={`${section.label} isn't available for ${profile.label}: ${section.reason}.`} />
+  if (mode === 'unavailable') return <EmptyState message={`${section.label} isn't available for ${profile.label}: ${section.reason}.`} />
 
   const tabs = [...extraTabs.map((t) => ({ ...t, own: true })), ...sectionTabs(data && { ...data, label: section.label })]
   const current = tabs.find((t) => t.id === tab) || tabs[0]
@@ -128,6 +129,7 @@ export default function SectionView({ sectionId, title, extraTabs = [], renderRo
       {notice && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">{notice}</p>}
       {error && <ErrorState message={error} onRetry={reload} />}
       {tabs.length > 1 && <Tabs tabs={tabs.map(({ id, label }) => ({ id, label }))} active={current?.id} onChange={setTab} />}
+      {mode === 'own-tabs-only' && <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">TikTok's own {section.label.toLowerCase()} isn't available for {profile.label}: {section.reason}.</p>}
       {current?.own && current.render()}
       {!current?.own && !data && loading && <Spinner />}
       {!current?.own && current && (

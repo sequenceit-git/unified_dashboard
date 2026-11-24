@@ -40,3 +40,19 @@ test('an order of another shop is refused', async () => {
     assert.equal(calls.length, 0)
   } finally { restore() }
 })
+
+test('the breakdown lines always add up to what the buyer paid', async () => {
+  const restore = stubModules({
+    '/models/Order': modelStub(() => ({ _id: 'o1', shopId: 's1', externalOrderId: '5770', marketplace: 'tiktok_shop' })),
+    '/models/Shop': modelStub(() => ({ _id: 's1', marketplace: 'tiktok_shop', status: 'connected' })),
+    '../manager': { withShopToken: async (shop, fn) => fn('tok') },
+    '../../service': { call: async () => ({ ...PRICE, cod_fee: '1.25', distance_shipping_fee: '0.75', payment: '39.5' }) },
+  })
+  try {
+    const service = freshRequire('marketplaces/tiktok_shop/app/services/orders.js')
+    const res = await service.priceDetail({ user: { role: 'super_admin' }, params: { id: 'o1' }, query: {}, body: {} })
+    const sum = Math.round(res.lines.reduce((t, l) => t + l.amount.value, 0) * 100) / 100
+    assert.equal(sum, 39.5)
+    assert.deepEqual(res.lines.at(-1), { label: 'Other fees and adjustments', amount: { value: 2, currency: 'USD' } })
+  } finally { restore() }
+})

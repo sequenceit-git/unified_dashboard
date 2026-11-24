@@ -306,7 +306,8 @@ async function sectionFor(ctx) {
 /** GET /sections/:sectionId/:actionId?id= — a read-only drill-down the section file defines (`details`). */
 async function sectionDetail(ctx) {
     const { loader } = await sectionFor(ctx)
-    const detail = loader.details?.[ctx.params.actionId]
+    // Own names only: a lookup like details['constructor'] would reach Object and hand back the token.
+    const detail = Object.hasOwn(loader.details || {}, ctx.params.actionId) ? loader.details[ctx.params.actionId] : null
     if (!detail) throw new HttpError(404, { error: 'No such detail' })
     const id = String(ctx.query?.id || '').trim()
     if (!id) throw new HttpError(400, { error: 'id is required' })
@@ -317,7 +318,7 @@ async function sectionDetail(ctx) {
 /** POST /sections/:sectionId/:actionId — an action the section file defines (`actions`); returns `{ message }`. */
 async function sectionAction(ctx) {
     const { section, loader } = await sectionFor(ctx)
-    const action = loader.actions?.[ctx.params.actionId]
+    const action = Object.hasOwn(loader.actions || {}, ctx.params.actionId) ? loader.actions[ctx.params.actionId] : null
     if (!action) throw new HttpError(404, { error: 'No such action' })
     const shop = await connectedShop(ctx, 'tiktok_shop')
     const result = await marketplaceManager.withShopToken(shop, (token) => action(token, shop, String(ctx.body?.id ?? ''), ctx.body?.value))

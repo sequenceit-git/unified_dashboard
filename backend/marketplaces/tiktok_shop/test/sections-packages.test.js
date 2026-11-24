@@ -72,3 +72,26 @@ test('failed packages are reported by id', async () => {
     assert.equal(res.message, 'Shipped 1 package. Not shipped: P3 (Address incomplete).')
   } finally { restore() }
 })
+
+test('ship-all asks TikTok for packages to ship and follows every page', async () => {
+  const calls = []
+  const pages = { '': { packages: [{ id: 'A1', package_status: 'PROCESSING' }], next_page_token: 't2' }, t2: { packages: [{ id: 'A2', package_status: 'PROCESSING' }] } }
+  const restore = stubModules({
+    './helpers': {
+      ...require('../sections/helpers'),
+      ttPost: async (token, shop, path, body, query) => {
+        calls.push([path, body, query])
+        if (path.endsWith('/packages/search')) return pages[query?.page_token || '']
+        return { errors: [] }
+      },
+    },
+  })
+  try {
+    const packages = freshRequire('marketplaces/tiktok_shop/sections/packages.js')
+    const res = await packages.actions['ship-all']('tok', {})
+    const searches = calls.filter(([p]) => p.endsWith('/packages/search'))
+    assert.deepEqual(searches.map(([, body, q]) => [body.package_status, q.page_token || '']), [['PROCESSING', ''], ['PROCESSING', 't2']])
+    assert.deepEqual(calls.find(([p]) => p.endsWith('/packages/ship'))[1].packages.map((p) => p.id), ['A1', 'A2'])
+    assert.equal(res.message, 'Shipped 2 packages.')
+  } finally { restore() }
+})

@@ -21,3 +21,12 @@ export function sectionTabs(data) {
     summary: tiles.filter((tile) => !tile.tab || tile.tab === label || (index === 0 && !groups[tile.tab])),
   }))
 }
+
+/**
+ * What a section page can show: `full`; `own-tabs-only` when TikTok's API for it isn't available but
+ * the page has its own tabs (Analytics' sales charts come from the dashboard's orders); `unavailable`.
+ */
+export function pageMode(section, extraTabs = []) {
+  if (section?.available !== false) return 'full'
+  return extraTabs.length ? 'own-tabs-only' : 'unavailable'
+}

@@ -53,3 +53,17 @@ test('warnings alone allow publishing', async () => {
   assert.equal(canPublish(check), true)
   assert.deepEqual(checkWarnings(check), ['Description is short'])
 })
+
+test('a listing TikTok marks as failed is held even without listed reasons', async () => {
+  const { canPublish, blockingIssues } = await load('/src/marketplaces/tiktok_shop/sections/products/listing/listingCheck.js')
+  const check = { ok: false, issues: [] }
+  assert.equal(canPublish(check), false)
+  assert.deepEqual(blockingIssues(check), ['TikTok marked this listing as failing its check without giving a reason.'])
+})
+
+test('the sales charts stay when TikTok analytics is not available', async () => {
+  const { pageMode } = await load('/src/marketplaces/tiktok_shop/sectionTabs.js')
+  assert.equal(pageMode({ available: false }, [{ id: 'sales' }]), 'own-tabs-only')
+  assert.equal(pageMode({ available: false }, []), 'unavailable')
+  assert.equal(pageMode({ available: true }, [{ id: 'sales' }]), 'full')
+})

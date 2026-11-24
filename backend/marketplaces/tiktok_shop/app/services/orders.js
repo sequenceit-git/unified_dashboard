@@ -286,8 +286,7 @@ async function priceDetail(ctx) {
     const currency = p.currency || 'USD'
     const num = (...keys) => Math.round(keys.reduce((t, k) => t + (Number(p[k]) || 0), 0) * 100) / 100
     const line = (label, value) => ({ label, amount: { value, currency } })
-    return {
-      lines: [
+    const lines = [
         line('Products (list price)', num('sku_list_price')),
         line('Seller discounts', -num('subtotal_deduction_seller', 'voucher_deduction_seller')),
         line('TikTok discounts', -num('subtotal_deduction_platform', 'voucher_deduction_platform')),
@@ -295,9 +294,11 @@ async function priceDetail(ctx) {
         line('Shipping discounts (seller)', -num('shipping_fee_deduction_seller')),
         line('Shipping discounts (TikTok)', -num('shipping_fee_deduction_platform', 'shipping_fee_deduction_platform_voucher')),
         line('Tax', num('tax_amount')),
-      ],
-      total: line('Buyer paid', num('payment')),
-    }
+    ]
+    // COD, distance and other fees TikTok adds: one line so the breakdown always adds up to what was paid.
+    const rest = Math.round((num('payment') - lines.reduce((t, l) => t + l.amount.value, 0)) * 100) / 100
+    if (rest !== 0) lines.push(line('Other fees and adjustments', rest))
+    return { lines, total: line('Buyer paid', num('payment')) }
 }
 
 module.exports = { priceDetail, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }

@@ -14,6 +14,19 @@ async function searchPackages(token, shop) {
   return (await ttPost(token, shop, '/fulfillment/202309/packages/search')).packages || []
 }
 
+/** Every package TikTok has waiting to ship (PROCESSING), following all pages. */
+async function packagesToShip(token, shop) {
+  const all = []
+  let pageToken = ''
+  for (let page = 0; page < 40; page += 1) {
+    const res = await ttPost(token, shop, '/fulfillment/202309/packages/search', { package_status: 'PROCESSING' }, { page_size: 50, ...(pageToken ? { page_token: pageToken } : {}) })
+    all.push(...(res.packages || []))
+    pageToken = res.next_page_token || ''
+    if (!pageToken) break
+  }
+  return all
+}
+
 async function packages(token, shop) {
   const list = await tables([{
     id: 'packages',
@@ -71,9 +84,9 @@ packages.details = {
 
 /** Row and table actions: `actions[action](token, shop, id, value) → { message }`. */
 packages.actions = {
-  /** Ships every package TikTok shows as ready (read again here, not taken from the page), 50 per call. */
+  /** Ships every package TikTok has waiting to ship (asked again here, all pages, not taken from the page), 50 per call. */
   'ship-all': async (token, shop) => {
-    const ready = (await searchPackages(token, shop)).filter((p) => READY.test(p.package_status || p.status || '')).map((p) => p.id)
+    const ready = (await packagesToShip(token, shop)).filter((p) => READY.test(p.package_status || p.status || 'PROCESSING')).map((p) => p.id)
     if (!ready.length) return { message: 'No packages are ready to ship.' }
     const failed = []
     for (let i = 0; i < ready.length; i += BATCH) {

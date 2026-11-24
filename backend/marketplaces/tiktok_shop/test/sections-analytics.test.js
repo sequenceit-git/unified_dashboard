@@ -107,3 +107,18 @@ test('a detail action runs the section file’s own detail', async () => {
     } finally { adapter.sections.analytics.details = real }
   } finally { restore() }
 })
+
+test('built-in object names are not details or actions (no token leak)', async () => {
+  const restore = stubModules({
+    '/models/Shop': modelStub(() => ({ _id: 's1', marketplace: 'tiktok_shop', status: 'connected' })),
+    '../manager': { withShopToken: async (shop, fn) => fn('SECRET-TOKEN') },
+  })
+  try {
+    const service = freshRequire('marketplaces/tiktok_shop/app/services/sections.js')
+    for (const actionId of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) {
+      const ctx = { user: { role: 'super_admin' }, params: { sectionId: 'analytics', actionId }, query: { id: '1' }, body: { id: '1' } }
+      await assert.rejects(service.sectionDetail(ctx), (e) => e.status === 404, `detail ${actionId}`)
+      await assert.rejects(service.sectionAction(ctx), (e) => e.status === 404, `action ${actionId}`)
+    }
+  } finally { restore() }
+})
