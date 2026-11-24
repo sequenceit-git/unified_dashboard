@@ -50,10 +50,17 @@ test('video results list views to GMV per video', async () => {
     assert.deepEqual(data.tables.map((x) => x.tab), ['Videos & LIVE', 'Videos & LIVE', 'Video results', 'LIVE results', 'Bestsellers', 'Bestsellers', 'Bestsellers', 'Bestsellers'])
     const topProducts = data.tables.find((x) => x.id === 'bestsellingProducts')
     assert.deepEqual([topProducts.rows[0].title, topProducts.rows[0].shopOrRating, topProducts.rows[0].gmvRange], ['Hero item', 'Demo Shop · ★ 4.9', '$500 - $1000'])
-    for (const suffix of ['shop_videos/performance', 'shop_lives/performance', 'shop_videos/overview_performance', 'shop_lives/overview_performance']) {
+    for (const suffix of ['shop_videos/performance', 'shop_videos/overview_performance', 'shop_lives/overview_performance']) {
       const hit = calls.find(([p]) => p.endsWith(suffix))
       assert.equal(hit?.[1]?.account_type, 'ALL', `expected account_type=ALL on ${suffix}`)
     }
+    const liveTypes = new Set(
+      calls
+        .filter(([p]) => p.endsWith('shop_lives/performance') && !p.endsWith('overview_performance'))
+        .map(([, q]) => q?.account_type),
+    )
+    assert.deepEqual([...liveTypes].sort(), ['AFFILIATE_ACCOUNTS', 'MARKETING_ACCOUNTS', 'OFFICIAL_ACCOUNTS'])
+    assert.equal(liveTypes.has('ALL'), false)
     for (const suffix of ['videos/bestselling', 'lives/bestselling', 'products/bestselling', 'creators/bestselling']) {
       const hit = calls.find(([p]) => p.endsWith(suffix))
       assert.match(String(hit?.[1]?.date), /^\d{4}-\d{2}-\d{2}$/, `expected date on ${suffix}`)

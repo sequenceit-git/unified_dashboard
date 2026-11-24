@@ -26,12 +26,12 @@ async function withBestsellingDate(call, now = new Date()) {
 
 async function videosLive(token, shop, { now = new Date() } = {}) {
   const range = ttRange(30, now)
-  const callWithFallback = async (primary, secondary, legacy) => withVersionFallback(
-    () => ttGet(token, shop, primary, { ...range, page_size: 50, account_type: 'ALL' }),
+  const callWithFallback = async (primary, secondary, legacy, accountType = 'ALL') => withVersionFallback(
+    () => ttGet(token, shop, primary, { ...range, page_size: 50, account_type: accountType }),
     () => (legacy ? withVersionFallback(
-      () => ttGet(token, shop, secondary, { ...range, page_size: 50, account_type: 'ALL' }),
-      () => ttGet(token, shop, legacy, { ...range, page_size: 50, account_type: 'ALL' }),
-    ) : ttGet(token, shop, secondary, { ...range, page_size: 50, account_type: 'ALL' })),
+      () => ttGet(token, shop, secondary, { ...range, page_size: 50, account_type: accountType }),
+      () => ttGet(token, shop, legacy, { ...range, page_size: 50, account_type: accountType }),
+    ) : ttGet(token, shop, secondary, { ...range, page_size: 50, account_type: accountType })),
   )
   let videoIds = []
   const tiles = []
@@ -61,16 +61,29 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       tab: 'Videos & LIVE',
       title: 'LIVE sessions (last 30 days)',
       columns: [col('title', 'Session'), col('creator', 'Host'), col('start', 'Started', 'date'), col('viewers', 'Viewers', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
-      load: async () => (await callWithFallback('/analytics/202609/shop_lives/performance', '/analytics/202509/shop_lives/performance', '/analytics/202508/shop_lives/performance')).live_stream_sessions?.map((row) => ({
-        id: String(row.id),
-        title: row.title || row.id,
-        creator: row.username || '',
-        start: seconds(row.start_time),
-        viewers: Number(row.interaction_performance?.viewers ?? row.viewers ?? 0),
-        orders: Number(row.sales_performance?.sku_orders ?? 0),
-        gmv: money(row.sales_performance?.gmv),
-        actions: [{ id: 'live', label: 'Per minute', detail: true }],
-      })) || [],
+      load: async () => {
+        const TYPES = ['OFFICIAL_ACCOUNTS', 'MARKETING_ACCOUNTS', 'AFFILIATE_ACCOUNTS']
+        const settled = await Promise.allSettled(TYPES.map((t) => callWithFallback('/analytics/202609/shop_lives/performance', '/analytics/202509/shop_lives/performance', '/analytics/202508/shop_lives/performance', t)))
+        const ok = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value)
+        if (!ok.length) throw settled[0].reason
+        const seen = new Set()
+        const sessions = ok.flatMap((r) => r.live_stream_sessions || []).filter((row) => {
+          const id = String(row.id)
+          if (seen.has(id)) return false
+          seen.add(id)
+          return true
+        })
+        return sessions.map((row) => ({
+          id: String(row.id),
+          title: row.title || row.id,
+          creator: row.username || '',
+          start: seconds(row.start_time),
+          viewers: Number(row.interaction_performance?.viewers ?? row.viewers ?? 0),
+          orders: Number(row.sales_performance?.sku_orders ?? 0),
+          gmv: money(row.sales_performance?.gmv),
+          actions: [{ id: 'live', label: 'Per minute', detail: true }],
+        }))
+      },
     },
   ])
   const results = await tables([
