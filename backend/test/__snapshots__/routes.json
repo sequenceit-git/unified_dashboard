@@ -180,6 +180,7 @@
       "GET /sections/shipping/:packageId/label",
       "POST /sections/shipping/:packageId/ship",
       "PATCH /shops/:id/ai-reply",
+      "POST /shops/:id/refresh-permissions",
       "GET /shops/:id/categories",
       "GET /shops/:id/categories/:categoryId/attributes",
       "GET /shops/:id/categories/:categoryId/rules",

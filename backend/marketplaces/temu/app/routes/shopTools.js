@@ -20,6 +20,16 @@ function shopToolsRoutes(shopKey) {
     }
   })
 
+  // POST /api/<shop>/shops/:id/refresh-permissions — store the API methods Temu grants this shop's app
+  router.post('/:id/refresh-permissions', async (req, res) => {
+    try {
+      res.json(await service.refreshPermissions(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/shops/:id/categories — Fetch marketplace taxonomy categories
   router.get('/:id/categories', async (req, res) => {
     try {

@@ -41,12 +41,6 @@
     "priority": "medium",
     "value": "Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction."
   },
-  "bg.open.accesstoken.info.get": {
-    "section": "new: account",
-    "size": "small",
-    "priority": "medium",
-    "value": "Check the access token: the store it belongs to, its expiry and the API scopes granted (spot a missing permission before a call fails)."
-  },
   "temu.local.mall.tags.get": {
     "section": "new: account",
     "size": "small",

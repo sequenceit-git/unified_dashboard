@@ -87,4 +87,20 @@ async function temuAdReport(token, days) {
   }
 }
 
-module.exports = { AFTERSALES_GROUP, temuTime, temuAmount, temuGoodsRows, TEMU_AFTERSALES_STATUS, adVal, adMoney, temuAdReport }
+/**
+ * Wraps a table loader for one Temu API method: when the shop's granted methods are known and this
+ * one isn't among them, says how to enable it instead of calling Temu. Shops without a recorded
+ * list (connected before it was stored) are not blocked.
+ */
+function grantAware(shop, method, load) {
+  return async (...args) => {
+    const granted = shop?.grantedScopes
+    if (Array.isArray(granted) && granted.length && !granted.includes(method)) {
+      throw new Error(`This needs "${method}" enabled for the app in the Temu partner account, then reconnect the shop in Settings.`)
+    }
+    return load(...args)
+  }
+}
+
+module.exports = {
+  grantAware, AFTERSALES_GROUP, temuTime, temuAmount, temuGoodsRows, TEMU_AFTERSALES_STATUS, adVal, adMoney, temuAdReport }

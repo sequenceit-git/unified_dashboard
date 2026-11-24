@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
+| Temu | 133 | 22 | 0 | 111 | 0 | 30 | — |
 
 ## eBay
 
@@ -1750,11 +1750,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | low | small | `temu.logistics.shipment.pickup.reservation.create` | — | Create package reservation api | Carrier pickup reservations, label list and shipping logistics types. |
 | — | low | small | `temu.logistics.shipment.pickup.reservation.result.get` | — | Get package reservation result api | Carrier pickup reservations, label list and shipping logistics types. |
 
-#### new: account (2)
+#### new: account (1)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | medium | small | `bg.open.accesstoken.info.get` | — | Get Accesstoken Detail Information | Check the access token: the store it belongs to, its expiry and the API scopes granted (spot a missing permission before a call fails). |
 | — | low | small | `temu.local.mall.tags.get` | — | get store tags | Store tags (store type and programs). |
 
 #### new: cooperative warehouse (5)
@@ -1782,7 +1781,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Ads | `temu.searchrec.ad.reports.goods.query` | Advertisement goods data report (goods dimension) interface | Advertisement goods data report (goods dimension) |  |
 | missing | Ads | `temu.searchrec.ad.roas.pred` | Advertising roas prediction interface | Advertising roas prediction |  |
 | covered | Authorization | `bg.open.accesstoken.create` | Get Access Token | Temu's authorization callback interface allows developers to receive notifications when a user has successfully authorized their application. When after the user grants permission, Temu will redirect back to the develope | `marketplaces/temu/client.js` |
-| missing | Authorization | `bg.open.accesstoken.info.get` | Get Accesstoken Detail Information | This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints. |  |
+| covered | Authorization | `bg.open.accesstoken.info.get` | Get Accesstoken Detail Information | This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints. | `marketplaces/temu/app/services/sections.js`, `marketplaces/temu/client.js` |
 | missing | Authorization | `temu.local.mall.tags.get` | get store tags | This API allows sellers to retrieve the list of store tags currently assigned to their store. |  |
 | missing | Compliance | `bg.arbok.open.cert.queryNeedUploadItems` | bg.arbok.open.cert.queryNeedUploadItems | ￼External key customers have their own development capabilities and can call APIs to query the content to be uploaded |  |
 | missing | Compliance | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | External key customers have their own development capabilities and can call APIs to submit qualifications |  |

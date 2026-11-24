@@ -210,6 +210,17 @@ async function shipPackage(ctx) {
 }
 
 /** GET /:id/categories */
+/** POST /shops/:id/refresh-permissions — reads which API methods the shop's token may call and stores them. */
+async function refreshPermissions(ctx) {
+    const shop = await Shop.findOne({ _id: ctx.params.id, marketplace: 'temu' })
+    if (!shop) throw new HttpError(404, { error: 'Shop not found' })
+    const temu = require('../../service')
+    const info = await marketplaceManager.withShopToken(shop, (token) => temu.call('bg.open.accesstoken.info.get', { access_token: token }))
+    const grantedScopes = Array.isArray(info.apiScopeList) ? info.apiScopeList : []
+    await Shop.updateOne({ _id: shop._id }, { grantedScopes })
+    return { methods: grantedScopes.length, grantedScopes }
+}
+
 async function categories(ctx) {
     const shop = await Shop.findById(ctx.params.id).select('+auth.accessTokenEnc')
     if (!shop) throw new HttpError(404, { error: 'Shop not found' })
@@ -302,4 +313,4 @@ async function setAiReply(ctx) {
     return shop
 }
 
-module.exports = { connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, categories, attributes, categoryRules, brands, sizeCharts, finances, setAiReply }
+module.exports = { refreshPermissions, connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, categories, attributes, categoryRules, brands, sizeCharts, finances, setAiReply }

@@ -40,11 +40,15 @@ class TemuClient {
     const token = result.accessToken || result.access_token
     const mallId = result.mallId || result.mall_id
     if (!token) throw new Error('Temu did not return an access token')
+    // The API methods this app may call for the shop; ask Temu when the reply doesn't list them.
+    let granted = Array.isArray(result.apiScopeList) ? result.apiScopeList : null
+    if (!granted) granted = (await this.call('bg.open.accesstoken.info.get', { access_token: token }).catch(() => ({}))).apiScopeList || null
     return {
       access_token: token,
       expires_in: result.expiredTime || result.expires_in,
       externalShopId: mallId ? String(mallId) : `temu-${Date.now()}`,
       shopName: result.mallName || 'Temu Shop',
+      ...(granted ? { grantedScopes: granted } : {}),
     }
   }
 
