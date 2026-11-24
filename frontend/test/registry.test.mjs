@@ -31,21 +31,17 @@ test('sidebar subsections are unchanged', async () => {
 
 /** A section's action columns (src/marketplaces/<key>/sections/<id>/tableActions.jsx). */
 const actions = async (key, id) => (await load(`/src/marketplaces/${key}/sections/${id}/tableActions.jsx`)).default.tableActions
-const SECTIONS_WITH_ACTIONS = { ebay: ['returns-cases', 'offers', 'promotions'], tiktok_shop: ['returns-cancellations', 'promotions', 'packages'], temu: ['after-sales'] }
+// Temu's Returns & refunds page has its own buttons (temu/sections/after-sales/returnsView.js, tested in temu-returns.test.mjs).
+const SECTIONS_WITH_ACTIONS = { ebay: ['returns-cases', 'offers', 'promotions'], tiktok_shop: ['returns-cancellations', 'promotions', 'packages'] }
 
 test('section tables with actions per shop', async () => {
   const wired = async (key) => Object.fromEntries(await Promise.all(SECTIONS_WITH_ACTIONS[key].map(async (id) => [id, Object.keys(await actions(key, id)).sort()])))
   assert.deepEqual(await wired('ebay'), { 'returns-cases': ['cancellations', 'returns'], offers: ['eligible'], promotions: ['activities', 'promotions'] })
   assert.deepEqual(await wired('tiktok_shop'), { 'returns-cancellations': ['cancellations', 'returns'], promotions: ['activities', 'promotions'], packages: ['packages'] })
-  assert.deepEqual(await wired('temu'), { 'after-sales': ['cancellations', 'returns'] })
 })
 
-test('Temu returns: approve & refund only, reviewing label; eBay: approve and decline', async () => {
+test('eBay returns: approve and decline', async () => {
   const ctx = { onAction: () => {} }
-  const temu = await actions('temu', 'after-sales')
-  assert.deepEqual(texts(temu.returns({ status: 'Pending' }, ctx)), ['Approve & refund'])
-  assert.deepEqual(texts(temu.returns({ status: 'Platform reviewing' }, ctx)), ['Temu reviewing'])
-  assert.deepEqual(texts(temu.cancellations({ status: 'Pending' }, ctx)), ['Approve'])
   const ebay = await actions('ebay', 'returns-cases')
   assert.deepEqual(texts(ebay.returns({ status: 'Requested' }, ctx)), ['Approve', 'Decline'])
   assert.deepEqual(texts(ebay.cancellations({ status: 'Closed' }, ctx)), ['Processed'])
