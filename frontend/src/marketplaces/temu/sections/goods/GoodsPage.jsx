@@ -4,6 +4,8 @@ import { useShopSection } from '../../../../hooks/useShopSection'
 import { useShopProfile } from '../../../../hooks/useShopProfiles'
 import Button from '../../../../components/ui/Button'
 import CatalogTab from './CatalogTab'
+import ComplianceTab from './ComplianceTab'
+import Tabs from '../../../../components/ui/Tabs'
 import DirectListModal from './DirectListModal'
 import { hasDirectListingWork, useDirectListing } from './hooks/useDirectListing'
 import ListModal from './ListModal'
@@ -20,6 +22,7 @@ export default function GoodsPage() {
   const [listPrefill, setListPrefill] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [rowPatch, setRowPatch] = useState(null)
+  const [tab, setTab] = useState('catalog')
   const { session: directSession } = useDirectListing(marketplace)
   const directWork = hasDirectListingWork(marketplace)
 
@@ -69,14 +72,15 @@ export default function GoodsPage() {
       )}
       <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="p-4">
-          <CatalogTab
+          <div className="mb-3"><Tabs tabs={[{ id: 'catalog', label: 'Goods' }, { id: 'compliance', label: 'Compliance' }]} active={tab} onChange={setTab} /></div>
+          {tab === 'compliance' ? <ComplianceTab /> : <CatalogTab
             onEdit={setEditing}
             onList={setListing}
             refreshKey={refreshKey}
             rowPatch={rowPatch}
             marketplace={marketplace}
             listLabel={listAction}
-          />
+          />}
         </div>
       </div>
       {(showNew || editing) && (

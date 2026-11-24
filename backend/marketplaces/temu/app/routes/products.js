@@ -52,6 +52,19 @@ function productsRoutes(shopKey) {
     }
   })
 
+  // Temu compliance (app/services/compliance.js): goods with certificates, a goods' detail, certificate upload.
+  const compliance = require('../services/compliance')
+  for (const [method, path, fn] of [['get', '/compliance', 'list'], ['get', '/:goodsId/compliance', 'detail'], ['post', '/:goodsId/certificates', 'uploadCertificate']]) {
+    router[method](path, async (req, res) => {
+      try {
+        res.json(await compliance[fn](ctxOf(req)))
+      } catch (err) {
+        if (err instanceof HttpError) return res.status(err.status).json(err.body)
+        res.status(502).json({ error: err.message })
+      }
+    })
+  }
+
   // Temu listing helpers (app/services/goodsHelpers.js): /api/<shop>/goods/helpers/*
   const goodsHelpers = require('../services/goodsHelpers')
   router.get('/helpers/categories/recommend', async (req, res) => {

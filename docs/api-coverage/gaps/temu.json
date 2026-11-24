@@ -41,30 +41,6 @@
     "priority": "low",
     "value": "Store tags (store type and programs)."
   },
-  "bg.arbok.open.cert.queryNeedUploadItems": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
-  "bg.arbok.open.cert.uploadProductCert": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
-  "bg.arbok.open.product.cert.query": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
-  "bg.arbok.open.upload.uploadFile": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
   "bg.compliance.edit": {
     "section": "goods",
     "size": "medium",
@@ -72,12 +48,6 @@
     "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
   },
   "bg.compliance.metadata.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
-  "bg.local.compliance.goods.list.query": {
     "section": "goods",
     "size": "medium",
     "priority": "medium",
@@ -137,12 +107,6 @@
     "priority": "low",
     "value": "Order customisation details and order verification uploads."
   },
-  "bg.goods.compliancelabel.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
   "bg.local.goods.category.check": {
     "section": "goods",
     "size": "medium",
@@ -162,12 +126,6 @@
     "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
   },
   "bg.local.goods.compliance.info.fill.list.query": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
-  "bg.local.goods.compliance.rules.get": {
     "section": "goods",
     "size": "medium",
     "priority": "medium",

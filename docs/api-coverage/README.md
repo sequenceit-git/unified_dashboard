@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 56 | 0 | 77 | 0 | 13 | — |
+| Temu | 133 | 63 | 0 | 70 | 0 | 13 | — |
 
 ## eBay
 
@@ -1582,7 +1582,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 | — | medium | medium | `temu.aftersales.upload.returnlabel` | — | Upload return label | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
-#### goods (35)
+#### goods (28)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
@@ -1592,18 +1592,11 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | high | large | `temu.local.goods.v2.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.v3.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | medium | small | `bg.local.goods.out.sn.set` | — | Set contribution ID for goods | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
-| — | medium | medium | `bg.arbok.open.cert.queryNeedUploadItems` | — | bg.arbok.open.cert.queryNeedUploadItems | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.arbok.open.cert.uploadProductCert` | — | bg.arbok.open.cert.uploadProductCert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.arbok.open.product.cert.query` | — | query product cert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.arbok.open.upload.uploadFile` | — | bg.arbok.open.upload.uploadFile | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.compliance.edit` | — | edit_compliance | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.compliance.metadata.get` | — | query_compliance_metadata | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.goods.compliancelabel.get` | — | bg.goods.compliancelabel.get | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.compliance.goods.list.query` | — | Product compliance list query | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.local.goods.compliance.edit` | — | Edit product qualification information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.local.goods.compliance.extra.template.get` | — | Inquire Required Compliance Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.local.goods.compliance.info.fill.list.query` | — | Query compliance information fill in the drop-down list | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.goods.compliance.rules.get` | — | Query Mandatory Qualification Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `temu.local.goods.compliance.v2.edit` | — | edit goods compliance interface v2 version | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | low | small | `bg.flash.open.upload.real.image` | — | Kaiping real shot picture upload | Upload real product photos (real-shot images). |
 | — | low | small | `bg.flash.open.upload.recognize` | — | Kaiping real-time image acquisition test result interface | Upload real product photos (real-shot images). |
@@ -1699,13 +1692,13 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Authorization | `bg.open.accesstoken.create` | Get Access Token | Temu's authorization callback interface allows developers to receive notifications when a user has successfully authorized their application. When after the user grants permission, Temu will redirect back to the develope | `marketplaces/temu/client.js` |
 | covered | Authorization | `bg.open.accesstoken.info.get` | Get Accesstoken Detail Information | This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints. | `marketplaces/temu/app/services/sections.js`, `marketplaces/temu/client.js` |
 | missing | Authorization | `temu.local.mall.tags.get` | get store tags | This API allows sellers to retrieve the list of store tags currently assigned to their store. |  |
-| missing | Compliance | `bg.arbok.open.cert.queryNeedUploadItems` | bg.arbok.open.cert.queryNeedUploadItems | ￼External key customers have their own development capabilities and can call APIs to query the content to be uploaded |  |
-| missing | Compliance | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | External key customers have their own development capabilities and can call APIs to submit qualifications |  |
-| missing | Compliance | `bg.arbok.open.product.cert.query` | query product cert | Some large stores with R&D capabilities, after using the Kaiping interface to upload qualifications in batches, need to query the reasons for the rejection of product qualifications in batches |  |
-| missing | Compliance | `bg.arbok.open.upload.uploadFile` | bg.arbok.open.upload.uploadFile | Large external customers have their own development capabilities and can call APIs to upload files |  |
+| covered | Compliance | `bg.arbok.open.cert.queryNeedUploadItems` | bg.arbok.open.cert.queryNeedUploadItems | ￼External key customers have their own development capabilities and can call APIs to query the content to be uploaded | `marketplaces/temu/app/services/compliance.js` |
+| covered | Compliance | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | External key customers have their own development capabilities and can call APIs to submit qualifications | `marketplaces/temu/app/services/compliance.js` |
+| covered | Compliance | `bg.arbok.open.product.cert.query` | query product cert | Some large stores with R&D capabilities, after using the Kaiping interface to upload qualifications in batches, need to query the reasons for the rejection of product qualifications in batches | `marketplaces/temu/app/services/compliance.js` |
+| covered | Compliance | `bg.arbok.open.upload.uploadFile` | bg.arbok.open.upload.uploadFile | Large external customers have their own development capabilities and can call APIs to upload files | `marketplaces/temu/app/services/compliance.js` |
+| covered | Compliance | `bg.local.compliance.goods.list.query` | Product compliance list query | Product management attribute list query | `marketplaces/temu/app/services/compliance.js` |
 | missing | Compliance | `bg.compliance.edit` | edit_compliance | edit compliance info |  |
 | missing | Compliance | `bg.compliance.metadata.get` | query_compliance_metadata | query compliance metadata |  |
-| missing | Compliance | `bg.local.compliance.goods.list.query` | Product compliance list query | Product management attribute list query |  |
 | missing | Flash (real images) | `bg.flash.open.upload.real.image` | Kaiping real shot picture upload | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
 | missing | Flash (real images) | `bg.flash.open.upload.recognize` | Kaiping real-time image acquisition test result interface | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
 | covered | Order | `bg.order.amount.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP | `marketplaces/temu/orders.js` |
@@ -1722,11 +1715,13 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Order | `temu.order.cancel.appeal.result.get` | Merchant initiates order cancellation result query interface | Merchant queries the status of cancellation order appeal records |  |
 | missing | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface |  |
 | missing | Order verification | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods. |  |
+| covered | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels | `marketplaces/temu/app/services/compliance.js` |
 | covered | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.category.recommend` | Query Recommended Category by Product Name | query recommended category by product name | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.cats.get` | Query Categories | Get Temu Categories | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.compliance.property.check` | Verify Product Attribute Settings | Verify Product Attribute Settings | `marketplaces/temu/listings.js` |
-| covered | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail | `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.compliance.rules.get` | Query Mandatory Qualification Information | Query Mandatory Qualification Information | `marketplaces/temu/app/services/compliance.js` |
+| covered | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail | `marketplaces/temu/app/services/compliance.js`, `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.image.upload` | Image material processing | Image material processing | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.list.query` | Get product list | Get product list | `marketplaces/temu/listings.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.out.sn.check` | Check if contribution ID for goods is repeated | Check if contribution ID for goods is repeated | `marketplaces/temu/app/services/goodsHelpers.js` |
@@ -1751,12 +1746,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |
-| missing | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels |  |
 | missing | Product | `bg.local.goods.category.check` | goods category precheck | precheck category misplacement |  |
 | missing | Product | `bg.local.goods.compliance.edit` | Edit product qualification information | Edit product qualification information |  |
 | missing | Product | `bg.local.goods.compliance.extra.template.get` | Inquire Required Compliance Information | Inquire Required Compliance Information |  |
 | missing | Product | `bg.local.goods.compliance.info.fill.list.query` | Query compliance information fill in the drop-down list | local-local goods B, query compliance information fill in the drop-down list |  |
-| missing | Product | `bg.local.goods.compliance.rules.get` | Query Mandatory Qualification Information | Query Mandatory Qualification Information |  |
 | missing | Product | `bg.local.goods.gallery.signature.get` | Get Signature | Get gallery Signature |  |
 | missing | Product | `bg.local.goods.out.sn.set` | Set contribution ID for goods | Set contribution ID for goods |  |
 | missing | Product | `bg.local.goods.property.get` | Get temu attributes | Get Temu goods attributes |  |
