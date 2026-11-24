@@ -9,7 +9,9 @@ const { shopFilter, canAccessShop } = require('../../../../middleware/auth')
 const ADAPTER = require('../..')
 
 function dates(req) {
-  const to = req.query.to ? new Date(req.query.to) : new Date()
+  // A plain calendar day ("2026-11-23") as `to` counts in full.
+  const plainDay = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.to || ''))
+  const to = req.query.to ? new Date(plainDay ? `${req.query.to}T23:59:59.999Z` : req.query.to) : new Date()
   const from = req.query.from ? new Date(req.query.from) : new Date(to.getTime() - 29 * 86400000)
   return { from, to }
 }

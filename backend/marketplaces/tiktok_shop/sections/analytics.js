@@ -48,6 +48,7 @@ async function healthRows(token, shop) {
     value: m.value != null ? `${m.value}${m.value_unit || ''}` : '',
     target: m.benchmarks?.excellent_threshold != null ? `${m.benchmarks.excellent_threshold}${m.value_unit || ''}` : '',
     status: m.status_text || m.status || '',
+    statusCode: m.status || '',
     reason: m.top_reason_text || '',
     actions: [{ id: 'metric', label: 'Diagnose', detail: true }],
   }))

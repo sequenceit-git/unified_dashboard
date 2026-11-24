@@ -8,14 +8,14 @@ test.after(() => server.close())
 
 const day = (date, o = {}) => ({ date, gmv: 0, orders: 0, items: 0, refunds: null, customers: null, pageViews: null, visitors: null, conversion: null, channels: null, ...o })
 
-test('periods and change', async () => {
+test('periods are whole days ending at the last day with data, never overlapping', async () => {
   const { PERIODS, periodRanges, change, pointsChange } = await load()
   assert.deepEqual(PERIODS.map((p) => p.value), ['7', '30', '60', '90'])
-  const r = periodRanges(7, new Date('2026-11-24T15:00:00'))
-  assert.equal(r.current.from, new Date('2026-11-18T00:00:00').toISOString())
-  assert.equal(r.previous.from, new Date('2026-11-11T00:00:00').toISOString())
+  assert.deepEqual(periodRanges(7, '2026-11-23'), { current: { from: '2026-11-17', to: '2026-11-23' }, previous: { from: '2026-11-10', to: '2026-11-16' } })
+  assert.deepEqual(periodRanges(30, '2026-03-01').previous, { from: '2026-01-01', to: '2026-01-30' })
   assert.equal(change(110, 100), 10)
   assert.equal(change(5, 0), null)
+  assert.equal(change(5, undefined), null)
   assert.equal(change(50, -100), 150)
   assert.equal(pointsChange(2.5, 2.2), 0.3)
   assert.equal(pointsChange(null, 2.2), null)
@@ -43,7 +43,7 @@ test('channel share sums to 100 and is null without channel data', async () => {
 
 test('the previous period lines up by day index', async () => {
   const { withPrevious } = await load()
-  const rows = withPrevious([day('2026-11-19', { gmv: 10 })], [day('2026-11-16', { gmv: 4 })], 3, new Date('2026-11-18T00:00:00').toISOString())
+  const rows = withPrevious([day('2026-11-19', { gmv: 10 })], [day('2026-11-16', { gmv: 4 })], 3, '2026-11-18')
   assert.deepEqual(rows, [{ date: '2026-11-18', gmv: 0, prevGmv: 0 }, { date: '2026-11-19', gmv: 10, prevGmv: 4 }, { date: '2026-11-20', gmv: 0, prevGmv: 0 }])
 })
 
@@ -53,6 +53,11 @@ test('shop health: problems are metrics whose status is not a good one', async (
   assert.equal(needsWork('Good'), false)
   assert.equal(needsWork('Needs work'), true)
   assert.equal(needsWork(''), false)
+  assert.equal(needsWork('Not good'), true)
+  assert.equal(needsWork('Does not meet'), true)
+  assert.equal(needsWork("Doesn't meet"), true)
+  assert.equal(needsWork('Good', 'POOR'), true)
+  assert.equal(needsWork('', 'EXCELLENT'), false)
   const v = healthView({
     summary: [{ id: 'sps-score', value: '4.2', sub: 'Good' }, { id: 'peers', value: '72%' }, { id: 'benefits', value: '3 of 5' }],
     tables: [{ id: 'health', rows: [{ id: 'OTDR', metric: 'Late dispatch rate', value: '4.1%', target: '2%', status: 'Needs work', reason: 'Mondays' }, { id: 'NRR', metric: 'Negative reviews', value: '0.5%', status: 'Excellent' }] }],

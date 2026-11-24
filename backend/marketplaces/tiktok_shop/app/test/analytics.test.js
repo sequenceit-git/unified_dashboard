@@ -27,7 +27,7 @@ test('order totals count only TikTok Shop orders in the date range, without canc
     assert.equal($match.marketplace, 'tiktok_shop', 'whatever the client sends, only TikTok Shop rows')
     assert.deepEqual($match.status, { $nin: ['cancelled', 'refunded'] })
     assert.equal($match.placedAt.$gte.toISOString(), '2026-11-01T00:00:00.000Z')
-    assert.equal($match.placedAt.$lte.toISOString(), '2026-11-20T00:00:00.000Z')
+    assert.equal($match.placedAt.$lte.toISOString(), '2026-11-20T23:59:59.999Z', 'a plain "to" day counts in full')
   } finally { restore() }
 })
 

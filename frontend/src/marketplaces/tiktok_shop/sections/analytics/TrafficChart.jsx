@@ -1,8 +1,10 @@
 /** Product page views and visitors by day (TikTok's traffic data). */
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import Card from '../../../../components/ui/Card'
+import { Spinner } from '../../../../components/ui/Feedback'
 
-export default function TrafficChart({ rows }) {
+export default function TrafficChart({ rows, loading }) {
+  if (loading) return <Card className="min-w-0"><Spinner /></Card>
   return (
     <Card className="min-w-0 max-w-full overflow-hidden">
       <h2 className="mb-2 font-semibold">Traffic</h2>

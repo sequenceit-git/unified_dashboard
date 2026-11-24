@@ -58,6 +58,7 @@ test('shop health shows the score, benefits and each metric', async () => {
     const health = data.tables.find((t) => t.id === 'health')
     assert.equal(health.tab, 'Shop health')
     assert.deepEqual([health.rows[0].metric, health.rows[0].value, health.rows[0].status], ['Late dispatch rate', '2.1%', 'Needs work'])
+    assert.ok('statusCode' in health.rows[0])
     assert.ok(data.summary.some((s) => s.tab === 'Shop health' && s.label === 'Shop performance score' && s.value === '4.2'))
     assert.equal(data.summary.find((s) => s.label === 'Shop performance score').id, 'sps-score')
     assert.ok(data.summary.filter((s) => s.id === 'benefits' || s.id === 'peers' || s.id === 'dimension').length >= 1)

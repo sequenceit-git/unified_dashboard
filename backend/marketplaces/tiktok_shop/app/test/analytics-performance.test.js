@@ -65,3 +65,21 @@ test("a sub-admin without the TikTok shop gets orders only, and TikTok isn't ask
     assert.equal(calls.length, 0)
   } finally { restore() }
 })
+
+test('plain calendar days count in full: the "to" day is included', async () => {
+  const pipelines = []
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean']) p[m] = () => p; return p }
+  const restore = stubModules({
+    '/models/Order': { schema: { path: () => true }, aggregate: async (pl) => { pipelines.push(pl); return [] } },
+    '/models/Product': {},
+    '/models/Listing': {},
+    '/models/Shop': { findOne: () => chain(null), find: () => chain([]) },
+    '../manager': {},
+    '../..': { hooks: { analytics: {} } },
+  })
+  try {
+    const service = freshRequire('marketplaces/tiktok_shop/app/services/analytics.js')
+    await service.performance({ ...admin, query: { from: '2026-11-17', to: '2026-11-23' } })
+    assert.equal(pipelines[0][0].$match.placedAt.$lte.toISOString(), '2026-11-23T23:59:59.999Z')
+  } finally { restore() }
+})

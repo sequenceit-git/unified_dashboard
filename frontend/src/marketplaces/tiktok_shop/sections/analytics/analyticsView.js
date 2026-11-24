@@ -1,24 +1,32 @@
 /** What the TikTok Shop analytics page shows: periods, totals, channels, traffic, shop health. */
 
+function dayKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export const PERIODS = [7, 30, 60, 90].map((d) => ({ value: String(d), label: `Last ${d} days` }))
 
 const round1 = (n) => Math.round(n * 10) / 10
 const round2 = (n) => Math.round(n * 100) / 100
 const num = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v))
 
-/** The last `days` days (to the end of today) and the same number of days just before them. */
-export function periodRanges(days, now = new Date()) {
+const toDay = (s) => new Date(`${s}T00:00:00`)
+const addDays = (s, n) => { const d = toDay(s); d.setDate(d.getDate() + n); return dayKey(d) }
+
+/** Today as a calendar day (YYYY-MM-DD, local). */
+export function today(now = new Date()) {
+  return dayKey(now)
+}
+
+/**
+ * `days` whole calendar days ending on `endDay` (TikTok's latest day with data, or today) and the
+ * same number of days just before them: never overlapping, never longer than asked.
+ */
+export function periodRanges(days, endDay) {
   const n = Number(days)
-  const end = new Date(now)
-  end.setHours(23, 59, 59, 999)
-  const start = new Date(now)
-  start.setHours(0, 0, 0, 0)
-  start.setDate(start.getDate() - (n - 1))
-  const prevStart = new Date(start)
-  prevStart.setDate(prevStart.getDate() - n)
   return {
-    current: { from: start.toISOString(), to: end.toISOString() },
-    previous: { from: prevStart.toISOString(), to: new Date(start.getTime() - 1).toISOString() },
+    current: { from: addDays(endDay, -(n - 1)), to: endDay },
+    previous: { from: addDays(endDay, -(2 * n - 1)), to: addDays(endDay, -n) },
   }
 }
 
@@ -67,12 +75,10 @@ export function channelShare(days) {
     .sort((a, b) => b.amount - a.amount)
 }
 
-const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
 /** One row per day of the current period with the previous period's GMV on the same day index. */
 export function withPrevious(current, previous, days, currentFrom) {
   const n = Number(days)
-  const start = new Date(currentFrom)
+  const start = toDay(currentFrom)
   const prevStart = new Date(start)
   prevStart.setDate(prevStart.getDate() - n)
   const now = new Map((current || []).map((r) => [r.date, r]))
@@ -93,11 +99,15 @@ export function trafficRows(days) {
   return (days || []).filter((d) => d.visitors != null || d.pageViews != null).map((d) => ({ date: d.date, pageViews: d.pageViews || 0, visitors: d.visitors || 0 }))
 }
 
-const GOOD = /excellent|good|great|on track|meet/i
+const BAD = /\bnot\b|n't|below|poor|risk|improve|fail|bad|warn|needs|low/i
+const GOOD = /excellent|good|great|on.?track|meet|pass|healthy|normal/i
 
-/** TikTok doesn't document its status values: anything not reading as good needs attention. */
-export function needsWork(status) {
-  return Boolean(status) && !GOOD.test(status)
+/** TikTok doesn't document its status values: bad words win, good ones pass, anything else needs a look. */
+export function needsWork(status, code = '') {
+  const said = `${status || ''} ${code || ''}`.trim()
+  if (!said) return false
+  if (BAD.test(said)) return true
+  return !GOOD.test(said)
 }
 
 /** Shop Performance Score, benefits and the metrics that need work, from the analytics section loader. */
@@ -105,7 +115,7 @@ export function healthView(section) {
   const tiles = section?.summary || []
   const tile = (id) => tiles.find((t) => t.id === id)
   const table = (section?.tables || []).find((t) => t.id === 'health')
-  const problems = (table?.rows || []).filter((r) => needsWork(r.status))
+  const problems = (table?.rows || []).filter((r) => needsWork(r.status, r.statusCode))
   return {
     score: tile('sps-score')?.value ?? null,
     tier: tile('sps-score')?.sub || '',

@@ -1,9 +1,11 @@
 /** Where GMV came from: TikTok videos, LIVE or the product card. */
 import Card from '../../../../components/ui/Card'
+import { Spinner } from '../../../../components/ui/Feedback'
 
 const COLORS = { video: 'bg-indigo-500', live: 'bg-rose-500', productCard: 'bg-emerald-500' }
 
-export default function ChannelShare({ channels }) {
+export default function ChannelShare({ channels, loading }) {
+  if (loading) return <Card className="min-w-0"><Spinner /></Card>
   return (
     <Card className="min-w-0">
       <h2 className="mb-3 font-semibold">Where sales come from</h2>
