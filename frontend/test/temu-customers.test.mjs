@@ -13,6 +13,7 @@ test('pills and summary from the counts; unknown before the first load', async (
   assert.equal(customerSummary({ all: 40, repeat: 7 }), '40 buyers · 7 repeat buyers (18%)')
   assert.equal(customerSummary({ all: 1, repeat: 0 }), '1 buyer · 0 repeat buyers')
   assert.equal(customerSummary(null), '')
+  assert.equal(customerSummary({ all: 3, repeat: 1 }, 'ann'), '3 matching buyers · 1 repeat buyer (33%)')
 })
 
 test('an order in the buyer drawer opens on the Orders page', async () => {

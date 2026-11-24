@@ -24,6 +24,13 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
+  // Ask before throwing away typed changes (closing, or opening an order).
+  const start = customer.address || {}
+  const dirty = name !== (customer.name || '') || email !== (customer.email || '') || phone !== (customer.phone || '')
+    || street !== (start.street || '') || city !== (start.city || '') || state !== (start.state || '') || zip !== (start.zip || '')
+  const leaveOk = () => !dirty || window.confirm('Leave without saving the contact changes?')
+  const close = () => { if (leaveOk()) onClose() }
+
   const save = async (e) => {
     e.preventDefault()
     setBusy(true)
@@ -51,10 +58,10 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
     <Drawer
       title={customer.name || 'Customer'}
       subtitle={`${customer.orderCount || 0} order${customer.orderCount === 1 ? '' : 's'} · $${(customer.totalSpent || 0).toFixed(2)} spent${customer.orderCount >= 2 ? ' · repeat buyer' : ''}`}
-      onClose={onClose}
+      onClose={close}
       footer={<>
         <Button type="submit" form="temu-customer-form" disabled={busy}>{busy ? 'Saving…' : 'Save contact'}</Button>
-        <Button variant="secondary" onClick={onClose}>Close</Button>
+        <Button variant="secondary" onClick={close}>Close</Button>
       </>}
     >
       <div className="space-y-4 text-sm">
@@ -144,7 +151,7 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
             {(customer.orders || []).map((o) => (
               <li key={o._id} className="flex flex-wrap justify-between items-center gap-2 rounded bg-gray-50 px-2 py-1 dark:bg-slate-800">
                 <span>
-                  {orderLink(o) ? <Link to={orderLink(o)} className="font-mono text-xs text-indigo-600 hover:underline dark:text-indigo-400">{o.externalOrderId}</Link> : <span className="font-mono text-xs">{o.externalOrderId}</span>}
+                  {orderLink(o) ? <Link to={orderLink(o)} onClick={(e) => { if (!leaveOk()) e.preventDefault() }} className="font-mono text-xs text-indigo-600 hover:underline dark:text-indigo-400">{o.externalOrderId}</Link> : <span className="font-mono text-xs">{o.externalOrderId}</span>}
                   {(o.placedAt || o.createdAt) && <span className="ml-2 text-xs text-gray-500 dark:text-slate-400">{new Date(o.placedAt || o.createdAt).toLocaleDateString()}</span>}
                 </span>
                 <span><Badge color={statusColor(o.status)}>{o.status}</Badge> ${o.totals?.total?.toFixed(2)}</span>

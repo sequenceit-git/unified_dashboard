@@ -7,10 +7,10 @@ export function customerPills(counts) {
   ]
 }
 
-export function customerSummary(counts) {
+export function customerSummary(counts, q = '') {
   if (!counts) return ''
   const share = counts.all && counts.repeat ? ` (${Math.round((counts.repeat / counts.all) * 100)}%)` : ''
-  return `${counts.all} buyer${counts.all === 1 ? '' : 's'} · ${counts.repeat} repeat buyer${counts.repeat === 1 ? '' : 's'}${share}`
+  return `${counts.all}${String(q).trim() ? ' matching' : ''} buyer${counts.all === 1 ? '' : 's'} · ${counts.repeat} repeat buyer${counts.repeat === 1 ? '' : 's'}${share}`
 }
 
 /** The order on the Temu Orders page (it searches by ?q=). */

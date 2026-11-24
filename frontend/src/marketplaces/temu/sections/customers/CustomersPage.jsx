@@ -4,7 +4,6 @@ import { useAuth } from '../../../../auth/AuthContext'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { api, queryString } from '../../../../lib/api'
-import ShopSectionGate from '../../../../components/ShopSectionGate'
 import DataTable from '../../../../components/ui/DataTable'
 import Pagination from '../../../../components/ui/Pagination'
 import SearchInput from '../../../../components/ui/SearchInput'
@@ -13,11 +12,8 @@ import PageHeader from '../../ui/PageHeader'
 import StatusPills from '../../ui/StatusPills'
 import { customerPills, customerSummary } from './customersView'
 
+// The app's route already checks access to this section (gated route).
 export default function CustomersPage() {
-  return <ShopSectionGate sectionId="customers"><Customers /></ShopSectionGate>
-}
-
-function Customers() {
   const { token } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
@@ -37,6 +33,7 @@ function Customers() {
     if (!marketplace) return
     setLoading(true)
     setError('')
+    setOpenError('')
     try {
       const res = await api.get(`/api/temu/customers${queryString({ q, sort, page, limit: 15, repeat: pill === 'repeat' ? 1 : undefined })}`, token)
       setRows(res.data)
@@ -68,7 +65,7 @@ function Customers() {
 
   return (
     <div className="space-y-3">
-      <PageHeader title="Temu customers" summary={customerSummary(counts)} />
+      <PageHeader title="Temu customers" summary={customerSummary(counts, q)} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <StatusPills pills={customerPills(counts)} active={pill} onChange={(k) => { setPill(k); setPage(1) }} />
         <div className="w-full sm:w-72"><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search name, email, phone…" /></div>
