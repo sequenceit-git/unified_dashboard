@@ -38,6 +38,7 @@ export default function TemuOrderDetail({ orderId }) {
         <h3 className="font-semibold text-gray-900 dark:text-slate-100">Amounts on Temu</h3>
         {loading && <p className="mt-1 text-xs text-gray-500">Loading…</p>}
         {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+        {data?.amountsNote && <p className="mt-1 text-xs text-gray-500">{data.amountsNote}</p>}
         {data && (
           <ul className="mt-1 space-y-1 text-sm">
             {data.amounts.map((l) => (

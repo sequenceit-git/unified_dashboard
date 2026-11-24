@@ -15,9 +15,10 @@ const GOODS_PER_CALL = 20
  * Every SKU Temu has for the shop (up to 20 pages of 100): Temu's newer SKU list
  * (temu.local.sku.list.retrieve, token paging) when the app has it, else the older one.
  */
-async function allTemuSkus(token, shop) {
+async function allTemuSkus(token, shop, { withPrice = false } = {}) {
   const granted = Array.isArray(shop?.grantedScopes) && shop.grantedScopes.length ? shop.grantedScopes : null
-  if (!granted || granted.includes('temu.local.sku.list.retrieve')) {
+  // The older SKU list carries each SKU's price; it's used when the price itself is needed from it.
+  if (!withPrice && (!granted || granted.includes('temu.local.sku.list.retrieve'))) {
     try {
       const all = []
       let pageToken = ''
@@ -46,8 +47,12 @@ async function priceGuide(token, shop) {
     .map((l) => { const [goodsId, skuId] = String(l.externalListingId).split(':'); return { goodsId, skuId, productId: String(l.productId) } })
   const titles = new Map((await Product.find({ _id: { $in: [...new Set(listings.map((l) => l.productId))] } }).select('title').lean()).map((p) => [String(p._id), p.title]))
   const listingBySku = new Map(listings.map((l) => [l.skuId, l]))
+  // Temu US doesn't offer the SKU price query: then your price comes from the SKU list itself.
+  const granted = Array.isArray(shop?.grantedScopes) && shop.grantedScopes.length ? shop.grantedScopes : null
+  const priceQuery = !granted || granted.includes('bg.local.goods.sku.list.price.query')
   // Every SKU Temu has for the shop (Seller Center additions too), not only the dashboard's listings.
-  const temuSkus = await allTemuSkus(token, shop)
+  const temuSkus = await allTemuSkus(token, shop, { withPrice: !priceQuery })
+  const listedPrice = new Map(temuSkus.filter((s) => s.price != null && s.price !== '').map((s) => [String(s.skuId), temuAmount(s.price, s.currency)]))
   const skus = (temuSkus.length ? temuSkus.map((s) => ({ goodsId: String(s.goodsId), skuId: String(s.skuId) })) : listings)
     .map((s) => ({ ...s, productId: listingBySku.get(s.skuId)?.productId }))
   const goods = new Map()
@@ -58,7 +63,9 @@ async function priceGuide(token, shop) {
   for (let i = 0; i < ids.length; i += GOODS_PER_CALL) {
     const batch = ids.slice(i, i + GOODS_PER_CALL)
     const [now, rec] = await Promise.all([
-      temu.call('bg.local.goods.sku.list.price.query', { access_token: token, querySupplierPriceBaseList: batch.map((g) => ({ goodsId: Number(g), skuIdList: goods.get(g).map((l) => Number(l.skuId)) })) }),
+      priceQuery
+        ? temu.call('bg.local.goods.sku.list.price.query', { access_token: token, querySupplierPriceBaseList: batch.map((g) => ({ goodsId: Number(g), skuIdList: goods.get(g).map((l) => Number(l.skuId)) })) })
+        : {},
       temu.call('temu.local.goods.recommendedprice.query', { access_token: token, goodsIdList: batch.map(Number) }),
     ])
     for (const g of now.openapiGoodsSupplierPriceDTOList || []) for (const k of g.openapiSkuSupplierPriceDTOList || []) current.set(String(k.skuId), temuAmount(k.supplierPrice))
@@ -66,7 +73,7 @@ async function priceGuide(token, shop) {
   }
   return skus
     .map((l) => {
-      const now = current.get(l.skuId) || null
+      const now = current.get(l.skuId) || listedPrice.get(l.skuId) || null
       const rec = recommended.get(l.skuId) || null
       const difference = now && rec?.value ? Math.round(((now.value - rec.value) / rec.value) * 1000) / 10 : null
       return { id: l.skuId, goodsId: l.goodsId, skuId: l.skuId, product: titles.get(l.productId) || '', current: now, recommended: rec, difference }
@@ -82,7 +89,7 @@ async function prices(token, shop) {
       title: "Your price vs Temu's recommended price",
       note: "SKUs priced above Temu's recommendation come first: they are the ones a price review is most likely to reject.",
       columns: [col('product', 'Product'), col('goodsId', 'Goods'), col('skuId', 'SKU'), col('current', 'Your supplier price', 'money'), col('recommended', 'Temu recommends', 'money'), col('difference', 'Difference %', 'number')],
-      load: grantAware(shop, 'bg.local.goods.sku.list.price.query', grantAware(shop, 'temu.local.goods.recommendedprice.query', () => priceGuide(token, shop))),
+      load: grantAware(shop, 'temu.local.goods.recommendedprice.query', () => priceGuide(token, shop)),
     },
     {
       id: 'reviews',

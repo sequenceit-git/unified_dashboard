@@ -112,3 +112,29 @@ test('the price guide reads SKUs with the newer SKU list when granted, the old o
   const old = await run(['bg.local.goods.sku.list.query', 'bg.local.goods.sku.list.price.query', 'temu.local.goods.recommendedprice.query', 'bg.local.goods.priceorder.query', 'bg.local.goods.list.query'])
   assert.ok(!old.calls.includes('temu.local.sku.list.retrieve') && old.calls.includes('bg.local.goods.sku.list.query'))
 })
+
+test('on Temu US the price guide takes your price from the SKU list (the price query is not offered there)', async () => {
+  const calls = []
+  const granted = ['bg.local.goods.sku.list.query', 'temu.local.goods.recommendedprice.query', 'bg.local.goods.priceorder.query', 'bg.local.goods.list.query', 'temu.local.sku.list.retrieve']
+  const restore = stubModules({
+    '/models/Listing': modelStub(() => [{ externalListingId: '77:1', productId: 'p1' }]),
+    '/models/Product': modelStub(() => [{ _id: 'p1', title: 'Phone case' }]),
+    '../service': {
+      call: async (type) => {
+        calls.push(type)
+        if (type === 'bg.local.goods.sku.list.query') return { skuList: [{ goodsId: 77, skuId: 1, price: '12.00', currency: 'USD' }] }
+        if (type === 'temu.local.goods.recommendedprice.query') return { goodsList: [{ goodsId: 77, skuList: [{ skuId: 1, recommendedSupplyPrice: USD(10) }] }] }
+        if (type === 'bg.local.goods.priceorder.query') return { list: [] }
+        if (type === 'bg.local.goods.list.query') return { goodsList: [] }
+        throw new Error(`unexpected ${type}`)
+      },
+    },
+  })
+  try {
+    const prices = freshRequire('marketplaces/temu/sections/price-reviews.js')
+    const t = (await prices('tok', { _id: 's1', grantedScopes: granted })).tables.find((x) => x.id === 'pricing')
+    assert.equal(t.error, undefined)
+    assert.deepEqual(t.rows.map((r) => [r.skuId, r.current?.value, r.recommended?.value, r.difference]), [['1', 12, 10, 20]])
+    assert.ok(!calls.includes('bg.local.goods.sku.list.price.query'))
+  } finally { restore() }
+})

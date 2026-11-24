@@ -108,6 +108,12 @@ function temuFile(file, maxMb = 10) {
   return { name: String(file.name || '').replace(/[^\w.\- ]/g, '').slice(0, 100) || 'file', dataUrl: `data:${kind};base64,${m[1]}` }
 }
 
+/** Whether the shop's token allows a Temu method (a shop without a stored list is never blocked). */
+function allowedMethod(shop, method) {
+  const granted = shop?.grantedScopes
+  return !(Array.isArray(granted) && granted.length && !granted.includes(method))
+}
+
 function grantAware(shop, method, load) {
   return async (...args) => {
     const granted = shop?.grantedScopes
@@ -119,4 +125,4 @@ function grantAware(shop, method, load) {
 }
 
 module.exports = {
-  temuFile, grantAware, AFTERSALES_GROUP, temuTime, temuAmount, temuGoodsRows, TEMU_AFTERSALES_STATUS, adVal, adMoney, temuAdReport }
+  allowedMethod, temuFile, grantAware, AFTERSALES_GROUP, temuTime, temuAmount, temuGoodsRows, TEMU_AFTERSALES_STATUS, adVal, adMoney, temuAdReport }

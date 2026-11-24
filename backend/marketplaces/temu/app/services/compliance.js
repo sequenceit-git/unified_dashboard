@@ -7,7 +7,7 @@
 const Listing = require('../../../../models/Listing')
 const marketplaceManager = require('../manager')
 const { HttpError } = require('../../../../utils/httpError')
-const { grantAware } = require('../../sections/helpers')
+const { grantAware, allowedMethod } = require('../../sections/helpers')
 const { goodsShop } = require('./goodsHelpers')
 
 const MAX_FILE = 10 * 1024 * 1024
@@ -70,6 +70,8 @@ async function detail(ctx) {
     }))
     return {
       goodsId,
+      // Temu US may not offer the certificate upload methods: then the page points to Seller Center.
+      canUpload: allowedMethod(shop, 'bg.arbok.open.upload.uploadFile') && allowedMethod(shop, 'bg.arbok.open.cert.uploadProductCert'),
       required,
       onFile: (onFile.productCertList || []).map((c) => ({ certType: c.certType, name: c.certName || `Certificate ${c.certType}`, auditStatus: c.auditStatus, rejectReason: c.rejectReason || '' })),
       checks: (rules.checkInfoList || []).map((c) => ({ name: c.checkShowName || c.checkName || '', result: c.checkResultDesc || '', reason: c.checkFailReason || '' })),

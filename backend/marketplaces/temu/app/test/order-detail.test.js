@@ -65,3 +65,18 @@ test('full address needs orders permission', async () => {
     assert.equal(calls.length, 0)
   } finally { restore() }
 })
+
+test("when Temu doesn't share order amounts with the app, the detail says so", async () => {
+  const restore = stubModules({
+    '/models/Order': modelStub(() => ORDER),
+    '/models/Shop': modelStub(() => ({ _id: 's1', marketplace: 'temu', status: 'connected', grantedScopes: ['bg.order.detail.v2.get'] })),
+    '../manager': { withShopToken: async (shop, fn) => fn('tok') },
+    '../../service': { call: async (type) => { if (type === 'bg.order.detail.v2.get') return DETAIL; throw Object.assign(new Error("access_token don't have this api access"), { code: 3000032 }) } },
+  })
+  try {
+    const service = freshRequire('marketplaces/temu/app/services/orders.js')
+    const res = await service.temuDetail({ user: { role: 'super_admin' }, params: { id: 'o1' }, query: {}, body: {} })
+    assert.deepEqual(res.amounts, [])
+    assert.match(res.amountsNote, /doesn't share order amounts/)
+  } finally { restore() }
+})

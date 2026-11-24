@@ -4,13 +4,15 @@
  */
 const temu = require('../service')
 const { col, tables, words } = require('../../../services/marketplace/sectionKit')
-const { AFTERSALES_GROUP, temuTime, TEMU_AFTERSALES_STATUS, temuAmount, temuFile } = require('./helpers')
+const { AFTERSALES_GROUP, temuTime, TEMU_AFTERSALES_STATUS, temuAmount, temuFile, allowedMethod } = require('./helpers')
 
 // Temu US: the return warehouse region for return carriers.
 const US_REGION = 211
 const CLOSED = /refunded|rejected|cancelled/i
 
-async function returns(token) {
+async function returns(token, shop) {
+  // Temu US may not offer the file upload a return label needs: then the button isn't offered.
+  const canUploadLabel = allowedMethod(shop, 'bg.arbok.open.upload.uploadFile') && allowedMethod(shop, 'temu.aftersales.upload.returnlabel')
   const carriers = ((await temu.call('temu.aftersales.carrier.get', { access_token: token, returnWarehouseRegionId1: US_REGION }).catch(() => ({}))).carrierDTOList || [])
     .map((c) => ({ value: String(c.carrierId), label: c.carrierName }))
   const end = Math.floor(Date.now() / 1000)
@@ -42,11 +44,11 @@ async function returns(token) {
           { id: 'aftersales', label: 'Details', detail: true },
           ...(CLOSED.test(AFTERSALES_GROUP[row.afterSalesStatusGroup] || '') ? [] : [
             { id: 'return-address', label: "Buyer's address", detail: true },
-            { id: 'return-label', label: 'Upload return label', input: { fields: [
+            ...(canUploadLabel ? [{ id: 'return-label', label: 'Upload return label', input: { fields: [
               carriers.length ? { name: 'carrierId', label: 'Carrier', options: carriers } : { name: 'carrierId', label: 'Carrier id' },
               { name: 'trackingNumber', label: 'Tracking number' },
               { name: 'file', label: 'Label (PDF, JPEG or PNG)', type: 'file', accept: 'application/pdf,image/jpeg,image/png' },
-            ] } },
+            ] } }] : []),
           ]),
         ],
       })) || [],

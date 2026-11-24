@@ -81,3 +81,18 @@ test('a 12 MB certificate, a non-PDF/image file, or a goods of another shop is r
     assert.equal(other.calls.length, 0)
   } finally { other.restore() }
 })
+
+test('on Temu US without the certificate upload methods, the detail says to upload in Seller Center', async () => {
+  const restore = stubModules({
+    '/models/Shop': modelStub(() => ({ _id: 's1', marketplace: 'temu', status: 'connected', grantedScopes: ['bg.local.goods.detail.query', 'bg.local.goods.compliance.rules.get', 'bg.local.compliance.goods.list.query'] })),
+    '/models/Listing': modelStub(() => ({ _id: 'l1', externalListingId: '77:1' })),
+    '../manager': { withShopToken: async (shop, fn) => fn('tok') },
+    '../../service': { call: async (type) => (type === 'bg.local.goods.detail.query' ? { catId: 1 } : type === 'bg.local.goods.compliance.rules.get' ? { goodsCertList: [{ certType: 5, certName: 'CPC', isRequired: true, uploadStatusLanguageMap: { en: 'Not uploaded' } }] } : (() => { throw new Error(`unexpected ${type}`) })()) },
+  })
+  try {
+    const compliance = freshRequire('marketplaces/temu/app/services/compliance.js')
+    const d = await compliance.detail({ user: { role: 'super_admin' }, params: { goodsId: '77' }, query: {}, body: {} })
+    assert.equal(d.canUpload, false)
+    assert.deepEqual(d.required.map((c) => c.name), ['CPC'])
+  } finally { restore() }
+})

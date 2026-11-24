@@ -81,3 +81,15 @@ test('open returns offer the label upload and the address; closed ones only deta
     assert.deepEqual(label.input.fields[0].options, [{ value: '7', label: 'UPS' }])
   } finally { restore() }
 })
+
+test('Upload return label is offered only when the app may upload files', async () => {
+  const { returns, restore } = load({
+    'bg.aftersales.parentaftersales.list.get': { data: [{ parentAfterSalesSn: 'AS1', parentOrderSn: 'PO-1', afterSalesStatusGroup: 2 }] },
+    'bg.aftersales.cancel.list.get': { data: [] },
+    'temu.aftersales.carrier.get': { carrierDTOList: [] },
+  })
+  try {
+    const rows = (await returns('tok', { grantedScopes: ['bg.aftersales.parentaftersales.list.get', 'temu.aftersales.returnaddress.get'] })).tables.find((t) => t.id === 'returns').rows
+    assert.deepEqual(rows[0].actions.map((a) => a.id), ['aftersales', 'return-address'])
+  } finally { restore() }
+})

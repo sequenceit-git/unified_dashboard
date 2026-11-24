@@ -74,7 +74,10 @@ function Detail({ goodsId, title, token, onClose }) {
               <div className="flex flex-wrap gap-2">{d.labels.flatMap((l) => l.images.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt={`Label for SKU ${l.skuId}`} className="h-16 rounded border" /></a>))}</div>
             </section>
           )}
-          {d.required.length > 0 && (
+          {d.required.length > 0 && !d.canUpload && (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">Temu doesn't let this app upload certificates (Temu US). Upload them in Temu Seller Center; their status shows here.</p>
+          )}
+          {d.required.length > 0 && d.canUpload && (
             <section className="space-y-2 rounded-lg border p-3">
               <h3 className="font-semibold">Upload a certificate</h3>
               <Select label="Certificate" value={certType} options={d.required.map((c) => ({ value: String(c.certType), label: c.name }))} onChange={(e) => setCertType(e.target.value)} />

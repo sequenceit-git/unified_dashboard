@@ -315,6 +315,7 @@ async function temuDetail(ctx) {
         ['Buyer paid', amountOf(paid.customerPaidTotal)],
         ['Estimated settlement to you', amountOf(proceeds.estimatedSettlementTotal)],
       ].filter(([, a]) => a).map(([label, a]) => ({ label, amount: a })),
+      ...(amount ? {} : { amountsNote: "Temu doesn't share order amounts with this app (Temu US). See the amounts in Seller Center." }),
       status: parent.parentOrderStatus ?? null,
       timeline: [
         ['Ordered', when(parent.parentOrderTime)],
