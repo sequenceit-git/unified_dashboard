@@ -138,3 +138,14 @@ test('new goods made in the Temu form become a dashboard product first', async (
   assert.deepEqual(newProductBody(form), { title: 'Red mug', description: 'Ceramic', images: ['/uploads/a.jpg'], basePrice: 8, stock: 5, sku: 'MUG-1', status: 'active' })
   assert.equal(newProductBody({ ...form, outGoodsSn: '' }).sku, undefined)
 })
+
+test('the stock check stays hidden when Temu and the dashboard agree', async () => {
+  const { stockCheck } = await load('/src/marketplaces/temu/sections/inventory/stockCheck.js')
+  assert.deepEqual(stockCheck([{ mismatch: false, dashboardStock: 3 }]), { show: false, differ: [], onlyOnTemu: 0 })
+  const rows = [{ skuId: '1', mismatch: true, dashboardStock: 4, temuStock: 9 }, { skuId: '2', mismatch: false, dashboardStock: null }, { skuId: '3', mismatch: false, dashboardStock: 1 }]
+  const r = stockCheck(rows)
+  assert.equal(r.show, true)
+  assert.deepEqual(r.differ.map((x) => x.skuId), ['1'])
+  assert.equal(r.onlyOnTemu, 1)
+  assert.deepEqual(stockCheck(null), { show: false, differ: [], onlyOnTemu: 0 })
+})

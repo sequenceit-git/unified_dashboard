@@ -21,6 +21,16 @@ function inventoryRoutes(shopKey) {
   })
 
   // GET /api/<shop>/inventory/temu-stock — Temu's stock per SKU next to the dashboard's
+  // POST /api/<shop>/inventory/temu-stock/fix { goodsId, skuId } — send the dashboard's stock for that SKU to Temu
+  router.post('/temu-stock/fix', async (req, res) => {
+    try {
+      res.json(await service.fixTemuStock(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   router.get('/temu-stock', async (req, res) => {
     try {
       res.json(await service.temuStock(ctxOf(req)))

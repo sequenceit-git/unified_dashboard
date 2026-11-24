@@ -6,7 +6,7 @@ import AdjustModal from './AdjustModal'
 import HistoryTab from './HistoryTab'
 import LowStockTab from './LowStockTab'
 import StockTab from './StockTab'
-import TemuStockTab from './TemuStockTab'
+import TemuStockCheck from './TemuStockCheck'
 
 export default function InventoryPage() {
   const section = useShopSection()
@@ -33,15 +33,14 @@ export default function InventoryPage() {
           { id: 'stock', label: 'Stock' },
           { id: 'history', label: 'History' },
           { id: 'low', label: 'Low stock' },
-          { id: 'temu', label: 'Temu stock' },
         ]}
         active={tab}
         onChange={setTab}
       />
+      {tab === 'stock' && <TemuStockCheck key={refreshKey} />}
       {tab === 'stock' && <StockTab marketplace={marketplace} onAdjust={setAdjusting} refreshKey={refreshKey} />}
       {tab === 'history' && <HistoryTab marketplace={marketplace} refreshKey={refreshKey} />}
       {tab === 'low' && <LowStockTab marketplace={marketplace} refreshKey={refreshKey} />}
-      {tab === 'temu' && <TemuStockTab />}
       {adjusting && <AdjustModal product={adjusting} onClose={() => setAdjusting(null)} onSaved={saved} />}
     </div>
   )

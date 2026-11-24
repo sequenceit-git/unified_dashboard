@@ -168,6 +168,7 @@
       "PATCH /goods/:id/sync",
       "PATCH /goods/:id/price",
       "GET /inventory/low-stock",
+      "POST /inventory/temu-stock/fix",
       "GET /inventory/temu-stock",
       "GET /inventory/logs",
       "POST /inventory/adjust",

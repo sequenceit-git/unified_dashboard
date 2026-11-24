@@ -267,4 +267,23 @@ async function temuStock(ctx) {
     return rows.map((r, i) => [r, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([r]) => r)
 }
 
-module.exports = { lowStock, logs, adjust, sync, temuStock }
+/**
+ * POST /temu-stock/fix { goodsId, skuId } — "Use dashboard stock": sends the dashboard's stock for
+ * that SKU to Temu (the number is worked out here from the dashboard, never taken from the page).
+ */
+async function fixTemuStock(ctx) {
+    const goodsId = String(ctx.body?.goodsId || '')
+    const skuId = String(ctx.body?.skuId || '')
+    if (!/^\d+$/.test(goodsId) || !/^\d+$/.test(skuId)) throw new HttpError(400, { error: 'Unknown Temu SKU' })
+    const row = (await temuStock(ctx)).find((r) => r.goodsId === goodsId && r.skuId === skuId)
+    if (!row || row.dashboardStock == null) throw new HttpError(400, { error: 'The dashboard has no stock for this Temu SKU. Link it to a product first, or change it in Temu Seller Center.' })
+    const Shop = require('../../../../models/Shop')
+    const filter = { marketplace: 'temu', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    const temu = require('../../service')
+    await marketplaceManager.withShopToken(shop, (token) => temu.updateStock(token, null, row.dashboardStock, { externalListingId: `${goodsId}:${skuId}` }))
+    return { message: `Temu now has ${row.dashboardStock} for ${row.sku || skuId}.` }
+}
+
+module.exports = { lowStock, logs, adjust, sync, temuStock, fixTemuStock }

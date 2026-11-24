@@ -77,3 +77,26 @@ test('SKUs that exist only on Temu still show', async () => {
     assert.equal(calls[0].goodsId, 77)
   } finally { restore() }
 })
+
+test('Use dashboard stock sends the dashboard number for that SKU to Temu', async () => {
+  const sent = []
+  const restore = stubModules({
+    '/models/Shop': modelStub(() => ({ _id: 's1', marketplace: 'temu', status: 'connected' })),
+    '/models/Listing': modelStub(() => [{ externalListingId: '77:1', productId: 'p1' }, { externalListingId: '77:9', productId: 'p9' }]),
+    '/models/Product': modelStub(() => [{ _id: 'p1', title: 'Case', sku: 'CASE', stock: 4, variants: [] }]),
+    '../manager': { withShopToken: async (shop, fn) => fn('tok') },
+    '../../service': {
+      call: async () => ({ stockList: [{ goodsId: 77, skuStockInfoList: [{ skuId: 1, outSkuSn: 'CASE', selfOrdinaryStock: { stock: 9 } }, { skuId: 3, outSkuSn: 'NEW', selfOrdinaryStock: { stock: 2 } }] }] }),
+      updateStock: async (token, sku, quantity, opts) => { sent.push([quantity, opts.externalListingId]); return { success: true } },
+    },
+  })
+  try {
+    const service = freshRequire('marketplaces/temu/app/services/inventory.js')
+    const res = await service.fixTemuStock({ ...admin, body: { goodsId: '77', skuId: '1' } })
+    assert.deepEqual(sent, [[4, '77:1']])
+    assert.match(res.message, /Temu now has 4/)
+    // A SKU the dashboard doesn't hold has no dashboard number to send.
+    await assert.rejects(service.fixTemuStock({ ...admin, body: { goodsId: '77', skuId: '3' } }), (e) => e.status === 400)
+    await assert.rejects(service.fixTemuStock({ ...admin, body: { goodsId: 'x', skuId: '1' } }), (e) => e.status === 400)
+  } finally { restore() }
+})
