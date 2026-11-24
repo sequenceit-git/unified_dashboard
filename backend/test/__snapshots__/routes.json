@@ -72,6 +72,8 @@
       "POST /sections/promotions/:id/resume",
       "GET /sections/fulfillment/:packageId/label",
       "POST /sections/fulfillment/:packageId/ship",
+      "GET /sections/:sectionId/:actionId",
+      "POST /sections/:sectionId/:actionId",
       "PATCH /shops/:id/ai-reply",
       "GET /shops/:id/categories",
       "GET /shops/:id/categories/:categoryId/attributes",
