@@ -26,6 +26,18 @@ const RETURN_ESCALATIONS = {
   BUYER_STILL_UNHAPPY_AFTER_REFUND: 'The buyer is still unhappy after the refund',
   OTHERS: 'Something else',
 }
+// Why a seller asks eBay to step into an item-not-received inquiry.
+const INQUIRY_ESCALATIONS = {
+  BUYER_STILL_UNHAPPY_AFTER_REFUND: 'The buyer is still unhappy after the refund',
+  TROUBLE_COMMUNICATION_WITH_BUYER: "I can't reach an agreement with the buyer",
+  OTHERS: 'Something else',
+}
+// Why a seller appeals eBay's case decision.
+const APPEAL_REASONS = {
+  DISAGREE_WITH_FINAL_DECISION: "I disagree with eBay's decision",
+  NEW_INFORMATION: 'I have new information',
+  OTHER: 'Something else',
+}
 const MAX_MESSAGE = 1000
 
 /** A message typed for the buyer: 1–1000 characters. */
@@ -152,6 +164,34 @@ const ACTIONS = {
       return { message: `eBay was asked to step into return ${id}.` }
     },
   },
+  'inquiry-message': {
+    label: 'Message buyer',
+    run: async (client, token, id, value = {}) => {
+      const content = messageText(value.message)
+      await client.postOrder(token, `/post-order/v2/inquiry/${enc(id)}/send_message`, { method: 'POST', body: { message: { content } } })
+      return { message: `Message sent on inquiry ${id}.` }
+    },
+  },
+  'inquiry-escalate': {
+    label: 'Ask eBay to step in',
+    run: async (client, token, id, value = {}) => {
+      const reason = String(value.reason || '')
+      if (!Object.hasOwn(INQUIRY_ESCALATIONS, reason)) throw new HttpError(400, { error: 'Choose why eBay should step in.' })
+      const comments = String(value.comments || '').trim().slice(0, MAX_MESSAGE)
+      await client.postOrder(token, `/post-order/v2/inquiry/${enc(id)}/escalate`, { method: 'POST', body: { escalateInquiryReason: reason, ...(comments ? { comments } : {}) } })
+      return { message: `Inquiry ${id} sent to eBay to decide.` }
+    },
+  },
+  'case-appeal': {
+    label: 'Appeal',
+    run: async (client, token, id, value = {}) => {
+      const appealReason = String(value.reason || '')
+      if (!Object.hasOwn(APPEAL_REASONS, appealReason)) throw new HttpError(400, { error: 'Choose why you appeal.' })
+      const comments = messageText(value.comments)
+      await client.postOrder(token, `/post-order/v2/casemanagement/${enc(id)}/appeal`, { method: 'POST', body: { appealReason, comments } })
+      return { message: `Appeal sent for case ${id}. eBay reviews it and lets you know.` }
+    },
+  },
   'dispute-evidence': {
     label: 'Add evidence',
     // Upload (multipart) → add the file to a new evidence set, or to the set of that type eBay already has.
@@ -203,4 +243,4 @@ const ACTIONS = {
   },
 }
 
-module.exports = { ACTIONS, CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS, LABEL_CARRIERS, RETURN_ESCALATIONS, MAX_MESSAGE, imageFile, messageText }
+module.exports = { ACTIONS, CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS, LABEL_CARRIERS, RETURN_ESCALATIONS, INQUIRY_ESCALATIONS, APPEAL_REASONS, MAX_MESSAGE, imageFile, messageText }

@@ -39,7 +39,7 @@ test('open inquiries and cases are listed', async () => {
     const inq = tables.find((t) => t.id === 'inquiries')
     assert.equal(inq.tab, 'Inquiries')
     assert.equal(inq.rows[0].id, '5')
-    assert.deepEqual(inq.rows[0].actions.map((a) => a.id), ['inquiry-refund', 'inquiry-tracking'])
+    assert.deepEqual(inq.rows[0].actions.map((a) => a.id), ['inquiry', 'inquiry-message', 'inquiry-escalate', 'inquiry-refund', 'inquiry-tracking'])
     const cases = tables.find((t) => t.id === 'cases')
     assert.equal(cases.tab, 'Cases')
     assert.equal(cases.rows[0].caseId, '7')

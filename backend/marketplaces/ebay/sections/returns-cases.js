@@ -5,7 +5,7 @@
  */
 const { money, words, col, tables } = require('../../../services/marketplace/sectionKit')
 const { ebayGet, ebayApiz, scopeAware } = require('./helpers')
-const { CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS, LABEL_CARRIERS, RETURN_ESCALATIONS, MAX_MESSAGE } = require('./returnsActions')
+const { CARRIERS, EVIDENCE_TYPES, ADDRESS_FIELDS, LABEL_CARRIERS, RETURN_ESCALATIONS, INQUIRY_ESCALATIONS, APPEAL_REASONS, MAX_MESSAGE } = require('./returnsActions')
 
 const CLOSED = /closed|refunded|cancel|resolved|complete/i
 // Any refund already started or issued (REFUND_INITIATED, …_PENDING_CONFIRMATION, LESS_THAN_A_FULL_REFUND_ISSUED).
@@ -91,10 +91,15 @@ async function returnsCases(token) {
         claim: money(row.claimAmount),
         respondBy: row.respondByDate?.value || null,
         created: row.creationDate?.value || null,
-        actions: CLOSED.test(row.inquiryStatusEnum || '') ? [] : [
+        actions: [{ id: 'inquiry', label: 'Details', detail: true }, ...(CLOSED.test(row.inquiryStatusEnum || '') ? [] : [
+          { id: 'inquiry-message', label: 'Message buyer', input: { fields: [messageField()] } },
+          { id: 'inquiry-escalate', label: 'Ask eBay to step in', input: { fields: [
+            { name: 'reason', label: 'Why', options: Object.entries(INQUIRY_ESCALATIONS).map(([value, label]) => ({ value, label })) },
+            { name: 'comments', label: 'Details for eBay', type: 'textarea', maxLength: MAX_MESSAGE, optional: true },
+          ] } },
           { id: 'inquiry-refund', label: 'Refund', confirm: `Refund the buyer for inquiry ${row.inquiryId}?` },
           { id: 'inquiry-tracking', label: 'Add tracking', input: { fields: [{ name: 'trackingNumber', label: 'Tracking number' }, { name: 'carrier', label: 'Carrier', options: CARRIERS.map((c) => ({ value: c, label: c })) }] } },
-        ],
+        ])],
       })) || [],
     },
     {
@@ -102,7 +107,15 @@ async function returnsCases(token) {
       tab: 'Cases',
       title: 'Cases',
       columns: [col('caseId', 'Case'), col('itemId', 'Item'), col('buyer', 'Buyer'), col('status', 'Status', 'status'), col('claim', 'Claim', 'money'), col('respondBy', 'Respond by', 'date'), col('created', 'Opened', 'date')],
-      load: async () => (await ebayGet(token, '/post-order/v2/casemanagement/search?case_status_filter=OPEN&limit=50', { iaf: true })).members?.map((row) => ({
+      // Open cases, then recently closed ones (a decided case can be appealed).
+      load: async () => {
+        const [open, closed] = await Promise.all([
+          ebayGet(token, '/post-order/v2/casemanagement/search?case_status_filter=OPEN&limit=50', { iaf: true }),
+          ebayGet(token, '/post-order/v2/casemanagement/search?case_status_filter=CLOSED&limit=50', { iaf: true }).catch(() => ({ members: [] })),
+        ])
+        const seen = new Set()
+        return [...(open.members || []), ...(closed.members || [])].filter((row) => !seen.has(String(row.caseId)) && seen.add(String(row.caseId))).map((row) => ({
+        id: String(row.caseId),
         caseId: String(row.caseId),
         itemId: String(row.itemId),
         buyer: row.buyer,
@@ -110,7 +123,15 @@ async function returnsCases(token) {
         claim: money(row.claimAmount),
         respondBy: row.respondByDate?.value || null,
         created: row.creationDate?.value || null,
-      })) || [],
+        actions: [
+          { id: 'case', label: 'Details', detail: true },
+          ...(/CLOSED/i.test(row.caseStatusEnum || '') ? [{ id: 'case-appeal', label: 'Appeal', input: { fields: [
+            { name: 'reason', label: 'Why', options: Object.entries(APPEAL_REASONS).map(([value, label]) => ({ value, label })) },
+            { name: 'comments', label: 'What eBay should know', type: 'textarea', maxLength: MAX_MESSAGE },
+          ] } }] : []),
+        ],
+      }))
+      },
     },
     {
       id: 'disputes',
@@ -160,7 +181,43 @@ async function returnsCases(token) {
 }
 
 /** Read-only drill-downs: `details[name](token, shop, id) → { title, summary, tables }`. */
+/** History rows of an inquiry or case (`{ date, action, actor, description }`). */
+const historyTable = (history) => ({
+  id: 'history',
+  title: 'History',
+  columns: [col('when', 'When', 'date'), col('what', 'What'), col('who', 'By'), col('notes', 'Notes')],
+  rows: (history || []).map((h) => ({ when: h.date?.value || h.date || null, what: words(h.action), who: words(h.actor), notes: h.description || '' })),
+})
+
 returnsCases.details = {
+  /** An item-not-received inquiry and what happened on it. */
+  inquiry: async (token, shop, id) => {
+    const r = await ebayGet(token, `/post-order/v2/inquiry/${encodeURIComponent(id)}`, { iaf: true })
+    return {
+      title: `Inquiry ${id}`,
+      summary: [
+        { label: 'Status', value: words(r.status || r.state || r.inquiryStatusEnum), type: 'text' },
+        { label: 'Buyer', value: r.buyer || '—', type: 'text' },
+        { label: 'Claim', value: money(r.claimAmount), type: 'money' },
+        { label: 'Respond by', value: (r.respondByDate?.value || '').slice(0, 10) || '—', type: 'text' },
+      ],
+      tables: [historyTable(r.inquiryHistoryDetails?.history || r.history)],
+    }
+  },
+  /** A Money Back Guarantee case: its status, eBay's decision and history. */
+  case: async (token, shop, id) => {
+    const r = await ebayGet(token, `/post-order/v2/casemanagement/${encodeURIComponent(id)}`, { iaf: true })
+    return {
+      title: `Case ${id}`,
+      summary: [
+        { label: 'Status', value: words(r.status || r.caseStatusEnum), type: 'text' },
+        { label: 'Type', value: words(r.caseType), type: 'text' },
+        { label: 'Claim', value: money(r.claimAmount), type: 'money' },
+        { label: 'Decision', value: words(r.decision || r.caseDecision) || '—', type: 'text' },
+      ],
+      tables: [historyTable(r.caseHistoryDetails?.history || r.history)],
+    }
+  },
   /** A return: what the buyer said, its history, photos and files, and the return shipment's tracking. */
   return: async (token, shop, id) => {
     const r = await ebayGet(token, `/post-order/v2/return/${encodeURIComponent(id)}`, { iaf: true })

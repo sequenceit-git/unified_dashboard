@@ -1889,36 +1889,6 @@
     "priority": "low",
     "value": "Read one cancellation request (search and actions are already used)."
   },
-  "POST /post-order/v2/casemanagement/{caseId}/appeal": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "eBay Money Back Guarantee cases: view case details and appeal decisions."
-  },
-  "GET /post-order/v2/casemanagement/{caseId}": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "eBay Money Back Guarantee cases: view case details and appeal decisions."
-  },
-  "POST /post-order/v2/inquiry/{inquiryId}/escalate": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
-  },
-  "GET /post-order/v2/inquiry/{inquiryId}": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
-  },
-  "POST /post-order/v2/inquiry/{inquiryId}/send_message": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Item-not-received inquiries: list, view, provide tracking, refund or message the buyer before they become cases."
-  },
   "POST /post-order/v2/return": {
     "section": "returns-cases",
     "size": "small",
