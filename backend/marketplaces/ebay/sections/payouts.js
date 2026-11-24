@@ -17,7 +17,9 @@ const signed = (amount, entry) => {
   return m
 }
 
-async function payouts(token) {
+async function payouts(token, shop, { now = new Date() } = {}) {
+  // eBay requires a filter on billing activity; the last 90 days (its limit is 120).
+  const billFilter = `transactionDate:[${new Date(now.getTime() - 90 * 86400000).toISOString()}..${now.toISOString()}]`.replace(/[[\]]/g, encodeURIComponent)
   // Full paths written out at each call: the API coverage report finds endpoints by their path.
   const host = ebayApiz()
   const [summary, funds, earningsSummary, list] = await Promise.all([
@@ -83,7 +85,7 @@ async function payouts(token) {
         title: 'eBay bill',
         note: 'Every fee and credit eBay charged: insertion and final value fees, ad fees, store subscription.',
         columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('details', 'Details'), col('orderId', 'Order'), col('amount', 'Amount', 'money')],
-        load: async () => (await ebayGet(token, `${host}/sell/finances/v1/billing_activity?limit=50`)).billingActivities?.map((row) => ({
+        load: async () => (await ebayGet(token, `${host}/sell/finances/v1/billing_activity?limit=50&filter=${billFilter}`)).billingActivities?.map((row) => ({
           date: row.billingTransactionDate,
           type: words(row.feeType),
           details: row.feeTypeDescription || '',

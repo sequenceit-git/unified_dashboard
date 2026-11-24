@@ -73,3 +73,24 @@ test('earnings without the scope ask for a reconnect while payouts still load', 
     assert.equal(summary.filter((s) => s.tab === 'Order earnings').length, 0)
   } finally { restore() }
 })
+
+test('the eBay bill asks for the last 90 days (eBay requires a filter)', async () => {
+  const urls = []
+  const restore = stubModules({
+    './helpers': {
+      scopeAware: require('../sections/helpers').scopeAware,
+      ebayApiz: () => 'https://apiz.ebay.com',
+      ebayGet: async (token, url) => {
+        urls.push(url)
+        const key = Object.keys(FIXTURES).find((k) => url.includes(`/sell/finances/v1/${k}`))
+        return FIXTURES[key]
+      },
+    },
+  })
+  try {
+    const payouts = freshRequire('marketplaces/ebay/sections/payouts.js')
+    await payouts('tok', {}, { now: new Date('2026-11-24T10:00:00Z') })
+    const bill = urls.find((u) => u.includes('billing_activity'))
+    assert.equal(bill, 'https://apiz.ebay.com/sell/finances/v1/billing_activity?limit=50&filter=transactionDate:%5B2026-08-26T10:00:00.000Z..2026-11-24T10:00:00.000Z%5D')
+  } finally { restore() }
+})

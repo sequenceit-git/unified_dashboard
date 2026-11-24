@@ -110,3 +110,14 @@ test('dispute accept needs the returns-cases section', async () => {
     await assert.rejects(service.caseAction({ ...admin, params: { actionId: 'nope' } }), (e) => e.status === 404)
   } finally { restore() }
 })
+
+test('refund is not offered again once a refund has started', async () => {
+  const states = ['REFUND_INITIATED', 'REFUND_SENT_PENDING_CONFIRMATION', 'LESS_THAN_A_FULL_REFUND_ISSUED', 'REFUND_ISSUED']
+  const old = GETS['/post-order/v2/return/search']
+  GETS['/post-order/v2/return/search'] = { members: states.map((s, i) => ({ returnId: `X${i}`, status: s, state: s })) }
+  const { section, restore } = loadSection()
+  try {
+    const rows = (await section('tok')).tables.find((t) => t.id === 'returns').rows
+    assert.deepEqual(rows.map((r) => r.actions.map((a) => a.id)), [[], [], [], []])
+  } finally { restore(); GETS['/post-order/v2/return/search'] = old }
+})

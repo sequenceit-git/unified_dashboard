@@ -865,7 +865,7 @@ async function getBestOffers(token) {
 }
 
 /** Accepts, declines or counters one Best Offer. A counter needs a positive price. */
-async function respondToBestOffer(token, { itemId, offerId, action, counterPrice, currency = 'USD' }) {
+async function respondToBestOffer(token, { itemId, offerId, action, counterPrice, quantity = 1, currency = 'USD' }) {
   const fail = (message) => { throw Object.assign(new Error(message), { status: 400 }) }
   if (!itemId || !offerId) fail('itemId and offerId are required')
   if (!['Accept', 'Decline', 'Counter'].includes(action)) fail(`Unknown Best Offer action ${action}`)
@@ -875,7 +875,7 @@ async function respondToBestOffer(token, { itemId, offerId, action, counterPrice
     `<ItemID>${escapeXml(itemId)}</ItemID>`,
     `<BestOfferID>${escapeXml(offerId)}</BestOfferID>`,
     `<Action>${action}</Action>`,
-    action === 'Counter' ? `<CounterOfferPrice currencyID="${escapeXml(currency)}">${price.toFixed(2)}</CounterOfferPrice><CounterOfferQuantity>1</CounterOfferQuantity>` : '',
+    action === 'Counter' ? `<CounterOfferPrice currencyID="${escapeXml(currency)}">${price.toFixed(2)}</CounterOfferPrice><CounterOfferQuantity>${Math.max(1, Math.floor(Number(quantity)) || 1)}</CounterOfferQuantity>` : '',
   ]
   return call(token, 'RespondToBestOffer', parts.join(''))
 }

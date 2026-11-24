@@ -36,3 +36,9 @@ test('an action button is disabled while its request runs', async () => {
   assert.equal(s.isBusy('r1:accept'), false)
   assert.equal(s.start('r1:accept'), true)
 })
+
+test('tiles whose tab has no table show on the first tab', async () => {
+  const { sectionTabs } = await load('/src/marketplaces/ebay/sectionTabs.js')
+  const tabs = sectionTabs({ summary: [{ label: 'Available', tab: 'Funds' }, { label: 'Paid out', tab: 'Payouts' }], tables: [{ id: 'p', tab: 'Payouts' }, { id: 'e', tab: 'Order earnings' }] })
+  assert.deepEqual(tabs.map((t) => t.summary.map((s) => s.label)), [['Available', 'Paid out'], []])
+})

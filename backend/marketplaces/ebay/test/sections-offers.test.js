@@ -31,7 +31,7 @@ test('the offers section lists Best Offers first, with accept, decline and count
     const { tables } = await freshRequire('marketplaces/ebay/sections/offers.js')('tok')
     assert.deepEqual(tables.map((t) => [t.id, t.tab]), [['bestOffers', 'Best Offers'], ['eligible', 'Send offers']])
     const [row] = tables[0].rows
-    assert.equal(row.id, '111:B1')
+    assert.equal(row.id, '111:B1:1')
     assert.deepEqual(row.actions.map((a) => a.id), ['offer-accept', 'offer-decline', 'offer-counter'])
   } finally { restore() }
 })
@@ -63,12 +63,18 @@ test('offer actions check the offers section and send the right Action', async (
   })
   try {
     const service = freshRequire('marketplaces/ebay/app/services/sections.js')
-    const admin = (actionId, value) => ({ user: { role: 'super_admin' }, params: { actionId }, body: { id: '111:B1', value }, query: {} })
+    const admin = (actionId, value, id = '111:B1:1') => ({ user: { role: 'super_admin' }, params: { actionId }, body: { id, value }, query: {} })
     await service.offerAction(admin('offer-accept'))
-    await service.offerAction(admin('offer-counter', '12.5'))
-    assert.deepEqual(calls, [{ itemId: '111', offerId: 'B1', action: 'Accept' }, { itemId: '111', offerId: 'B1', action: 'Counter', counterPrice: 12.5 }])
-    const sub = { user: { id: 'u2', role: 'sub_admin', allowedSections: ['ebay:orders'] }, allowedShopIds: ['s1'], params: { actionId: 'offer-accept' }, body: { id: '111:B1' }, query: {} }
+    await service.offerAction(admin('offer-counter', '12.5', '111:B1:3'))
+    assert.deepEqual(calls, [{ itemId: '111', offerId: 'B1', action: 'Accept' }, { itemId: '111', offerId: 'B1', action: 'Counter', counterPrice: 12.5, quantity: 3 }])
+    const sub = { user: { id: 'u2', role: 'sub_admin', allowedSections: ['ebay:orders'] }, allowedShopIds: ['s1'], params: { actionId: 'offer-accept' }, body: { id: '111:B1:1' }, query: {} }
     await assert.rejects(service.offerAction(sub), (e) => e.status === 403)
     assert.equal(calls.length, 2)
   } finally { restore() }
 })
+
+test('a counter keeps the quantity the buyer asked for', () => withFetch((name) => XML(name, ''), async (sent) => {
+  const trading = freshRequire('marketplaces/ebay/trading.js')
+  await trading.respondToBestOffer('tok', { itemId: '111', offerId: 'B1', action: 'Counter', counterPrice: 30, quantity: 3 })
+  assert.match(sent[0].body, /<CounterOfferQuantity>3<\/CounterOfferQuantity>/)
+}))

@@ -12,7 +12,8 @@ async function offers(token) {
     columns: [col('itemId', 'Item'), col('title', 'Product'), col('buyer', 'Buyer'), col('price', 'Offer', 'money'), col('quantity', 'Qty', 'number'), col('message', 'Message'), col('expires', 'Expires', 'date')],
     load: async () => (await trading.getBestOffers(token)).map((offer) => ({
       ...offer,
-      id: `${offer.itemId}:${offer.offerId}`,
+      // Quantity rides along so a counter keeps the quantity the buyer asked for.
+      id: `${offer.itemId}:${offer.offerId}:${offer.quantity || 1}`,
       actions: [
         { id: 'offer-accept', label: 'Accept', confirm: `Accept ${offer.buyer || 'the buyer'}'s offer on item ${offer.itemId}?` },
         { id: 'offer-decline', label: 'Decline', confirm: `Decline ${offer.buyer || 'the buyer'}'s offer on item ${offer.itemId}?` },

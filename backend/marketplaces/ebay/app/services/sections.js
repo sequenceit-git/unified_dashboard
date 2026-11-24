@@ -154,11 +154,11 @@ async function offerAction(ctx) {
     if (!section || !canUseSection(ctx.authUser || ctx.user, marketplace, section.id, section.route)) {
       throw new HttpError(403, { error: `You do not have access to ${section?.label || 'Best offers'} on this shop` })
     }
-    const [itemId, offerId] = String(ctx.body?.id || '').split(':')
-    if (!itemId || !offerId) throw new HttpError(400, { error: 'id must be <itemId>:<offerId>' })
+    const [itemId, offerId, qty] = String(ctx.body?.id || '').split(':')
+    if (!itemId || !offerId) throw new HttpError(400, { error: 'id must be <itemId>:<offerId>:<quantity>' })
     const shop = await connectedShop(ctx, marketplace)
     const trading = require('../../trading')
-    const args = { itemId, offerId, action: ACTION, ...(ACTION === 'Counter' ? { counterPrice: Number(ctx.body.value) } : {}) }
+    const args = { itemId, offerId, action: ACTION, ...(ACTION === 'Counter' ? { counterPrice: Number(ctx.body.value), quantity: Math.max(1, Number(qty) || 1) } : {}) }
     try {
       await marketplaceManager.withShopToken(shop, (token) => trading.respondToBestOffer(token, args))
     } catch (err) {

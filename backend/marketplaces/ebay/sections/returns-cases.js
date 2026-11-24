@@ -8,13 +8,15 @@ const { ebayGet, ebayApiz, scopeAware } = require('./helpers')
 const { CARRIERS } = require('./returnsActions')
 
 const CLOSED = /closed|refunded|cancel|resolved|complete/i
+// Any refund already started or issued (REFUND_INITIATED, …_PENDING_CONFIRMATION, LESS_THAN_A_FULL_REFUND_ISSUED).
+const REFUND_STARTED = /refund/i
 // Buyer has shipped the item back, or it arrived: the seller can mark it received.
 const AWAITING_RECEIPT = /ITEM_SHIPPED|RETURN_SHIPPED|ITEM_DELIVERED|BUYER_SHIPPED/i
 const OPEN_DISPUTE = /OPEN|ACTION_NEEDED|WAITING_FOR_SELLER/i
 
 function returnActions(row) {
   const state = `${row.state || ''} ${row.status || ''}`
-  if (CLOSED.test(state)) return []
+  if (CLOSED.test(state) || REFUND_STARTED.test(state)) return []
   return [
     ...(AWAITING_RECEIPT.test(state) ? [{ id: 'mark-received', label: 'Mark received', confirm: `Mark return ${row.returnId} as received?` }] : []),
     { id: 'refund', label: 'Refund', confirm: `Refund return ${row.returnId} for eBay's estimated amount?` },
