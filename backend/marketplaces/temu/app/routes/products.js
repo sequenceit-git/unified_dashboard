@@ -52,6 +52,98 @@ function productsRoutes(shopKey) {
     }
   })
 
+  // Temu listing helpers (app/services/goodsHelpers.js): /api/<shop>/goods/helpers/*
+  const goodsHelpers = require('../services/goodsHelpers')
+  router.get('/helpers/categories/recommend', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.recommend(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.get('/helpers/categories', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.categories(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.get('/helpers/template', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.template(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.post('/helpers/spec', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.spec(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.post('/helpers/images', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.uploadImages(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.get('/helpers/shipping-templates', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.shippingTemplates(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.get('/helpers/brands', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.brands(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.get('/helpers/tax-codes', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.taxCodes(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.get('/helpers/net-units', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.netUnits(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  router.post('/helpers/check', async (req, res) => {
+    try {
+      res.json(await goodsHelpers.check(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/goods/:goodsId/temu-detail — the goods as Temu has it (details, SKUs, publication status)
   router.get('/:goodsId/temu-detail', async (req, res) => {
     try {

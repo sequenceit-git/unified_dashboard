@@ -155,18 +155,6 @@
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
-  "bg.local.goods.category.recommend": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "bg.local.goods.cats.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
   "bg.local.goods.compliance.edit": {
     "section": "goods",
     "size": "medium",
@@ -202,18 +190,6 @@
     "size": "medium",
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "bg.local.goods.image.upload": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "bg.local.goods.out.sn.check": {
-    "section": "goods",
-    "size": "small",
-    "priority": "medium",
-    "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
   },
   "bg.local.goods.out.sn.set": {
     "section": "goods",
@@ -251,30 +227,6 @@
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
-  "bg.local.goods.size.element.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "bg.local.goods.spec.id.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "bg.local.goods.tax.code.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "bg.local.goods.template.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
   "bg.local.goods.update": {
     "section": "goods",
     "size": "large",
@@ -299,12 +251,6 @@
     "priority": "high",
     "value": "Temu's recommended and current supplier price per SKU, to price competitively before a price review."
   },
-  "temu.local.goods.brand.trademark.V2.get": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
   "temu.local.goods.cats.rules.get": {
     "section": "goods",
     "size": "medium",
@@ -322,12 +268,6 @@
     "size": "large",
     "priority": "high",
     "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
-  },
-  "temu.local.goods.illegal.vocabulary.check": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
   "temu.local.goods.image.v2.upload": {
     "section": "goods",
@@ -348,12 +288,6 @@
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
   "temu.local.goods.pre.sale.status.edit": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "low",
-    "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
-  },
-  "temu.local.goods.sku.net.content.unit.query": {
     "section": "goods",
     "size": "medium",
     "priority": "low",

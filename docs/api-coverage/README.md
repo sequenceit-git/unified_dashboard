@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 40 | 0 | 93 | 0 | 17 | — |
+| Temu | 133 | 51 | 0 | 82 | 0 | 17 | — |
 
 ## eBay
 
@@ -1582,7 +1582,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 | — | medium | medium | `temu.aftersales.upload.returnlabel` | — | Upload return label | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
-#### goods (51)
+#### goods (40)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
@@ -1595,7 +1595,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | high | large | `temu.local.goods.delete` | — | Product deletion | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.v2.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.v3.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
-| — | medium | small | `bg.local.goods.out.sn.check` | — | Check if contribution ID for goods is repeated | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
 | — | medium | small | `bg.local.goods.out.sn.set` | — | Set contribution ID for goods | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
 | — | medium | medium | `bg.arbok.open.cert.queryNeedUploadItems` | — | bg.arbok.open.cert.queryNeedUploadItems | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.arbok.open.cert.uploadProductCert` | — | bg.arbok.open.cert.uploadProductCert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
@@ -1614,26 +1613,16 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | low | small | `bg.flash.open.upload.real.image` | — | Kaiping real shot picture upload | Upload real product photos (real-shot images). |
 | — | low | small | `bg.flash.open.upload.recognize` | — | Kaiping real-time image acquisition test result interface | Upload real product photos (real-shot images). |
 | — | low | medium | `bg.local.goods.category.check` | — | goods category precheck | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.category.recommend` | — | Query Recommended Category by Product Name | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.cats.get` | — | Query Categories | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `bg.local.goods.gallery.signature.get` | — | Get Signature | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.image.upload` | — | Image material processing | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `bg.local.goods.property.get` | — | Get temu attributes | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `bg.local.goods.property.relations` | — | Query relation-property data of the product | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `bg.local.goods.property.relations.level.template` | — | Query dependency and level in relation-property database | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `bg.local.goods.property.relations.template` | — | Query property data in relation- property database | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.size.element.get` | — | Query Size Chart Element Information | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.spec.id.get` | — | Search And Generate Merchant-Customized Specifications | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.tax.code.get` | — | Get ITC list | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `bg.local.goods.template.get` | — | Query Product Attributes Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `bg.local.goods.videocoverimage.get` | — | Get video cover | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.brand.trademark.V2.get` | — | Query trademarks and properties | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.goods.cats.rules.get` | — | Query the rules for posting products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.illegal.vocabulary.check` | — | check illeagl vocabulary | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.goods.image.v2.upload` | — | Image material processing | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.goods.missing.attributes.get` | — | temu.local.goods.missing.attributes.get | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.goods.pre.sale.status.edit` | — | Temu Pre-sale Bulk Enable/Disable API | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
-| — | low | medium | `temu.local.goods.sku.net.content.unit.query` | — | Query the name of physical unit for Unit-count-field | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.goods.spec.info.get` | — | Query specification information | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.product.attributes.get` | — | Query Attribute Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.product.variation.get` | — | Query Mandatory And Optional Variations Of Products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
@@ -1738,56 +1727,56 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Order | `temu.order.cancel.appeal.result.get` | Merchant initiates order cancellation result query interface | Merchant queries the status of cancellation order appeal records |  |
 | missing | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface |  |
 | missing | Order verification | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods. |  |
+| covered | Product | `bg.local.goods.category.recommend` | Query Recommended Category by Product Name | query recommended category by product name | `marketplaces/temu/app/services/goodsHelpers.js` |
+| covered | Product | `bg.local.goods.cats.get` | Query Categories | Get Temu Categories | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail | `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.image.upload` | Image material processing | Image material processing | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.list.query` | Get product list | Get product list | `marketplaces/temu/listings.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
+| covered | Product | `bg.local.goods.out.sn.check` | Check if contribution ID for goods is repeated | Check if contribution ID for goods is repeated | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.priceorder.change.sku.price` | Batch change SKU base price | Support merchants within the white list to modify sku base prices in batches. | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.priceorder.query` | Query price offer Info | Support merchants within the white list to query the price offer list. | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.publish.status.get` | Batch Query Product Publication Status | Batch Query Product Publication Status | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sale.status.set` | Modify The Listing Status Of Products | Support goods/SKU dimension for listing and delisting operations | `marketplaces/temu/listings.js` |
+| covered | Product | `bg.local.goods.size.element.get` | Query Size Chart Element Information | Check size chart/image upload limits and requirements for this category. | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.sku.list.price.query` | Batch query latest supplier price of SKUs. | This is an API for batch querying the latest supply prices of SKUs for local-to-local goods. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.sku.list.query` | Get sku list | Get sku list, as well as get Variants | `marketplaces/temu/app/services/products.js`, `marketplaces/temu/sections/price-reviews.js` |
-| covered | Product | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Check if contribution ID for SKU is duplicate | `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Check if contribution ID for SKU is duplicate | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sku.out.sn.set` | Set contribution ID for SKU | Set contribution ID for SKU | `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.spec.id.get` | Search And Generate Merchant-Customized Specifications | Search And Generate Merchant-Customized Specifications | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js` |
+| covered | Product | `bg.local.goods.tax.code.get` | Get ITC list | local-local goods B | `marketplaces/temu/app/services/goodsHelpers.js` |
+| covered | Product | `bg.local.goods.template.get` | Query Product Attributes Template | query product attributes template | `marketplaces/temu/app/services/goodsHelpers.js` |
+| covered | Product | `temu.local.goods.brand.trademark.V2.get` | Query trademarks and properties | Query trademarks and properties | `marketplaces/temu/app/services/goodsHelpers.js` |
+| covered | Product | `temu.local.goods.illegal.vocabulary.check` | check illeagl vocabulary | check illegal vocabulary | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. | `marketplaces/temu/sections/price-reviews.js` |
+| covered | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |
 | missing | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels |  |
 | missing | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu |  |
 | missing | Product | `bg.local.goods.category.check` | goods category precheck | precheck category misplacement |  |
-| missing | Product | `bg.local.goods.category.recommend` | Query Recommended Category by Product Name | query recommended category by product name |  |
-| missing | Product | `bg.local.goods.cats.get` | Query Categories | Get Temu Categories |  |
 | missing | Product | `bg.local.goods.compliance.edit` | Edit product qualification information | Edit product qualification information |  |
 | missing | Product | `bg.local.goods.compliance.extra.template.get` | Inquire Required Compliance Information | Inquire Required Compliance Information |  |
 | missing | Product | `bg.local.goods.compliance.info.fill.list.query` | Query compliance information fill in the drop-down list | local-local goods B, query compliance information fill in the drop-down list |  |
 | missing | Product | `bg.local.goods.compliance.property.check` | Verify Product Attribute Settings | Verify Product Attribute Settings |  |
 | missing | Product | `bg.local.goods.compliance.rules.get` | Query Mandatory Qualification Information | Query Mandatory Qualification Information |  |
 | missing | Product | `bg.local.goods.gallery.signature.get` | Get Signature | Get gallery Signature |  |
-| missing | Product | `bg.local.goods.image.upload` | Image material processing | Image material processing |  |
-| missing | Product | `bg.local.goods.out.sn.check` | Check if contribution ID for goods is repeated | Check if contribution ID for goods is repeated |  |
 | missing | Product | `bg.local.goods.out.sn.set` | Set contribution ID for goods | Set contribution ID for goods |  |
 | missing | Product | `bg.local.goods.partial.update` | Partial Edit Product | Edit a subset of the product properties (e.g. description, brand, images, attributes). |  |
 | missing | Product | `bg.local.goods.property.get` | Get temu attributes | Get Temu goods attributes |  |
 | missing | Product | `bg.local.goods.property.relations` | Query relation-property data of the product | Query the relational database data associated with goods, such as vehicle library. |  |
 | missing | Product | `bg.local.goods.property.relations.level.template` | Query dependency and level in relation-property database | Obtaining the hierarchical attribute value and hierarchical id of vehicle type library data. |  |
 | missing | Product | `bg.local.goods.property.relations.template` | Query property data in relation- property database | Query the full quantum attribute by the dependency id of the parent attribute value and the hierarchical id. |  |
-| missing | Product | `bg.local.goods.size.element.get` | Query Size Chart Element Information | Check size chart/image upload limits and requirements for this category. |  |
-| missing | Product | `bg.local.goods.spec.id.get` | Search And Generate Merchant-Customized Specifications | Search And Generate Merchant-Customized Specifications |  |
-| missing | Product | `bg.local.goods.tax.code.get` | Get ITC list | local-local goods B |  |
-| missing | Product | `bg.local.goods.template.get` | Query Product Attributes Template | query product attributes template |  |
 | missing | Product | `bg.local.goods.update` | Update Goods Draft On Temu | Edit all properties (e.g. description, brand, images, attributes) of a product. |  |
 | missing | Product | `bg.local.goods.videocoverimage.get` | Get video cover | Used to obtain the cover image of the video screen |  |
 | missing | Product | `temu.local.goods.attributes.edit` | temu.local.goods.attributes.edit | temu.local.goods.attributes.edit |  |
 | missing | Product | `temu.local.goods.baseprice.recommend` | recommend base price | recommend baseprice |  |
-| missing | Product | `temu.local.goods.brand.trademark.V2.get` | Query trademarks and properties | Query trademarks and properties |  |
 | missing | Product | `temu.local.goods.cats.rules.get` | Query the rules for posting products | Query the rules for posting products |  |
 | missing | Product | `temu.local.goods.compliance.v2.edit` | edit goods compliance interface v2 version | edit goods compliance interface v2 version |  |
 | missing | Product | `temu.local.goods.delete` | Product deletion | Product deletion |  |
-| missing | Product | `temu.local.goods.illegal.vocabulary.check` | check illeagl vocabulary | check illegal vocabulary |  |
 | missing | Product | `temu.local.goods.image.v2.upload` | Image material processing | Image material processing |  |
 | missing | Product | `temu.local.goods.list.retrieve` | Product list Retrieve | local goods list search |  |
 | missing | Product | `temu.local.goods.missing.attributes.get` | temu.local.goods.missing.attributes.get | temu.local.goods.missing.attributes.get |  |
 | missing | Product | `temu.local.goods.pre.sale.status.edit` | Temu Pre-sale Bulk Enable/Disable API | This API allows batch enabling or disabling the pre-sale status for multiple SKUs belonging to a product item. |  |
-| missing | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit |  |
 | missing | Product | `temu.local.goods.spec.info.get` | Query specification information | Used to query the specification value information in different languages corresponding to the platform's specification ID |  |
 | missing | Product | `temu.local.goods.v2.add` | Add New Items On Temu | Add New Items On Temu |  |
 | missing | Product | `temu.local.goods.v3.add` | Add New Items On Temu | Post products to temu and automatically populate the database based on the original product data provided. |  |
@@ -1812,7 +1801,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Returns and after-sales | `temu.aftersales.returnlabel.prepare.get` | Query return label preparation information | This interface is designed to query return label preparation information. |  |
 | missing | Returns and after-sales | `temu.aftersales.signature.get` | Query signature information | This interface is designed to query signature information. |  |
 | missing | Returns and after-sales | `temu.aftersales.upload.returnlabel` | Upload return label | This interface is designed to upload return label. |  |
-| covered | Shipping | `bg.freight.template.list.query` | Query Freight Template List | query freight template list by Temu seller, use for claim that goods logistics fee rules when listing items | `marketplaces/temu/sections/shipping.js` |
+| covered | Shipping | `bg.freight.template.list.query` | Query Freight Template List | query freight template list by Temu seller, use for claim that goods logistics fee rules when listing items | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/sections/shipping.js` |
 | covered | Shipping | `bg.logistics.companies.get` | get logistics companies | Obtain full logistics providers that support shipping at the corresponding regoin | `marketplaces/temu/orders.js` |
 | covered | Shipping | `bg.logistics.shipment.v2.confirm` | Confirm Order Shipment | The bg.logistic.shipment.v2.confirm interface is designed to synchronize and return order fulfillment information through this interface. Switch the order status from pending shipment to shipped. | `marketplaces/temu/orders.js` |
 | covered | Shipping | `bg.logistics.warehouse.list.get` | Get shipping address api | Sellers can use this API to obtain the shop's warehouse information. | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/shipping.js` |
