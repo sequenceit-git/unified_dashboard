@@ -20,6 +20,9 @@ export default function ShopHealth({ health, loading, error, onRetry, onDiagnose
       </div>
       {loading && <Spinner />}
       {!loading && (error || health.error) && <ErrorState message={error || health.error} onRetry={onRetry} />}
+      {!loading && !error && !health.error && health.unscored && (
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">TikTok hasn't scored this shop yet. The score and its metrics appear here once TikTok has enough orders to rate the shop.</p>
+      )}
       {!loading && !error && !health.error && health.allGood && (
         <p className="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300"><FiCheckCircle aria-hidden="true" /> All metrics on track</p>
       )}

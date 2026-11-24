@@ -20,6 +20,7 @@ function load(extra = {}) {
       ttGet: async (token, shop, path, query) => {
         calls.push([path, query])
         const data = { ...DATA, ...extra }[path]
+        if (data instanceof Error) throw data
         if (!data) throw new Error(`unexpected ${path}`)
         return data
       },
@@ -123,5 +124,29 @@ test('built-in object names are not details or actions (no token leak)', async (
       await assert.rejects(service.sectionDetail(ctx), (e) => e.status === 404, `detail ${actionId}`)
       await assert.rejects(service.sectionAction(ctx), (e) => e.status === 404, `action ${actionId}`)
     }
+  } finally { restore() }
+})
+
+test("a shop TikTok hasn't scored yet reads as not scored, not as an error", async () => {
+  const notFound = Object.assign(new Error('Resource Not Found. No `shop performance data` matches `7494810167041885955`. Please verify the identifier and retry.'), { code: 36009004 })
+  const { analytics, restore } = load({
+    '/analytics/202606/shop_performances/metrics': notFound,
+    '/analytics/202610/shop_performances/overview': notFound,
+    '/analytics/202610/shop_performances/benefits': notFound,
+  })
+  try {
+    const data = await analytics('tok', {}, { now: NOW })
+    const health = data.tables.find((t) => t.id === 'health')
+    assert.equal(health.error, undefined)
+    assert.deepEqual(health.rows, [])
+    assert.ok(data.summary.some((s) => s.id === 'sps-unscored'))
+  } finally { restore() }
+})
+
+test('other shop health failures still show as errors', async () => {
+  const { analytics, restore } = load({ '/analytics/202606/shop_performances/metrics': new Error('upstream timeout') })
+  try {
+    const health = (await analytics('tok', {}, { now: NOW })).tables.find((t) => t.id === 'health')
+    assert.match(health.error, /timeout/)
   } finally { restore() }
 })

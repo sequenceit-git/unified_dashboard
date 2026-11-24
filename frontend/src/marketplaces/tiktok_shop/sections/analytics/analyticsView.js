@@ -116,13 +116,15 @@ export function healthView(section) {
   const tile = (id) => tiles.find((t) => t.id === id)
   const table = (section?.tables || []).find((t) => t.id === 'health')
   const problems = (table?.rows || []).filter((r) => needsWork(r.status, r.statusCode))
+  const isUnscored = tiles.some((t) => t.id === 'sps-unscored')
   return {
     score: tile('sps-score')?.value ?? null,
     tier: tile('sps-score')?.sub || '',
     peers: tile('peers')?.value ?? null,
     benefits: tile('benefits')?.value ?? null,
     problems,
-    allGood: Boolean(table) && !table.error && problems.length === 0,
+    unscored: isUnscored,
+    allGood: Boolean(table) && !table.error && !isUnscored && problems.length === 0,
     error: table?.error || '',
   }
 }

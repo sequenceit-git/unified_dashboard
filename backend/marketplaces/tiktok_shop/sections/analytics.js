@@ -39,6 +39,9 @@ async function skuRows(token, shop, now) {
     .sort((a, b) => (b.gmv?.value || 0) - (a.gmv?.value || 0))
 }
 
+/** TikTok's "No shop performance data matches <shop>": the shop hasn't been scored yet (new or low volume). */
+const unscored = (err) => /no .*shop performance data|resource not found/i.test(err?.message || '')
+
 async function healthRows(token, shop) {
   const { metrics = [] } = await ttGet(token, shop, '/analytics/202606/shop_performances/metrics')
   return metrics.map((m) => ({
@@ -86,8 +89,12 @@ async function analytics(token, shop, { now = new Date() } = {}) {
         const [overview, benefits, rows] = await Promise.all([
           ttGet(token, shop, '/analytics/202610/shop_performances/overview').catch(() => null),
           ttGet(token, shop, '/analytics/202610/shop_performances/benefits').catch(() => null),
-          healthRows(token, shop),
+          healthRows(token, shop).catch((err) => { if (unscored(err)) return null; throw err }),
         ])
+        if (rows === null) {
+          healthTiles = [{ id: 'sps-unscored', tab: 'Shop health', label: 'Shop performance score', value: 'Not scored yet', type: 'text', sub: 'TikTok scores a shop once it has enough orders.' }]
+          return []
+        }
         if (overview) {
           healthTiles = [
             { id: 'sps-score', tab: 'Shop health', label: 'Shop performance score', value: overview.sps_score ?? '—', type: 'text', sub: overview.sps_tier_text || '' },

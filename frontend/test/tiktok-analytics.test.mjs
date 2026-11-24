@@ -68,3 +68,11 @@ test('shop health: problems are metrics whose status is not a good one', async (
   assert.equal(healthView({ summary: [], tables: [{ id: 'health', rows: [], error: 'no scope' }] }).error, 'no scope')
   assert.equal(healthView(null).allGood, false)
 })
+
+test("a shop TikTok hasn't scored yet is neither an error nor all good", async () => {
+  const { healthView } = await load()
+  const v = healthView({ summary: [{ id: 'sps-unscored', value: 'Not scored yet' }], tables: [{ id: 'health', rows: [] }] })
+  assert.equal(v.unscored, true)
+  assert.equal(v.allGood, false)
+  assert.equal(v.error, '')
+})
