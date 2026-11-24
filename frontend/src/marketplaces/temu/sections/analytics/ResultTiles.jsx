@@ -1,5 +1,6 @@
 /** Revenue, orders, average order and profit with the change vs the previous period; returns per 100 orders. */
-import { StatCard } from '../../../../components/ui/Card'
+import Card, { StatCard } from '../../../../components/ui/Card'
+import { ErrorState } from '../../../../components/ui/Feedback'
 import { change, margin } from './analyticsView'
 
 const money = (n) => `$${Number(n || 0).toFixed(2)}`
@@ -10,7 +11,8 @@ function Change({ value }) {
   return <span className={up ? 'text-emerald-600' : 'text-rose-600'}>{up ? '▲' : '▼'} {Math.abs(value)}% vs previous period</span>
 }
 
-export default function ResultTiles({ current, previous, loading, returnsPer100 }) {
+export default function ResultTiles({ current, previous, loading, error, onRetry, returnsPer100 }) {
+  if (error) return <Card><ErrorState message={error} onRetry={onRetry} /></Card>
   const c = current || {}
   const p = previous || {}
   const show = (v) => (loading ? '…' : v)

@@ -1,8 +1,10 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import Card from '../../../../components/ui/Card'
-import { EmptyState } from '../../../../components/ui/Feedback'
+import { EmptyState, ErrorState, Spinner } from '../../../../components/ui/Feedback'
 
-export default function RevenueChart({ data }) {
+export default function RevenueChart({ data, loading, error, onRetry }) {
+  if (error) return <Card className="min-w-0 max-w-full"><ErrorState message={error} onRetry={onRetry} /></Card>
+  if (loading) return <Card className="min-w-0 max-w-full"><Spinner /></Card>
   if (!data?.some((d) => d.revenue || d.orders || d.prevRevenue)) return <Card className="min-w-0 max-w-full"><EmptyState message="No revenue data in range" /></Card>
   return (
     <Card className="min-w-0 max-w-full overflow-hidden">

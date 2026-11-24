@@ -106,13 +106,24 @@ async function summary(ctx) {
 }
 
 /** GET /revenue */
+/** The viewer's IANA time zone (e.g. "Asia/Dhaka") when valid, else UTC: days are grouped in it. */
+function viewerZone(tz) {
+  if (typeof tz !== 'string' || tz.length > 64 || !/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)*$/.test(tz)) return 'UTC'
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz })
+    return tz
+  } catch {
+    return 'UTC'
+  }
+}
+
 async function revenue(ctx) {
     const extra = { ...marketplaceFilter(ctx), status: { $nin: ['cancelled', 'refunded'] } }
     const rows = await Order.aggregate([
       { $match: match(ctx, extra) },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$placedAt' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$placedAt', timezone: viewerZone(ctx.query.tz) } },
           revenue: { $sum: '$totals.total' },
           orders: { $sum: 1 },
         },
@@ -157,7 +168,7 @@ async function products(ctx) {
       { $limit: limit },
     ])
     // Each product's Temu goods ids (listings are "<goodsId>:<skuId>"), so the page can match Temu's traffic warnings.
-    const listingFilter = { productId: { $in: rows.map((r) => r._id) }, marketplace: 'temu', externalListingId: /^\d+:\d+$/ }
+    const listingFilter = { productId: { $in: rows.map((r) => r._id).filter((id) => id != null) }, marketplace: 'temu', externalListingId: /^\d+:\d+$/ }
     if (ctx.user.role === 'sub_admin') listingFilter.shopId = { $in: ctx.allowedShopIds || [] }
     const goods = new Map()
     for (const l of await Listing.find(listingFilter).select('productId externalListingId').lean()) {

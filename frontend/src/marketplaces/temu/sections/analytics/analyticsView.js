@@ -26,7 +26,7 @@ export function periodRanges(days, now = new Date()) {
 /** Percent change, one decimal; null when there is nothing to compare with. */
 export function change(current, previous) {
   if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null
-  return round1(((current - previous) / previous) * 100)
+  return round1(((current - previous) / Math.abs(previous)) * 100)
 }
 
 export function margin(profit, revenue) {
@@ -84,7 +84,24 @@ export function attentionItems({ traffic, inventory, returnsPer100 }) {
   const low = (traffic || []).filter((r) => r.warning === 'Low traffic').length
   if (restricted) items.push({ id: 'restricted', text: `${restricted} goods traffic-restricted`, to: '/temu/goods' })
   if (low) items.push({ id: 'low-traffic', text: `${low} goods with low traffic`, to: '/temu/goods' })
-  if (inventory?.lowCount > 0) items.push({ id: 'stock', text: `${inventory.lowCount} low stock, ${inventory.outCount || 0} out of stock`, to: '/temu/inventory' })
+  if (inventory?.lowCount > 0) items.push({ id: 'stock', text: `${inventory.lowCount - (inventory.outCount || 0)} low stock, ${inventory.outCount || 0} out of stock`, to: '/temu/inventory' })
   if (returnsPer100 != null && returnsPer100 >= RETURNS_ALERT) items.push({ id: 'returns', text: `Returns ${returnsPer100} per 100 orders (last 30 days)`, to: '/temu/after-sales' })
   return items
+}
+
+/** What the Needs attention card shows; a failed check never reads as "All good". */
+export function attentionStatus({ items, loading, error }) {
+  if (items.length) return 'problems'
+  if (loading) return 'loading'
+  if (error) return 'error'
+  return 'all-good'
+}
+
+/** The browser's time zone, so the server groups orders into the same days the page shows. */
+export function viewerZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
 }
