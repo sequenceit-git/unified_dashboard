@@ -7,7 +7,7 @@ const load = () => server.ssrLoadModule('/src/marketplaces/temu/sections/goods/g
 test.after(() => server.close())
 
 const COUNTS = { all: 48, live: 30, pending: 3, unlisted: 8, out_of_stock: 3, paused: 2, error: 2, ended: 0 }
-const SIGNALS = { goods: { 1: { traffic: 'Traffic restricted' }, 2: { traffic: 'Low traffic', certNeeded: true }, 3: { priceReview: true }, 4: { traffic: 'Traffic restricted' } }, unavailable: [] }
+const SIGNALS = { goods: { 1: { traffic: 'Traffic restricted' }, 2: { traffic: 'Low traffic', compliance: true }, 3: { priceReview: true }, 4: { traffic: 'Traffic restricted' } }, unavailable: [] }
 
 test("pills use Temu's own state names, Removed only when there are some", async () => {
   const { statusPills } = await load()
@@ -18,18 +18,16 @@ test("pills use Temu's own state names, Removed only when there are some", async
   assert.ok(statusPills({ ...COUNTS, ended: 1 }).some((p) => p.label === 'Removed'))
 })
 
-test('needs attention: rejected, sold out, restricted traffic, certificates, price reviews', async () => {
+test('needs attention: rejected, sold out, restricted traffic, price reviews (compliance is only a chip)', async () => {
   const { attentionItems, summaryLine, signalTotals } = await load()
-  const totals = signalTotals(SIGNALS)
-  assert.deepEqual(totals, { restricted: 2, low: 1, certNeeded: 1, priceReview: 1 })
+  const totals = signalTotals({ ...SIGNALS, totals: { restricted: 3, low: 1, compliance: 2, priceReview: 1 } })
+  assert.deepEqual(totals, { restricted: 3, low: 1, compliance: 2, priceReview: 1 }, "the server's per-row totals")
   const items = attentionItems(COUNTS, totals)
-  assert.deepEqual(items.map((i) => i.id), ['error', 'out', 'restricted', 'cert', 'price'])
+  assert.deepEqual(items.map((i) => i.id), ['error', 'out', 'restricted', 'price'])
   assert.equal(items[0].text, '2 rejected by Temu')
-  assert.equal(items[0].pill, 'error')
-  assert.equal(items[3].tab, 'compliance')
-  assert.equal(items[4].to, '/temu/price-reviews')
+  assert.equal(items[3].to, '/temu/price-reviews')
   assert.equal(summaryLine(COUNTS, totals), '48 goods · 30 on sale · 9 need attention')
-  assert.deepEqual(attentionItems({ ...COUNTS, error: 0, out_of_stock: 0 }, { restricted: 0, low: 0, certNeeded: 0, priceReview: 0 }), [])
+  assert.deepEqual(signalTotals(null), { restricted: 0, low: 0, compliance: 0, priceReview: 0 })
 })
 
 test("each row's next step in Temu terms", async () => {
@@ -49,6 +47,6 @@ test('chips per goods from its Temu goods id', async () => {
   const { goodsIdOf, chipsFor } = await load()
   assert.equal(goodsIdOf('601234:77'), '601234')
   assert.equal(goodsIdOf(null), '')
-  assert.deepEqual(chipsFor(SIGNALS.goods[2]).map((c) => c.label), ['Low traffic', 'Certificate needed'])
+  assert.deepEqual(chipsFor(SIGNALS.goods[2]).map((c) => c.label), ['Low traffic', 'Compliance to check'])
   assert.deepEqual(chipsFor(undefined), [])
 })

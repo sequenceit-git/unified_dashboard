@@ -16,7 +16,8 @@ const REASONS = [
 export default function AdjustModal({ product, onClose, onSaved }) {
   const { token } = useAuth()
   const variants = Array.isArray(product.variants) && product.variants.length > 1 ? product.variants : []
-  const [variantSku, setVariantSku] = useState(variants[0]?.sku || '')
+  // Opens on the sold-out variant when there is one (Restock from Goods), else the first.
+  const [variantSku, setVariantSku] = useState((variants.find((v) => Number(v.stock) <= 0) || variants[0])?.sku || '')
   const activeVariant = variants.find((v) => v.sku === variantSku)
   const currentStock = Number(activeVariant ? activeVariant.stock : (product.stock ?? 0))
 

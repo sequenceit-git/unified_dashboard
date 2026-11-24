@@ -12,30 +12,25 @@ export function statusPills(counts) {
     .map(([key, label]) => ({ key, label, listing: key, count: counts ? counts[key] ?? 0 : null }))
 }
 
+/** Rows with each signal (the server counts them like the pills: one per stored row). */
 export function signalTotals(signals) {
-  const all = Object.values(signals?.goods || {})
-  return {
-    restricted: all.filter((g) => g.traffic === 'Traffic restricted').length,
-    low: all.filter((g) => g.traffic === 'Low traffic').length,
-    certNeeded: all.filter((g) => g.certNeeded).length,
-    priceReview: all.filter((g) => g.priceReview).length,
-  }
+  const t = signals?.totals || {}
+  return { restricted: t.restricted || 0, low: t.low || 0, compliance: t.compliance || 0, priceReview: t.priceReview || 0 }
 }
 
-/** Problems that exist now; each selects a pill, opens a tab or goes to the page that fixes it. */
+/** Problems that exist now; each selects a pill or goes to the page that fixes it. */
 export function attentionItems(counts, totals) {
   const items = []
   if (counts?.error) items.push({ id: 'error', text: `${counts.error} rejected by Temu`, pill: 'error', action: 'Fix' })
   if (counts?.out_of_stock) items.push({ id: 'out', text: `${counts.out_of_stock} sold out`, pill: 'out_of_stock', action: 'Restock' })
   if (totals?.restricted) items.push({ id: 'restricted', text: `${totals.restricted} traffic-restricted by Temu`, to: '/temu/analytics', action: 'See why' })
-  if (totals?.certNeeded) items.push({ id: 'cert', text: `${totals.certNeeded} need a certificate`, tab: 'compliance', action: 'Compliance' })
   if (totals?.priceReview) items.push({ id: 'price', text: `${totals.priceReview} price review waiting`, to: '/temu/price-reviews', action: 'Price reviews' })
   return items
 }
 
 export function summaryLine(counts, totals) {
   if (!counts) return ''
-  const n = attentionItems(counts, totals).length && ((counts.error || 0) + (counts.out_of_stock || 0) + (totals?.restricted || 0) + (totals?.certNeeded || 0) + (totals?.priceReview || 0))
+  const n = (counts.error || 0) + (counts.out_of_stock || 0) + (totals?.restricted || 0) + (totals?.priceReview || 0)
   return `${counts.all} goods · ${counts.live} on sale${n ? ` · ${n} need attention` : ''}`
 }
 
@@ -58,7 +53,7 @@ export function chipsFor(signal) {
   if (!signal) return []
   return [
     ...(signal.traffic ? [{ label: signal.traffic, tone: signal.traffic === 'Traffic restricted' ? 'red' : 'amber' }] : []),
-    ...(signal.certNeeded ? [{ label: 'Certificate needed', tone: 'amber' }] : []),
+    ...(signal.compliance ? [{ label: 'Compliance to check', tone: 'blue' }] : []),
     ...(signal.priceReview ? [{ label: 'Price review waiting', tone: 'blue' }] : []),
   ]
 }

@@ -115,7 +115,7 @@ async function list(ctx) {
       ]
       // A Temu goods id (digits) finds the goods listed under it (listings are "<goodsId>:<skuId>").
       if (/^\d{6,}$/.test(ctx.query.q.trim())) {
-        const listed = await Listing.find({ marketplace: 'temu', externalListingId: { $regex: `^${q}:` } }).select('productId').lean()
+        const listed = await Listing.find({ marketplace: 'temu', externalListingId: { $regex: `^${q}(:|$)` } }).select('productId').lean()
         if (listed.length) filter.$or.push({ _id: { $in: listed.map((row) => row.productId) } })
       }
     }
@@ -491,6 +491,14 @@ async function listingAction(ctx) {
     listing.syncError = null
     listing.lastSyncedAt = new Date()
     await listing.save()
+    // Temu puts the whole goods on or off sale: its other SKU rows change with it.
+    const goodsId = String(listing.externalListingId).split(':')[0]
+    if (['publish', 'unpublish'].includes(action) && /^\d+$/.test(goodsId)) {
+      await Listing.updateMany(
+        { shopId: listing.shopId, marketplace: 'temu', externalListingId: { $regex: new RegExp(`^${goodsId}:`) }, _id: { $ne: listing._id } },
+        { $set: { status: listing.status, ...(listing.marketplaceStatus ? { marketplaceStatus: listing.marketplaceStatus } : {}), syncError: null, lastSyncedAt: listing.lastSyncedAt } },
+      )
+    }
     if (action === 'delete' || action === 'end') {
       await marketplaceManager.forgetListing(listing, [product?.sku, listing.externalListingId, `EBAY-${listing.externalListingId}`])
       if (product?.sourceReportId) {

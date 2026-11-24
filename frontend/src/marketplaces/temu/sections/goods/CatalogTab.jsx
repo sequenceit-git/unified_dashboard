@@ -165,7 +165,8 @@ export default function CatalogTab({ listing = 'all', signals, canRestock = true
     const canDelete = !listed || r.shopListing?.status === 'ended' || r.shopListing?.status === 'error'
     return [
       ...(next !== 'edit' ? [{ label: 'Edit', onClick: () => onEdit(r) }] : []),
-      ...(r.shopListing?.listingUrl ? [{ label: 'View on Temu', onClick: () => window.open(r.shopListing.listingUrl, '_blank', 'noopener') }] : []),
+      // A rejected goods may point at a goods Temu already removed: no link then.
+      ...(r.shopListing?.listingUrl && r.shopListing.status !== 'error' ? [{ label: 'View on Temu', onClick: () => window.open(r.shopListing.listingUrl, '_blank', 'noopener') }] : []),
       ...listingActionsFor(profile, r.shopListing).filter((a) => !(a.id === 'publish' && next === 'publish')).map((a) => ({ label: a.label, danger: a.danger, onClick: () => runShopAction(r, a) })),
       ...(canDelete ? [{ label: 'Delete', danger: true, onClick: () => remove(r._id) }] : []),
     ]
@@ -199,7 +200,7 @@ export default function CatalogTab({ listing = 'all', signals, canRestock = true
           <Select className="min-w-0" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1) }} options={SORTS} aria-label="Sort" />
         </div>
       )}
-      {notice.text && <p className={`mb-2 text-sm ${notice.error ? 'text-rose-600' : 'text-emerald-700'}`}>{notice.text}</p>}
+      {notice.text && <p className={`mb-2 text-sm ${notice.error ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{notice.text}</p>}
       <DataTable
         columns={[
           {
@@ -216,9 +217,9 @@ export default function CatalogTab({ listing = 'all', signals, canRestock = true
                   </div>
                   <div className="min-w-0">
                     <p className="line-clamp-2 font-medium">{r.title}</p>
-                    <p className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                    <p className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500 dark:text-slate-400">
                       <span>SKU {r.sku}</span>
-                      {item && r.shopListing?.listingUrl && (
+                      {item && r.shopListing?.listingUrl && r.shopListing.status !== 'error' && (
                         <a href={r.shopListing.listingUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-0.5 text-indigo-600 hover:underline dark:text-indigo-400">
                           Goods {item} <FiExternalLink size={11} aria-hidden="true" />
                         </a>

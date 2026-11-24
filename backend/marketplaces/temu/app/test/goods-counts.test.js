@@ -75,3 +75,33 @@ test('counts cover only products the list can show, each product once', async ()
     assert.deepEqual(await service.counts(admin), { all: 3, live: 1, unlisted: 1, out_of_stock: 0, paused: 0, ended: 0, error: 1, pending: 0 })
   } finally { restore() }
 })
+
+test('Put on sale / Take off sale updates every SKU row of that goods', async () => {
+  const saved = []
+  const updates = []
+  const restore = stubModules({
+    '/models/Product': { findById: () => chain({ _id: 'p1', sku: 'A', stock: 3 }), find: () => chain([]), countDocuments: async () => 0, distinct: async () => [] },
+    '/models/Listing': {
+      findOne: async () => ({ _id: 'L1', productId: 'p1', shopId: 's1', externalListingId: '77:1', status: 'paused', save: async function save() { saved.push(this.status) }, toObject() { return { ...this } } }),
+      find: () => chain([]),
+      updateMany: async (filter, update) => { updates.push([filter, update]) },
+      distinct: async () => [],
+    },
+    '/models/Shop': { findById: () => chain({ _id: 's1', marketplace: 'temu' }), find: () => chain([]) },
+    '/models/ResearchReport': { updateMany: () => ({ catch: () => {} }) },
+    '../../services/marketplace': {},
+    '../marketplace': {},
+    '../manager': { applyListingAction: async () => ({ status: 'live', marketplaceStatus: 'ON_SALE' }), rememberListing: async () => {} },
+    '/catalog/productImport': {},
+    '/core/notify': { stockChangedOnShops: async () => {}, listingStatusChanged: async () => {} },
+  })
+  try {
+    const service = freshRequire('marketplaces/temu/app/services/products.js')
+    await service.listingAction({ ...admin, params: { id: 'p1' }, body: { action: 'publish' } })
+    assert.deepEqual(saved, ['live'])
+    const [filter, update] = updates[0]
+    assert.equal(filter.shopId, 's1')
+    assert.equal(String(filter.externalListingId.$regex), '/^77:/')
+    assert.equal(update.$set.status, 'live')
+  } finally { restore() }
+})
