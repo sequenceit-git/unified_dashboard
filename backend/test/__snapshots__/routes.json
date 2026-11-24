@@ -23,6 +23,7 @@
       "GET /listings/",
       "POST /listings/import-url",
       "POST /listings/fill-attributes",
+      "GET /listings/counts",
       "GET /listings/categories",
       "GET /listings/:id",
       "POST /listings/",

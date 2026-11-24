@@ -42,6 +42,16 @@ function productsRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/products/counts — products per eBay state (Listings status pills)
+  router.get('/counts', async (req, res) => {
+    try {
+      res.json(await service.counts(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/products/categories
   router.get('/categories', async (req, res) => {
     try {

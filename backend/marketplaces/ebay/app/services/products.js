@@ -67,6 +67,7 @@ function listingStatusFilter(value) {
     case 'error':
       return { status: value }
     case 'inactive': return { status: { $in: ['paused', 'pending'] } }
+    case 'closed': return { status: { $in: ['ended', 'paused'] } }
     default: return {}
   }
 }
@@ -101,7 +102,11 @@ async function list(ctx) {
     // This shop's products only: each shop has its own products, stock and price.
     filter.marketplace = 'ebay'
     const marketplace = 'ebay'
-    if (ctx.query.listing && ctx.query.listing !== 'all') {
+    if (ctx.query.listing === 'unlisted') {
+      // Products with no eBay listing yet (drafts, or never sent).
+      const listed = (await Listing.find({ marketplace }).select('productId').lean()).map((row) => row.productId)
+      filter._id = ids ? { $in: ids.filter((id) => !listed.some((l) => String(l) === String(id))) } : { $nin: listed }
+    } else if (ctx.query.listing && ctx.query.listing !== 'all') {
       const rows = await Listing.find({ marketplace, ...listingStatusFilter(ctx.query.listing) }).select('productId')
       const allowed = ids ? new Set(ids.map(String)) : null
       filter._id = { $in: rows.map((row) => row.productId).filter((id) => !allowed || allowed.has(String(id))) }
@@ -128,6 +133,28 @@ async function list(ctx) {
       })
     }
     return result
+}
+
+/**
+ * GET /counts — how many products are in each eBay state, for the Listings status pills:
+ * `{ all, live, unlisted, out_of_stock, ended (ended or unsold), error, pending }`.
+ */
+async function counts(ctx) {
+    const ids = await scopedIds(ctx)
+    const productFilter = { marketplace: 'ebay', ...(ids ? { _id: { $in: ids } } : {}) }
+    const [all, listings] = await Promise.all([
+      Product.countDocuments(productFilter),
+      Listing.find({ marketplace: 'ebay', ...(ids ? { productId: { $in: ids } } : {}) }).select('productId status').lean(),
+    ])
+    const out = { all, live: 0, unlisted: 0, out_of_stock: 0, ended: 0, error: 0, pending: 0 }
+    const listed = new Set()
+    for (const row of listings) {
+      listed.add(String(row.productId))
+      const key = row.status === 'paused' ? 'ended' : row.status
+      if (key in out && key !== 'all' && key !== 'unlisted') out[key] += 1
+    }
+    out.unlisted = Math.max(0, all - listed.size)
+    return out
 }
 
 /** POST /import-url */
@@ -498,4 +525,4 @@ async function updatePrice(ctx) {
     return { product, pushedToMarketplaces: results.filter((item) => item.ok).length, marketplaceSync: results }
 }
 
-module.exports = { list, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
+module.exports = { list, counts, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
