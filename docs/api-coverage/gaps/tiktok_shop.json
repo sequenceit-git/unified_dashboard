@@ -377,36 +377,6 @@
     "priority": "medium",
     "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
   },
-  "GET /finance/202501/orders/{order_id}/statement_transactions": {
-    "section": "finance",
-    "size": "small",
-    "priority": "high",
-    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
-  },
-  "GET /finance/202501/statements/{statement_id}/statement_transactions": {
-    "section": "finance",
-    "size": "small",
-    "priority": "high",
-    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
-  },
-  "GET /finance/202507/orders/unsettled": {
-    "section": "finance",
-    "size": "small",
-    "priority": "high",
-    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
-  },
-  "GET /finance/202609/account_balances": {
-    "section": "finance",
-    "size": "small",
-    "priority": "high",
-    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
-  },
-  "GET /finance/202609/account_transactions": {
-    "section": "finance",
-    "size": "small",
-    "priority": "high",
-    "value": "Money detail: transactions per order and per statement, unsettled orders, account balances and balance history."
-  },
   "GET /fulfillment/202309/combinable_packages/search": {
     "section": "packages",
     "size": "medium",

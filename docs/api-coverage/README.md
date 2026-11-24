@@ -9,7 +9,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
-| TikTok Shop | 365 | 57 | 11 | 256 | 41 | 39 | 110 |
+| TikTok Shop | 365 | 62 | 11 | 251 | 41 | 34 | 105 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
@@ -943,16 +943,6 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | needs scope: Customer Engagement - Read | medium | medium | `POST /customer_engagement/202412/performances` | Customer Engagement - Read | Get Engagement Task Performances | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
 | needs scope: Customer Engagement - Write | medium | medium | `POST /customer_engagement/202502/engagement_tasks/custom` | Customer Engagement - Write | Create Custom Engagement Task | Customer engagement: send messages and engagement tasks to customers from templates, and see their results. |
 
-#### finance (5)
-
-| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
-|---|---|---|---|---|---|---|
-| available now | high | small | `GET /finance/202501/orders/{order_id}/statement_transactions` | Finance Information | Get Transactions by Order | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202501/statements/{statement_id}/statement_transactions` | Finance Information | Get Transactions by Statement | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202507/orders/unsettled` | Finance Information | Get Unsettled Transactions | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202609/account_balances` | Finance Information | Get TradeIn Supplier Account Balance | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-| available now | high | small | `GET /finance/202609/account_transactions` | Finance Information | Get TradeIn Account Transactions | Money detail: transactions per order and per statement, unsettled orders, account balances and balance history. |
-
 #### inventory (1)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
@@ -1417,12 +1407,12 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Event | `DELETE /event/202309/webhooks` | Delete Webhook for an Event | Deletes the shop's webhook URL for the specified event topic. |  |
 | covered | Finance | `GET /finance/202309/statements` | Get Statements | Retrieves the statements generated for a shop and the key statement information based on a specified date range or their payment status. | `marketplaces/tiktok_shop/finance.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/sections/finance.js` |
 | covered | Finance | `GET /finance/202309/withdrawals` | Get Seller Financial Transactions | Retrieves seller financial transaction records within an optional creation-time range, filtered by the required transaction types. | `marketplaces/tiktok_shop/sections/finance.js` |
+| covered | Finance | `GET /finance/202501/orders/{order_id}/statement_transactions` | Get Transactions by Order | Retrieves the SKU-level details of an order transaction. | `marketplaces/tiktok_shop/sections/finance.js` |
+| covered | Finance | `GET /finance/202501/statements/{statement_id}/statement_transactions` | Get Transactions by Statement | Retrieves the details of a statement, including the transactions, which can be a standard order transaction, an adjustment transaction, or a reserve-related transaction. | `marketplaces/tiktok_shop/sections/finance.js` |
+| covered | Finance | `GET /finance/202507/orders/unsettled` | Get Unsettled Transactions | This API allows the partner to retrieve a list of unsettled transactions (incl. | `marketplaces/tiktok_shop/sections/finance.js` |
+| covered | Finance | `GET /finance/202609/account_balances` | Get TradeIn Supplier Account Balance | Retrieves the available account balance for the currently authorized TradeIn supplier. | `marketplaces/tiktok_shop/sections/finance.js` |
+| covered | Finance | `GET /finance/202609/account_transactions` | Get TradeIn Account Transactions | Retrieves account transaction records for the currently authorized TradeIn supplier. | `marketplaces/tiktok_shop/sections/finance.js` |
 | covered (older version: `GET /finance/202309/payments`) | Finance | `GET /finance/202605/payments` | Get Payments | **This API is currently unavailable to SEA markets.** Retrieves records of automated payments for a shop based on a specified date range. | `marketplaces/tiktok_shop/sections/finance.js` |
-| missing | Finance | `GET /finance/202501/orders/{order_id}/statement_transactions` | Get Transactions by Order | Retrieves the SKU-level details of an order transaction. |  |
-| missing | Finance | `GET /finance/202501/statements/{statement_id}/statement_transactions` | Get Transactions by Statement | Retrieves the details of a statement, including the transactions, which can be a standard order transaction, an adjustment transaction, or a reserve-related transaction. |  |
-| missing | Finance | `GET /finance/202507/orders/unsettled` | Get Unsettled Transactions | This API allows the partner to retrieve a list of unsettled transactions (incl. |  |
-| missing | Finance | `GET /finance/202609/account_balances` | Get TradeIn Supplier Account Balance | Retrieves the available account balance for the currently authorized TradeIn supplier. |  |
-| missing | Finance | `GET /finance/202609/account_transactions` | Get TradeIn Account Transactions | Retrieves account transaction records for the currently authorized TradeIn supplier. |  |
 | missing | Fulfilled by TikTok (FBT) | `GET /fbt/202408/warehouses` | Get FBT Warehouse List | This API is used to retrieve all Fulfilled by TikTok warehouse information including the warehouse name, warehouse address information, etc. |  |
 | missing | Fulfilled by TikTok (FBT) | `GET /fbt/202409/merchants/onboarded_regions` | Get FBT Merchant Onboarded Regions | This API verifies whether a seller is registered as a Fulfillment by TikTok (FBT) merchant. |  |
 | missing | Fulfilled by TikTok (FBT) | `GET /fbt/202601/mcf_outbound_orders` | Get FBT MCF Order Status | Use this API to retrieve an MCF order and the current status and fulfillment details of its consign orders. |  |
