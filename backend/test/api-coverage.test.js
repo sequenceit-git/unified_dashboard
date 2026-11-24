@@ -275,3 +275,35 @@ test('eBay wave 2 endpoints are covered', () => {
   const missing = WAVE2.filter((id) => !/^covered/.test(String(rows.get(id))))
   assert.deepEqual(missing, [])
 })
+
+// ---- Temu wave 3 (docs/superpowers/plans/2026-11-24-temu-api-wave3.md)
+test('Temu wave 3 methods are covered', () => {
+  const { shopCoverage } = require('../scripts/apiCoverage/compare')
+  const rows = new Map(shopCoverage('temu').map((r) => [r.id, r.status]))
+  const WAVE3 = [
+    // listing helpers and listing
+    'bg.local.goods.cats.get', 'bg.local.goods.category.recommend', 'bg.local.goods.template.get', 'bg.local.goods.size.element.get', 'bg.local.goods.spec.id.get',
+    'bg.local.goods.image.upload', 'bg.freight.template.list.query', 'temu.local.goods.brand.trademark.V2.get', 'bg.local.goods.tax.code.get',
+    'temu.local.goods.sku.net.content.unit.query', 'temu.local.goods.illegal.vocabulary.check', 'bg.local.goods.out.sn.check',
+    'bg.local.goods.compliance.property.check', 'bg.local.goods.add', 'bg.local.goods.partial.update', 'temu.local.goods.attributes.edit', 'temu.local.goods.delete',
+    'temu.local.goods.baseprice.recommend',
+    // compliance
+    'bg.local.compliance.goods.list.query', 'bg.local.goods.compliance.rules.get', 'bg.arbok.open.cert.queryNeedUploadItems', 'bg.arbok.open.product.cert.query',
+    'bg.goods.compliancelabel.get', 'bg.arbok.open.upload.uploadFile', 'bg.arbok.open.cert.uploadProductCert',
+    // orders and shipping
+    'temu.track.trackinginfo.get', 'bg.order.customization.get', 'temu.order.cancel.outofstock.result.get', 'bg.order.combinedshipment.list.get',
+    'bg.order.unshipped.package.get', 'temu.local.order.verification.upload', 'bg.logistics.shipment.v2.get',
+    'bg.logistics.shippingservices.get', 'bg.logistics.shipment.create', 'bg.logistics.shipment.result.get', 'bg.logistics.shipment.document.get',
+    'bg.logistics.shipment.update', 'bg.logistics.shipment.shippingtype.update', 'temu.logistics.shipment.pickup.reservation.create',
+    'temu.logistics.shipment.pickup.reservation.result.get', 'temu.logistics.shipment.pickup.reservation.cancel', 'temu.logistics.label.list.get',
+    'temu.logistics.shiplogisticstype.get',
+    // returns
+    'bg.aftersales.parentreturnorder.get', 'temu.aftersales.returnaddress.get', 'temu.aftersales.carrier.get', 'temu.aftersales.returnlabel.prepare.get',
+    'temu.aftersales.upload.returnlabel',
+    // ads, prices, analytics
+    'temu.searchrec.ad.goods.create.query', 'temu.searchrec.ad.roas.pred', 'temu.searchrec.ad.create', 'temu.searchrec.ad.modify',
+    'temu.searchrec.ad.detail.query', 'temu.searchrec.ad.log.query', 'temu.local.sku.list.retrieve', 'temu.local.goods.list.retrieve', 'temu.local.mall.tags.get',
+  ]
+  const missing = WAVE3.filter((id) => !/^covered/.test(String(rows.get(id))))
+  assert.deepEqual(missing, [])
+})

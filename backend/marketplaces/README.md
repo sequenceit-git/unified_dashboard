@@ -146,6 +146,29 @@ other shop's pages or components):
   `GET /api/temu/orders/:id/temu-detail`, `POST /api/temu/orders/:id/full-address` (on request,
   `Cache-Control: no-store`, never stored), `GET /api/temu/inventory/temu-stock`.
 
+### Temu US: listing, compliance, labels, returns, ads (wave 3)
+
+The shop is Temu US (openapi-b-us, regionId 211, USD; weights in lb, sizes in inches, one decimal).
+- Listing (Temu's release flow): helpers under `/api/temu/goods/helpers/*` (categories, recommend,
+  template, spec, images by public URL → Temu url, shipping templates, brands, tax codes, net units,
+  price suggestion, banned-word/duplicate-code check); `goodsTemplate.js` maps Temu's template,
+  `goodsPayload.js` builds `bg.local.goods.add` (problems by field → 400); `listings.createListing`
+  reads the template again, runs Temu's property check, adds the goods ("Under review"). Edits use
+  `bg.local.goods.partial.update` (+ attributes.edit); deleting a product deletes the Temu goods first.
+- Compliance (US): `/api/temu/goods/compliance`, `/goods/:goodsId/compliance`, certificate upload
+  (PDF/JPEG/PNG ≤ 10 MB by bytes, Temu file upload, never stored). EU GPSR/representative editing is
+  not built.
+- Orders: `/orders/:id/temu-follow-up` (packages + tracking, customisation, out-of-stock cancellation
+  result), `/orders/temu-ship-together`, `/orders/:id/verification`.
+- Buy-shipping (`app/services/labels.js`): services → `shipment.create` (sendType 0, ship now) →
+  "bought" only when `shipment.result.get` says so; the label file is fetched with Temu's toa-*
+  signed headers and handed over (`GET /orders/:id/label`, never stored); retry, own carrier, pickups.
+- Returns: return shipment in the detail, buyer's return address on request (never stored), upload
+  your own return label. Ads: create (eligibility first, budget in USD, ROAS typed or Temu's
+  prediction), change budget/ROAS, details and change log. Analytics: Temu insights tab.
+- Not built because Temu doesn't document the values: pre-sale on/off, seller cancellation request,
+  promotion enrolment edits (operateType), ad pause (status), split shipments.
+
 ## Add a shop
 
 1. Create `marketplaces/<new_key>/` with the files above and an `index.js` adapter.
