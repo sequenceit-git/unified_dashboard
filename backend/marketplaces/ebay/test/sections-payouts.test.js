@@ -105,3 +105,41 @@ test('the eBay bill asks for the last 90 days (eBay requires a filter)', async (
     assert.equal(bill, '/sell/finances/v1/billing_activity?limit=50&filter=transactionDate:%5B2026-08-26T10:00:00.000Z..2026-11-24T10:00:00.000Z%5D')
   } finally { restore() }
 })
+
+test('a payout opens with its transactions', async () => {
+  const urls = []
+  const restore = stubModules({
+    './helpers': {
+      scopeAware: require('../sections/helpers').scopeAware,
+      ebayApiz: () => 'https://apiz.ebay.com',
+      ebayGet: async (token, url) => {
+        urls.push(url)
+        if (url.includes('/payout/P1')) return { payoutId: 'P1', payoutDate: '2026-11-18', payoutStatus: 'SUCCEEDED', amount: USD(100), totalFee: USD(2), payoutInstrument: { nickname: 'Checking', accountLastFourDigits: '4321' } }
+        if (url.includes('/transaction?')) return { transactions: [{ transactionDate: '2026-11-17T00:00:00.000Z', transactionType: 'SALE', orderId: '01-1', bookingEntry: 'CREDIT', amount: USD(60) }, { transactionType: 'REFUND', bookingEntry: 'DEBIT', amount: USD(5) }] }
+        throw new Error(`unexpected ${url}`)
+      },
+    },
+  })
+  try {
+    const payouts = freshRequire('marketplaces/ebay/sections/payouts.js')
+    const detail = await payouts.details.payout('tok', {}, 'P1')
+    assert.deepEqual(urls, ['https://apiz.ebay.com/sell/finances/v1/payout/P1', 'https://apiz.ebay.com/sell/finances/v1/transaction?limit=200&filter=payoutId:%7BP1%7D'])
+    assert.ok(detail.summary.some((s) => s.label === 'Paid to' && s.value === 'Checking …4321'))
+    assert.deepEqual(detail.tables[0].rows.map((r) => [r.type, r.amount.value]), [['Sale', 60], ['Refund', -5]])
+  } finally { restore() }
+})
+
+test('the Payouts tab shows sales, refunds, labels and on hold for 90 days', async () => {
+  const before = FIXTURES['transaction_summary?']
+  FIXTURES['transaction_summary?'] = { creditAmount: USD(900), refundAmount: USD(40), shippingLabelAmount: USD(55), onHoldAmount: USD(12) }
+  const { payouts, restore } = load()
+  try {
+    const { summary, tables } = await payouts('tok', {}, { now: new Date('2026-11-24T10:00:00.000Z') })
+    const tiles = Object.fromEntries(summary.filter((s) => s.tab === 'Payouts').map((s) => [s.label, s.value?.value ?? s.value]))
+    assert.equal(tiles['Sales (90 days)'], 900)
+    assert.equal(tiles['Refunds (90 days)'], 40)
+    assert.equal(tiles['Shipping labels (90 days)'], 55)
+    assert.equal(tiles['On hold'], 12)
+    assert.ok(tables.find((t) => t.id === 'payouts').rows[0].actions.some((a) => a.id === 'payout' && a.detail))
+  } finally { restore(); if (before === undefined) delete FIXTURES['transaction_summary?']; else FIXTURES['transaction_summary?'] = before }
+})

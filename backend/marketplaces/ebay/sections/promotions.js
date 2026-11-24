@@ -4,6 +4,13 @@
  */
 const { money, words, col, tables } = require('../../../services/marketplace/sectionKit')
 const { ebayGet } = require('./helpers')
+const { ebaySend } = require('../client')
+const { HttpError } = require('../../../utils/httpError')
+
+const DELETABLE = /^(DRAFT|ENDED)$/
+
+/** Delete lives on the API of the promotion's kind: markdown sales vs. threshold discounts. */
+const deletePath = (p) => (p.promotionType === 'MARKDOWN_SALE' ? `/sell/marketing/v1/item_price_markdown/${encodeURIComponent(p.promotionId)}` : `/sell/marketing/v1/item_promotion/${encodeURIComponent(p.promotionId)}`)
 
 async function promotions(token) {
   let byId = new Map()
@@ -14,8 +21,13 @@ async function promotions(token) {
     columns: [col('name', 'Name'), col('type', 'Type'), col('status', 'Status', 'status'), col('start', 'Starts', 'date'), col('end', 'Ends', 'date')],
     load: async () => {
       const rows = (await ebayGet(token, '/sell/marketing/v1/promotion?marketplace_id=EBAY_US&limit=100')).promotions?.map((row) => ({
+        id: String(row.promotionId),
         promotionId: row.promotionId,
         name: row.name,
+        actions: [
+          { id: 'items', label: 'Listings', detail: true },
+          ...(DELETABLE.test(row.promotionStatus || '') ? [{ id: 'delete', label: 'Delete', danger: true, confirm: `Delete promotion "${row.name}"?` }] : []),
+        ],
         type: words(row.promotionType),
         status: words(row.promotionStatus),
         start: row.startDate,
@@ -63,6 +75,37 @@ async function promotions(token) {
     ],
     tables: [...list, results],
   }
+}
+
+/** Read-only drill-downs. */
+promotions.details = {
+  /** The listings a promotion covers. */
+  items: async (token, shop, id) => {
+    const res = await ebayGet(token, `/sell/marketing/v1/promotion/${encodeURIComponent(id)}/get_listing_set?limit=200`)
+    return {
+      title: `Listings in promotion ${id}`,
+      tables: [{
+        id: 'listings',
+        title: 'Listings',
+        ...(res.total > (res.listings || []).length ? { note: `Showing ${(res.listings || []).length} of ${res.total}.` } : {}),
+        columns: [col('listingId', 'Listing'), col('title', 'Title'), col('price', 'Price', 'money'), col('quantity', 'Quantity', 'number')],
+        rows: (res.listings || []).map((l) => ({ listingId: String(l.listingId), title: l.title || '', price: money(l.currentPrice), quantity: l.quantity ?? null })),
+      }],
+    }
+  },
+}
+
+/** Row actions served by the generic section action route. */
+promotions.actions = {
+  /** A draft or ended promotion; its kind and status are read again from eBay. */
+  delete: async (token, shop, id) => {
+    const list = (await ebayGet(token, '/sell/marketing/v1/promotion?marketplace_id=EBAY_US&limit=200')).promotions || []
+    const promo = list.find((p) => String(p.promotionId) === String(id))
+    if (!promo) throw new HttpError(404, { error: `eBay has no promotion ${id}.` })
+    if (!DELETABLE.test(promo.promotionStatus || '')) throw new HttpError(400, { error: 'Only a draft or ended promotion can be deleted. Pause or end it first.' })
+    await ebaySend(token, 'DELETE', deletePath(promo))
+    return { message: `Promotion "${promo.name || id}" deleted.` }
+  },
 }
 
 module.exports = promotions

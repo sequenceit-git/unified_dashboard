@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 430 | 105 | 0 | 316 | 9 | 42 | — |
+| eBay | 430 | 111 | 0 | 310 | 9 | 41 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
 | Temu | 133 | 40 | 0 | 93 | 0 | 17 | — |
 
@@ -20,11 +20,10 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 
 ### eBay — gaps by section
 
-#### analytics (4)
+#### analytics (3)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}` | sell.analytics.readonly | getSellerStandardsProfile | Seller level (Top Rated / Above Standard / Below Standard) with defect rate, late-shipment rate and cases closed without resolution, current and projected. |
 | — | low | medium | `GET /sell/feed/v1/customer_service_metric_task` | sell.analytics.readonly | getCustomerServiceMetricTasks | Download the customer-service metric report as a file. |
 | — | low | medium | `GET /sell/feed/v1/customer_service_metric_task/{task_id}` | sell.analytics.readonly | getCustomerServiceMetricTask | Download the customer-service metric report as a file. |
 | — | low | medium | `POST /sell/feed/v1/customer_service_metric_task` | sell.analytics.readonly | createCustomerServiceMetricTask | Download the customer-service metric report as a file. |
@@ -197,25 +196,20 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | low | small | `Trading:GetSellerTransactions` | — | GetSellerTransactions | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
 | — | low | small | `Trading:SendInvoice` | — | SendInvoice | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
 
-#### payouts (5)
+#### payouts (3)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
 | — | high | small | `GET /sell/finances/v1/order_earnings/{order_id}` | sell.finances.earnings.read | getOrderEarningsById | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
-| — | medium | small | `GET /sell/finances/v1/payout/{payout_Id}` | sell.finances | getPayout | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
-| — | medium | small | `GET /sell/finances/v1/transaction_summary` | sell.finances | getTransactionSummary | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
 | — | medium | small | `GET /sell/finances/v1/transfer/{transfer_Id}` | sell.finances | getTransfer | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
 | — | low | small | `Trading:GetAccount` | — | GetAccount | Legacy eBay invoice/account statement (the Finances API covers fees better). |
 
-#### promotions (8)
+#### promotions (5)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
 | — | medium | medium | `DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | deleteItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `DELETE /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | deleteItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | getItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing.readonly | getItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set` | sell.marketing | getListingSet | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `POST /sell/marketing/v1/item_promotion` | sell.marketing | createItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `PUT /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | updateItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `PUT /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | updateItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
@@ -475,8 +469,8 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Account v2 API | `POST /sell/account/v2/rate_table/{rate_table_id}/update_shipping_cost` | updateShippingCost | This method allows sellers to update shippingCost and/or additionalCost information for an existing shipping rate table identified by the rate_table_id path parameter.A successful call returns an HTTP status code of 204 |  |
 | covered | Analytics API | `GET /sell/analytics/v1/customer_service_metric/{customer_service_metric_type}/{evaluation_type}` | getCustomerServiceMetric | Use this method to retrieve a seller's performance and rating for the customer service metric. | `marketplaces/ebay/sections/analytics.js` |
 | covered | Analytics API | `GET /sell/analytics/v1/seller_standards_profile` | findSellerStandardsProfiles | This call retrieves all the standards profiles for the associated seller. | `marketplaces/ebay/sections/analytics.js` |
+| covered | Analytics API | `GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}` | getSellerStandardsProfile | This call retrieves a single standards profile for the associated seller. | `marketplaces/ebay/sections/analytics.js` |
 | covered | Analytics API | `GET /sell/analytics/v1/traffic_report` | getTrafficReport | This method returns a report that details the user traffic received by a seller's listings. | `marketplaces/ebay/sections/analytics.js` |
-| missing | Analytics API | `GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}` | getSellerStandardsProfile | This call retrieves a single standards profile for the associated seller. |  |
 | not for sellers | Browse API | `GET /buy/browse/v1/item_summary/search` | search | This method searches for eBay items by various query parameters and retrieves summaries of the items. | `marketplaces/ebay/listings.js` |
 | not for sellers | Browse API | `GET /buy/browse/v1/item/get_item_by_legacy_id` | getItemByLegacyId | This method is a bridge between the eBay legacy APIs, such as Shopping and Finding, and the eBay Buy APIs. | `marketplaces/ebay/importItem.js`, `marketplaces/ebay/listings.js` |
 | missing | Catalog API | `GET /commerce/catalog/v1_beta/product_summary/search` | search | This method searches for and retrieves summaries of one or more products in the eBay catalog that match the search criteria provided by a seller. |  |
@@ -516,11 +510,11 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Finances API | `GET /sell/finances/v1/order_earnings_summary` | getOrderEarningsSummary | This method returns a summarized view of order earnings information for one or more orders associated with a seller account. | `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/payout` | getPayouts | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/payout_summary` | getPayoutSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
+| covered | Finances API | `GET /sell/finances/v1/payout/{payout_Id}` | getPayout | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/seller_funds_summary` | getSellerFundsSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/transaction` | getTransactions | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/finance.js`, `marketplaces/ebay/sections/payouts.js` |
+| covered | Finances API | `GET /sell/finances/v1/transaction_summary` | getTransactionSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
 | missing | Finances API | `GET /sell/finances/v1/order_earnings/{order_id}` | getOrderEarningsById | This method returns detailed order-level financial data including order earnings, gross amount, expenses, and refunds. |  |
-| missing | Finances API | `GET /sell/finances/v1/payout/{payout_Id}` | getPayout | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
-| missing | Finances API | `GET /sell/finances/v1/transaction_summary` | getTransactionSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
 | missing | Finances API | `GET /sell/finances/v1/transfer/{transfer_Id}` | getTransfer | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order` | getOrders | Use this method to search for and retrieve one or more orders based on their creation date, last modification date, or fulfillment status using the filter parameter. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/profile.js` |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}` | getOrder | Use this call to retrieve the contents of an order based on its unique identifier, orderId. | `marketplaces/ebay/orders.js` |
@@ -595,9 +589,12 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Marketing API | `GET /sell/marketing/v1/ad_report_task` | getReportTasks | This method returns information on all the existing report tasks related to a seller. | `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/ad_report_task/{report_task_id}` | getReportTask | This call returns the details of a specific Promoted Listings report task, as specified by the report_task_id path parameter. | `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/ad_report/{report_id}` | getReport | This call downloads the report as specified by the report_id path parameter. | `marketplaces/ebay/sections/advertising.js` |
+| covered | Marketing API | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | getItemPriceMarkdownPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
+| covered | Marketing API | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | getItemPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/promotion` | getPromotions | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/promotion_report` | getPromotionReports | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/promotion_summary_report` | getPromotionSummaryReport | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
+| covered | Marketing API | `GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set` | getListingSet | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `POST /sell/marketing/v1/ad_campaign` | createCampaign | This method can be used to create a Promoted Listings general, priority, or offsite campaign.A Promoted Listings campaign is the structure in which you place the ads or ad group for the listings you wish to promote.Note: | `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_create_ads_by_listing_id` | bulkCreateAdsByListingId | This method adds multiple listings to an existing Promoted Listings campaign using listingId values generated by the Trading API or Inventory API, or using values generated by an ad group ID.For general strategy campaign | `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/bulk_delete_ads_by_listing_id` | bulkDeleteAdsByListingId | This method works with listing IDs created with either the Trading API or the Inventory API.The method deletes a set of ads, as specified by a list of listingID values from a Promoted Listings campaign. | `marketplaces/ebay/sections/advertising.js` |
@@ -631,11 +628,8 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Marketing API | `GET /sell/marketing/v1/email_campaign/{email_campaign_id}/email_preview` | getEmailPreview | This method returns a preview of the email sent by the email campaign indicated by the email_campaign_id path parameter.Call getEmailCampaigns to obtain a list of email campaigns. |  |
 | missing | Marketing API | `GET /sell/marketing/v1/email_campaign/audience` | getAudiences | This method retrieves all available email newsletter audiences for the email campaign type specified by the emailCampaignType path parameter.Use the optional limit and offset path parameters to paginate the results and t |  |
 | missing | Marketing API | `GET /sell/marketing/v1/email_campaign/report` | getEmailReport | This method returns the seller's email campaign performance report for a time period specified by the startDate and endDate path parameters. |  |
-| missing | Marketing API | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | getItemPriceMarkdownPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
-| missing | Marketing API | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | getItemPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
 | missing | Marketing API | `GET /sell/marketing/v1/negative_keyword` | getNegativeKeywords | This method can be used to retrieve all of the negative keywords for ad groups in priority strategy campaigns that use the Cost Per Click (CPC) funding model.The results can be filtered using the campaign_ids, ad_group_i |  |
 | missing | Marketing API | `GET /sell/marketing/v1/negative_keyword/{negative_keyword_id}` | getNegativeKeyword | This method retrieves details on a specific negative keyword.In the request, specify the negative_keyword_id as a path parameter. |  |
-| missing | Marketing API | `GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set` | getListingSet | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
 | missing | Marketing API | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | createAdByListingId | This method adds a listing to an existing Promoted Listings campaign using a listingId value generated by the Trading API or Inventory API, or using a value generated by an ad group ID. |  |
 | missing | Marketing API | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group` | createAdGroup | This method adds an ad group to an existing priority strategy campaign that uses manual targeting.To create an ad group for a campaign, specify the defaultBid for the ad group in the payload of the request. |  |
 | missing | Marketing API | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}/suggest_bids` | suggestBids | This method allows sellers to retrieve the suggested bids for input keywords and match type. |  |

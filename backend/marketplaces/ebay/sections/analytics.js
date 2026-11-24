@@ -2,6 +2,7 @@
  * eBay "analytics" section tables (shown next to the sales charts): listing traffic from the
  * Analytics API traffic report, and seller level (standards profile, customer-service metrics).
  */
+const { HttpError } = require('../../../utils/httpError')
 const { col, tables, words, listingTitles } = require('../../../services/marketplace/sectionKit')
 const { ebayGet, scopeAware } = require('./helpers')
 
@@ -53,6 +54,8 @@ async function standardsRows(token) {
   return standardsProfiles.map((p) => {
     const metric = (key) => (p.metrics || []).find((m) => m.metricKey === key)?.value
     return {
+      id: `${p.program}|${p.cycle?.cycleType}`,
+      actions: [{ id: 'standards', label: 'Metrics', detail: true }],
       program: words(String(p.program || '').replace(/^PROGRAM_/, '')),
       cycle: words(p.cycle?.cycleType),
       level: words(p.standardsLevel),
@@ -116,6 +119,28 @@ async function analytics(token, shop, { now = new Date() } = {}) {
     ],
     tables: list,
   }
+}
+
+const metricValue = (v) => String(v && typeof v === 'object' ? v.value ?? '' : v ?? '')
+
+/** Read-only drill-downs. */
+analytics.details = {
+  /** Every metric eBay rates for one seller-level program and cycle (id `PROGRAM|CYCLE`). */
+  standards: async (token, shop, id) => {
+    const [program, cycle] = String(id).split('|')
+    if (!/^PROGRAM_[A-Z_]+$/.test(program || '') || !/^[A-Z_]+$/.test(cycle || '')) throw new HttpError(400, { error: 'Unknown seller level.' })
+    const p = await ebayGet(token, `/sell/analytics/v1/seller_standards_profile/${program}/${cycle}`)
+    return {
+      title: `Seller level: ${words(program.replace(/^PROGRAM_/, ''))} (${words(cycle)})`,
+      summary: [{ label: 'Level', value: words(p.standardsLevel), type: 'text' }],
+      tables: [{
+        id: 'metrics',
+        title: 'Metrics',
+        columns: [col('metric', 'Metric'), col('value', 'Value'), col('benchmark', 'Compared with eBay')],
+        rows: (p.metrics || []).map((m) => ({ metric: words(m.metricKey), value: metricValue(m.value), benchmark: words(m.benchmark?.rating) })),
+      }],
+    }
+  },
 }
 
 module.exports = analytics

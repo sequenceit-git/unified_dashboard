@@ -167,8 +167,8 @@ test('the report shows which gaps the app can call now', () => {
 // ---- Final review fixes
 test('the gap list shows the scope each endpoint needs', () => {
   const md = require('../scripts/apiCoverage/report').buildReport()
-  // An analytics endpoint wave 1 doesn't call (traffic_report is covered since then).
-  assert.match(md, /`GET \/sell\/analytics\/v1\/seller_standards_profile\/\{program\}\/\{cycle\}` \| sell\.analytics\.readonly \|/)
+  // An endpoint no wave calls yet (seller_standards_profile/{program}/{cycle} is covered since eBay wave 2).
+  assert.match(md, /`GET \/sell\/account\/v1\/kyc` \| sell\.account \|/)
 })
 
 test('a call that matches no catalog endpoint fails the comparison', () => {

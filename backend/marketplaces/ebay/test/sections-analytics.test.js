@@ -88,3 +88,21 @@ test('other API errors are shown as they are', async () => {
   const { scopeAware } = require('../sections/helpers')
   await assert.rejects(scopeAware(async () => { throw Object.assign(new Error('eBay is down'), { status: 500 }) }, 'listing traffic')(), /eBay is down/)
 })
+
+test('a seller level row opens its metrics', async () => {
+  const { analytics, urls, restore } = load((url) => (url.includes('seller_standards_profile/PROGRAM_US/CURRENT')
+    ? { program: 'PROGRAM_US', cycle: { cycleType: 'CURRENT' }, standardsLevel: 'TOP_RATED', metrics: [
+      { metricKey: 'DEFECTIVE_TRANSACTION_RATE', value: { value: '0.12' }, benchmark: { rating: 'MEETS_OR_EXCEEDS' } },
+      { metricKey: 'TRANSACTION_COUNT', value: '412' },
+    ] }
+    : fixtures()(url)))
+  try {
+    const row = (await analytics('tok', {}, { now: NOW })).tables.find((t) => t.id === 'standards').rows[0]
+    assert.equal(row.id, 'PROGRAM_US|CURRENT')
+    assert.deepEqual(row.actions, [{ id: 'standards', label: 'Metrics', detail: true }])
+    const detail = await analytics.details.standards('tok', {}, 'PROGRAM_US|CURRENT')
+    assert.ok(urls.includes('/sell/analytics/v1/seller_standards_profile/PROGRAM_US/CURRENT'))
+    assert.deepEqual(detail.tables[0].rows.map((r) => [r.metric, r.value, r.benchmark]), [['Defective transaction rate', '0.12', 'Meets or exceeds'], ['Transaction count', '412', '']])
+    await assert.rejects(analytics.details.standards('tok', {}, 'PROGRAM_US'), (e) => e.status === 400)
+  } finally { restore() }
+})

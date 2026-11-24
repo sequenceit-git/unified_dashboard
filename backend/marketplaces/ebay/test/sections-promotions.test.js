@@ -46,3 +46,39 @@ test('an empty report shows an empty table, not an error', async () => {
     assert.deepEqual(tables[1].rows, [])
   } finally { restore() }
 })
+
+test('a promotion opens with its listings', async () => {
+  const { promotions, urls, restore } = load({
+    'promotion/P1/get_listing_set': { listings: [{ listingId: '111', title: 'Jeans', currentPrice: USD(20), quantity: 3 }] },
+  })
+  try {
+    const detail = await promotions.details.items('tok', {}, 'P1')
+    assert.ok(urls.includes('/sell/marketing/v1/promotion/P1/get_listing_set?limit=200'))
+    assert.deepEqual(detail.tables[0].rows.map((r) => [r.listingId, r.title, r.price.value, r.quantity]), [['111', 'Jeans', 20, 3]])
+  } finally { restore() }
+})
+
+test('a draft or ended promotion can be deleted', async () => {
+  const sent = []
+  const { promotions, restore } = load({
+    promotion: { promotions: [
+      { promotionId: 'P1', name: 'Old sale', promotionType: 'MARKDOWN_SALE', promotionStatus: 'ENDED' },
+      { promotionId: 'P2', name: 'Draft', promotionType: 'ORDER_DISCOUNT', promotionStatus: 'DRAFT' },
+      { promotionId: 'P3', name: 'Live', promotionType: 'ORDER_DISCOUNT', promotionStatus: 'RUNNING' },
+    ] },
+    promotion_report: { promotionReports: [] },
+    promotion_summary_report: {},
+  })
+  const restoreClient = stubModules({ '../client': { ebaySend: async (token, method, url) => { sent.push(`${method} ${url}`); return {} } } })
+  try {
+    const p = freshRequire('marketplaces/ebay/sections/promotions.js')
+    const rows = (await p('tok')).tables[0].rows
+    const ids = (id) => rows.find((r) => r.id === id).actions.map((a) => a.id)
+    assert.deepEqual([ids('P1'), ids('P2'), ids('P3')], [['items', 'delete'], ['items', 'delete'], ['items']])
+    await p.actions.delete('tok', {}, 'P1')
+    await p.actions.delete('tok', {}, 'P2')
+    assert.deepEqual(sent, ['DELETE /sell/marketing/v1/item_price_markdown/P1', 'DELETE /sell/marketing/v1/item_promotion/P2'])
+    await assert.rejects(p.actions.delete('tok', {}, 'P3'), (e) => e.status === 400)
+  } finally { restoreClient(); restore() }
+  void promotions
+})

@@ -97,7 +97,9 @@ async function payouts(token, shop, { now = new Date() } = {}) {
       net: money(s.orderEarnings),
     }
   }) || []
-  const [summary, funds, earningsSummary, list] = await Promise.all([
+  // Paid-out transactions of the last 90 days; brackets and braces encoded like the bill's filter.
+  const txFilter = `transactionStatus:{PAYOUT},transactionDate:[${new Date(now.getTime() - 90 * 86400000).toISOString()}..${now.toISOString()}]`.replace(/[[\]{}]/g, encodeURIComponent)
+  const [summary, funds, earningsSummary, list, txSummary] = await Promise.all([
     ebayGet(token, `${host}/sell/finances/v1/payout_summary`).catch(() => null),
     ebayGet(token, `${host}/sell/finances/v1/seller_funds_summary`).catch(() => null),
     scopeAware(() => ebayGet(token, `${host}/sell/finances/v1/order_earnings_summary`), 'order earnings')().catch(() => null),
@@ -115,6 +117,8 @@ async function payouts(token, shop, { now = new Date() } = {}) {
           fee: money(row.totalFee),
           transactions: row.transactionCount,
           account: [row.payoutInstrument?.nickname, row.payoutInstrument?.accountLastFourDigits && `…${row.payoutInstrument.accountLastFourDigits}`].filter(Boolean).join(' '),
+          id: String(row.payoutId),
+          actions: [{ id: 'payout', label: 'Transactions', detail: true }],
         })) || [],
       },
       {
@@ -165,6 +169,7 @@ async function payouts(token, shop, { now = new Date() } = {}) {
         })) || [],
       },
     ]),
+    ebayGet(token, `${host}/sell/finances/v1/transaction_summary?filter=${txFilter}`).catch(() => null),
   ])
   if (fromTransactions) {
     list.find((t) => t.id === 'earnings').note = "Worked out from your eBay transactions (sales, fees, labels, refunds): eBay doesn't give this app its order-earnings report."
@@ -177,6 +182,12 @@ async function payouts(token, shop, { now = new Date() } = {}) {
         { tab: 'Funds', label: 'On hold', value: money(funds.fundsOnHold), type: 'money' },
         { tab: 'Funds', label: 'Total', value: money(funds.totalFunds), type: 'money' },
       ] : []),
+      ...(txSummary ? [
+        { tab: 'Payouts', label: 'Sales (90 days)', value: money(txSummary.creditAmount), type: 'money' },
+        { tab: 'Payouts', label: 'Refunds (90 days)', value: money(txSummary.refundAmount), type: 'money' },
+        { tab: 'Payouts', label: 'Shipping labels (90 days)', value: money(txSummary.shippingLabelAmount), type: 'money' },
+        { tab: 'Payouts', label: 'On hold', value: money(txSummary.onHoldAmount), type: 'money' },
+      ].filter((t) => t.value) : []),
       ...(summary ? [
         { tab: 'Payouts', label: 'Paid out', value: money(summary.amount), type: 'money' },
         { tab: 'Payouts', label: 'Payouts', value: summary.payoutCount, type: 'number' },
@@ -192,6 +203,33 @@ async function payouts(token, shop, { now = new Date() } = {}) {
     ],
     tables: list,
   }
+}
+
+/** Read-only drill-downs. */
+payouts.details = {
+  /** One payout and the transactions it paid. */
+  payout: async (token, shop, id) => {
+    const host = ebayApiz()
+    const [p, tx] = await Promise.all([
+      ebayGet(token, `${host}/sell/finances/v1/payout/${encodeURIComponent(id)}`),
+      ebayGet(token, `${host}/sell/finances/v1/transaction?limit=200&filter=payoutId:%7B${encodeURIComponent(id)}%7D`).catch(() => ({ transactions: [] })),
+    ])
+    return {
+      title: `Payout ${id}`,
+      summary: [
+        { label: 'Amount', value: money(p.amount), type: 'money' },
+        { label: 'Fee', value: money(p.totalFee), type: 'money' },
+        { label: 'Status', value: p.payoutStatusDescription || words(p.payoutStatus), type: 'text' },
+        { label: 'Paid to', value: [p.payoutInstrument?.nickname, p.payoutInstrument?.accountLastFourDigits && `…${p.payoutInstrument.accountLastFourDigits}`].filter(Boolean).join(' ') || '—', type: 'text' },
+      ],
+      tables: [{
+        id: 'transactions',
+        title: 'Transactions in this payout',
+        columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('orderId', 'Order'), col('amount', 'Amount', 'money')],
+        rows: (tx.transactions || []).map((t) => ({ date: t.transactionDate || null, type: words(t.transactionType), orderId: t.orderId || '', amount: signed(t.amount, t.bookingEntry) })),
+      }],
+    }
+  },
 }
 
 module.exports = payouts
