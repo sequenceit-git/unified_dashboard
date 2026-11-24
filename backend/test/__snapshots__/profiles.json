@@ -59,6 +59,13 @@
         "needs": "sell.marketing scope"
       },
       {
+        "id": "advertising",
+        "label": "Promoted Listings",
+        "path": "/ebay/advertising",
+        "route": "products",
+        "needs": "sell.marketing scope"
+      },
+      {
         "id": "payouts",
         "label": "Payouts",
         "path": "/ebay/payouts",

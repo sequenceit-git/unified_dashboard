@@ -40,6 +40,7 @@ module.exports = {
     { id: 'returns-cases', label: 'Returns & cases', path: '/ebay/returns-cases', route: 'orders', needs: 'Post-Order API', probe: (t) => ebayRest(t, '/post-order/v2/return/search?limit=1', { iaf: true }) },
     { id: 'offers', label: 'Best offers', path: '/ebay/offers', route: 'products', needs: 'Negotiation API', probe: (t) => ebayRest(t, '/sell/negotiation/v1/find_eligible_items?limit=1') },
     { id: 'promotions', label: 'Promotions', path: '/ebay/promotions', route: 'products', needs: 'sell.marketing scope', probe: (t) => ebayRest(t, '/sell/marketing/v1/promotion?marketplace_id=EBAY_US&limit=1') },
+    { id: 'advertising', label: 'Promoted Listings', path: '/ebay/advertising', route: 'products', needs: 'sell.marketing scope', probe: (t) => ebayRest(t, '/sell/marketing/v1/ad_campaign?limit=1') },
     { id: 'payouts', label: 'Payouts', path: '/ebay/payouts', route: 'analytics', needs: 'sell.finances scope', probe: (t) => ebayRest(t, `${ebayConfig.environment === 'SANDBOX' ? 'https://apiz.sandbox.ebay.com' : 'https://apiz.ebay.com'}/sell/finances/v1/payout?limit=1`) },
     { id: 'buyers', label: 'Buyers', path: '/ebay/buyers', route: 'customers', needs: 'sell.fulfillment scope', probe: ebayOrders },
   ],

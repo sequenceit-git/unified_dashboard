@@ -72,7 +72,7 @@ test('listing defaults match the old per-shop checks', async () => {
 })
 
 const SECTION_IDS = {
-  ebay: ['products', 'inventory', 'orders', 'returns', 'offers', 'promotions', 'finances', 'customers', 'inbox', 'analytics'].map((id) => ({ products: 'listings', finances: 'payouts', customers: 'buyers', returns: 'returns-cases', inbox: 'messages' })[id] || id),
+  ebay: ['products', 'inventory', 'orders', 'returns', 'offers', 'promotions', 'advertising', 'finances', 'customers', 'inbox', 'analytics'].map((id) => ({ products: 'listings', finances: 'payouts', customers: 'buyers', returns: 'returns-cases', inbox: 'messages' })[id] || id),
   tiktok_shop: ['products', 'inventory', 'orders', 'fulfillment', 'returns', 'promotions', 'finances', 'content', 'customers', 'analytics'].map((id) => ({ fulfillment: 'packages', finances: 'finance', content: 'videos-live', returns: 'returns-cancellations' })[id] || id),
   temu: ['products', 'inventory', 'orders', 'fulfillment', 'returns', 'prices', 'promotions', 'ads', 'customers', 'analytics'].map((id) => ({ products: 'goods', fulfillment: 'shipping', prices: 'price-reviews', returns: 'after-sales' })[id] || id),
 }

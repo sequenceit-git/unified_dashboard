@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const { stubModules, freshRequire } = require('./helpers/stub')
 
 const EXPECTED = {
-  ebay: ['analytics', 'messages', 'listings', 'inventory', 'orders', 'returns-cases', 'offers', 'promotions', 'payouts', 'buyers'],
+  ebay: ['analytics', 'messages', 'listings', 'inventory', 'orders', 'returns-cases', 'offers', 'promotions', 'advertising', 'payouts', 'buyers'],
   // The E-commerce connector app has no Customer Service or Affiliate Seller scope: no Inbox, no Creators.
   tiktok_shop: ['analytics', 'products', 'inventory', 'orders', 'packages', 'returns-cancellations', 'promotions', 'finance', 'videos-live', 'customers'],
   temu: ['analytics', 'goods', 'inventory', 'orders', 'shipping', 'after-sales', 'price-reviews', 'promotions', 'ads', 'customers'],

@@ -5,5 +5,6 @@ module.exports = {
   'returns-cases': require('./returns-cases'),
   payouts: require('./payouts'),
   promotions: require('./promotions'),
+  advertising: require('./advertising'),
   offers: require('./offers'),
 }

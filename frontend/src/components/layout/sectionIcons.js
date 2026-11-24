@@ -9,6 +9,7 @@ export const SECTION_ICONS = {
   offers: FiMessageCircle,
   creators: FiStar,
   ads: FiTrendingUp,
+  advertising: FiTrendingUp,
   // Products: eBay listings, TikTok Shop products, Temu goods
   listings: FiPackage,
   products: FiPackage,
