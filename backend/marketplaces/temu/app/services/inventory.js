@@ -220,4 +220,49 @@ async function sync(ctx) {
     return { success: true, synced: successCount, failed: failCount }
 }
 
-module.exports = { lowStock, logs, adjust, sync }
+/**
+ * GET /temu-stock — the stock Temu holds for each listed SKU (the seller's own warehouse stock;
+ * pre-sale stock shown apart) next to the dashboard's stock. Mismatches first, unknown SKUs last.
+ */
+async function temuStock(ctx) {
+    const Shop = require('../../../../models/Shop')
+    const filter = { marketplace: 'temu', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    if (!shop) throw new HttpError(404, { error: 'No connected Temu shop' })
+    // Temu listings are "<goodsId>:<skuId>".
+    const listings = (await Listing.find({ shopId: shop._id, marketplace: 'temu', externalListingId: /^\d+:\d+$/ }).select('externalListingId productId').lean())
+      .map((l) => { const [goodsId, skuId] = String(l.externalListingId).split(':'); return { goodsId, skuId, productId: String(l.productId) } })
+    const products = new Map((await Product.find({ _id: { $in: [...new Set(listings.map((l) => l.productId))] } }).select('title sku stock variants').lean()).map((p) => [String(p._id), p]))
+    const bySku = new Map(listings.map((l) => [l.skuId, l]))
+    const temu = require('../../service')
+    const stocks = []
+    await marketplaceManager.withShopToken(shop, async (token) => {
+      const ids = [...bySku.keys()]
+      for (let i = 0; i < ids.length; i += 50) {
+        const res = await temu.call('temu.local.goods.sku.stock.query', { access_token: token, skuIdList: ids.slice(i, i + 50).map(Number) })
+        for (const goods of res.stockList || []) for (const sku of goods.skuStockInfoList || []) stocks.push({ goodsId: String(goods.goodsId), ...sku })
+      }
+    })
+    const rows = stocks.map((sku) => {
+      const listing = bySku.get(String(sku.skuId))
+      const product = listing && products.get(listing.productId)
+      const variant = product?.variants?.find((v) => v.sku && v.sku === sku.outSkuSn)
+      const dashboardStock = variant ? variant.stock ?? 0 : product && !(product.variants || []).length ? product.stock ?? 0 : null
+      const temuStock = sku.selfOrdinaryStock?.stock ?? 0
+      return {
+        sku: sku.outSkuSn || String(sku.skuId),
+        goodsId: sku.goodsId,
+        skuId: String(sku.skuId),
+        product: product?.title || '',
+        temuStock,
+        preSale: sku.selfPreSaleStock?.stock ?? 0,
+        dashboardStock,
+        mismatch: dashboardStock != null && dashboardStock !== temuStock,
+      }
+    })
+    const rank = (r) => (r.mismatch ? 0 : r.dashboardStock == null ? 2 : 1)
+    return rows.map((r, i) => [r, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([r]) => r)
+}
+
+module.exports = { lowStock, logs, adjust, sync, temuStock }

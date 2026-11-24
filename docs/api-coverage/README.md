@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 30 | 0 | 103 | 0 | 27 | — |
+| Temu | 133 | 31 | 0 | 102 | 0 | 26 | — |
 
 ## eBay
 
@@ -1686,12 +1686,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | low | medium | `temu.local.product.attributes.get` | — | Query Attribute Template | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 | — | low | medium | `temu.local.product.variation.get` | — | Query Mandatory And Optional Variations Of Products | Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch. |
 
-#### inventory (1)
-
-| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
-|---|---|---|---|---|---|---|
-| — | high | small | `temu.local.goods.sku.stock.query` | — | local goods query product stock | Read the current stock Temu holds per SKU (to check stock sync). |
-
 #### orders (5)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
@@ -1808,6 +1802,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Check if contribution ID for SKU is duplicate | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sku.out.sn.set` | Set contribution ID for SKU | Set contribution ID for SKU | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js` |
+| covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |
 | missing | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels |  |
 | missing | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu |  |
 | missing | Product | `bg.local.goods.category.check` | goods category precheck | precheck category misplacement |  |
@@ -1847,7 +1842,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `temu.local.goods.pre.sale.status.edit` | Temu Pre-sale Bulk Enable/Disable API | This API allows batch enabling or disabling the pre-sale status for multiple SKUs belonging to a product item. |  |
 | missing | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. |  |
 | missing | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit |  |
-| missing | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B |  |
 | missing | Product | `temu.local.goods.spec.info.get` | Query specification information | Used to query the specification value information in different languages corresponding to the platform's specification ID |  |
 | missing | Product | `temu.local.goods.v2.add` | Add New Items On Temu | Add New Items On Temu |  |
 | missing | Product | `temu.local.goods.v3.add` | Add New Items On Temu | Post products to temu and automatically populate the database based on the original product data provided. |  |

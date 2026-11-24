@@ -20,6 +20,16 @@ function inventoryRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/inventory/temu-stock — Temu's stock per SKU next to the dashboard's
+  router.get('/temu-stock', async (req, res) => {
+    try {
+      res.json(await service.temuStock(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/inventory/logs?productId=&shopId=&reason=&direction=&q=&from=&to=&page=&limit=
   router.get('/logs', async (req, res) => {
     try {

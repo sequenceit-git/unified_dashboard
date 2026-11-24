@@ -377,12 +377,6 @@
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
-  "temu.local.goods.sku.stock.query": {
-    "section": "inventory",
-    "size": "small",
-    "priority": "high",
-    "value": "Read the current stock Temu holds per SKU (to check stock sync)."
-  },
   "temu.local.goods.spec.info.get": {
     "section": "goods",
     "size": "medium",
