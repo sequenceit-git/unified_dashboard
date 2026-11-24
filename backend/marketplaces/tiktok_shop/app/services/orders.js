@@ -272,4 +272,32 @@ async function refund(ctx) {
     return { success: true, order, marketplaceResult }
 }
 
-module.exports = { list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }
+/** GET /:id/price-detail — the order's price breakdown from TikTok (discounts, shipping, tax, what the buyer paid). */
+async function priceDetail(ctx) {
+    const order = await Order.findOne({ _id: ctx.params.id, marketplace: 'tiktok_shop' })
+    if (!order) throw new HttpError(404, { error: 'Order not found' })
+    if (ctx.user.role === 'sub_admin' && !(ctx.allowedShopIds || []).some((id) => String(id) === String(order.shopId))) {
+      throw new HttpError(403, { error: 'You do not have permission to see orders of this shop' })
+    }
+    const shop = await Shop.findOne({ _id: order.shopId, status: 'connected' })
+    if (!shop) throw new HttpError(404, { error: 'The shop of this order is not connected' })
+    const tiktok = require('../../service')
+    const p = await marketplaceManager.withShopToken(shop, (token) => tiktok.call(token, 'GET', `/order/202407/orders/${encodeURIComponent(order.externalOrderId)}/price_detail`, { shop }))
+    const currency = p.currency || 'USD'
+    const num = (...keys) => Math.round(keys.reduce((t, k) => t + (Number(p[k]) || 0), 0) * 100) / 100
+    const line = (label, value) => ({ label, amount: { value, currency } })
+    return {
+      lines: [
+        line('Products (list price)', num('sku_list_price')),
+        line('Seller discounts', -num('subtotal_deduction_seller', 'voucher_deduction_seller')),
+        line('TikTok discounts', -num('subtotal_deduction_platform', 'voucher_deduction_platform')),
+        line('Shipping', num('shipping_list_price')),
+        line('Shipping discounts (seller)', -num('shipping_fee_deduction_seller')),
+        line('Shipping discounts (TikTok)', -num('shipping_fee_deduction_platform', 'shipping_fee_deduction_platform_voucher')),
+        line('Tax', num('tax_amount')),
+      ],
+      total: line('Buyer paid', num('payment')),
+    }
+}
+
+module.exports = { priceDetail, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }

@@ -9,7 +9,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
-| TikTok Shop | 365 | 62 | 11 | 251 | 41 | 34 | 105 |
+| TikTok Shop | 365 | 63 | 11 | 250 | 41 | 33 | 104 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
@@ -949,11 +949,10 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 |---|---|---|---|---|---|---|
 | available now | high | small | `POST /product/202309/inventory/search` | Product Basic | Inventory Search | Stock per SKU and per warehouse for many products at once (check that stock sync is right). |
 
-#### orders (6)
+#### orders (5)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| available now | high | small | `GET /order/202407/orders/{order_id}/price_detail` | Order Information | Get Order Price Details | Order price breakdown: seller and platform discounts, shipping fee, taxes. |
 | available now | low | small | `POST /order/202605/orders/blind_box_result/callback` | Order Information | Update The Blind Box Opening Results | External orders link, proof-of-delivery and blind-box results. |
 | available now | low | small | `POST /order/202606/pod_details/search` | Order Information | Search POD Customization Details | External orders link, proof-of-delivery and blind-box results. |
 | needs scope: Read External Order References | low | small | `GET /order/202406/orders/{order_id}/external_orders` | Read External Order References | Get External Order References | External orders link, proof-of-delivery and blind-box results. |
@@ -1472,10 +1471,10 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Logistics | `GET /logistics/202510/seller_templates` | Get Shipping Template Availability | get seller's available shipping template and return the reason why the template is not available，this api is now only available for JP and UK market |  |
 | missing | Logistics | `GET /logistics/202604/orders/{order_id}/tracking` | Get Logistics Tracking | Use this API to retrieve detailed logistics tracking information for an order. |  |
 | missing | Logistics | `GET /logistics/202606/seller_template/template_exist` | Check Shipping Template Existence | Checks whether the authenticated shop has a shipping template for the specified business warehouse. |  |
+| covered | Orders | `GET /order/202407/orders/{order_id}/price_detail` | Get Order Price Details | Get the detailed pricing calculation information of an order or a line item, including vouchers, tax, etc. | `marketplaces/tiktok_shop/app/services/orders.js` |
 | covered | Orders | `GET /order/202507/orders` | Get Order Detail | Get detailed information for up to 50 TikTok Shop orders specified by their IDs, including order status, payment details, price and tax information, package information, and shipping address information when available. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Orders | `POST /order/202309/orders/search` | Get Order List | Returns a list of orders created or updated during the timeframe indicated by the specified parameters. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/profile.js` |
 | missing | Orders | `GET /order/202406/orders/{order_id}/external_orders` | Get External Order References | If you have used the `Add External Order References` API, use this API to retrieve the external order references associated with a TikTok Shop order for the specified external order management system (OMS) platform. |  |
-| missing | Orders | `GET /order/202407/orders/{order_id}/price_detail` | Get Order Price Details | Get the detailed pricing calculation information of an order or a line item, including vouchers, tax, etc. |  |
 | missing | Orders | `POST /order/202406/orders/external_order_search` | Search Orders by External Order Reference | If you have used the `Add External Order References` API to sync information from your external order management system (OMS) to corresponding orders in TikTok Shop, you may call this API to search for order information |  |
 | missing | Orders | `POST /order/202406/orders/external_orders` | Add External Order References | If you use an external order management system (OMS), its order and line item IDs may differ from the corresponding TikTok Shop IDs. |  |
 | missing | Orders | `POST /order/202605/orders/blind_box_result/callback` | Update The Blind Box Opening Results | After the merchant completes blind box opening in a live room, use this callback to send the opening results for an order back to the platform. |  |

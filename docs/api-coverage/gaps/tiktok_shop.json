@@ -443,12 +443,6 @@
     "priority": "low",
     "value": "External orders link, proof-of-delivery and blind-box results."
   },
-  "GET /order/202407/orders/{order_id}/price_detail": {
-    "section": "orders",
-    "size": "small",
-    "priority": "high",
-    "value": "Order price breakdown: seller and platform discounts, shipping fee, taxes."
-  },
   "GET /product/202309/categories/{category_id}/global_attributes": {
     "section": "new: global products",
     "size": "large",

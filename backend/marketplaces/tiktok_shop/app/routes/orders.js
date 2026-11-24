@@ -21,6 +21,16 @@ function ordersRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/orders/:id/price-detail — TikTok's price breakdown of one order
+  router.get('/:id/price-detail', async (req, res) => {
+    try {
+      res.json(await service.priceDetail(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/orders/:id
   router.get('/:id', async (req, res) => {
     try {
