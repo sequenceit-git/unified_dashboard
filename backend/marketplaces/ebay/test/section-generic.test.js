@@ -63,3 +63,25 @@ test('a sub-admin without the section gets 403', async () => {
     assert.equal(tokenCalls.length, 0)
   } finally { restore() }
 })
+
+test("an eBay 401 never reaches the browser as the dashboard's own 401", async () => {
+  const express = require('express')
+  const restore = stubModules({
+    '/middleware/auth': { requireAuth: (q, r, n) => { q.user = { role: 'super_admin' }; n() }, loadAccess: (q, r, n) => n(), canUseSection: () => true },
+    '/middleware/shopScope': { onlyShop: () => (q, r, n) => n() },
+    '../services/sections': { sectionAction: async () => { throw Object.assign(new Error('Invalid access token'), { status: 401 }) }, sectionDetail: async () => { throw Object.assign(new Error('Invalid access token'), { status: 401 }) } },
+  })
+  try {
+    const { sectionsRoutes } = freshRequire('marketplaces/ebay/app/routes/sections.js')
+    const app = express().use(express.json()).use('/s', (sectionsRoutes || freshRequire('marketplaces/ebay/app/routes/sections.js'))('ebay'))
+    const server = app.listen(0)
+    try {
+      const base = `http://127.0.0.1:${server.address().port}/s/returns/x`
+      const post = await fetch(base, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+      const get = await fetch(`${base}?id=1`)
+      assert.notEqual(post.status, 401)
+      assert.notEqual(get.status, 401)
+      assert.match((await post.json()).error, /Reconnect eBay|access token/i)
+    } finally { server.close() }
+  } finally { restore() }
+})

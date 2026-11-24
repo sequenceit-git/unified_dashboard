@@ -105,5 +105,14 @@ test('cost is sent as a number', async () => {
   const { cleanShippingPayer, shippingPayerFrom } = await load('/src/marketplaces/ebay/sections/listings/listing/shippingPayer.js')
   assert.deepEqual(cleanShippingPayer({ paidBy: 'buyer', cost: '6.50' }), { paidBy: 'buyer', cost: 6.5 })
   assert.deepEqual(shippingPayerFrom({ ebayShipping: { paidBy: 'seller', cost: 0, type: 'Flat', policy: 'Std' } }), { paidBy: 'seller', cost: '', type: 'Flat', policy: 'Std' })
-  assert.deepEqual(shippingPayerFrom({}), { paidBy: 'buyer', cost: '', type: 'Flat', policy: '' })
+  // Unknown (a product not on eBay yet): keep the shop's own shipping, nothing is sent.
+  assert.deepEqual(shippingPayerFrom({}), { paidBy: '', cost: '', type: 'Flat', policy: '' })
+  assert.equal(cleanShippingPayer(shippingPayerFrom({})), undefined)
+})
+
+test('a new listing keeps the shop shipping unless the seller picks who pays', async () => {
+  const { validateShippingPayer, cleanShippingPayer, NEW_LISTING_SHIPPING } = await load('/src/marketplaces/ebay/sections/listings/listing/shippingPayer.js')
+  assert.equal(NEW_LISTING_SHIPPING.paidBy, '')
+  assert.equal(validateShippingPayer(NEW_LISTING_SHIPPING), '')
+  assert.equal(cleanShippingPayer(NEW_LISTING_SHIPPING), undefined)
 })

@@ -183,10 +183,9 @@ async function payouts(token, shop, { now = new Date() } = {}) {
         { tab: 'Funds', label: 'Total', value: money(funds.totalFunds), type: 'money' },
       ] : []),
       ...(txSummary ? [
-        { tab: 'Payouts', label: 'Sales (90 days)', value: money(txSummary.creditAmount), type: 'money' },
-        { tab: 'Payouts', label: 'Refunds (90 days)', value: money(txSummary.refundAmount), type: 'money' },
-        { tab: 'Payouts', label: 'Shipping labels (90 days)', value: money(txSummary.shippingLabelAmount), type: 'money' },
-        { tab: 'Payouts', label: 'On hold', value: money(txSummary.onHoldAmount), type: 'money' },
+        { tab: 'Payouts', label: 'Sales paid out (90 days)', value: money(txSummary.creditAmount), type: 'money' },
+        { tab: 'Payouts', label: 'Refunds paid out (90 days)', value: money(txSummary.refundAmount), type: 'money' },
+        { tab: 'Payouts', label: 'Shipping labels paid out (90 days)', value: money(txSummary.shippingLabelAmount), type: 'money' },
       ].filter((t) => t.value) : []),
       ...(summary ? [
         { tab: 'Payouts', label: 'Paid out', value: money(summary.amount), type: 'money' },

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Input } from '../../../../../components/ui/Input'
 import { validateShippingPayer } from './shippingPayer'
 
@@ -6,7 +7,9 @@ import { validateShippingPayer } from './shippingPayer'
  * paid by the seller. Read-only when the listing uses an eBay shipping policy.
  */
 export default function EbayShippingPayerField({ value, onChange, type = value?.type || 'Flat' }) {
-  const paidBy = value?.paidBy === 'seller' ? 'seller' : 'buyer'
+  const paidBy = value?.paidBy === 'seller' || value?.paidBy === 'buyer' ? value.paidBy : ''
+  // Offered while nothing is known: the listing keeps the shop's usual shipping.
+  const [offerKeep] = useState(paidBy === '')
   const err = validateShippingPayer(value, type)
   const set = (patch) => onChange({ ...value, ...patch })
 
@@ -15,7 +18,7 @@ export default function EbayShippingPayerField({ value, onChange, type = value?.
       <div className="space-y-1 rounded-lg border border-gray-200 bg-gray-50/70 p-3 text-xs dark:border-slate-700 dark:bg-slate-800/40">
         <p className="font-semibold text-gray-700 dark:text-slate-200">Who pays shipping</p>
         <p className="text-gray-600 dark:text-slate-300">
-          {paidBy === 'seller' ? 'Free shipping (you pay).' : 'The buyer pays.'} This listing uses your eBay shipping policy "{value.policy}": change it in Seller Hub.
+          {paidBy === 'seller' ? 'Free shipping (you pay).' : paidBy === 'buyer' ? 'The buyer pays.' : ''} This listing uses your eBay shipping policy "{value.policy}": change it in Seller Hub.
         </p>
       </div>
     )
@@ -25,6 +28,12 @@ export default function EbayShippingPayerField({ value, onChange, type = value?.
     <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/70 p-3 dark:border-slate-700 dark:bg-slate-800/40">
       <p className="text-xs font-semibold text-gray-700 dark:text-slate-200">Who pays shipping</p>
       <div className="flex flex-wrap gap-4 text-sm">
+        {offerKeep && (
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="radio" name="ebay-shipping-payer" checked={paidBy === ''} onChange={() => set({ paidBy: '', cost: '' })} />
+            Same as my other eBay listings
+          </label>
+        )}
         <label className="flex cursor-pointer items-center gap-2">
           <input type="radio" name="ebay-shipping-payer" checked={paidBy === 'buyer'} onChange={() => set({ paidBy: 'buyer' })} />
           Buyer pays shipping

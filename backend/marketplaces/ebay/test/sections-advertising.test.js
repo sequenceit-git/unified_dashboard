@@ -300,7 +300,7 @@ test('report tasks are listed with status', async () => {
 
 test("requesting a report uses eBay's metrics for that report type", async () => {
   const { advertising, restore, calls } = load({
-    get: { '/sell/marketing/v1/ad_report_metadata/CAMPAIGN_PERFORMANCE_REPORT': { maxNumberOfMetricsToRequest: 2, dimensionMetadata: [{ dimensionKey: 'campaign_id' }, { dimensionKey: 'day' }], metricMetadata: [{ metricKey: 'impressions' }, { metricKey: 'clicks' }, { metricKey: 'sales' }] } },
+    get: { '/sell/marketing/v1/ad_campaign?': { campaigns: [campaign('1', 'RUNNING')] }, '/sell/marketing/v1/ad_report_metadata/CAMPAIGN_PERFORMANCE_REPORT': { maxNumberOfMetricsToRequest: 2, dimensionMetadata: [{ dimensionKey: 'campaign_id' }, { dimensionKey: 'day' }], metricMetadata: [{ metricKey: 'impressions' }, { metricKey: 'clicks' }, { metricKey: 'sales' }] } },
     send: { '/sell/marketing/v1/ad_report_task': {} },
   })
   advertising.now = () => NOW
@@ -308,7 +308,7 @@ test("requesting a report uses eBay's metrics for that report type", async () =>
     const res = await advertising.actions['request-report']('tok', {}, 'reports', { type: 'CAMPAIGN_PERFORMANCE_REPORT', days: '30' })
     assert.deepEqual(calls.find(([m]) => m === 'POST'), ['POST', '/sell/marketing/v1/ad_report_task', {
       reportType: 'CAMPAIGN_PERFORMANCE_REPORT', dateFrom: '2026-10-25T10:00:00.000Z', dateTo: '2026-11-24T10:00:00.000Z', marketplaceId: 'EBAY_US',
-      fundingModels: ['COST_PER_SALE'], dimensions: [{ dimensionKey: 'campaign_id' }], metricKeys: ['impressions', 'clicks'], reportFormat: 'TSV_GZIP',
+      fundingModels: ['COST_PER_SALE'], dimensions: [{ dimensionKey: 'campaign_id' }], metricKeys: ['impressions', 'clicks'], reportFormat: 'TSV_GZIP', campaignIds: ['1'],
     }])
     assert.match(res.message, /eBay is building the report/)
     await assert.rejects(advertising.actions['request-report']('tok', {}, 'reports', { type: 'NOPE', days: '30' }), (e) => e.status === 400)
@@ -350,5 +350,39 @@ test('deleting a report task calls eBay', async () => {
   try {
     await advertising.actions['delete-report']('tok', {}, 'T2')
     assert.deepEqual(calls[0], ['DELETE', '/sell/marketing/v1/ad_report_task/T2', undefined])
+  } finally { restore() }
+})
+
+test('campaign and listing reports name the campaigns or listings eBay asks for', async () => {
+  const meta = { dimensionMetadata: [{ dimensionKey: 'campaign_id' }], metricMetadata: [{ metricKey: 'clicks' }] }
+  const { advertising, restore, calls } = load({
+    listings: LISTINGS,
+    get: { ad_report_metadata: meta, '/sell/marketing/v1/ad_campaign?': { campaigns: [campaign('1', 'RUNNING'), campaign('4', 'RUNNING', 'COST_PER_CLICK'), campaign('3', 'ENDED')] } },
+    send: { '/sell/marketing/v1/ad_report_task': {} },
+  })
+  advertising.now = () => NOW
+  try {
+    await advertising.actions['request-report']('tok', { _id: 's1' }, 'reports', { type: 'CAMPAIGN_PERFORMANCE_REPORT', days: '7' })
+    await advertising.actions['request-report']('tok', { _id: 's1' }, 'reports', { type: 'LISTING_PERFORMANCE_REPORT', days: '7' })
+    await advertising.actions['request-report']('tok', { _id: 's1' }, 'reports', { type: 'ACCOUNT_PERFORMANCE_REPORT', days: '7' })
+    const posts = calls.filter(([m]) => m === 'POST').map(([, , b]) => b)
+    assert.deepEqual(posts[0].campaignIds, ['1', '3'])
+    assert.deepEqual(posts[1].listingIds, ['111', '222', '333'])
+    assert.equal(posts[2].campaignIds, undefined)
+    assert.equal(posts[2].listingIds, undefined)
+  } finally { restore() }
+})
+
+test('a batch eBay refuses as a whole is reported and the other batches still count', async () => {
+  const ids = Array.from({ length: 700 }, (_, i) => String(9000 + i))
+  let n = 0
+  const { advertising, restore } = load({
+    send: { bulk_create_ads_by_listing_id: (url, body) => { n += 1; if (n === 2) throw new Error('eBay is busy'); return { responses: body.requests.map((r) => ({ listingId: r.listingId, statusCode: 201 })) } } },
+  })
+  try {
+    const res = await advertising.actions['add-listings']('tok', {}, '1', { listings: ids, rate: '5' })
+    assert.equal(res.refused.length, 200)
+    assert.equal(res.refused[0].reason, 'eBay is busy')
+    assert.ok(res.message.startsWith('Added 500 listings.'))
   } finally { restore() }
 })

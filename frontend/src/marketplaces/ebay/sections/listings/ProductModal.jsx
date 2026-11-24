@@ -39,7 +39,7 @@ const EMPTY = {
   conditionDescription: '',
   dispatchTimeMax: '',
   bestOffer: { enabled: false, autoAcceptPrice: '', minOfferPrice: '' },
-  ebayShipping: { paidBy: 'buyer', cost: '', type: 'Flat', policy: '' },
+  ebayShipping: { paidBy: '', cost: '', type: 'Flat', policy: '' },
   basePrice: '',
   listPrice: '',
   costPrice: '',

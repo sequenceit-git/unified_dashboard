@@ -188,6 +188,8 @@ function sectionsRoutes(shopKey) {
       res.json(await service.sectionAction(ctxOf(req)))
     } catch (err) {
       if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      // eBay's own 401 must not look like the dashboard's sign-in expiring (the page would log out).
+      if (err.status === 401) return res.status(502).json({ error: `eBay didn't accept the shop's sign-in (${err.message}). Reconnect eBay in Settings.` })
       res.status(err.status && err.status < 500 ? err.status : 400).json({ error: err.message })
     }
   })

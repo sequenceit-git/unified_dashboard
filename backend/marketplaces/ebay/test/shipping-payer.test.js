@@ -75,7 +75,8 @@ test("a listing on a shipping policy is refused with the policy's name", () => w
   ? LISTING('<SellerProfiles><SellerShippingProfile><ShippingProfileID>9</ShippingProfileID><ShippingProfileName>Std</ShippingProfileName></SellerShippingProfile></SellerProfiles>')
   : XML(name, '')), async (sent) => {
   const trading = freshRequire('marketplaces/ebay/trading.js')
-  await assert.rejects(trading.reviseListing('tok', '123', { ebayShipping: { paidBy: 'seller' }, title: 'New title' }), (e) => e.status === 400 && e.message === 'This listing uses your eBay shipping policy "Std". Change who pays shipping in that policy in Seller Hub.')
+  // Shipping alone: nothing else to send, so the edit is refused before any write.
+  await assert.rejects(trading.reviseListing('tok', '123', { ebayShipping: { paidBy: 'seller' } }), (e) => e.status === 400 && e.message === 'This listing uses your eBay shipping policy "Std". Change who pays shipping in that policy in Seller Hub.')
   assert.deepEqual(sent.map((s) => s.name), ['GetItem'])
 }))
 
@@ -86,3 +87,42 @@ test("the listing's current payer is read from eBay", () => {
     assert.deepEqual(item.shipping, { paidBy: 'buyer', cost: 4.99, type: 'Flat', policy: 'Std' })
   })
 })
+
+test('a shipping change keeps eBay International Shipping, discounts, rate tables and tax', () => withFetch((name) => (name === 'GetItem'
+  ? XML('GetItem', '<Item><ItemID>123</ItemID><ShippingDetails><ShippingType>Flat</ShippingType>'
+    + '<ShippingServiceOptions><ShippingServicePriority>1</ShippingServicePriority><ShippingService>USPSGroundAdvantage</ShippingService><ShippingServiceCost currencyID="USD">4.99</ShippingServiceCost></ShippingServiceOptions>'
+    + '<GlobalShipping>true</GlobalShipping><ShippingDiscountProfileID>42</ShippingDiscountProfileID><PromotionalShippingDiscount>true</PromotionalShippingDiscount>'
+    + '<RateTableDetails><DomesticRateTableId>7</DomesticRateTableId></RateTableDetails><SalesTax><SalesTaxPercent>8.25</SalesTaxPercent><SalesTaxState>TX</SalesTaxState></SalesTax>'
+    + '<CalculatedShippingRate><PackagingHandlingCosts currencyID="USD">1.50</PackagingHandlingCosts></CalculatedShippingRate>'
+    + '<SellingManagerSalesRecordNumber>9</SellingManagerSalesRecordNumber></ShippingDetails></Item>')
+  : XML(name, '<ItemID>123</ItemID>')), async (sent) => {
+  const trading = freshRequire('marketplaces/ebay/trading.js')
+  await trading.reviseListing('tok', '123', { ebayShipping: { paidBy: 'seller' } })
+  const body = sent[1].body
+  for (const kept of ['<GlobalShipping>true</GlobalShipping>', '<ShippingDiscountProfileID>42</ShippingDiscountProfileID>', '<PromotionalShippingDiscount>true</PromotionalShippingDiscount>',
+    '<RateTableDetails><DomesticRateTableId>7</DomesticRateTableId></RateTableDetails>', '<SalesTax><SalesTaxPercent>8.25</SalesTaxPercent><SalesTaxState>TX</SalesTaxState></SalesTax>',
+    '<CalculatedShippingRate><PackagingHandlingCosts currencyID="USD">1.50</PackagingHandlingCosts></CalculatedShippingRate>']) assert.ok(body.includes(kept), kept)
+  assert.doesNotMatch(body, /SellingManagerSalesRecordNumber/)
+}))
+
+test('mixed shipping types follow the domestic part', () => {
+  const trading = freshRequire('marketplaces/ebay/trading.js')
+  const flatDomestic = { ...TEMPLATE('FlatDomesticCalculatedInternational'), shippingOptions: TEMPLATE().shippingOptions.map((o, i) => (i ? o : { ...o, free: true, cost: '0.00' })) }
+  assert.throws(() => trading.shippingXml(flatDomestic, {}, { ebayShipping: { paidBy: 'buyer' } }), (e) => e.status === 400)
+  assert.match(option(trading.shippingXml(flatDomestic, {}, { ebayShipping: { paidBy: 'buyer', cost: 5 } }), 1), /<ShippingServiceCost currencyID="USD">5.00<\/ShippingServiceCost>/)
+  assert.doesNotMatch(trading.shippingXml(TEMPLATE('CalculatedDomesticFlatInternational'), {}, {}), /ShippingServiceCost/)
+  assert.equal(trading.shippingPayer({ ShippingDetails: { ShippingType: 'FlatDomesticCalculatedInternational', ShippingServiceOptions: [] } }).type, 'Flat')
+  assert.equal(trading.shippingPayer({ ShippingDetails: { ShippingType: 'CalculatedDomesticFlatInternational', ShippingServiceOptions: [] } }).type, 'Calculated')
+})
+
+test('on a policy listing the other changes still go to eBay and shipping is reported as skipped', () => withFetch((name) => (name === 'GetItem'
+  ? LISTING('<SellerProfiles><SellerShippingProfile><ShippingProfileName>Std</ShippingProfileName></SellerShippingProfile></SellerProfiles>')
+  : XML(name, '<ItemID>123</ItemID>')), async (sent) => {
+  const trading = freshRequire('marketplaces/ebay/trading.js')
+  const res = await trading.reviseListing('tok', '123', { ebayShipping: { paidBy: 'seller' }, title: 'New title' })
+  assert.deepEqual(sent.map((s) => s.name), ['GetItem', 'ReviseFixedPriceItem'])
+  assert.match(sent[1].body, /<Title>New title<\/Title>/)
+  assert.doesNotMatch(sent[1].body, /ShippingDetails/)
+  assert.deepEqual(res.skipped, ['shipping'])
+  assert.match(res.message, /shipping policy "Std"/)
+}))

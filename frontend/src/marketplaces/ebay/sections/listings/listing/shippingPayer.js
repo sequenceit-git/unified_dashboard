@@ -6,11 +6,14 @@
 
 const COST_MISSING = 'Enter the shipping cost the buyer pays.'
 
-/** The form's starting value from a product (synced from eBay) — buyer pays when unknown. */
+/** A new listing: keep the shop's own shipping (copied from its live listings) until the seller picks. */
+export const NEW_LISTING_SHIPPING = Object.freeze({ paidBy: '', cost: '', type: 'Flat', policy: '' })
+
+/** The form's starting value from a product (synced from eBay); '' (keep the shop's shipping) when unknown. */
 export function shippingPayerFrom(product) {
   const s = product?.ebayShipping || {}
   return {
-    paidBy: s.paidBy === 'seller' ? 'seller' : 'buyer',
+    paidBy: s.paidBy === 'seller' || s.paidBy === 'buyer' ? s.paidBy : '',
     cost: s.paidBy === 'buyer' && s.cost != null ? String(s.cost) : '',
     type: s.type === 'Calculated' ? 'Calculated' : 'Flat',
     policy: s.policy || '',

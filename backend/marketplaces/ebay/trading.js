@@ -365,12 +365,27 @@ function shippingPayer(item) {
   return {
     paidBy: String(text(first?.FreeShipping)) === 'true' ? 'seller' : 'buyer',
     cost: Number.isFinite(cost) && text(first?.ShippingServiceCost) !== '' ? cost : null,
-    type: /Calculated/i.test(text(shipping.ShippingType) || '') ? 'Calculated' : 'Flat',
+    type: calculatedDomestic(text(shipping.ShippingType)) ? 'Calculated' : 'Flat',
     policy: text(item.SellerProfiles?.SellerShippingProfile?.ShippingProfileName) || null,
   }
 }
 
 const badRequest = (message) => Object.assign(new Error(message), { status: 400 })
+
+/** Whether domestic services use eBay's calculated rates (Calculated, CalculatedDomesticFlatInternational). */
+const calculatedDomestic = (type) => /^Calculated/i.test(String(type || ''))
+
+// ShippingDetails children a revise sends back unchanged (eBay replaces the whole container).
+const KEPT_SHIPPING = ['GlobalShipping', 'ShippingDiscountProfileID', 'InternationalShippingDiscountProfileID', 'PromotionalShippingDiscount', 'InternationalPromotionalShippingDiscount', 'RateTableDetails', 'SalesTax', 'CalculatedShippingRate', 'CODCost', 'ShippingRateType']
+
+/** A parsed XML value (attributes `@x`, text `#text`) written back as XML. */
+function toXml(name, value) {
+  if (Array.isArray(value)) return value.map((v) => toXml(name, v)).join('')
+  if (value === null || typeof value !== 'object') return `<${name}>${escapeXml(value)}</${name}>`
+  const attrs = Object.keys(value).filter((k) => k.startsWith('@')).map((k) => ` ${k.slice(1)}="${escapeXml(value[k])}"`).join('')
+  const inner = Object.keys(value).filter((k) => !k.startsWith('@')).map((k) => (k === '#text' ? escapeXml(value[k]) : toXml(k, value[k]))).join('')
+  return `<${name}${attrs}>${inner}</${name}>`
+}
 
 /** Domestic shipping options of a listing as the template keeps them. */
 const shippingOptionsOf = (shipping) => (shipping.ShippingServiceOptions || []).map((option) => ({
@@ -390,7 +405,7 @@ function applyShippingPayer(type, options, payer) {
   if (!payer?.paidBy || !options.length) return options
   const first = [...options].sort((a, b) => Number(a.priority || 1) - Number(b.priority || 1))[0]
   let cost = null
-  if (payer.paidBy === 'buyer' && !/Calculated/i.test(type)) {
+  if (payer.paidBy === 'buyer' && !calculatedDomestic(type)) {
     cost = Number(payer.cost)
     if (payer.cost === '' || payer.cost == null || !(cost >= 0.01)) throw badRequest('Enter the shipping cost the buyer pays.')
   }
@@ -408,8 +423,8 @@ function domesticXml(type, options) {
     `<ShippingServicePriority>${escapeXml(option.priority)}</ShippingServicePriority>`,
     `<ShippingService>${escapeXml(option.service)}</ShippingService>`,
     option.free ? '<FreeShipping>true</FreeShipping>' : '',
-    type !== 'Calculated' && option.cost !== '' ? `<ShippingServiceCost currencyID="USD">${escapeXml(option.cost)}</ShippingServiceCost>` : '',
-    type !== 'Calculated' && option.additionalCost !== '' ? `<ShippingServiceAdditionalCost currencyID="USD">${escapeXml(option.additionalCost)}</ShippingServiceAdditionalCost>` : '',
+    !calculatedDomestic(type) && option.cost !== '' ? `<ShippingServiceCost currencyID="USD">${escapeXml(option.cost)}</ShippingServiceCost>` : '',
+    !calculatedDomestic(type) && option.additionalCost !== '' ? `<ShippingServiceAdditionalCost currencyID="USD">${escapeXml(option.additionalCost)}</ShippingServiceAdditionalCost>` : '',
     '</ShippingServiceOptions>',
   ].join('')).join('')
 }
@@ -434,7 +449,8 @@ function reviseShippingXml(item, payer) {
   ].join('')).join('')
   const excluded = (shipping.ExcludeShipToLocation || []).map((l) => `<ExcludeShipToLocation>${escapeXml(text(l))}</ExcludeShipToLocation>`).join('')
   const domestic = domesticXml(type, applyShippingPayer(type, shippingOptionsOf(shipping), payer))
-  return `<ShippingDetails><ShippingType>${escapeXml(type)}</ShippingType>${domestic}${international}${excluded}</ShippingDetails>`
+  const kept = KEPT_SHIPPING.filter((k) => shipping[k] !== undefined).map((k) => toXml(k, shipping[k])).join('')
+  return `<ShippingDetails><ShippingType>${escapeXml(type)}</ShippingType>${domestic}${international}${excluded}${kept}</ShippingDetails>`
 }
 
 const templates = new Map()
@@ -813,13 +829,21 @@ async function reviseListing(token, itemId, changes = {}) {
   const { title, description, price, quantity, images, subtitle, conditionDescription } = changes
   // Who pays shipping is checked (and the listing's shipping read) before anything is sent.
   let shippingPart = ''
+  let shippingSkipped = ''
   if (changes.ebayShipping?.paidBy) {
     const current = await getItem(token, itemId)
     if (!current) throw badRequest(`eBay has no listing ${itemId}.`)
     const policy = shippingPayer(current.raw).policy
-    if (policy) throw badRequest(`This listing uses your eBay shipping policy "${policy}". Change who pays shipping in that policy in Seller Hub.`)
-    shippingPart = reviseShippingXml(current.raw, changes.ebayShipping)
+    if (policy) {
+      // The listing's shipping comes from a business policy: the other changes still go to eBay.
+      shippingSkipped = `This listing uses your eBay shipping policy "${policy}". Change who pays shipping in that policy in Seller Hub.`
+      const others = Object.keys(changes).some((k) => !['ebayShipping', 'variants'].includes(k) && changes[k] !== undefined)
+      if (!others) throw badRequest(shippingSkipped)
+    } else {
+      shippingPart = reviseShippingXml(current.raw, changes.ebayShipping)
+    }
   }
+  const done = (result) => (shippingSkipped ? { ...result, skipped: ['shipping'], message: shippingSkipped } : result)
   let compliantImages = []
   if (images && images.length) {
     compliantImages = await filterEbayCompliantImages(images)
@@ -870,7 +894,7 @@ async function reviseListing(token, itemId, changes = {}) {
     if (itemParts.slice(1).some(Boolean)) {
       await call(token, 'ReviseFixedPriceItem', `<Item>${itemParts.join('')}</Item>`)
     }
-    return { success: true }
+    return done({ success: true })
   }
 
   const normalizedQty = quantity != null ? Math.max(0, Math.floor(Number(quantity))) : null
@@ -887,7 +911,7 @@ async function reviseListing(token, itemId, changes = {}) {
   const qtyPart = normalizedQty != null ? `<Quantity>${normalizedQty}</Quantity>` : ''
   try {
     await call(token, 'ReviseFixedPriceItem', `<Item>${nonQtyParts.join('')}${qtyPart}</Item>`)
-    return { success: true }
+    return done({ success: true })
   } catch (err) {
     if (normalizedQty === 0 && /quantity|greater than 0|at least 1|out.?of.?stock/i.test(err.message || '')) {
       const hasOtherChanges = Boolean(title || description || price != null || compliantImages.length || subtitle !== undefined || conditionDescription !== undefined || shippingPart)
@@ -895,7 +919,7 @@ async function reviseListing(token, itemId, changes = {}) {
         await call(token, 'ReviseFixedPriceItem', `<Item>${nonQtyParts.join('')}</Item>`)
       }
       await endListing(token, itemId, 'NotAvailable')
-      return { success: true, ended: true, status: 'ended', marketplaceStatus: 'Ended' }
+      return done({ success: true, ended: true, status: 'ended', marketplaceStatus: 'Ended' })
     }
     throw err
   }

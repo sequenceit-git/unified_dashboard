@@ -92,7 +92,15 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
 async function bulk(token, url, requests) {
   const refused = []
   for (let i = 0; i < requests.length; i += BATCH) {
-    const res = await ebaySend(token, 'POST', url, { requests: requests.slice(i, i + BATCH) })
+    const batch = requests.slice(i, i + BATCH)
+    let res
+    try {
+      res = await ebaySend(token, 'POST', url, { requests: batch })
+    } catch (err) {
+      // A batch eBay refuses as a whole: its listings are reported, the other batches still count.
+      refused.push(...batch.map((r) => ({ listingId: String(r.listingId), reason: err.message || 'eBay refused this batch' })))
+      continue
+    }
     for (const r of res.responses || []) {
       if (r.errors?.length || Number(r.statusCode) >= 400) refused.push({ listingId: String(r.listingId), reason: r.errors?.[0]?.message || `eBay returned ${r.statusCode}` })
     }
@@ -355,6 +363,17 @@ advertising.actions = {
     const meta = await ebayGet(token, `/sell/marketing/v1/ad_report_metadata/${enc(reportType)}`)
     const metricKeys = (meta.metricMetadata || []).map((m) => m.metricKey).filter(Boolean).slice(0, meta.maxNumberOfMetricsToRequest || undefined)
     const dimension = (meta.dimensionMetadata || [])[0]?.dimensionKey
+    // eBay asks General sellers to name the campaigns (campaign report) or listings (listing report).
+    let scope = {}
+    if (reportType === 'CAMPAIGN_PERFORMANCE_REPORT') {
+      const campaignIds = (await allCampaigns(token)).filter((c) => c.fundingStrategy?.fundingModel === 'COST_PER_SALE').map((c) => String(c.campaignId)).slice(0, 1000)
+      if (!campaignIds.length) throw new HttpError(400, { error: 'You have no General campaigns to report on.' })
+      scope = { campaignIds }
+    } else if (reportType === 'LISTING_PERFORMANCE_REPORT') {
+      const listingIds = (await shopListings(shop)).map((l) => l.listingId).slice(0, 500)
+      if (!listingIds.length) throw new HttpError(400, { error: 'This shop has no live eBay listings to report on.' })
+      scope = { listingIds }
+    }
     const now = advertising.now()
     await ebaySend(token, 'POST', '/sell/marketing/v1/ad_report_task', {
       reportType,
@@ -365,6 +384,7 @@ advertising.actions = {
       ...(dimension ? { dimensions: [{ dimensionKey: dimension }] } : {}),
       metricKeys,
       reportFormat: 'TSV_GZIP',
+      ...scope,
     })
     return { message: `eBay is building the report (${REPORT_TYPES[reportType]}, last ${days} days). Press Refresh in a few minutes.` }
   },

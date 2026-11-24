@@ -129,17 +129,18 @@ test('a payout opens with its transactions', async () => {
   } finally { restore() }
 })
 
-test('the Payouts tab shows sales, refunds, labels and on hold for 90 days', async () => {
+test('the Payouts tab shows what was paid out in 90 days, with on hold only on Funds', async () => {
   const before = FIXTURES['transaction_summary?']
   FIXTURES['transaction_summary?'] = { creditAmount: USD(900), refundAmount: USD(40), shippingLabelAmount: USD(55), onHoldAmount: USD(12) }
   const { payouts, restore } = load()
   try {
     const { summary, tables } = await payouts('tok', {}, { now: new Date('2026-11-24T10:00:00.000Z') })
     const tiles = Object.fromEntries(summary.filter((s) => s.tab === 'Payouts').map((s) => [s.label, s.value?.value ?? s.value]))
-    assert.equal(tiles['Sales (90 days)'], 900)
-    assert.equal(tiles['Refunds (90 days)'], 40)
-    assert.equal(tiles['Shipping labels (90 days)'], 55)
-    assert.equal(tiles['On hold'], 12)
+    assert.equal(tiles['Sales paid out (90 days)'], 900)
+    assert.equal(tiles['Refunds paid out (90 days)'], 40)
+    assert.equal(tiles['Shipping labels paid out (90 days)'], 55)
+    // On hold is the Funds tab's own tile, not a 90-day paid-out total.
+    assert.equal(summary.filter((s) => s.label === 'On hold').length, 1)
     assert.ok(tables.find((t) => t.id === 'payouts').rows[0].actions.some((a) => a.id === 'payout' && a.detail))
   } finally { restore(); if (before === undefined) delete FIXTURES['transaction_summary?']; else FIXTURES['transaction_summary?'] = before }
 })
