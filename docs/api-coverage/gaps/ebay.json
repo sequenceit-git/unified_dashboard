@@ -767,19 +767,7 @@
     "priority": "low",
     "value": "Download the customer-service metric report as a file."
   },
-  "GET /sell/finances/v1/order_earnings": {
-    "section": "payouts",
-    "size": "small",
-    "priority": "high",
-    "value": "Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total."
-  },
   "GET /sell/finances/v1/order_earnings/{order_id}": {
-    "section": "payouts",
-    "size": "small",
-    "priority": "high",
-    "value": "Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total."
-  },
-  "GET /sell/finances/v1/order_earnings_summary": {
     "section": "payouts",
     "size": "small",
     "priority": "high",
@@ -790,12 +778,6 @@
     "size": "small",
     "priority": "medium",
     "value": "Payout and transaction details: a single payout or transfer, and totals by transaction type."
-  },
-  "GET /sell/finances/v1/seller_funds_summary": {
-    "section": "payouts",
-    "size": "small",
-    "priority": "high",
-    "value": "Money not yet paid out: available, processing and on-hold funds right now."
   },
   "GET /sell/finances/v1/transaction_summary": {
     "section": "payouts",
@@ -808,12 +790,6 @@
     "size": "small",
     "priority": "medium",
     "value": "Payout and transaction details: a single payout or transfer, and totals by transaction type."
-  },
-  "GET /sell/finances/v1/billing_activity": {
-    "section": "payouts",
-    "size": "small",
-    "priority": "medium",
-    "value": "Itemised eBay bill: insertion fees, final value fees, ad fees, store subscription and other charges."
   },
   "GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment/{fulfillmentId}": {
     "section": "orders",

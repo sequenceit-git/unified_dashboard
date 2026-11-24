@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 429 | 45 | 0 | 375 | 9 | 100 | — |
+| eBay | 429 | 49 | 0 | 371 | 9 | 97 | — |
 | TikTok Shop | 365 | 41 | 11 | 272 | 41 | 53 | 126 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
@@ -205,15 +205,11 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | low | small | `Trading:GetSellerTransactions` | — | GetSellerTransactions | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
 | — | low | small | `Trading:SendInvoice` | — | SendInvoice | Trading API order calls (combine orders, send invoices, mark shipped); the REST Fulfillment API already covers orders. |
 
-#### payouts (9)
+#### payouts (5)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `GET /sell/finances/v1/order_earnings` | sell.finances.earnings.read | getOrderEarnings | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
-| — | high | small | `GET /sell/finances/v1/order_earnings_summary` | sell.finances.earnings.read | getOrderEarningsSummary | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
 | — | high | small | `GET /sell/finances/v1/order_earnings/{order_id}` | sell.finances.earnings.read | getOrderEarningsById | Net earnings per order after eBay fees, ad fees, shipping labels and refunds — real profit per order and in total. |
-| — | high | small | `GET /sell/finances/v1/seller_funds_summary` | sell.finances | getSellerFundsSummary | Money not yet paid out: available, processing and on-hold funds right now. |
-| — | medium | small | `GET /sell/finances/v1/billing_activity` | sell.finances | getBillingActivities | Itemised eBay bill: insertion fees, final value fees, ad fees, store subscription and other charges. |
 | — | medium | small | `GET /sell/finances/v1/payout/{payout_Id}` | sell.finances | getPayout | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
 | — | medium | small | `GET /sell/finances/v1/transaction_summary` | sell.finances | getTransactionSummary | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
 | — | medium | small | `GET /sell/finances/v1/transfer/{transfer_Id}` | sell.finances | getTransfer | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
@@ -570,15 +566,15 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Feedback API | `GET /commerce/feedback/v1/feedback_rating_summary` | getFeedbackRatingSummary | This method provides a detailed overview of feedback ratings associated with a user in the eBay marketplace. |  |
 | missing | Feedback API | `POST /commerce/feedback/v1/feedback` | leaveFeedback | This method creates and submits feedback to the user's order partner for a line item in the order. |  |
 | missing | Feedback API | `POST /commerce/feedback/v1/respond_to_feedback` | respondToFeedback | This method allows users to respond to feedback provided by the order partner for a specific line item in an order. |  |
+| covered | Finances API | `GET /sell/finances/v1/billing_activity` | getBillingActivities | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
+| covered | Finances API | `GET /sell/finances/v1/order_earnings` | getOrderEarnings | This method returns detailed order-level financial data for each order associated with a seller account. | `marketplaces/ebay/sections/payouts.js` |
+| covered | Finances API | `GET /sell/finances/v1/order_earnings_summary` | getOrderEarningsSummary | This method returns a summarized view of order earnings information for one or more orders associated with a seller account. | `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/payout` | getPayouts | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/payout_summary` | getPayoutSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
+| covered | Finances API | `GET /sell/finances/v1/seller_funds_summary` | getSellerFundsSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/transaction` | getTransactions | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/finance.js`, `marketplaces/ebay/sections/payouts.js` |
-| missing | Finances API | `GET /sell/finances/v1/billing_activity` | getBillingActivities | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
-| missing | Finances API | `GET /sell/finances/v1/order_earnings` | getOrderEarnings | This method returns detailed order-level financial data for each order associated with a seller account. |  |
-| missing | Finances API | `GET /sell/finances/v1/order_earnings_summary` | getOrderEarningsSummary | This method returns a summarized view of order earnings information for one or more orders associated with a seller account. |  |
 | missing | Finances API | `GET /sell/finances/v1/order_earnings/{order_id}` | getOrderEarningsById | This method returns detailed order-level financial data including order earnings, gross amount, expenses, and refunds. |  |
 | missing | Finances API | `GET /sell/finances/v1/payout/{payout_Id}` | getPayout | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
-| missing | Finances API | `GET /sell/finances/v1/seller_funds_summary` | getSellerFundsSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
 | missing | Finances API | `GET /sell/finances/v1/transaction_summary` | getTransactionSummary | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
 | missing | Finances API | `GET /sell/finances/v1/transfer/{transfer_Id}` | getTransfer | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance |  |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order` | getOrders | Use this method to search for and retrieve one or more orders based on their creation date, last modification date, or fulfillment status using the filter parameter. | `marketplaces/ebay/orders.js`, `marketplaces/ebay/profile.js` |

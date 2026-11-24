@@ -18,18 +18,19 @@ const signed = (amount, entry) => {
 }
 
 async function payouts(token) {
-  const base = `${ebayApiz()}/sell/finances/v1`
+  // Full paths written out at each call: the API coverage report finds endpoints by their path.
+  const host = ebayApiz()
   const [summary, funds, earningsSummary, list] = await Promise.all([
-    ebayGet(token, `${base}/payout_summary`).catch(() => null),
-    ebayGet(token, `${base}/seller_funds_summary`).catch(() => null),
-    scopeAware(() => ebayGet(token, `${base}/order_earnings_summary`), 'order earnings')().catch(() => null),
+    ebayGet(token, `${host}/sell/finances/v1/payout_summary`).catch(() => null),
+    ebayGet(token, `${host}/sell/finances/v1/seller_funds_summary`).catch(() => null),
+    scopeAware(() => ebayGet(token, `${host}/sell/finances/v1/order_earnings_summary`), 'order earnings')().catch(() => null),
     tables([
       {
         id: 'payouts',
         tab: 'Payouts',
         title: 'Payouts',
         columns: [col('payoutId', 'Payout'), col('date', 'Date', 'date'), col('status', 'Status', 'status'), col('amount', 'Amount', 'money'), col('fee', 'Fee', 'money'), col('transactions', 'Transactions', 'number'), col('account', 'Paid to')],
-        load: async () => (await ebayGet(token, `${base}/payout?limit=50`)).payouts?.map((row) => ({
+        load: async () => (await ebayGet(token, `${host}/sell/finances/v1/payout?limit=50`)).payouts?.map((row) => ({
           payoutId: row.payoutId,
           date: row.payoutDate,
           status: row.payoutStatusDescription || words(row.payoutStatus),
@@ -44,7 +45,7 @@ async function payouts(token) {
         tab: 'Payouts',
         title: 'Recent transactions',
         columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('memo', 'Details'), col('orderId', 'Order'), col('buyer', 'Buyer'), col('amount', 'Amount', 'money'), col('status', 'Status', 'status')],
-        load: async () => (await ebayGet(token, `${base}/transaction?limit=50`)).transactions?.map((row) => ({
+        load: async () => (await ebayGet(token, `${host}/sell/finances/v1/transaction?limit=50`)).transactions?.map((row) => ({
           date: row.transactionDate,
           type: words(row.transactionType),
           memo: row.transactionMemo || '',
@@ -60,7 +61,7 @@ async function payouts(token) {
         title: 'Earnings per order',
         note: "What each order left you after eBay's fees, ad fees, shipping labels and refunds (eBay's own figures).",
         columns: [col('orderId', 'Order'), col('date', 'Date', 'date'), col('buyer', 'Buyer'), col('gross', 'Gross', 'money'), col('ebayFees', 'eBay fees', 'money'), col('adFees', 'Ad fees', 'money'), col('shippingLabels', 'Shipping labels', 'money'), col('refunds', 'Refunds', 'money'), col('net', 'Net', 'money')],
-        load: scopeAware(async () => (await ebayGet(token, `${base}/order_earnings?limit=50`)).orders?.map((row) => {
+        load: scopeAware(async () => (await ebayGet(token, `${host}/sell/finances/v1/order_earnings?limit=50`)).orders?.map((row) => {
           const s = row.orderEarningsSummary || {}
           const fees = s.expenses?.marketplaceFees || []
           return {
@@ -82,7 +83,7 @@ async function payouts(token) {
         title: 'eBay bill',
         note: 'Every fee and credit eBay charged: insertion and final value fees, ad fees, store subscription.',
         columns: [col('date', 'Date', 'date'), col('type', 'Type'), col('details', 'Details'), col('orderId', 'Order'), col('amount', 'Amount', 'money')],
-        load: async () => (await ebayGet(token, `${base}/billing_activity?limit=50`)).billingActivities?.map((row) => ({
+        load: async () => (await ebayGet(token, `${host}/sell/finances/v1/billing_activity?limit=50`)).billingActivities?.map((row) => ({
           date: row.billingTransactionDate,
           type: words(row.feeType),
           details: row.feeTypeDescription || '',
