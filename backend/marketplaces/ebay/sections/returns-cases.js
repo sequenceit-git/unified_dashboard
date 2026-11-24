@@ -261,8 +261,11 @@ returnsCases.details = {
   },
   /** A payment dispute: what eBay asks for, the evidence on file, and what happened. */
   dispute: async (token, shop, id) => {
-    const base = `${ebayApiz()}/sell/fulfillment/v1/payment_dispute/${encodeURIComponent(id)}`
-    const [d, history] = await Promise.all([ebayGet(token, base), ebayGet(token, `${base}/activity`).catch(() => ({ activity: [] }))])
+    const apiz = ebayApiz()
+    const [d, history] = await Promise.all([
+      ebayGet(token, `${apiz}/sell/fulfillment/v1/payment_dispute/${encodeURIComponent(id)}`),
+      ebayGet(token, `${apiz}/sell/fulfillment/v1/payment_dispute/${encodeURIComponent(id)}/activity`).catch(() => ({ activity: [] })),
+    ])
     const typeOf = (t) => EVIDENCE_TYPES[t] || words(t)
     return {
       title: `Payment dispute ${id}`,

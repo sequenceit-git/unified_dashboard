@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 430 | 111 | 0 | 310 | 9 | 41 | — |
+| eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
 | Temu | 133 | 40 | 0 | 93 | 0 | 17 | — |
 
@@ -208,17 +208,16 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | medium | medium | `DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | deleteItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
-| — | medium | medium | `DELETE /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | deleteItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | getItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
+| — | medium | medium | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing.readonly | getItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `POST /sell/marketing/v1/item_promotion` | sell.marketing | createItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `PUT /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | updateItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `PUT /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | updateItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 
-#### returns-cases (8)
+#### returns-cases (7)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity` | sell.payment.dispute | getActivities | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
 | — | high | medium | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content` | sell.payment.dispute | fetchEvidenceContent | Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline. |
 | — | low | small | `DELETE /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | removePostOrderDocument | Upload and manage documents attached to returns and cases. |
 | — | low | small | `GET /commerce/media/v1_beta/post_order/document/{document_id}` | commerce.post_order.document | downloadPostOrderDocument | Upload and manage documents attached to returns and cases. |
@@ -521,6 +520,7 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment` | getShippingFulfillments | Use this call to retrieve the contents of all fulfillments currently defined for a specified order based on the order's unique identifier, orderId. | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute_summary` | getPaymentDisputeSummaries | Search Payment Dispute by Filters | `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}` | getPaymentDispute | Get Payment Dispute Details | `marketplaces/ebay/sections/returns-cases.js`, `marketplaces/ebay/sections/returnsActions.js` |
+| covered | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity` | getActivities | Get Payment Dispute Activity | `marketplaces/ebay/sections/returns-cases.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/order/{order_id}/issue_refund` | issueRefund | Issue Refund | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment` | createShippingFulfillment | When you group an order's line items into one or more packages, each package requires a corresponding plan for handling, addressing, and shipping; this is a shipping fulfillment. | `marketplaces/ebay/orders.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/accept` | acceptPaymentDispute | Accept Payment Dispute | `marketplaces/ebay/sections/returnsActions.js` |
@@ -529,7 +529,6 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence` | updateEvidence | Update evidence | `marketplaces/ebay/sections/returnsActions.js` |
 | covered | Fulfillment API | `POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file` | uploadEvidenceFile | Upload an Evidence File | `marketplaces/ebay/sections/returnsActions.js` |
 | missing | Fulfillment API | `GET /sell/fulfillment/v1/order/{orderId}/shipping_fulfillment/{fulfillmentId}` | getShippingFulfillment | Use this call to retrieve the contents of a fulfillment based on its unique identifier, fulfillmentId (combined with the associated order's orderId). |  |
-| missing | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity` | getActivities | Get Payment Dispute Activity |  |
 | missing | Fulfillment API | `GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/fetch_evidence_content` | fetchEvidenceContent | Get Payment Dispute Evidence File |  |
 | missing | Identity API | `GET /commerce/identity/v1/user` | getUser | This method retrieves the account profile information for an authenticated user, which requires a User access token. |  |
 | covered | Inventory API | `DELETE /sell/inventory/v1/inventory_item/{sku}` | deleteInventoryItem | This call is used to delete an inventory item record associated with a specified SKU. | `marketplaces/ebay/listings.js` |
@@ -580,6 +579,8 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | M2M Public API Service | `POST /commerce/message/v1/bulk_update_conversation` | bulkUpdateConversation | This method can be used to update the conversationStatus of up to 10 conversations.The conversationId, existing conversationType, and updated conversationStatus for each conversation to modify are required in the convers |  |
 | missing | M2M Public API Service | `POST /commerce/message/v1/update_conversation` | updateConversation | This method can be used to update the conversationStatus or the read status of a specified conversation.Note: Only one of these statuses can be updated at a time using this method. |  |
 | covered | Marketing API | `DELETE /sell/marketing/v1/ad_report_task/{report_task_id}` | deleteReportTask | This call deletes the report task specified by the report_task_id path parameter. | `marketplaces/ebay/sections/advertising.js` |
+| covered | Marketing API | `DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}` | deleteItemPriceMarkdownPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
+| covered | Marketing API | `DELETE /sell/marketing/v1/item_promotion/{promotion_id}` | deleteItemPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/ad_campaign` | getCampaigns | This method retrieves the details for all of the seller's defined campaigns. | `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/ad_campaign/{campaign_id}` | getCampaign | This method retrieves the details of a single campaign, as specified with the campaign_id query parameter. | `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | getAds | This method retrieves Promoted Listings ads that are associated with listings created with either the Trading API or the Inventory API. | `marketplaces/ebay/sections/advertising.js` |
@@ -589,8 +590,6 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | covered | Marketing API | `GET /sell/marketing/v1/ad_report_task` | getReportTasks | This method returns information on all the existing report tasks related to a seller. | `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/ad_report_task/{report_task_id}` | getReportTask | This call returns the details of a specific Promoted Listings report task, as specified by the report_task_id path parameter. | `marketplaces/ebay/sections/advertising.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/ad_report/{report_id}` | getReport | This call downloads the report as specified by the report_id path parameter. | `marketplaces/ebay/sections/advertising.js` |
-| covered | Marketing API | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | getItemPriceMarkdownPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
-| covered | Marketing API | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | getItemPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/promotion` | getPromotions | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/promotion_report` | getPromotionReports | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `GET /sell/marketing/v1/promotion_summary_report` | getPromotionSummaryReport | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
@@ -612,8 +611,6 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Marketing API | `DELETE /sell/marketing/v1/ad_campaign/{campaign_id}` | deleteCampaign | This method deletes the campaign specified by the campaign_id query parameter.Note: You can only delete campaigns that have ended.Call getCampaigns to retrieve the campaign_id and the campaign status (RUNNING, PAUSED, EN |  |
 | missing | Marketing API | `DELETE /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}` | deleteAd | This method removes the specified ad from the specified campaign.Pass the ID of the ad to delete with the ID of the campaign associated with the ad as path parameters to the call.Call getCampaigns to get the current list |  |
 | missing | Marketing API | `DELETE /sell/marketing/v1/email_campaign/{email_campaign_id}` | deleteEmailCampaign | This method deletes the email campaign specified by the email_campaign_id path parameter.Call getEmailCampaigns to retrieve all of the seller's email campaigns. |  |
-| missing | Marketing API | `DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}` | deleteItemPriceMarkdownPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
-| missing | Marketing API | `DELETE /sell/marketing/v1/item_promotion/{promotion_id}` | deleteItemPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
 | missing | Marketing API | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group` | getAdGroups | This method retrieves ad groups for the specified campaigns.Each campaign can only have one ad group.In the request, supply the campaign_ids as path parameters.Call getCampaigns to retrieve a list of the current campaign |  |
 | missing | Marketing API | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad_group/{ad_group_id}` | getAdGroup | This method retrieves the details of a specified ad group, such as the ad group’s default bid and status.In the request, specify the campaign_id and ad_group_id as path parameters.Call getCampaigns to retrieve a list of |  |
 | missing | Marketing API | `GET /sell/marketing/v1/ad_campaign/{campaign_id}/ad/{ad_id}` | getAd | This method retrieves the specified ad from the specified campaign. |  |
@@ -628,6 +625,8 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Marketing API | `GET /sell/marketing/v1/email_campaign/{email_campaign_id}/email_preview` | getEmailPreview | This method returns a preview of the email sent by the email campaign indicated by the email_campaign_id path parameter.Call getEmailCampaigns to obtain a list of email campaigns. |  |
 | missing | Marketing API | `GET /sell/marketing/v1/email_campaign/audience` | getAudiences | This method retrieves all available email newsletter audiences for the email campaign type specified by the emailCampaignType path parameter.Use the optional limit and offset path parameters to paginate the results and t |  |
 | missing | Marketing API | `GET /sell/marketing/v1/email_campaign/report` | getEmailReport | This method returns the seller's email campaign performance report for a time period specified by the startDate and endDate path parameters. |  |
+| missing | Marketing API | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | getItemPriceMarkdownPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
+| missing | Marketing API | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | getItemPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
 | missing | Marketing API | `GET /sell/marketing/v1/negative_keyword` | getNegativeKeywords | This method can be used to retrieve all of the negative keywords for ad groups in priority strategy campaigns that use the Cost Per Click (CPC) funding model.The results can be filtered using the campaign_ids, ad_group_i |  |
 | missing | Marketing API | `GET /sell/marketing/v1/negative_keyword/{negative_keyword_id}` | getNegativeKeyword | This method retrieves details on a specific negative keyword.In the request, specify the negative_keyword_id as a path parameter. |  |
 | missing | Marketing API | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | createAdByListingId | This method adds a listing to an existing Promoted Listings campaign using a listingId value generated by the Trading API or Inventory API, or using a value generated by an ad group ID. |  |

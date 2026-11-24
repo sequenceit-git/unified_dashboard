@@ -83,11 +83,32 @@ Shared code (services, routes, models, middleware, utils, config) must not name 
   offer-counter). Each service also checks the section, not only the route guard.
 - Write each API path out in full at the call (no shared base variable): the API coverage
   report (`npm run api-coverage`) finds endpoints by their path.
-- eBay asks for four scopes beyond the original six (`config.extraScopes`: analytics, order
-  earnings, payment disputes, feedback). `EBAY_EXTRA_SCOPES` replaces the list; `""` asks for
-  none, e.g. if the eBay keyset refuses one. Shops connected before them see which features a
-  reconnect turns on (`missingScopes`); tables whose scope is missing say "Reconnect eBay in
-  Settings to allow …" (`sections/helpers.js` `scopeAware`).
+- eBay asks for three scopes beyond the original six (`config.extraScopes`: analytics, payment
+  disputes, feedback; `sell.finances.earnings.read` is left out because eBay refuses it for this
+  app, so Order earnings are worked out from transactions). `EBAY_EXTRA_SCOPES` replaces the
+  list; `""` asks for none, e.g. if the eBay keyset refuses one. Shops connected before them see
+  which features a reconnect turns on (`missingScopes`); tables whose scope is missing say
+  "Reconnect eBay in Settings to allow …" (`sections/helpers.js` `scopeAware`).
+- Drill-downs and generic actions: a section file may export `details[name](token, shop, id)`
+  (read-only `{ title, summary?, tables }`) and `actions[name](token, shop, id, value)`
+  (`{ message, refused? }`), served by `GET|POST /api/ebay/sections/:sectionId/:actionId` after
+  every named route; only the file's own names run (`Object.hasOwn`), the section access is
+  checked before any eBay call, and an action clears the section cache even when it fails.
+  Row actions may ask for `input.fields` with `options` + `multiple` (an array) or `type: 'file'`
+  (`{ name, type, size, dataUrl }`).
+- Promoted Listings (`sections/advertising.js`): campaigns (pause, resume, end, rename,
+  budget), ads with eBay's suggested rates (Recommendation API; bulk calls in batches of 500,
+  refusals per listing), create/copy campaigns, and ad reports (eBay builds them in the
+  background; a finished one is read as gzipped TSV, first 500 rows).
+- Returns & cases (`sections/returnsActions.js`): dispute evidence photos (JPEG/PNG checked by
+  their bytes, up to 5 MB) are uploaded to eBay as multipart (`client.js` `ebayUpload`) and never
+  stored or logged; contest, return messages/photos/label/escalation, inquiry messages and
+  escalation, case appeal.
+- Who pays shipping: `product.ebayShipping` (`paidBy`, `cost`, `type`, `policy`) is read from the
+  listing on sync; listing or editing sends it as `ebayShipping`. Free shipping makes the first
+  domestic service free (eBay's rule); the buyer pays a typed cost on a flat listing or eBay's
+  rate on a calculated one. A revise sends the whole `ShippingDetails` back (eBay replaces it);
+  a listing on an eBay shipping policy is refused with the policy's name.
 
 ### Tabs, drill-downs and actions (TikTok Shop)
 

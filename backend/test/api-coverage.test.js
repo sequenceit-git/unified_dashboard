@@ -245,3 +245,33 @@ test('Temu wave 1 methods are covered', () => {
   ]
   for (const id of WAVE1) assert.match(String(rows.get(id)), /^covered/, id)
 })
+
+// ---- eBay wave 2 (docs/superpowers/plans/2026-11-24-ebay-api-wave2.md)
+test('eBay wave 2 endpoints are covered', () => {
+  const { shopCoverage } = require('../scripts/apiCoverage/compare')
+  const rows = new Map(shopCoverage('ebay').map((r) => [r.id, r.status]))
+  const M = '/sell/marketing/v1'
+  const WAVE2 = [
+    `GET ${M}/ad_campaign`, `POST ${M}/ad_campaign`, `GET ${M}/ad_campaign/{campaign_id}`,
+    `POST ${M}/ad_campaign/{campaign_id}/pause`, `POST ${M}/ad_campaign/{campaign_id}/resume`, `POST ${M}/ad_campaign/{campaign_id}/end`,
+    `POST ${M}/ad_campaign/{campaign_id}/update_campaign_identification`, `POST ${M}/ad_campaign/{campaign_id}/update_campaign_budget`,
+    `GET ${M}/ad_campaign/{campaign_id}/ad`, `GET ${M}/ad_campaign/{campaign_id}/suggest_items`,
+    `POST ${M}/ad_campaign/{campaign_id}/bulk_create_ads_by_listing_id`, `POST ${M}/ad_campaign/{campaign_id}/bulk_delete_ads_by_listing_id`,
+    `POST ${M}/ad_campaign/{campaign_id}/bulk_update_ads_bid_by_listing_id`, `GET ${M}/ad_campaign/get_campaign_by_name`,
+    `POST ${M}/ad_campaign/{campaign_id}/clone`, 'POST /sell/recommendation/v1/find',
+    `GET ${M}/ad_report_task`, `POST ${M}/ad_report_task`, `GET ${M}/ad_report_task/{report_task_id}`, `DELETE ${M}/ad_report_task/{report_task_id}`,
+    `GET ${M}/ad_report_metadata/{report_type}`, `GET ${M}/ad_report/{report_id}`,
+    'GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}', 'GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity',
+    'POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/upload_evidence_file', 'POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/add_evidence',
+    'POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/update_evidence', 'POST /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/contest',
+    'GET /post-order/v2/return/{returnId}/files', 'GET /post-order/v2/return/{returnId}/tracking', 'POST /post-order/v2/return/{returnId}/send_message',
+    'POST /post-order/v2/return/{returnId}/file/upload', 'POST /post-order/v2/return/{returnId}/file/submit', 'POST /post-order/v2/return/{returnId}/add_shipping_label',
+    'POST /post-order/v2/return/{returnId}/escalate', 'GET /post-order/v2/inquiry/{inquiryId}', 'POST /post-order/v2/inquiry/{inquiryId}/send_message',
+    'POST /post-order/v2/inquiry/{inquiryId}/escalate', 'GET /post-order/v2/casemanagement/{caseId}', 'POST /post-order/v2/casemanagement/{caseId}/appeal',
+    'GET /commerce/feedback/v1/awaiting_feedback', 'POST /commerce/feedback/v1/feedback',
+    'GET /sell/analytics/v1/seller_standards_profile/{program}/{cycle}', 'GET /sell/finances/v1/payout/{payout_Id}', 'GET /sell/finances/v1/transaction_summary',
+    `GET ${M}/promotion/{promotion_id}/get_listing_set`, `DELETE ${M}/item_promotion/{promotion_id}`, `DELETE ${M}/item_price_markdown/{promotion_id}`,
+  ]
+  const missing = WAVE2.filter((id) => !/^covered/.test(String(rows.get(id))))
+  assert.deepEqual(missing, [])
+})

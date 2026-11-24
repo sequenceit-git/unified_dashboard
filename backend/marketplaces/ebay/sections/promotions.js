@@ -9,9 +9,6 @@ const { HttpError } = require('../../../utils/httpError')
 
 const DELETABLE = /^(DRAFT|ENDED)$/
 
-/** Delete lives on the API of the promotion's kind: markdown sales vs. threshold discounts. */
-const deletePath = (p) => (p.promotionType === 'MARKDOWN_SALE' ? `/sell/marketing/v1/item_price_markdown/${encodeURIComponent(p.promotionId)}` : `/sell/marketing/v1/item_promotion/${encodeURIComponent(p.promotionId)}`)
-
 async function promotions(token) {
   let byId = new Map()
   const list = await tables([{
@@ -103,7 +100,9 @@ promotions.actions = {
     const promo = list.find((p) => String(p.promotionId) === String(id))
     if (!promo) throw new HttpError(404, { error: `eBay has no promotion ${id}.` })
     if (!DELETABLE.test(promo.promotionStatus || '')) throw new HttpError(400, { error: 'Only a draft or ended promotion can be deleted. Pause or end it first.' })
-    await ebaySend(token, 'DELETE', deletePath(promo))
+    // Delete lives on the API of the promotion's kind: markdown sales vs. threshold discounts.
+    if (promo.promotionType === 'MARKDOWN_SALE') await ebaySend(token, 'DELETE', `/sell/marketing/v1/item_price_markdown/${encodeURIComponent(promo.promotionId)}`)
+    else await ebaySend(token, 'DELETE', `/sell/marketing/v1/item_promotion/${encodeURIComponent(promo.promotionId)}`)
     return { message: `Promotion "${promo.name || id}" deleted.` }
   },
 }

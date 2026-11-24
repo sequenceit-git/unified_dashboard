@@ -755,12 +755,6 @@
     "priority": "high",
     "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
   },
-  "GET /sell/fulfillment/v1/payment_dispute/{payment_dispute_id}/activity": {
-    "section": "returns-cases",
-    "size": "medium",
-    "priority": "high",
-    "value": "Payment disputes (chargebacks): list and open them, read evidence, accept, or contest with uploaded proof before the deadline."
-  },
   "POST /sell/inventory/v1/bulk_create_or_replace_inventory_item": {
     "section": "listings",
     "size": "medium",
@@ -1223,13 +1217,13 @@
     "priority": "high",
     "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
   },
-  "PUT /sell/marketing/v1/item_price_markdown/{promotion_id}": {
+  "GET /sell/marketing/v1/item_price_markdown/{promotion_id}": {
     "section": "promotions",
     "size": "medium",
     "priority": "medium",
     "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
   },
-  "DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}": {
+  "PUT /sell/marketing/v1/item_price_markdown/{promotion_id}": {
     "section": "promotions",
     "size": "medium",
     "priority": "medium",
@@ -1241,13 +1235,13 @@
     "priority": "medium",
     "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
   },
-  "PUT /sell/marketing/v1/item_promotion/{promotion_id}": {
+  "GET /sell/marketing/v1/item_promotion/{promotion_id}": {
     "section": "promotions",
     "size": "medium",
     "priority": "medium",
     "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
   },
-  "DELETE /sell/marketing/v1/item_promotion/{promotion_id}": {
+  "PUT /sell/marketing/v1/item_promotion/{promotion_id}": {
     "section": "promotions",
     "size": "medium",
     "priority": "medium",
