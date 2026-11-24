@@ -113,29 +113,11 @@
     "priority": "low",
     "value": "Order customisation details and order verification uploads."
   },
-  "bg.order.decryptshippinginfo.get": {
-    "section": "orders",
-    "size": "small",
-    "priority": "medium",
-    "value": "Buyer's full shipping address when it is masked in the order."
-  },
-  "bg.order.detail.v2.get": {
-    "section": "orders",
-    "size": "small",
-    "priority": "high",
-    "value": "Full order detail (items, prices, status) in one call."
-  },
   "bg.order.unshipped.package.get": {
     "section": "shipping",
     "size": "small",
     "priority": "medium",
     "value": "Orders that can ship together and unshipped packages."
-  },
-  "temu.order.amount.v2.query": {
-    "section": "orders",
-    "size": "small",
-    "priority": "medium",
-    "value": "Newer order amount breakdown (the older amount call is used)."
   },
   "temu.order.cancel.appeal.apply": {
     "section": "orders",

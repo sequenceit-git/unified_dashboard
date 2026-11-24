@@ -156,6 +156,8 @@
       "POST /inventory/adjust",
       "POST /inventory/sync",
       "GET /orders/",
+      "GET /orders/:id/temu-detail",
+      "POST /orders/:id/full-address",
       "GET /orders/:id",
       "POST /orders/sync",
       "PATCH /orders/:id/status",

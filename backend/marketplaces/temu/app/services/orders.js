@@ -272,4 +272,73 @@ async function refund(ctx) {
     return { success: true, order, marketplaceResult }
 }
 
-module.exports = { list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }
+/** A Temu order the user may see: its shop must be one of theirs (sub-admins) and connected. */
+async function temuOrderFor(ctx, { needOrders = false } = {}) {
+    const user = ctx.authUser || ctx.user
+    if (needOrders && user.role === 'sub_admin' && !user.mainRoutes?.includes('orders')) {
+      throw new HttpError(403, { error: 'You need the Orders permission to see a buyer\'s address' })
+    }
+    const order = await Order.findOne({ _id: ctx.params.id, marketplace: 'temu' })
+    if (!order) throw new HttpError(404, { error: 'Order not found' })
+    if (user.role === 'sub_admin' && !(ctx.allowedShopIds || []).some((id) => String(id) === String(order.shopId))) {
+      throw new HttpError(403, { error: 'You do not have permission to see orders of this shop' })
+    }
+    const shop = await Shop.findOne({ _id: order.shopId, status: 'connected' })
+    if (!shop) throw new HttpError(404, { error: 'The shop of this order is not connected' })
+    return { order, shop }
+}
+
+const amountOf = (m) => (m && m.amount != null ? { value: Number(m.amount), currency: m.currency || 'USD' } : null)
+
+/** GET /:id/temu-detail — Temu's full order detail: items, amount breakdown, status and timeline. */
+async function temuDetail(ctx) {
+    const { order, shop } = await temuOrderFor(ctx)
+    const temu = require('../../service')
+    const sn = order.externalOrderId
+    const [detail, amount] = await marketplaceManager.withShopToken(shop, async (token) => [
+      await temu.call('bg.order.detail.v2.get', { access_token: token, parentOrderSn: sn }),
+      await temu.call('temu.order.amount.v2.query', { access_token: token, parentOrderSn: sn }).catch(() => null),
+    ])
+    const unit = new Map((amount?.orderList || []).map((l) => [String(l.orderSn), amountOf(l.unitRetailPrice || l.unitRetailPriceVatIncl)]))
+    const paid = amount?.parentOrderMap?.customerPaid || {}
+    const proceeds = amount?.parentOrderMap?.salesProceeds || {}
+    const neg = (m) => (m ? { ...m, value: -Math.abs(m.value) } : null)
+    const parent = detail.parentOrderMap || {}
+    const when = (t) => (t ? new Date(Number(t) * (String(t).length > 11 ? 1 : 1000)).toISOString() : null)
+    return {
+      items: (detail.orderList || []).map((l) => ({ goodsId: String(l.goodsId), skuId: String(l.skuId), title: l.goodsName || '', spec: l.spec || '', qty: l.quantity ?? 0, price: unit.get(String(l.orderSn)) || null })),
+      amounts: [
+        ['Products', amountOf(paid.retailPriceTotalTaxIncl)],
+        ['Seller discount', neg(amountOf(paid.retailPriceSellerDiscountTaxExcl))],
+        ['Temu discount', neg(amountOf(paid.retailPriceTemuDiscountTaxExcl))],
+        ['Shipping', amountOf(paid.shippingTotalTaxIncl)],
+        ['Buyer paid', amountOf(paid.customerPaidTotal)],
+        ['Estimated settlement to you', amountOf(proceeds.estimatedSettlementTotal)],
+      ].filter(([, a]) => a).map(([label, a]) => ({ label, amount: a })),
+      status: parent.parentOrderStatus ?? null,
+      timeline: [
+        ['Ordered', when(parent.parentOrderTime)],
+        ['Ship by', when(parent.expectShipLatestTime)],
+        ['Shipped', when(parent.parentShippingTime)],
+        ['Deliver by', when(parent.latestDeliveryTime)],
+      ].filter(([, t]) => t).map(([label, time]) => ({ label, time })),
+    }
+}
+
+/**
+ * POST /:id/full-address — the buyer's unmasked address, fetched from Temu only when asked.
+ * Needs the Orders permission; never stored, cached or logged.
+ */
+async function fullAddress(ctx) {
+    const { order, shop } = await temuOrderFor(ctx, { needOrders: true })
+    const temu = require('../../service')
+    const info = await marketplaceManager.withShopToken(shop, (token) => temu.call('bg.order.decryptshippinginfo.get', { access_token: token, parentOrderSn: order.externalOrderId }))
+    const cityLine = [info.regionName3, [info.regionName2, info.postCode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+    return {
+      name: info.receiptName || [info.addressExtra?.firstName, info.addressExtra?.lastName].filter(Boolean).join(' '),
+      phone: info.mobile || '',
+      address: [info.addressLine1, info.addressLine2, info.addressLine3, cityLine, info.regionName1].filter(Boolean).join(', '),
+    }
+}
+
+module.exports = { temuDetail, fullAddress, list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }

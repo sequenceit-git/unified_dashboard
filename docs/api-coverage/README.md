@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 27 | 0 | 106 | 0 | 28 | — |
+| Temu | 133 | 30 | 0 | 103 | 0 | 27 | — |
 
 ## eBay
 
@@ -1692,13 +1692,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 |---|---|---|---|---|---|---|
 | — | high | small | `temu.local.goods.sku.stock.query` | — | local goods query product stock | Read the current stock Temu holds per SKU (to check stock sync). |
 
-#### orders (8)
+#### orders (5)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `bg.order.detail.v2.get` | — | Get Order Detail information | Full order detail (items, prices, status) in one call. |
-| — | medium | small | `bg.order.decryptshippinginfo.get` | — | Get Order Buyer Sensitive Address Information | Buyer's full shipping address when it is masked in the order. |
-| — | medium | small | `temu.order.amount.v2.query` | — | Get order amount api | Newer order amount breakdown (the older amount call is used). |
 | — | medium | small | `temu.order.cancel.appeal.apply` | — | Merchant initiates order cancellation application interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
 | — | medium | small | `temu.order.cancel.appeal.result.get` | — | Merchant initiates order cancellation result query interface | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
 | — | medium | small | `temu.order.cancel.outofstock.result.get` | — | Merchant order out of stock cancel result query | Cancellation follow-up: result of out-of-stock cancellations and cancellation appeals. |
@@ -1788,15 +1785,15 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Flash (real images) | `bg.flash.open.upload.real.image` | Kaiping real shot picture upload | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
 | missing | Flash (real images) | `bg.flash.open.upload.recognize` | Kaiping real-time image acquisition test result interface | For large merchants (10,000+ products), the cost of uploading pictures one by one is too high. We provide API and allow merchants to connect with their own ERP systems. |  |
 | covered | Order | `bg.order.amount.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP | `marketplaces/temu/orders.js` |
+| covered | Order | `bg.order.decryptshippinginfo.get` | Get Order Buyer Sensitive Address Information | bg.order.decryptshippinginfo.get interface is designed to retrieve sensitive shipping address information for a specific order. | `marketplaces/temu/app/services/orders.js` |
+| covered | Order | `bg.order.detail.v2.get` | Get Order Detail information | The bg.order.detail.v2.get interface is designed for merchants to retrieve detailed information about a specific order within their respective stores. This functionality provides merchants with access to comprehensive or | `marketplaces/temu/app/services/orders.js` |
 | covered | Order | `bg.order.list.v2.get` | Batch Get Order Information | The bg.order.list.v2.get interface is designed for support batch return of corresponding order lists based on filtering criteria. | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/shipping.js` |
 | covered | Order | `bg.order.shippinginfo.v2.get` | Get Order Buyer Address Information v2 | The bg.order.shippinginfo.get.V2 interface is designed to retrieve shipping address information for a specific order. This functionality is crucial for merchants and logistics providers to ensure that orders are shipped | `marketplaces/temu/orders.js` |
+| covered | Order | `temu.order.amount.v2.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP. This API is currently available only in select marketplaces. | `marketplaces/temu/app/services/orders.js` |
 | covered | Order | `temu.order.cancel.outofstock.apply` | Merchant order out of stock cancel apply | The user takes the initiative to initiate a stock-out situation, which will be submitted to the risk control department for review. | `marketplaces/temu/orders.js` |
 | missing | Order | `bg.order.combinedshipment.list.get` | Combined Shipment Orders | The bg.order.combinedshipment.list.get interface is designed for merchants to retrieve combined shipping groups including lists of parent orders that can be combined for shipping. |  |
 | missing | Order | `bg.order.customization.get` | Query order customization information | Self developed sellers and third-party ISVs obtain customized product content information in bulk through Open API |  |
-| missing | Order | `bg.order.decryptshippinginfo.get` | Get Order Buyer Sensitive Address Information | bg.order.decryptshippinginfo.get interface is designed to retrieve sensitive shipping address information for a specific order. |  |
-| missing | Order | `bg.order.detail.v2.get` | Get Order Detail information | The bg.order.detail.v2.get interface is designed for merchants to retrieve detailed information about a specific order within their respective stores. This functionality provides merchants with access to comprehensive or |  |
 | missing | Order | `bg.order.unshipped.package.get` | bg order unshipped package get | The bg.order.unshipped.package.get interface is for sellers to query information about packages that have been fulfilled successfully by Temu-integrated channel. |  |
-| missing | Order | `temu.order.amount.v2.query` | Get order amount api | Provide the supply price information corresponding to the orders for the self-developed ERP. This API is currently available only in select marketplaces. |  |
 | missing | Order | `temu.order.cancel.appeal.apply` | Merchant initiates order cancellation application interface | Support merchants to initiate cancellation requests through the interface |  |
 | missing | Order | `temu.order.cancel.appeal.result.get` | Merchant initiates order cancellation result query interface | Merchant queries the status of cancellation order appeal records |  |
 | missing | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface |  |

@@ -21,6 +21,27 @@ function ordersRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/orders/:id/temu-detail — Temu's full order detail (items, amounts, timeline)
+  router.get('/:id/temu-detail', async (req, res) => {
+    try {
+      res.json(await service.temuDetail(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  // POST /api/<shop>/orders/:id/full-address — the buyer's full address, on request only; never stored
+  router.post('/:id/full-address', async (req, res) => {
+    res.set('Cache-Control', 'no-store')
+    try {
+      res.json(await service.fullAddress(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/orders/:id
   router.get('/:id', async (req, res) => {
     try {
