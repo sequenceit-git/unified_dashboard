@@ -9,7 +9,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
-| TikTok Shop | 365 | 64 | 11 | 249 | 41 | 32 | 103 |
+| TikTok Shop | 365 | 67 | 11 | 246 | 41 | 31 | 100 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
@@ -953,14 +953,11 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | needs scope: Read External Order References | low | small | `POST /order/202406/orders/external_order_search` | Read External Order References | Search Orders by External Order Reference | External orders link, proof-of-delivery and blind-box results. |
 | needs scope: Write External Order References | low | small | `POST /order/202406/orders/external_orders` | Write External Order References | Add External Order References | External orders link, proof-of-delivery and blind-box results. |
 
-#### packages (28)
+#### packages (25)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
 | available now | high | medium | `POST /fulfillment/202309/orders/{order_id}/split` | FS Order&Fulfillment Management, Package Split And Combine | Confirm Order Split | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| available now | high | medium | `POST /fulfillment/202309/packages/ship` | FS Order&Fulfillment Management, Fulfillment Basic | Batch Ship Packages | Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages. |
-| available now | medium | small | `GET /fulfillment/202309/orders/{order_id}/tracking` | Logistics Basic | Get Order Tracking | Package detail, handover time slots and order tracking. |
-| available now | medium | small | `GET /fulfillment/202309/packages/{package_id}` | FS Order&Fulfillment Management, Fulfillment Basic | Get Package Detail | Package detail, handover time slots and order tracking. |
 | available now | low | small | `GET /fulfillment/202309/orders/split_attributes` | FS Order&Fulfillment Management, Package Split And Combine | Get Order Split Attributes | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
 | available now | low | small | `GET /fulfillment/202508/tts_tracking_validation` | Logistics Basic | Check TikTok Shipping and Collection by TikTok Coverage | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
 | available now | low | small | `GET /logistics/202510/seller_templates` | Logistics Basic | Get Shipping Template Availability | Logistics: global warehouses, shipping templates and order tracking. |
@@ -1429,16 +1426,17 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Fulfilled by TikTok (FBT) | `POST /fbt/202607/goods/search` | Search Goods Info | Retrieves goods belonging to the merchant that match the specified filters and returns their IDs, names, goods-SKU relationships, merchant-declared measurements, warehouse-confirmed measurements, and other attributes. |  |
 | missing | Fulfilled by TikTok (FBT) | `POST /fbt/202607/goods/update_goods_info` | Update FBT Goods Info | Update FBT goods information, including goods name, image URL, dimensions, hazmat details, shelf-life attributes, and return address information. |  |
 | missing | Fulfilled by TikTok (FBT) | `POST /fbt/202607/mcf_outbound_orders` | Create FBT MCF Order | For orders created on other sales channels that require fulfillment via FBT, this API enables you to create corresponding orders (hereinafter referred to as MCF Orders). |  |
+| covered | Fulfillment | `GET /fulfillment/202309/orders/{order_id}/tracking` | Get Order Tracking | This API can use the order number to obtain the corresponding logistics tracking information. | `marketplaces/tiktok_shop/sections/packages.js` |
+| covered | Fulfillment | `GET /fulfillment/202309/packages/{package_id}` | Get Package Detail | Returns information about a package, including handover time slot, tracking number, and shipping provider information. | `marketplaces/tiktok_shop/sections/packages.js` |
 | covered | Fulfillment | `GET /fulfillment/202309/packages/{package_id}/shipping_documents` | Get Package Shipping Document | For packages shipped with TikTok Shipping, use this API to retrieve the URL of the shipping document selected by `document_type` for the package specified by `package_id`. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Fulfillment | `POST /fulfillment/202309/orders/{order_id}/shipping_info/update` | Update Order Shipping Info | If the seller entered an incorrect tracking number, this API allows the seller to update the tracking number and shipping provider for an order that has already been shipped. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Fulfillment | `POST /fulfillment/202309/orders/{order_id}/shipping_services/query` | Get Eligible Shipping Services | Retrieve available shipping services in the US and JP. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Fulfillment | `POST /fulfillment/202309/packages/{package_id}/ship` | Ship Package | Use this API to ship a package. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Fulfillment | `POST /fulfillment/202309/packages/search` | Search Package | Retrieve packages, optionally filtered by creation time, update time, or package status. | `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/sections/packages.js` |
+| covered | Fulfillment | `POST /fulfillment/202309/packages/ship` | Batch Ship Packages | Use this API to ship one or more packages in a single request. | `marketplaces/tiktok_shop/sections/packages.js` |
 | covered (older version: `POST /fulfillment/202309/orders/{orderId}/packages`) | Fulfillment | `POST /fulfillment/202610/orders/{order_id}/packages` | Mark Package As Shipped | **This API is currently exclusive to the following markets: US, UK, ES, IE, IT, DE, FR, JP.** This API is for sellers who fulfill orders through their own selected/preferred logistics carrier, and allows sellers to uploa | `marketplaces/tiktok_shop/orders.js` |
 | missing | Fulfillment | `GET /fulfillment/202309/combinable_packages/search` | Search Combinable Packages | Use this API to query orders eligible for combined shipping. |  |
-| missing | Fulfillment | `GET /fulfillment/202309/orders/{order_id}/tracking` | Get Order Tracking | This API can use the order number to obtain the corresponding logistics tracking information. |  |
 | missing | Fulfillment | `GET /fulfillment/202309/orders/split_attributes` | Get Order Split Attributes | Checks whether one or more TikTok Shop orders can be split into multiple packages. |  |
-| missing | Fulfillment | `GET /fulfillment/202309/packages/{package_id}` | Get Package Detail | Returns information about a package, including handover time slot, tracking number, and shipping provider information. |  |
 | missing | Fulfillment | `GET /fulfillment/202309/packages/{package_id}/handover_time_slots` | Get Package Handover Time Slots | Use this API to retrieve a specified package's door-to-door pickup time slots and handover availability for pickup, drop-off, and, in the UK, van collection. |  |
 | missing | Fulfillment | `GET /fulfillment/202508/tts_tracking_validation` | Check TikTok Shipping and Collection by TikTok Coverage | Enables a seller or warehouse to validate whether a tracking number is covered by TikTok Shipping (TTS) or Collection by TikTok (CBT). |  |
 | missing | Fulfillment | `POST /fulfillment/202309/files/upload` | Upload Proof of Delivery File | This API is used for the seller to upload the proof of delivery file for a package, and to generate the URL of the corresponding file. |  |
@@ -1447,7 +1445,6 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Fulfillment | `POST /fulfillment/202309/packages/{package_id}/uncombine` | Uncombine Packages | Use this API to uncombine one or more orders from an already combined package. |  |
 | missing | Fulfillment | `POST /fulfillment/202309/packages/combine` | Combine Package | Use this API to combine orders from each specified package into new fulfillment packages. |  |
 | missing | Fulfillment | `POST /fulfillment/202309/packages/deliver` | Update Package Delivery Status | Use this API to report delivery outcomes for SOF (Seller Own Fleet) packages or confirm O2O (Store Pickup) package delivery. |  |
-| missing | Fulfillment | `POST /fulfillment/202309/packages/ship` | Batch Ship Packages | Use this API to ship one or more packages in a single request. |  |
 | missing | Fulfillment | `POST /fulfillment/202407/bundles` | Create First Mile Bundle | If you send multiple packages to TikTok Shop warehouse in a single first-mile bundle, you can use the API to create a first-mile bundle on TikTok Shop and get the bundle ID. |  |
 | missing | Fulfillment | `POST /fulfillment/202502/invoice/upload` | Upload Invoice | Upload the invoice document. |  |
 | missing | Fulfillment | `POST /fulfillment/202510/first_mile_bundle` | Create First Mile Bundle(V2) | If you send multiple packages to TikTok Shop warehouse in a single first-mile bundle, you can use the API to create a first-mile bundle on TikTok Shop and get the bundle ID. |  |

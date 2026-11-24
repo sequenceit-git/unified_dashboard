@@ -383,23 +383,11 @@
     "priority": "high",
     "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
   },
-  "GET /fulfillment/202309/orders/{order_id}/tracking": {
-    "section": "packages",
-    "size": "small",
-    "priority": "medium",
-    "value": "Package detail, handover time slots and order tracking."
-  },
   "GET /fulfillment/202309/orders/split_attributes": {
     "section": "packages",
     "size": "small",
     "priority": "low",
     "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
-  },
-  "GET /fulfillment/202309/packages/{package_id}": {
-    "section": "packages",
-    "size": "small",
-    "priority": "medium",
-    "value": "Package detail, handover time slots and order tracking."
   },
   "GET /fulfillment/202309/packages/{package_id}/handover_time_slots": {
     "section": "packages",
@@ -1086,12 +1074,6 @@
     "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
   },
   "POST /fulfillment/202309/packages/deliver": {
-    "section": "packages",
-    "size": "medium",
-    "priority": "high",
-    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
-  },
-  "POST /fulfillment/202309/packages/ship": {
     "section": "packages",
     "size": "medium",
     "priority": "high",
