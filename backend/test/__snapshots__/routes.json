@@ -141,6 +141,8 @@
       "POST /goods/import-url",
       "POST /goods/fill-attributes",
       "GET /goods/categories",
+      "GET /goods/:goodsId/temu-detail",
+      "POST /goods/:goodsId/sku-codes",
       "GET /goods/:id",
       "POST /goods/",
       "PATCH /goods/:id",

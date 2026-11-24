@@ -9,6 +9,7 @@ import Badge from '../../../../components/ui/Badge'
 import VariantEditor from './components/VariantEditor'
 import { listingActionsFor, listingBadge, useShopProfile } from '../../../../hooks/useShopProfiles'
 import { CONDITIONS } from './listingConditions'
+import TemuDetail from './components/TemuDetail'
 
 // Bookkeeping keys kept in `attributes` that aren't item specifics.
 const HIDDEN_ATTRIBUTES = new Set(['targetMarketplace', 'sourceUrl', 'gtin', 'aiOpportunityScore', 'listingUrl', 'estimatedCost'])
@@ -219,6 +220,8 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                 />
               </div>
             </div>
+
+            {shopListing?.externalListingId && <TemuDetail externalListingId={shopListing.externalListingId} />}
 
             <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600">Pricing & Inventory</h3>

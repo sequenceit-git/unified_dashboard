@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 22 | 0 | 111 | 0 | 30 | — |
+| Temu | 133 | 27 | 0 | 106 | 0 | 28 | — |
 
 ## eBay
 
@@ -1630,12 +1630,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 | — | medium | medium | `temu.aftersales.upload.returnlabel` | — | Upload return label | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
-#### goods (56)
+#### goods (51)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `bg.local.goods.detail.query` | — | Query local goods detail | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
-| — | high | small | `bg.local.goods.sku.list.query` | — | Get sku list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
 | — | high | small | `temu.local.goods.list.retrieve` | — | Product list Retrieve | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
 | — | high | small | `temu.local.sku.list.retrieve` | — | Get SKU list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
 | — | high | large | `bg.local.goods.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
@@ -1647,9 +1645,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | high | large | `temu.local.goods.v3.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | medium | small | `bg.local.goods.out.sn.check` | — | Check if contribution ID for goods is repeated | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
 | — | medium | small | `bg.local.goods.out.sn.set` | — | Set contribution ID for goods | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
-| — | medium | small | `bg.local.goods.publish.status.get` | — | Batch Query Product Publication Status | Publication status of goods (live, under review, rejected). |
-| — | medium | small | `bg.local.goods.sku.out.sn.check` | — | Check if contribution ID for SKU is repeated | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
-| — | medium | small | `bg.local.goods.sku.out.sn.set` | — | Set contribution ID for SKU | Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs). |
 | — | medium | medium | `bg.arbok.open.cert.queryNeedUploadItems` | — | bg.arbok.open.cert.queryNeedUploadItems | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.arbok.open.cert.uploadProductCert` | — | bg.arbok.open.cert.uploadProductCert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.arbok.open.product.cert.query` | — | query product cert | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
@@ -1806,10 +1801,15 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Order | `temu.order.cancel.appeal.result.get` | Merchant initiates order cancellation result query interface | Merchant queries the status of cancellation order appeal records |  |
 | missing | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface |  |
 | missing | Order verification | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods. |  |
+| covered | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.list.query` | Get product list | Get product list | `marketplaces/temu/listings.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `bg.local.goods.priceorder.change.sku.price` | Batch change SKU base price | Support merchants within the white list to modify sku base prices in batches. | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.priceorder.query` | Query price offer Info | Support merchants within the white list to query the price offer list. | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
+| covered | Product | `bg.local.goods.publish.status.get` | Batch Query Product Publication Status | Batch Query Product Publication Status | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.sale.status.set` | Modify The Listing Status Of Products | Support goods/SKU dimension for listing and delisting operations | `marketplaces/temu/listings.js` |
+| covered | Product | `bg.local.goods.sku.list.query` | Get sku list | Get sku list, as well as get Variants | `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Check if contribution ID for SKU is duplicate | `marketplaces/temu/app/services/products.js` |
+| covered | Product | `bg.local.goods.sku.out.sn.set` | Set contribution ID for SKU | Set contribution ID for SKU | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js` |
 | missing | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels |  |
 | missing | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu |  |
@@ -1821,7 +1821,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `bg.local.goods.compliance.info.fill.list.query` | Query compliance information fill in the drop-down list | local-local goods B, query compliance information fill in the drop-down list |  |
 | missing | Product | `bg.local.goods.compliance.property.check` | Verify Product Attribute Settings | Verify Product Attribute Settings |  |
 | missing | Product | `bg.local.goods.compliance.rules.get` | Query Mandatory Qualification Information | Query Mandatory Qualification Information |  |
-| missing | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail |  |
 | missing | Product | `bg.local.goods.gallery.signature.get` | Get Signature | Get gallery Signature |  |
 | missing | Product | `bg.local.goods.image.upload` | Image material processing | Image material processing |  |
 | missing | Product | `bg.local.goods.out.sn.check` | Check if contribution ID for goods is repeated | Check if contribution ID for goods is repeated |  |
@@ -1831,12 +1830,8 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `bg.local.goods.property.relations` | Query relation-property data of the product | Query the relational database data associated with goods, such as vehicle library. |  |
 | missing | Product | `bg.local.goods.property.relations.level.template` | Query dependency and level in relation-property database | Obtaining the hierarchical attribute value and hierarchical id of vehicle type library data. |  |
 | missing | Product | `bg.local.goods.property.relations.template` | Query property data in relation- property database | Query the full quantum attribute by the dependency id of the parent attribute value and the hierarchical id. |  |
-| missing | Product | `bg.local.goods.publish.status.get` | Batch Query Product Publication Status | Batch Query Product Publication Status |  |
 | missing | Product | `bg.local.goods.size.element.get` | Query Size Chart Element Information | Check size chart/image upload limits and requirements for this category. |  |
 | missing | Product | `bg.local.goods.sku.list.price.query` | Batch query latest supplier price of SKUs. | This is an API for batch querying the latest supply prices of SKUs for local-to-local goods. |  |
-| missing | Product | `bg.local.goods.sku.list.query` | Get sku list | Get sku list, as well as get Variants |  |
-| missing | Product | `bg.local.goods.sku.out.sn.check` | Check if contribution ID for SKU is repeated | Check if contribution ID for SKU is duplicate |  |
-| missing | Product | `bg.local.goods.sku.out.sn.set` | Set contribution ID for SKU | Set contribution ID for SKU |  |
 | missing | Product | `bg.local.goods.spec.id.get` | Search And Generate Merchant-Customized Specifications | Search And Generate Merchant-Customized Specifications |  |
 | missing | Product | `bg.local.goods.tax.code.get` | Get ITC list | local-local goods B |  |
 | missing | Product | `bg.local.goods.template.get` | Query Product Attributes Template | query product attributes template |  |

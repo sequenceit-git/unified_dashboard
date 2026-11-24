@@ -221,12 +221,6 @@
     "priority": "medium",
     "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
   },
-  "bg.local.goods.detail.query": {
-    "section": "goods",
-    "size": "small",
-    "priority": "high",
-    "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
-  },
   "bg.local.goods.gallery.signature.get": {
     "section": "goods",
     "size": "medium",
@@ -281,12 +275,6 @@
     "priority": "low",
     "value": "Listing helpers: categories and rules, attribute templates, size charts, specs, image upload, brands, tax codes, wording check, pre-sale switch."
   },
-  "bg.local.goods.publish.status.get": {
-    "section": "goods",
-    "size": "small",
-    "priority": "medium",
-    "value": "Publication status of goods (live, under review, rejected)."
-  },
   "bg.local.goods.size.element.get": {
     "section": "goods",
     "size": "medium",
@@ -298,24 +286,6 @@
     "size": "small",
     "priority": "high",
     "value": "Temu's recommended and current supplier price per SKU, to price competitively before a price review."
-  },
-  "bg.local.goods.sku.list.query": {
-    "section": "goods",
-    "size": "small",
-    "priority": "high",
-    "value": "Full goods detail and SKU list (attributes, images, variations) and the newer list calls."
-  },
-  "bg.local.goods.sku.out.sn.check": {
-    "section": "goods",
-    "size": "small",
-    "priority": "medium",
-    "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
-  },
-  "bg.local.goods.sku.out.sn.set": {
-    "section": "goods",
-    "size": "small",
-    "priority": "medium",
-    "value": "Set and check the seller's own goods/SKU codes on Temu (match Temu items to dashboard SKUs)."
   },
   "bg.local.goods.spec.id.get": {
     "section": "goods",

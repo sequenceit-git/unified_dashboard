@@ -52,6 +52,26 @@ function productsRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/goods/:goodsId/temu-detail — the goods as Temu has it (details, SKUs, publication status)
+  router.get('/:goodsId/temu-detail', async (req, res) => {
+    try {
+      res.json(await service.temuDetail(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  // POST /api/<shop>/goods/:goodsId/sku-codes — set the seller's own SKU codes on Temu
+  router.post('/:goodsId/sku-codes', async (req, res) => {
+    try {
+      res.json(await service.setSkuCodes(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/products/:id
   router.get('/:id', async (req, res) => {
     try {

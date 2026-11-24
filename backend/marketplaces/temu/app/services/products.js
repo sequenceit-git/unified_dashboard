@@ -494,4 +494,86 @@ async function updatePrice(ctx) {
     return { product, pushedToMarketplaces: results.filter((item) => item.ok).length, marketplaceSync: results }
 }
 
-module.exports = { list, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
+// Temu's goods status codes (product listing and delisting guide).
+const GOODS_STATUS = { 2: 'Active', 3: 'Inactive', 4: 'Incomplete', 5: 'Draft', 6: 'Deleted' }
+const GOODS_SUB_STATUS = {
+  1: 'Sold out', 2: 'Delisted', 3: 'Blocked (penalty)', 4: 'Qualification documents due', 5: 'Processing',
+  6: 'Qualification review', 7: 'Release failed', 8: 'On-shelf', 9: 'Price assessment rejected',
+  10: 'Price assessment in process', 11: 'Audit processing', 12: 'Supplementary review', 13: 'Deleted',
+  14: 'Deletion refused (price assessment)',
+}
+
+/** The user's connected Temu shop that lists this goods (never another shop's goods). */
+async function temuShopForGoods(ctx, goodsId) {
+    if (!/^\d+$/.test(String(goodsId || ''))) throw new HttpError(400, { error: 'goodsId must be a Temu goods id' })
+    const filter = { marketplace: 'temu', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    if (!shop) throw new HttpError(404, { error: 'No connected Temu shop' })
+    const listing = await Listing.findOne({ shopId: shop._id, marketplace: 'temu', externalListingId: { $in: [String(goodsId), new RegExp(`^${goodsId}:`)] } })
+    if (!listing) throw new HttpError(404, { error: 'This shop has no such Temu goods' })
+    return shop
+}
+
+const temuMoney = (amount, currency) => (amount != null && amount !== '' ? { value: Number(amount?.amount ?? amount), currency: amount?.currency || currency || 'USD' } : null)
+
+/** GET /:goodsId/temu-detail — the goods as Temu has it: details, every SKU, publication status. */
+async function temuDetail(ctx) {
+    const goodsId = String(ctx.params.goodsId)
+    const shop = await temuShopForGoods(ctx, goodsId)
+    const temu = require('../../service')
+    const [detail, skus, publish] = await marketplaceManager.withShopToken(shop, (token) => Promise.all([
+      temu.call('bg.local.goods.detail.query', { access_token: token, goodsId: Number(goodsId) }),
+      temu.call('bg.local.goods.sku.list.query', { access_token: token, pageNo: 1, pageSize: 100, skuSearchType: 'ALL', searchText: goodsId }).catch(() => ({ skuList: [] })),
+      temu.call('bg.local.goods.publish.status.get', { access_token: token, goodsIdList: [Number(goodsId)] }).catch(() => ({ goodsPublishStatusList: [] })),
+    ]))
+    const own = (skus.skuList || []).filter((s) => String(s.goodsId) === goodsId)
+    const fromDetail = new Map((detail.skuList || []).map((s) => [String(s.skuId), s]))
+    const st = (publish.goodsPublishStatusList || []).find((p) => String(p.goodsId) === goodsId) || {}
+    return {
+      goods: {
+        title: detail.goodsName || '',
+        category: detail.catName || '',
+        images: detail.goodsGallery?.detailImage || detail.goodsGallery?.carouselImageUrls || [],
+        attributes: (detail.goodsProperties || []).map((p) => ({ name: p.name || p.propName || '', value: p.value ?? p.propValue ?? '' })),
+      },
+      skus: (own.length ? own : detail.skuList || []).map((s) => {
+        const d = fromDetail.get(String(s.skuId)) || {}
+        return {
+          skuId: String(s.skuId),
+          spec: s.specName || (d.specNameList || []).join(' / ') || '',
+          price: temuMoney(s.price ?? d.price, s.currency),
+          stock: s.stock ?? null,
+          sellerCode: s.skuSn ?? d.outSkuSn ?? '',
+        }
+      }),
+      status: { state: GOODS_STATUS[st.status] || (st.status != null ? `Status ${st.status}` : 'Unknown'), detail: GOODS_SUB_STATUS[st.subStatus] || '' },
+    }
+}
+
+/**
+ * POST /:goodsId/sku-codes { codes: [{ skuId, code }] } — sets the seller's own SKU codes on Temu.
+ * Checks every code with Temu first; if any is already used elsewhere, sets none.
+ */
+async function setSkuCodes(ctx) {
+    const goodsId = String(ctx.params.goodsId)
+    const codes = (Array.isArray(ctx.body?.codes) ? ctx.body.codes : [])
+      .map((c) => ({ skuId: String(c.skuId || '').trim(), code: String(c.code || '').trim() }))
+      .filter((c) => /^\d+$/.test(c.skuId) && c.code)
+    if (!codes.length) throw new HttpError(400, { error: 'Enter at least one SKU code.' })
+    const shop = await temuShopForGoods(ctx, goodsId)
+    const temu = require('../../service')
+    return marketplaceManager.withShopToken(shop, async (token) => {
+      const checked = await temu.call('bg.local.goods.sku.out.sn.check', { access_token: token, outSkuSnList: codes.map((c) => c.code) })
+      const taken = (checked.resultList || []).filter((r) => r.isDuplicate)
+      if (taken.length) {
+        throw new HttpError(400, { error: `Already used on Temu, nothing was saved: ${taken.map((r) => `${r.outSkuSn} (SKU ${r.duplicateSkuId})`).join(', ')}.` })
+      }
+      const set = await temu.call('bg.local.goods.sku.out.sn.set', { access_token: token, modifyList: codes.map((c) => ({ goodsId: Number(goodsId), skuId: Number(c.skuId), outSkuSn: c.code })) })
+      const failed = (set.resultList || []).filter((r) => r.modifySuccess === false)
+      const saved = codes.length - failed.length
+      return { message: `Saved ${saved} seller code${saved === 1 ? '' : 's'} on Temu.${failed.length ? ` Not saved: ${failed.map((r) => r.outSkuSn).join(', ')}.` : ''}` }
+    })
+}
+
+module.exports = { temuDetail, setSkuCodes, list, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
