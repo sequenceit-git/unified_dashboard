@@ -209,17 +209,6 @@ async function shipPackage(ctx) {
     return { success: true, result }
 }
 
-/** PATCH /:id/ai-reply */
-async function setAiReply(ctx) {
-    const shop = await Shop.findByIdAndUpdate(
-      ctx.params.id,
-      { aiReplyEnabled: Boolean(ctx.body.enabled) },
-      { returnDocument: 'after' },
-    ).select('name marketplace status aiReplyEnabled')
-    if (!shop) throw new HttpError(404, { error: 'Shop not found' })
-    return shop
-}
-
 /** GET /:id/categories */
 async function categories(ctx) {
     const shop = await Shop.findById(ctx.params.id).select('+auth.accessTokenEnc')
@@ -302,4 +291,4 @@ async function finances(ctx) {
     return finances || {}
 }
 
-module.exports = { connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, setAiReply, categories, attributes, categoryRules, brands, sizeCharts, finances}
+module.exports = { connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, categories, attributes, categoryRules, brands, sizeCharts, finances}

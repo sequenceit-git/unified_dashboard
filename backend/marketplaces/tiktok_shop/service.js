@@ -7,6 +7,5 @@ module.exports = Object.assign(
   require('./listings'),
   require('./promotions'),
   require('./finance'),
-  require('./inbox'),
   require('./analytics'),
 )

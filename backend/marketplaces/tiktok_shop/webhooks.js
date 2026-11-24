@@ -24,8 +24,6 @@ const EVENTS = {
   PRODUCT_CREATION: 'listings',
   PRODUCT_CATEGORY_CHANGE: 'listings',
   PRODUCT_AUDIT_STATUS_CHANGE: 'listings',
-  NEW_MESSAGE: 'inbox',
-  NEW_CONVERSATION: 'inbox',
   SELLER_DEAUTHORIZATION: 'deauth',
 }
 
@@ -67,7 +65,8 @@ function resolveKind(topic, payload) {
   if (normalized && EVENTS[normalized]) return EVENTS[normalized]
   const data = payload?.data || {}
   const type = Number(payload?.type)
-  if (data.conversation_id || data.message_id || type === 14) return 'inbox'
+  // No inbox (the connector app has no Customer Service scope): message events are ignored.
+  if (data.conversation_id || data.message_id || type === 14) return ''
   if (data.product_id) return 'listings'
   if (
     data.order_id

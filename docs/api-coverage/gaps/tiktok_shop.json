@@ -1,12 +1,12 @@
 {
   "DELETE /affiliate_seller/202409/open_collaborations/products/{product_id}": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "DELETE /affiliate_seller/202409/target_collaborations/{target_collaboration_id}": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
@@ -36,103 +36,103 @@
     "value": "Shop materials: upload and manage shop images and carousel content."
   },
   "GET /affiliate_seller/202409/open_collaboration_settings": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "GET /affiliate_seller/202410/open_collaborations/sample_rules": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "GET /affiliate_seller/202412/conversation/{conversation_id}/messages": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "GET /affiliate_seller/202412/conversations": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "GET /affiliate_seller/202412/conversations/messages/list/newest": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "GET /affiliate_seller/202508/open_collaborations/creator_content_details": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "GET /affiliate_seller/202508/target_collaborations/{target_collaboration_id}": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "GET /affiliate_seller/202512/sample_applications/deeplink": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
   },
   "GET /affiliate_seller/202603/compass/offline_tasks": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "GET /affiliate_seller/202603/compass/offline_tasks/{task_id}/file": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "GET /affiliate_seller/202607/creator_outreach/quota": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "GET /affiliate_seller/202608/conversations/group_counts": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "GET /affiliate_seller/202608/marketplace_creators/{creator_user_id}": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "GET /affiliate_seller/202611/partner_campaigns": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/candidate_products": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "GET /affiliate_seller/202611/partner_campaigns/{campaign_id}/products": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
@@ -414,7 +414,19 @@
     "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
   },
   "GET /customer_service/202309/agents/settings": {
-    "section": "customer-service",
+    "section": "new: inbox",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "GET /customer_service/202309/conversations": {
+    "section": "new: inbox",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "GET /customer_service/202309/conversations/{conversation_id}/messages": {
+    "section": "new: inbox",
     "size": "small",
     "priority": "medium",
     "value": "Customer service: open a conversation, agent settings, images, sessions."
@@ -426,7 +438,7 @@
     "value": "Customer-service performance: response rate and response time."
   },
   "GET /customer_service/202601/conversations/{conversation_id}": {
-    "section": "customer-service",
+    "section": "new: inbox",
     "size": "small",
     "priority": "medium",
     "value": "Customer service: open a conversation, agent settings, images, sessions."
@@ -822,163 +834,169 @@
     "value": "Shop materials: upload and manage shop images and carousel content."
   },
   "POST /affiliate_seller/202405/open_collaboration_settings": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202405/open_collaborations/products/search": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202409/sample_applications/{application_id}/fulfillments/search": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
   },
   "POST /affiliate_seller/202410/open_collaborations/sample_rules": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202410/orders/search": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "small",
     "priority": "high",
     "value": "Affiliate orders: which creator sold what, and the commission owed."
   },
   "POST /affiliate_seller/202412/conversations/{conversation_id}/messages": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "POST /affiliate_seller/202412/conversatons/read": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "POST /affiliate_seller/202412/open_collaborations": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202412/open_collaborations/search": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202507/sample_applications/{application_id}/review": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
   },
   "POST /affiliate_seller/202508/conversations": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "POST /affiliate_seller/202508/open_collaborations/{open_collaboration_id}/remove_creator": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202508/sample_applications/search": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Free samples: creators’ sample applications, approve or reject, and sample shipments."
   },
   "POST /affiliate_seller/202508/target_collaborations": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202508/target_collaborations/search": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202509/target_collaboration/{target_collaboration_id}/link": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202511/images/upload": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "POST /affiliate_seller/202603/compass/offline_task": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "POST /affiliate_seller/202605/target_collaborations/conflicts/check": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202605/target_collaborations/conflicts/resolve": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202608/conversations/{conversation_id}/status": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "medium",
     "value": "Chat with creators: conversations, messages, read state."
   },
   "POST /affiliate_seller/202608/creator_outreach/records/query": {
-    "section": "creators",
+    "section": "new: creators",
+    "size": "medium",
+    "priority": "low",
+    "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
+  },
+  "POST /affiliate_seller/202608/marketplace_creators/search": {
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "POST /affiliate_seller/202608/marketplace_creators/search/filter": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "POST /affiliate_seller/202608/media/upload": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "POST /affiliate_seller/202608/target_collaborations/creator_promotion_details/query": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "POST /affiliate_seller/202610/creator_outreach/eligibility/check": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
   },
   "POST /affiliate_seller/202611/partner_campaigns/{campaign_id}/products": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "low",
     "value": "Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks."
@@ -1026,25 +1044,37 @@
     "value": "Customer engagement: send messages and engagement tasks to customers from templates, and see their results."
   },
   "POST /customer_service/202309/conversations": {
-    "section": "customer-service",
+    "section": "new: inbox",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "POST /customer_service/202309/conversations/{conversation_id}/messages/read": {
+    "section": "new: inbox",
     "size": "small",
     "priority": "medium",
     "value": "Customer service: open a conversation, agent settings, images, sessions."
   },
   "POST /customer_service/202309/images/upload": {
-    "section": "customer-service",
+    "section": "new: inbox",
     "size": "small",
     "priority": "medium",
     "value": "Customer service: open a conversation, agent settings, images, sessions."
   },
   "POST /customer_service/202602/sessions/search": {
-    "section": "customer-service",
+    "section": "new: inbox",
     "size": "small",
     "priority": "medium",
     "value": "Customer service: open a conversation, agent settings, images, sessions."
   },
   "POST /customer_service/202605/conversations/{conversation_id}/sessions/{session_id}/end": {
-    "section": "customer-service",
+    "section": "new: inbox",
+    "size": "small",
+    "priority": "medium",
+    "value": "Customer service: open a conversation, agent settings, images, sessions."
+  },
+  "POST /customer_service/202606/conversations/{conversation_id}/messages": {
+    "section": "new: inbox",
     "size": "small",
     "priority": "medium",
     "value": "Customer service: open a conversation, agent settings, images, sessions."
@@ -1560,13 +1590,13 @@
     "value": "Sync package status from a third-party warehouse system."
   },
   "PUT /affiliate_seller/202508/target_collaborations/{target_collaboration_id}": {
-    "section": "creators",
+    "section": "new: creators",
     "size": "medium",
     "priority": "high",
     "value": "Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings."
   },
   "PUT /customer_service/202309/agents/settings": {
-    "section": "customer-service",
+    "section": "new: inbox",
     "size": "small",
     "priority": "medium",
     "value": "Customer service: open a conversation, agent settings, images, sessions."

@@ -4,7 +4,8 @@ const { stubModules, freshRequire } = require('./helpers/stub')
 
 const EXPECTED = {
   ebay: ['analytics', 'messages', 'listings', 'inventory', 'orders', 'returns-cases', 'offers', 'promotions', 'payouts', 'buyers'],
-  tiktok_shop: ['analytics', 'customer-service', 'products', 'inventory', 'orders', 'packages', 'returns-cancellations', 'promotions', 'finance', 'videos-live', 'creators', 'customers'],
+  // The E-commerce connector app has no Customer Service or Affiliate Seller scope: no Inbox, no Creators.
+  tiktok_shop: ['analytics', 'products', 'inventory', 'orders', 'packages', 'returns-cancellations', 'promotions', 'finance', 'videos-live', 'customers'],
   temu: ['analytics', 'goods', 'inventory', 'orders', 'shipping', 'after-sales', 'price-reviews', 'promotions', 'ads', 'customers'],
 }
 
@@ -21,7 +22,7 @@ test("notification links use the shop's section names", () => {
   try {
     const { shopPath } = freshRequire('services/core/notify.js')
     assert.equal(shopPath('/products', 'ebay'), '/ebay/listings')
-    assert.equal(shopPath('/inbox', 'tiktok_shop'), '/tiktok/customer-service')
+    assert.equal(shopPath('/returns', 'tiktok_shop'), '/tiktok/returns-cancellations')
     assert.equal(shopPath('/products', 'temu'), '/temu/goods')
     assert.equal(shopPath('/orders', 'temu'), '/temu/orders')
   } finally { restore() }
@@ -32,5 +33,5 @@ test("each shop's API uses its section names", () => {
   assert.ok(routes('ebay').includes('GET /listings/') && !routes('ebay').some((r) => r.includes(' /products')))
   assert.ok(routes('ebay').includes('GET /buyers/') && routes('ebay').some((r) => r.startsWith('GET /messages/')))
   assert.ok(routes('temu').includes('GET /goods/'))
-  assert.ok(routes('tiktok_shop').some((r) => r.startsWith('GET /customer-service/')))
+  assert.ok(!routes('tiktok_shop').some((r) => r.includes('/customer-service') || r.includes('/inbox') || r.includes('/ai-reply')))
 })

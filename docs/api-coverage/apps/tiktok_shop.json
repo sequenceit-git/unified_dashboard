@@ -1,8 +1,7 @@
 {
   "appCategory": "E-commerce connector",
-  "source": "Seeded with the scopes behind endpoints the dashboard already calls successfully (so they are granted). Replace or extend with the full list from Partner Center: App & Service > your app > Manage API, then run npm run api-coverage.",
+  "source": "Scopes behind endpoints the dashboard calls successfully. Customer Service and the affiliate (creator) scopes are not granted to this E-commerce connector app (Settings: Inbox and Creators locked), so those sections were removed. Replace or extend with the full list from Partner Center: App & Service > your app > Manage API, then run npm run api-coverage.",
   "scopes": [
-    "Customer Service",
     "FS Order&Fulfillment Management",
     "Finance Information",
     "Fulfillment Basic",
@@ -13,7 +12,6 @@
     "Product Modify",
     "Promotion Information",
     "Promotion Modify",
-    "Read Creator Marketplace",
     "Return & Refund Basic",
     "Shop Authorized Information",
     "TikTok Shop Analytics"

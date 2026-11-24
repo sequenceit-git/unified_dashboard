@@ -7,14 +7,6 @@ const ttDates = () => {
   const from = new Date(to - 7 * 86400000)
   return { start_date_ge: from.toISOString().slice(0, 10), end_date_lt: to.toISOString().slice(0, 10) }
 }
-const ttCreators = async (token, shop) => {
-  try {
-    return await tiktok.call(token, 'POST', '/affiliate_seller/202508/marketplace_creators/search', { shop, query: { page_size: 12 }, body: {} })
-  } catch (err) {
-    if (!/version|not found|404/i.test(err.message || '')) throw err
-    return tiktok.call(token, 'POST', '/affiliate_seller/202505/marketplace_creators/search', { shop, query: { page_size: 12 }, body: {} })
-  }
-}
 const ttProducts = ttCall('POST', '/product/202502/products/search', { query: { page_size: 1 }, body: {} })
 const ttOrders = ttCall('POST', '/order/202309/orders/search', { query: { page_size: 1 }, body: {} })
 
@@ -22,7 +14,6 @@ module.exports = {
   label: 'TikTok Shop',
   sections: [
     { id: 'analytics', label: 'Analytics', path: '/tiktok/analytics', route: 'analytics', needs: 'Data Analytics API', probe: ttCall('GET', '/analytics/202509/shop/performance', { query: ttDates() }) },
-    { id: 'customer-service', label: 'Inbox', path: '/tiktok/customer-service', route: 'inbox', needs: 'Customer Service scope', probe: ttCall('GET', '/customer_service/202309/conversations', { query: { page_size: 1 } }) },
     { id: 'products', label: 'Products', path: '/tiktok/products', route: 'products', needs: 'Product API', probe: ttProducts },
     { id: 'inventory', label: 'Inventory', path: '/tiktok/inventory', route: 'inventory', needs: 'Product API', probe: ttProducts },
     { id: 'orders', label: 'Orders', path: '/tiktok/orders', route: 'orders', needs: 'Order API', probe: ttOrders },
@@ -31,7 +22,6 @@ module.exports = {
     { id: 'promotions', label: 'Promotions', path: '/tiktok/promotions', route: 'products', needs: 'Promotion API', probe: ttCall('POST', '/promotion/202309/activities/search', { body: { page_size: 1 } }) },
     { id: 'finance', label: 'Finance', path: '/tiktok/finance', route: 'analytics', needs: 'Finance API', probe: ttCall('GET', '/finance/202309/statements', { query: { page_size: 1, sort_field: 'statement_time' } }) },
     { id: 'videos-live', label: 'Videos & LIVE', path: '/tiktok/videos-live', route: 'analytics', needs: 'Data Analytics API', probe: ttCall('GET', '/analytics/202509/shop_videos/performance', { query: { ...ttDates(), page_size: 1 } }) },
-    { id: 'creators', label: 'Creators', path: '/tiktok/creators', route: 'products', needs: 'Affiliate Seller scope', probe: ttCreators },
     { id: 'customers', label: 'Customers', path: '/tiktok/customers', route: 'customers', needs: 'Order API', probe: ttOrders },
   ],
   statuses: {

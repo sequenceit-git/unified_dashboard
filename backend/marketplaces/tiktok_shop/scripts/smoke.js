@@ -1,8 +1,8 @@
 /**
  * Read-only TikTok Shop US smoke test: `npm run smoke:tiktok`.
  * Uses the connected TikTok Shop's stored token and calls read-only endpoints across
- * authorization, orders, products, warehouse logistics, returns, cancellations, inbox,
- * finance, analytics, creators, and webhooks. Nothing is mutated. Exits 1 if any check fails.
+ * authorization, orders, products, warehouse logistics, returns, cancellations,
+ * finance, analytics and webhooks. Nothing is mutated. Exits 1 if any check fails.
  */
 const path = require('path')
 const root = path.join(__dirname, '..', '..', '..', '..')
@@ -80,11 +80,6 @@ async function main() {
     await check('Cancellations search (POST /return_refund/202309/cancellations/search)', async () => {
       const rows = await tiktok.getCancellations(token, { shop, limit: 10 })
       return `${rows.length} cancellation(s)`
-    })
-
-    await check('Inbox (GET /customer_service/202309/conversations)', async () => {
-      const threads = await tiktok.getInbox(token, shop)
-      return `${threads.length} conversation(s)`
     })
 
     await check('Webhooks (GET /event/202309/webhooks)', async () => {

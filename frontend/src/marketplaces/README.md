@@ -45,8 +45,9 @@ Another shop wanting the same section gets its own copy in its own folder.
 
 Each shop names its sections after its own API, so the same kind of page has a different name per
 shop: eBay `listings`, `payouts`, `buyers`, `returns-cases`, `messages`; TikTok Shop `packages`,
-`finance`, `videos-live`, `returns-cancellations`, `customer-service`; Temu `goods`, `shipping`,
-`price-reviews`, `after-sales`. The folder, URL (`/<urlId>/<id>`), sidebar id and API path use that
+`finance`, `videos-live`, `returns-cancellations` (no Inbox or Creators: the shop's TikTok app is an
+E-commerce connector without the Customer Service and Affiliate Seller scopes); Temu `goods`,
+`shipping`, `price-reviews`, `after-sales`. The folder, URL (`/<urlId>/<id>`), sidebar id and API path use that
 name. `renamedSections` on the shop maps the older generic names to them; `lib/shopRoutes.js`
 redirects old URLs, gates pages by their main route (`products`, `orders`, `inbox`, …, which stay
 app-wide), and finds the same section on another shop.

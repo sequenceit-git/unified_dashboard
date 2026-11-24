@@ -138,13 +138,6 @@
         "needs": "Data Analytics API"
       },
       {
-        "id": "customer-service",
-        "label": "Inbox",
-        "path": "/tiktok/customer-service",
-        "route": "inbox",
-        "needs": "Customer Service scope"
-      },
-      {
         "id": "products",
         "label": "Products",
         "path": "/tiktok/products",
@@ -199,13 +192,6 @@
         "path": "/tiktok/videos-live",
         "route": "analytics",
         "needs": "Data Analytics API"
-      },
-      {
-        "id": "creators",
-        "label": "Creators",
-        "path": "/tiktok/creators",
-        "route": "products",
-        "needs": "Affiliate Seller scope"
       },
       {
         "id": "customers",

@@ -1,24 +1,14 @@
 const express = require('express')
-const { requireAuth, loadAccess, requireRole } = require('../../../../middleware/auth')
+const { requireAuth, loadAccess } = require('../../../../middleware/auth')
 const { onlyShop, belongsToShop } = require('../../../../middleware/shopScope')
 const service = require('../services/sections')
 const { HttpError, ctxOf } = require('../../../../utils/httpError')
 
-/** /api/<shop>/shops/:id/…: one connected shop's catalog lookups, finances and inbox auto-reply. */
+/** /api/<shop>/shops/:id/…: one connected shop's catalog lookups and finances. */
 function shopToolsRoutes(shopKey) {
   const router = express.Router()
   router.param('id', belongsToShop(() => require('../../../../models/Shop'), shopKey, 'Shop'))
   router.use(requireAuth, loadAccess, onlyShop(shopKey))
-
-  // PATCH /api/<shop>/shops/:id/ai-reply — { enabled } turns the inbox auto-reply on or off for a shop
-  router.patch('/:id/ai-reply', requireRole('super_admin'), async (req, res) => {
-    try {
-      res.json(await service.setAiReply(ctxOf(req)))
-    } catch (err) {
-      if (err instanceof HttpError) return res.status(err.status).json(err.body)
-      res.status(400).json({ error: err.message })
-    }
-  })
 
   // GET /api/<shop>/shops/:id/categories — Fetch marketplace taxonomy categories
   router.get('/:id/categories', async (req, res) => {

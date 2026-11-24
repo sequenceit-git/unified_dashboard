@@ -16,11 +16,10 @@ export default {
   researchLabel: 'TikTok Shop',
   badgeColor: 'purple',
   /** Section ids renamed to this shop's own API names (old → new): old URLs redirect. */
-  renamedSections: { fulfillment: 'packages', finances: 'finance', content: 'videos-live', returns: 'returns-cancellations', inbox: 'customer-service' },
+  renamedSections: { fulfillment: 'packages', finances: 'finance', content: 'videos-live', returns: 'returns-cancellations' },
   /** This shop's pages, by section id (loaded on first visit): routes are /<urlId>/<section>. */
   pages: {
     analytics: lazy(() => import('./sections/analytics/AnalyticsPage')),
-    'customer-service': lazy(() => import('./sections/customer-service/CustomerServicePage')),
     products: lazy(() => import('./sections/products/ProductsPage')),
     inventory: lazy(() => import('./sections/inventory/InventoryPage')),
     orders: lazy(() => import('./sections/orders/OrdersPage')),
@@ -29,7 +28,6 @@ export default {
     promotions: lazy(() => import('./sections/promotions/PromotionsPage')),
     finance: lazy(() => import('./sections/finance/FinancePage')),
     'videos-live': lazy(() => import('./sections/videos-live/VideosLivePage')),
-    creators: lazy(() => import('./sections/creators/CreatorsPage')),
     customers: lazy(() => import('./sections/customers/CustomersPage')),
   },
   /** List dialog, also opened from Market research. */
@@ -43,9 +41,7 @@ export default {
     { id: 'promotions', route: 'products', label: 'Promotions', desc: 'Promotional campaigns, flash sales, and product discounts' },
     { id: 'finance', route: 'analytics', label: 'Finance', desc: 'Settlement statements, platform fees, and finance disbursement' },
     { id: 'videos-live', route: 'analytics', label: 'Videos & LIVE', desc: 'Shoppable video analytics, livestream performance, and GMV' },
-    { id: 'creators', route: 'products', label: 'Creators', desc: 'Affiliate marketplace creators and collaboration invites' },
     { id: 'customers', route: 'customers', label: 'Customers', desc: 'TikTok customer purchase history and profile records' },
-    { id: 'customer-service', route: 'inbox', label: 'Unified Inbox', desc: 'Customer service chat, buyer messaging, and rapid responses' },
     { id: 'analytics', route: 'analytics', label: 'Analytics', desc: 'Shop performance, video metrics, revenue analysis, and conversions' },
   ],
   theme: {
@@ -65,7 +61,7 @@ export default {
     tab: 'bg-white text-rose-700 shadow-xs dark:bg-slate-800 dark:text-rose-400',
   },
   promotions: { canCreate: true, pauseVerb: 'Deactivate' },
-  liveUpdates: { pushes: 'sales and messages', arrives: 'sales and messages' },
+  liveUpdates: { pushes: 'sales and listing changes', arrives: 'sales and listing changes' },
   shipNeedsTracking: true,
   listingDefaults: {
     variants: true,

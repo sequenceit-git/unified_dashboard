@@ -107,7 +107,7 @@ const tiktok_shop = [
   R(/\/authorization\/\d+\/category_assets$/, 'products', 'small', 'low', 'Categories the shop is authorised to sell in.'),
   // Customer service and engagement
   R(/\/customer_service\/\d+\/performance$/, 'analytics', 'small', 'medium', 'Customer-service performance: response rate and response time.'),
-  R(/\/customer_service\/\d+\//, 'customer-service', 'small', 'medium', 'Customer service: open a conversation, agent settings, images, sessions.'),
+  R(/\/customer_service\/\d+\//, 'new: inbox', 'small', 'medium', 'Customer service: open a conversation, agent settings, images, sessions.'),
   R(/\/customer_engagement\/\d+\//, 'customers', 'medium', 'medium', 'Customer engagement: send messages and engagement tasks to customers from templates, and see their results.'),
   // Fulfilled by TikTok
   R(/\/fbt\/\d+\//, 'new: fulfilled by TikTok', 'large', 'medium', 'Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders.'),
@@ -125,11 +125,11 @@ const tiktok_shop = [
   // Return and refund
   R(/\/return_refund\/\d+\//, 'returns-cancellations', 'small', 'medium', 'Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review.'),
   // Affiliate seller
-  R(/\/affiliate_seller\/\d+\/orders\/search$/, 'creators', 'small', 'high', 'Affiliate orders: which creator sold what, and the commission owed.'),
-  R(/\/affiliate_seller\/\d+\/(open_collaboration|target_collaboration)/, 'creators', 'medium', 'high', 'Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings.'),
-  R(/\/affiliate_seller\/\d+\/sample_applications/, 'creators', 'medium', 'medium', 'Free samples: creators’ sample applications, approve or reject, and sample shipments.'),
-  R(/\/affiliate_seller\/\d+\/(conversation|conversations|conversatons)/, 'creators', 'medium', 'medium', 'Chat with creators: conversations, messages, read state.'),
-  R(/\/affiliate_seller\/\d+\//, 'creators', 'medium', 'low', 'Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks.'),
+  R(/\/affiliate_seller\/\d+\/orders\/search$/, 'new: creators', 'small', 'high', 'Affiliate orders: which creator sold what, and the commission owed.'),
+  R(/\/affiliate_seller\/\d+\/(open_collaboration|target_collaboration)/, 'new: creators', 'medium', 'high', 'Affiliate collaborations: open plans (any creator) and targeted plans with chosen creators — create, edit, search and settings.'),
+  R(/\/affiliate_seller\/\d+\/sample_applications/, 'new: creators', 'medium', 'medium', 'Free samples: creators’ sample applications, approve or reject, and sample shipments.'),
+  R(/\/affiliate_seller\/\d+\/(conversation|conversations|conversatons)/, 'new: creators', 'medium', 'medium', 'Chat with creators: conversations, messages, read state.'),
+  R(/\/affiliate_seller\/\d+\//, 'new: creators', 'medium', 'low', 'Creator outreach and partner campaigns: creator detail, outreach quota and records, campaigns, media upload, offline report tasks.'),
   // Other
   R(/\/event\/\d+\/webhooks$/, 'new: notifications', 'small', 'low', 'Remove a webhook subscription (create and list are used).'),
   R(/\/open\/\d+\/|\/tools\/\d+\//, 'new: account', 'small', 'low', 'Developer tools endpoint (file upload initialisation).'),

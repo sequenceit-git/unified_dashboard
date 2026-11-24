@@ -9,8 +9,6 @@ const Product = require('../../../models/Product')
 const Listing = require('../../../models/Listing')
 const InventoryLog = require('../../../models/InventoryLog')
 const IgnoredListing = require('../../../models/IgnoredListing')
-const Conversation = require('../../../models/Conversation')
-const Message = require('../../../models/Message')
 const { saveCustomerStats } = require('./services/customerStats')
 const { newSku, isMachineSku, skuPrefix } = require('../../../utils/sku')
 const { productKey, escapeRegex, listingAliases, ignoreTokens } = require('../../../services/marketplace/listingKeys')
@@ -21,7 +19,7 @@ const SERVICE = ADAPTER.service
 /** Connecting to the shop (OAuth, tokens, access checks) stays shared: services/marketplace. */
 const connection = () => require('../../../services/marketplace/connection')
 
-/** This shop's sync and listing logic: orders, listings, stock, inbox, publishing. */
+/** This shop's sync and listing logic: orders, listings, stock, publishing. */
 class Manager {
   freshToken(shop, options) {
     return connection().freshToken(shop, options)
@@ -29,10 +27,6 @@ class Manager {
 
   withShopToken(shop, fn) {
     return connection().withShopToken(shop, fn)
-  }
-
-  messageAccessError(shop, err) {
-    return connection().messageAccessError(shop, err)
   }
 
   checkShopAccess(shop) {
@@ -1030,140 +1024,16 @@ class Manager {
     return { created }
   }
 
-  /**
-   * Full synchronization for a single shop (orders, listings, and inbox where supported)
-   */
+  /** Full synchronization for a single shop: listings, then orders. TikTok has no inbox here. */
   async syncAllForShop(shop) {
     const listingsResult = await this.syncListingsForShop(shop).catch((err) => ({ error: err.message }))
     const ordersResult = await this.syncOrdersForShop(shop).catch((err) => ({ error: err.message }))
-    let inboxResult = null
-    let newMessages = 0
-    let updatedThreads = 0
-    if (shop.apiAccess?.['customer-service']?.ok !== false) {
-      inboxResult = await require('./services/inbox').syncAndReply(shop).catch((err) => ({ error: err.message }))
-      newMessages = inboxResult?.newMessages || 0
-      updatedThreads = inboxResult?.updatedThreads || 0
-    }
     return {
       shopId: shop._id,
       shopName: shop.name,
       marketplace: shop.marketplace,
       orders: ordersResult,
       listings: listingsResult,
-      ...(inboxResult ? { inbox: inboxResult, newMessages, updatedThreads } : {}),
-    }
-  }
-
-  /** Imports conversations; `newInbound` lists buyer messages seen for the first time. */
-  async syncInboxForShop(shop) {
-    const summary = { shopName: shop.name, marketplace: shop.marketplace, imported: 0, updatedThreads: 0, newInbound: [] }
-    const service = SERVICE
-    if (typeof service.getInbox !== 'function') {
-      return { ...summary, error: `${shop.name} inbox sync is not available.` }
-    }
-    let result
-    try {
-      result = await this.withShopToken(shop, (token) => service.getInbox(token, shop))
-    } catch (err) {
-      return { ...summary, error: this.messageAccessError(shop, err) }
-    }
-    const threads = Array.isArray(result) ? result : result.threads || []
-    if (result.accountUsername && result.accountUsername !== shop.accountUsername) {
-      await Shop.updateOne({ _id: shop._id }, { accountUsername: result.accountUsername })
-      shop.accountUsername = result.accountUsername
-    }
-
-    let threadFetches = 0
-    for (const thread of threads) {
-      if (!thread.externalThreadId) continue
-      const prev = await Conversation.findOne({ shopId: shop._id, externalThreadId: thread.externalThreadId })
-        .select('lastMessageAt unreadCount lastMessagePreview').lean()
-      const nextTime = thread.lastMessageAt ? new Date(thread.lastMessageAt).getTime() : 0
-      const prevTime = prev?.lastMessageAt ? new Date(prev.lastMessageAt).getTime() : 0
-      const changed = !prev
-        || nextTime > prevTime
-        || Number(thread.unreadCount || 0) !== Number(prev.unreadCount || 0)
-        || (thread.lastMessagePreview || '') !== (prev.lastMessagePreview || '')
-      if (changed) summary.updatedThreads += 1
-
-      let messagesToSave = thread.messages || []
-      if (changed && thread.replyable !== false && typeof service.getThreadMessages === 'function' && threadFetches < 10) {
-        threadFetches += 1
-        const fullMessages = await this.withShopToken(shop, (token) =>
-          service.getThreadMessages(token, shop, thread.externalThreadId, { conversationType: thread.conversationType || 'FROM_MEMBERS' }),
-        ).catch(() => null)
-        if (fullMessages?.length) messagesToSave = fullMessages
-      }
-
-      const convo = await Conversation.findOneAndUpdate(
-        { shopId: shop._id, externalThreadId: thread.externalThreadId },
-        {
-          $set: {
-            marketplace: shop.marketplace,
-            status: thread.status || 'open',
-            lastMessageAt: thread.lastMessageAt || new Date(),
-            lastMessagePreview: thread.lastMessagePreview || '',
-            unreadCount: thread.unreadCount || 0,
-            ...(thread.customerName ? { customerName: thread.customerName } : {}),
-            ...(thread.replyable !== undefined ? { replyable: thread.replyable } : {}),
-          },
-        },
-        { upsert: true, returnDocument: 'after' },
-      )
-      for (const message of messagesToSave) {
-        if (!message.externalMessageId) continue
-        const saved = await Message.updateOne(
-          { shopId: shop._id, externalMessageId: message.externalMessageId },
-          {
-            $setOnInsert: {
-              conversationId: convo._id,
-              shopId: shop._id,
-              direction: message.direction || 'inbound',
-              senderType: message.senderType || 'customer',
-              text: message.text || '',
-              externalMessageId: message.externalMessageId,
-              sentAt: message.sentAt || new Date(),
-              deliveryStatus: 'delivered',
-            },
-          },
-          { upsert: true },
-        )
-        if (saved.upsertedCount && message.direction === 'inbound') {
-          summary.newInbound.push({ conversationId: convo._id, messageId: saved.upsertedId })
-        }
-      }
-      summary.imported += 1
-    }
-    return summary
-  }
-
-  /** Recent messages of a conversation straight from the marketplace, oldest first. */
-  async getThreadHistory(shop, convo, { markRead = false } = {}) {
-    const service = SERVICE
-    if (typeof service.getThreadMessages !== 'function') return []
-    const conversationType = convo.replyable === false ? 'FROM_EBAY' : 'FROM_MEMBERS'
-    return this.withShopToken(shop, (token) => service.getThreadMessages(token, shop, convo.externalThreadId, { conversationType, markRead }))
-  }
-
-  async markThreadRead(shop, convo) {
-    const service = SERVICE
-    if (typeof service.markConversationAsRead !== 'function' || !convo?.externalThreadId) return
-    return this.withShopToken(shop, (token) => service.markConversationAsRead(token, shop, convo.externalThreadId))
-  }
-
-  /** Sends text to the buyer on the marketplace; returns `{ externalMessageId }`. */
-  async sendReply(shop, convo, text) {
-    const service = SERVICE
-    if (typeof service.sendMessage !== 'function') {
-      throw new Error(`Replying from the dashboard is not available for ${shop.name}.`)
-    }
-    if (convo.replyable === false) {
-      throw new Error('This conversation is a marketplace notice and cannot be answered.')
-    }
-    try {
-      return await this.withShopToken(shop, (token) => service.sendMessage(token, shop, convo.externalThreadId, text))
-    } catch (err) {
-      throw new Error(this.messageAccessError(shop, err))
     }
   }
 

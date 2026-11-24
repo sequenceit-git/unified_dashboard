@@ -73,7 +73,7 @@ test('listing defaults match the old per-shop checks', async () => {
 
 const SECTION_IDS = {
   ebay: ['products', 'inventory', 'orders', 'returns', 'offers', 'promotions', 'finances', 'customers', 'inbox', 'analytics'].map((id) => ({ products: 'listings', finances: 'payouts', customers: 'buyers', returns: 'returns-cases', inbox: 'messages' })[id] || id),
-  tiktok_shop: ['products', 'inventory', 'orders', 'fulfillment', 'returns', 'promotions', 'finances', 'content', 'creators', 'customers', 'inbox', 'analytics'].map((id) => ({ fulfillment: 'packages', finances: 'finance', content: 'videos-live', returns: 'returns-cancellations', inbox: 'customer-service' })[id] || id),
+  tiktok_shop: ['products', 'inventory', 'orders', 'fulfillment', 'returns', 'promotions', 'finances', 'content', 'customers', 'analytics'].map((id) => ({ fulfillment: 'packages', finances: 'finance', content: 'videos-live', returns: 'returns-cancellations' })[id] || id),
   temu: ['products', 'inventory', 'orders', 'fulfillment', 'returns', 'prices', 'promotions', 'ads', 'customers', 'analytics'].map((id) => ({ products: 'goods', fulfillment: 'shipping', prices: 'price-reviews', returns: 'after-sales' })[id] || id),
 }
 
@@ -100,7 +100,7 @@ test('section pages are gated by their main route', async () => {
   const { gateFor } = await load('/src/lib/shopRoutes.js')
   const { getShop } = await load('/src/marketplaces/index.js')
   assert.deepEqual(gateFor(getShop('ebay'), 'listings'), { gated: true, route: 'products' })
-  assert.deepEqual(gateFor(getShop('tiktok_shop'), 'customer-service'), { gated: true, route: 'inbox' })
+  assert.deepEqual(gateFor(getShop('ebay'), 'messages'), { gated: true, route: 'inbox' })
   assert.deepEqual(gateFor(getShop('temu'), 'after-sales'), { gated: false, route: 'orders' })
 })
 

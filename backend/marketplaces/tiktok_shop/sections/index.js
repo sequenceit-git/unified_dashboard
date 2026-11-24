@@ -5,5 +5,4 @@ module.exports = {
   promotions: require('./promotions'),
   finance: require('./finance'),
   'videos-live': require('./videos-live'),
-  creators: require('./creators'),
 }

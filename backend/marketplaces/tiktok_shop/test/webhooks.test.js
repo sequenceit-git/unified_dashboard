@@ -39,7 +39,9 @@ test('resolveKind maps topics to sync kinds', () => {
   try {
     assert.equal(n.resolveKind('ORDER_STATUS_CHANGE', {}), 'orders')
     assert.equal(n.resolveKind('PRODUCT_STATUS_CHANGE', {}), 'listings')
-    assert.equal(n.resolveKind('NEW_MESSAGE', {}), 'inbox')
+    // No inbox: message events are ignored.
+    assert.equal(n.resolveKind('NEW_MESSAGE', {}), '')
+    assert.equal(n.resolveKind('', { data: { conversation_id: 'c1' } }), '')
     assert.equal(n.resolveKind('SELLER_DEAUTHORIZATION', {}), 'deauth')
     assert.equal(n.resolveKind('', { data: { order_id: '1' } }), 'orders')
   } finally { restore() }

@@ -10,7 +10,6 @@ module.exports = {
     listings: (shop) => manager().syncListingsForShop(shop),
     access: (shop) => manager().checkShopAccess(shop),
     full: (shop) => manager().syncAllForShop(shop),
-    inbox: (shop) => require('./services/inbox').syncAndReply(shop),
   },
   catalog: {
     publish: (shop, product, options) => manager().publishListing(shop, product, options),

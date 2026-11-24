@@ -42,9 +42,9 @@ function belongsToShopOk(Model, key, id) {
   return new Promise((resolve) => guard({}, { status: () => ({ json: () => resolve({ code: 404 }) }) }, () => resolve({ next: true }), id))
 }
 
-test('each shop exposes only its own route groups (Temu has no inbox)', () => {
+test('each shop exposes only its own route groups (Temu and TikTok have no inbox)', () => {
   const groups = (key) => [...new Set(require(`../marketplaces/${key}`).app.api.routeList.map((r) => r.split(' ')[1].split('/')[1]))].sort()
   assert.deepEqual(groups('temu'), ['analytics', 'customers', 'goods', 'inventory', 'orders', 'sections', 'shops'])
   assert.ok(groups('ebay').includes('messages'))
-  assert.ok(groups('tiktok_shop').includes('customer-service'))
+  assert.ok(!groups('tiktok_shop').includes('customer-service'))
 })
