@@ -623,18 +623,6 @@
     "priority": "medium",
     "value": "TikTok platform campaigns: browse campaigns and see registrations."
   },
-  "GET /return_refund/202309/reject_reasons": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
-  "GET /return_refund/202309/returns/{return_id}/records": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
   "GET /return_refund/202601/decision_eligibility": {
     "section": "returns-cancellations",
     "size": "small",

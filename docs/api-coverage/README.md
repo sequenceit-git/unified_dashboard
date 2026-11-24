@@ -9,7 +9,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
-| TikTok Shop | 365 | 67 | 11 | 246 | 41 | 31 | 100 |
+| TikTok Shop | 365 | 69 | 11 | 244 | 41 | 31 | 98 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
@@ -1048,12 +1048,10 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | available now | medium | medium | `GET /promotion/202611/shop_campaigns/{shop_campaign_id}` | Promotion Information | Get Shop Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
 | available now | medium | medium | `GET /promotion/202611/short_video_campaigns/{short_video_campaign_id}` | Promotion Information | Get Short Video Campaign | TikTok platform campaigns: browse campaigns and see registrations. |
 
-#### returns-cancellations (10)
+#### returns-cancellations (8)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| available now | medium | small | `GET /return_refund/202309/reject_reasons` | Return & Refund Basic | Get Reject Reasons | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
-| available now | medium | small | `GET /return_refund/202309/returns/{return_id}/records` | Return & Refund Basic | Get Return Records | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
 | available now | medium | small | `GET /return_refund/202601/decision_eligibility` | Return & Refund Basic | Get Decision Eligibility | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
 | available now | medium | small | `GET /return_refund/202602/orders/{order_id}/aftersale_eligibility` | Return & Refund Basic | Get Aftersale Eligibility | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
 | available now | medium | small | `GET /return_refund/202606/review_decision` | Return & Refund Basic | Get Available Review Decisions | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
@@ -1569,6 +1567,8 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Promotion | `GET /promotion/202611/short_video_campaigns/{short_video_campaign_id}` | Get Short Video Campaign | Get short video competition details, including times, participation requirements, benefits, agreement requirements, and account registration statistics. |  |
 | missing | Promotion | `POST /promotion/202607/activities/{activity_id}/republish` | Republish Activity | Use this API to republish a product discount activity or a flash deal activity that expired or was deactivated within the last 7 days. |  |
 | missing | Promotion | `PUT /promotion/202309/activities/{activity_id}` | Update Promotion Activity | Update an existing promotion activity. |  |
+| covered | Return and refund | `GET /return_refund/202309/reject_reasons` | Get Reject Reasons | Use this API to retrieve the seller reject-reason options currently applicable to the specified aftersales request. | `marketplaces/tiktok_shop/sections/returns-cancellations.js` |
+| covered | Return and refund | `GET /return_refund/202309/returns/{return_id}/records` | Get Return Records | Use this API to retrieve the record entries for a specific return request. | `marketplaces/tiktok_shop/sections/returns-cancellations.js` |
 | covered | Return and refund | `POST /return_refund/202309/cancellations/{cancel_id}/approve` | Approve Cancellation | Use this API to approve a buyer-initiated cancellation request identified by cancel_id. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Return and refund | `POST /return_refund/202309/cancellations/{cancel_id}/reject` | Reject Cancellation | Use this API to reject a buyer's cancellation request for the specified cancel_id. | `marketplaces/tiktok_shop/orders.js` |
 | covered | Return and refund | `POST /return_refund/202309/returns/{return_id}/approve` | Approve Return | Use this API to approve a buyer's return request. | `marketplaces/tiktok_shop/orders.js` |
@@ -1577,8 +1577,6 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | covered (older version: `POST /return_refund/202309/returns`) | Return and refund | `POST /return_refund/202602/returns` | Create Return | Use this API to create a seller-initiated aftersales request for an order on behalf of the buyer. | `marketplaces/tiktok_shop/orders.js` |
 | covered (older version: `GET /return_refund/202309/returns/search`) | Return and refund | `POST /return_refund/202602/returns/search` | Search Returns | Use this API to search returns by return ID, order ID, buyer, return type, return status, arbitration status, or create/update time window. | `marketplaces/tiktok_shop/orders.js`, `marketplaces/tiktok_shop/profile.js`, `marketplaces/tiktok_shop/sections/returns-cancellations.js` |
 | covered (older version: `POST /return_refund/202309/returns/{returnId}/reject`) | Return and refund | `POST /return_refund/202606/returns/{return_id}/reject` | Reject Return | Use this API to reject a buyer's refund-only, return-and-refund, or replacement request, or to offer a partial refund after the package is received. | `marketplaces/tiktok_shop/orders.js` |
-| missing | Return and refund | `GET /return_refund/202309/reject_reasons` | Get Reject Reasons | Use this API to retrieve the seller reject-reason options currently applicable to the specified aftersales request. |  |
-| missing | Return and refund | `GET /return_refund/202309/returns/{return_id}/records` | Get Return Records | Use this API to retrieve the record entries for a specific return request. |  |
 | missing | Return and refund | `GET /return_refund/202601/decision_eligibility` | Get Decision Eligibility | Use this API to evaluate which seller decisions are currently allowed for the specified aftersales request. |  |
 | missing | Return and refund | `GET /return_refund/202602/orders/{order_id}/aftersale_eligibility` | Get Aftersale Eligibility | Use this API to check whether a seller or buyer can initiate refund-only, return-and-refund, or cancellation requests for an order. |  |
 | missing | Return and refund | `GET /return_refund/202606/review_decision` | Get Available Review Decisions | Description of [GET]/return_refund/:version/Get_Review_Decision |  |
