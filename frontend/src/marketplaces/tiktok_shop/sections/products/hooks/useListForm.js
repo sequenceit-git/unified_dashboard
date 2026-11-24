@@ -1,5 +1,6 @@
 /** List dialog state: shop and category lookups, attributes, variants, validation and publishing (moved from ListModal). */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { applyAiFill, missingForAi } from '../listing/aiFill'
 import { useAuth } from '../../../../../auth/AuthContext'
 import { api } from '../../../../../lib/api'
 import { useApi } from '../../../../../hooks/useApi'
@@ -79,6 +80,11 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   const [certificationFiles, setCertificationFiles] = useState({})
   const [attributeError, setAttributeError] = useState('')
   const [aspects, setAspects] = useState({})
+  // Product Discovery finds: once the category's fields load, the AI fills the empty required ones.
+  const [aiFill, setAiFill] = useState({ busy: false, filled: [], asked: 0, error: '' })
+  const aiDoneFor = useRef('')
+  const aspectsNow = useRef(aspects)
+  aspectsNow.current = aspects
 
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -347,7 +353,34 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
     visibleAttributes,
   }
 
+  useEffect(() => {
+    if (product.source !== 'research_bot' || !categoryId || !attributes.length || aiDoneFor.current === categoryId) return
+    aiDoneFor.current = categoryId
+    const missing = missingForAi(attributes, aspectsNow.current)
+    if (!missing.length) return
+    const forCategory = categoryId
+    setAiFill({ busy: true, filled: [], asked: missing.length, error: '' })
+    api.post('/api/tiktok/products/fill-attributes', {
+      title,
+      description: product.description || '',
+      brand,
+      attributes: product.attributes || {},
+      schema: missing,
+    }, token)
+      .then((answers) => {
+        if (aiDoneFor.current !== forCategory) return
+        const { filled } = applyAiFill(aspectsNow.current, answers)
+        setAspects((prev) => applyAiFill(prev, answers).aspects)
+        setAiFill({ busy: false, filled, asked: missing.length, error: '' })
+      })
+      .catch((err) => {
+        if (aiDoneFor.current === forCategory) setAiFill({ busy: false, filled: [], asked: missing.length, error: err.message })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.source, categoryId, attributes])
+
   return {
+    aiFill,
     checkWarningsList,
     checkWarningsShown,
     token,

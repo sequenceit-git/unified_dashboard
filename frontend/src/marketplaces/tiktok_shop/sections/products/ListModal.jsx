@@ -46,6 +46,7 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
     categoryId,
     categoryState,
     attributeError,
+    aiFill,
     aspects,
     error,
     busy,
@@ -197,6 +198,13 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
                 </div>
               </details>
             )}
+            {aiFill.busy && <p className="text-xs text-indigo-600 dark:text-indigo-300">✨ AI is filling the specifics from what Product Discovery found…</p>}
+            {!aiFill.busy && aiFill.asked > 0 && !aiFill.error && (
+              <p className="rounded-md bg-indigo-50 px-2 py-1 text-xs text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">
+                ✨ AI filled {aiFill.filled.length} of {aiFill.asked} empty required specifics from what Product Discovery found. Check them before listing.
+              </p>
+            )}
+            {aiFill.error && <p className="text-xs text-amber-700 dark:text-amber-300">AI couldn't fill the specifics: {aiFill.error}</p>}
             {attributeError && <p className="text-xs text-red-600">{attributeError}</p>}
 
             <ListSizeChart ctx={slotCtx} />

@@ -5,7 +5,7 @@
  * Temu reviews new goods, so they start "Under review". A refusal shows Temu's reason next to the
  * field and keeps everything typed.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
 import { useApi } from '../../../../hooks/useApi'
 import { api, queryString } from '../../../../lib/api'
@@ -15,6 +15,7 @@ import Modal from '../../../../components/ui/Modal'
 import ImageDropzone from '../../../../components/ui/ImageDropzone'
 import CategoryPicker from './listing/CategoryPicker'
 import TemplateFields from './listing/TemplateFields'
+import { applyAiFill, missingForAi } from './listing/aiFill'
 import TemuVariants from './listing/TemuVariants'
 import { formFromProduct, newProductBody, problemsByField, skusFor, toTemuForm, validate } from './listing/temuForm'
 
@@ -44,6 +45,35 @@ export default function ListModal({ product, onClose, onSaved }) {
       .catch((err) => { if (!stop) setErrors((e) => ({ ...e, catId: err.message })) })
     return () => { stop = true }
   }, [form.catId, token])
+
+  // Product Discovery finds: once the category's template loads, the AI fills its empty required properties.
+  const [aiFill, setAiFill] = useState({ busy: false, filled: [], asked: 0, error: '' })
+  const aiDoneFor = useRef(null)
+  const formNow = useRef(form)
+  formNow.current = form
+  useEffect(() => {
+    if (product?.source !== 'research_bot' || !template || !form.catId || aiDoneFor.current === form.catId) return
+    aiDoneFor.current = form.catId
+    const missing = missingForAi(template, formNow.current)
+    if (!missing.length) return
+    const forCategory = form.catId
+    setAiFill({ busy: true, filled: [], asked: missing.length, error: '' })
+    api.post('/api/temu/goods/fill-attributes', {
+      title: formNow.current.title,
+      description: formNow.current.description,
+      brand: product.brand || '',
+      attributes: product.attributes || {},
+      schema: missing,
+    }, token)
+      .then((answers) => {
+        if (aiDoneFor.current !== forCategory) return
+        const { filled } = applyAiFill(template, formNow.current, answers)
+        setForm((f) => ({ ...f, attributes: applyAiFill(template, f, answers).attributes }))
+        setAiFill({ busy: false, filled, asked: missing.length, error: '' })
+      })
+      .catch((err) => { if (aiDoneFor.current === forCategory) setAiFill({ busy: false, filled: [], asked: missing.length, error: err.message }) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template, form.catId])
 
   const setAttr = (pid, value) => setForm((f) => ({ ...f, attributes: { ...f.attributes, [pid]: value } }))
   const setGroups = (variantGroups) => setForm((f) => ({ ...f, variantGroups, variants: skusFor(variantGroups.map((g) => g.values), f.variants, f) }))
@@ -135,6 +165,13 @@ export default function ListModal({ product, onClose, onSaved }) {
           {errors.title && <p className="text-xs text-red-600">{errors.title}</p>}
           <CategoryPicker token={token} title={form.title} value={form.catId} path={form.catPath} onChange={chooseCategory} error={errors.catId} />
           {form.catId && !template && <p className="text-xs text-gray-500">Loading Temu's attributes for this category…</p>}
+          {aiFill.busy && <p className="text-xs text-indigo-600 dark:text-indigo-300">✨ AI is filling the properties from what Product Discovery found…</p>}
+          {!aiFill.busy && aiFill.asked > 0 && !aiFill.error && (
+            <p className="rounded-md bg-indigo-50 px-2 py-1 text-xs text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">
+              ✨ AI filled {aiFill.filled.length} of {aiFill.asked} empty required properties from what Product Discovery found. Check them before listing.
+            </p>
+          )}
+          {aiFill.error && <p className="text-xs text-amber-700 dark:text-amber-300">AI couldn't fill the properties: {aiFill.error}</p>}
           {template && <TemplateFields template={template} form={form} setAttr={setAttr} errors={errors} />}
           <ImageDropzone images={form.images} onChange={(images) => set({ images })} maxImages={10} label="Photos (JPEG/PNG, up to 3 MB; non-apparel square ≥ 800 px, apparel 3:4) *" />
           {errors.images && <p className="text-xs text-red-600">{errors.images}</p>}
