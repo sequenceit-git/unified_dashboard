@@ -40,3 +40,16 @@ test('TikTok section files never come from another shop', async () => {
     assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /marketplaces\/(ebay|temu)\/|from '\.\.\/(\.\.\/)?(ebay|temu)\//, file)
   }
 })
+
+test('blocking listing-check issues stop the publish', async () => {
+  const { canPublish } = await load('/src/marketplaces/tiktok_shop/sections/products/listing/listingCheck.js')
+  assert.equal(canPublish({ ok: false, issues: [{ message: 'Banned word', blocking: true }] }), false)
+  assert.equal(canPublish(null), true)
+})
+
+test('warnings alone allow publishing', async () => {
+  const { canPublish, checkWarnings } = await load('/src/marketplaces/tiktok_shop/sections/products/listing/listingCheck.js')
+  const check = { ok: true, issues: [{ message: 'Description is short', blocking: false }] }
+  assert.equal(canPublish(check), true)
+  assert.deepEqual(checkWarnings(check), ['Description is short'])
+})

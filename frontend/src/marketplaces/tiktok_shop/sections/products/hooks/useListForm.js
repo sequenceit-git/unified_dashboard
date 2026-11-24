@@ -6,6 +6,7 @@ import { useApi } from '../../../../../hooks/useApi'
 import { marketplaceLabel } from '../../../..'
 import { matchAspects } from '../components/AttributeField'
 import { certificationNeeded, certificationPayload } from '../listing/CertificationFields'
+import { blockingIssues, canPublish, checkWarnings } from '../listing/listingCheck'
 import {
   hasAspectValue,
   isAttributeRequired,
@@ -26,6 +27,9 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   const { token } = useAuth()
   const shopsRes = useApi('/api/shops')
   const [chosenShopId, setChosenShopId] = useState('')
+  // TikTok's listing-check warnings: shown once, then the next click publishes anyway.
+  const [checkWarningsList, setCheckWarningsList] = useState([])
+  const [checkWarningsShown, setCheckWarningsShown] = useState(false)
 
   const shops = (shopsRes.data || []).filter(
     (s) => s.status === 'connected' && (!sectionMarketplace || s.marketplace === sectionMarketplace),
@@ -235,9 +239,7 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
         ? { type: String(identifierCode.type || '').toUpperCase(), code: String(identifierCode.code).trim() }
         : undefined
 
-      const res = await api.post(
-        `/api/tiktok/products/${product._id}/list`,
-        {
+      const payload = {
           shopId,
           price: normalizedVariants ? summaryPrice : (Number(price) || product.basePrice),
           stock: normalizedVariants ? summaryStock : Number(stock),
@@ -261,9 +263,23 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
           ...(categoryId ? { categoryId } : {}),
           ...(Object.keys(filled).length ? { aspects: filled } : {}),
           certifications: certificationPayload(categoryRules.certifications, aspects, visibleAttributes, certificationFiles),
-        },
-        token,
-      )
+      }
+      // Ask TikTok first (same data, nothing published): blocking problems stop here; warnings are
+      // shown once and the next click publishes anyway.
+      if (!isDraftMode && !checkWarningsShown) {
+        const check = await api.post(`/api/tiktok/products/${product._id}/listing-check`, payload, token)
+        if (!canPublish(check)) {
+          setError(`TikTok would not accept this listing: ${blockingIssues(check).join('; ')}`)
+          return
+        }
+        const warnings = checkWarnings(check)
+        if (warnings.length) {
+          setCheckWarningsList(warnings)
+          setCheckWarningsShown(true)
+          return
+        }
+      }
+      const res = await api.post(`/api/tiktok/products/${product._id}/list`, payload, token)
       onSaved(res?.product || res)
     } catch (err) {
       const missing = err.data?.missingSpecifics || []
@@ -332,6 +348,8 @@ export function useListForm({ product, marketplace: sectionMarketplace, prefill 
   }
 
   return {
+    checkWarningsList,
+    checkWarningsShown,
     token,
     shopsRes,
     chosenShopId,

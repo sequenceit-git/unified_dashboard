@@ -467,12 +467,6 @@
     "priority": "high",
     "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
   },
-  "GET /product/202405/products/seo_words": {
-    "section": "products",
-    "size": "small",
-    "priority": "high",
-    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
-  },
   "GET /product/202405/products/suggestions": {
     "section": "products",
     "size": "small",
@@ -1186,12 +1180,6 @@
     "size": "large",
     "priority": "low",
     "value": "Global (cross-border) products: one product published to several regional shops."
-  },
-  "POST /product/202309/products/listing_check": {
-    "section": "products",
-    "size": "small",
-    "priority": "medium",
-    "value": "Pre-check a listing for problems before publishing it."
   },
   "POST /product/202312/global_products/search": {
     "section": "new: global products",

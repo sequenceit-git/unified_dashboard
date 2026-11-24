@@ -652,7 +652,8 @@ module.exports = {
 
     const brandId = String(options.brandId || product.brandId || '').trim()
     const weightPound = Number(Number(options.weight || product.weight || 1).toFixed(2)) || 1
-    const data = await this.call(accessToken, 'POST', '/product/202309/products', {
+    // checkOnly: the same body goes to TikTok's listing check instead; nothing is created.
+    const data = await this.call(accessToken, 'POST', options.checkOnly ? '/product/202309/products/listing_check' : '/product/202309/products', {
       shop,
       body: {
         title,
@@ -676,6 +677,8 @@ module.exports = {
         idempotency_key: `${product._id || product.sku}-${Date.now()}`,
       },
     })
+
+    if (options.checkOnly) return data
 
     const createdSkus = Array.isArray(data.skus) ? data.skus : []
     const isMulti = createdSkus.length > 1

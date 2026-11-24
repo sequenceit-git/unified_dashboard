@@ -12,6 +12,7 @@ import { listingActionsFor, listingBadge, useShopProfile } from '../../../../hoo
 import { CONDITIONS } from './listingConditions'
 import ProductListPrice from './listing/productFields/ListPrice'
 import ProductIdentifier from './listing/productFields/Identifier'
+import SearchKeywords from './components/SearchKeywords'
 
 // Bookkeeping keys kept in `attributes` that aren't item specifics.
 const HIDDEN_ATTRIBUTES = new Set(['targetMarketplace', 'sourceUrl', 'gtin', 'aiOpportunityScore', 'listingUrl', 'estimatedCost'])
@@ -235,6 +236,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                   onChange={set('description')}
                 />
               </div>
+              <SearchKeywords productId={shopListing?.externalListingId} />
             </div>
 
             <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs space-y-3">

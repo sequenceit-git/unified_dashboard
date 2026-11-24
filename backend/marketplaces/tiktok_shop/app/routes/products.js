@@ -52,6 +52,16 @@ function productsRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/products/seo-words?productIds= — TikTok's suggested search keywords
+  router.get('/seo-words', async (req, res) => {
+    try {
+      res.json(await service.seoWords(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/products/:id
   router.get('/:id', async (req, res) => {
     try {
@@ -94,6 +104,16 @@ function productsRoutes(shopKey) {
   })
 
   // POST /api/<shop>/products/:id/list — list a product on a shop { shopId, price?, title?, categoryId?, condition?, weight?, dimensions?, images?, aspects? }
+  // POST /api/<shop>/products/:id/listing-check — TikTok's verdict on a listing before publishing it
+  router.post('/:id/listing-check', async (req, res) => {
+    try {
+      res.json(await service.listingCheck(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(400).json({ error: err.message })
+    }
+  })
+
   router.post('/:id/list', async (req, res) => {
     try {
       res.status(201).json(await service.listOnShop(ctxOf(req)))

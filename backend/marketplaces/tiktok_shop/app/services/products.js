@@ -319,6 +319,12 @@ async function listOnShop(ctx) {
     const capabilities = marketplaceManager.listingCapabilities(shop.marketplace)
     if (!capabilities.canList) throw new HttpError(422, { error: capabilities.note || `Listing on ${shop.name} is not available.` })
 
+    // Listing check: the same options go to TikTok's check (manager → createListing with checkOnly); nothing is saved.
+    if (ctx.checkOnly) {
+      const { checkSummary } = require('./listingCheck')
+      return checkSummary(await marketplaceManager.publishListing(shop, product, { ...listingOptions, checkOnly: true }))
+    }
+
     const existing = await Listing.findOne({ productId: product._id, shopId: shop._id })
     if (existing?.externalListingId && ['live', 'pending', 'out_of_stock'].includes(existing.status)) {
       throw new HttpError(409, { error: `Already listed on ${shop.name}. Edit the product to update the listing.` })
@@ -494,4 +500,22 @@ async function updatePrice(ctx) {
     return { product, pushedToMarketplaces: results.filter((item) => item.ok).length, marketplaceSync: results }
 }
 
-module.exports = { list, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
+/** POST /:id/listing-check — what TikTok would say about this listing, without publishing it. */
+async function listingCheck(ctx) {
+    return listOnShop({ ...ctx, checkOnly: true })
+}
+
+/** GET /seo-words?productIds=1,2 — search keywords TikTok suggests for the shop's products. */
+async function seoWords(ctx) {
+    const ids = String(ctx.query?.productIds || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 20)
+    if (!ids.length) throw new HttpError(400, { error: 'productIds is required' })
+    const filter = { marketplace: 'tiktok_shop', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    if (!shop) throw new HttpError(404, { error: 'No connected TikTok Shop' })
+    const tiktok = require('../../service')
+    const res = await marketplaceManager.withShopToken(shop, (token) => tiktok.call(token, 'GET', '/product/202405/products/seo_words', { shop, query: { product_ids: ids.join(',') } }))
+    return (res.products || []).map((p) => ({ productId: String(p.id), words: (p.seo_words || []).map((w) => ({ word: w.text })) }))
+}
+
+module.exports = { listingCheck, seoWords, list, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }

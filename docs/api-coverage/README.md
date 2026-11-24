@@ -9,7 +9,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
-| TikTok Shop | 365 | 69 | 11 | 244 | 41 | 31 | 98 |
+| TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
@@ -983,12 +983,10 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | needs scope: Manage Seller Redeem Info Callback | low | small | `POST /fulfillment/202601/redeem_info/callback` | Manage Seller Redeem Info Callback | Submit Redemption Information | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
 | needs scope: Manage Seller Redeem Info Callback | low | small | `POST /fulfillment/202606/pod_details/get` | Manage Seller Redeem Info Callback | Get POD Customization Details | Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates. |
 
-#### products (40)
+#### products (38)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| available now | high | small | `GET /product/202405/products/seo_words` | Product Basic | Get Products SEO Words | Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for. |
-| available now | medium | small | `POST /product/202309/products/listing_check` | Product Basic, Product Optimization | Check Product Listing | Pre-check a listing for problems before publishing it. |
 | available now | medium | medium | `GET /product/202604/opportunities/{opportunity_id}` | Product Basic | Get Opportunity Detail | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
 | available now | medium | medium | `GET /product/202604/opportunities/submissions` | Product Basic | Get Submission Records | Product opportunities: items buyers search for that the shop could list, and submit products for them. |
 | available now | medium | medium | `POST /product/202409/compliance/manufacturers` | Product Basic | Create Manufacturer | Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits. |
@@ -1474,6 +1472,7 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | covered | Products | `GET /product/202309/categories/{category_id}/attributes` | Get Category Attributes | Retrieve the standard built-in product and sales attributes for listing a product in a particular category based on your shop's location. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `GET /product/202309/categories/{category_id}/rules` | Get Category Rules | Retrieve the additional requirements (beyond mandatory product attributes) for listing a product in a particular category based on your shop's location. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `GET /product/202309/products/{product_id}` | Get Product | Retrieve product details by product ID, including products in the `FREEZE` or `DELETED` status. | `marketplaces/tiktok_shop/listings.js` |
+| covered | Products | `GET /product/202405/products/seo_words` | Get Products SEO Words | Obtain SEO suggestions for product titles of live products (status: `ACTIVATE`) to enhance product visibility. | `marketplaces/tiktok_shop/app/services/products.js` |
 | covered | Products | `POST /product/202309/categories/recommend` | Recommend Category | Retrieve the recommended category for a candidate product based on its title, description, and images. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/files/upload` | Upload Product File | Upload non-image files, such as PDF or video to TikTok Shop. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/images/upload` | Upload Product Image | Upload a local image to TikTok Shop for use as a product image, variant image, size chart, certification image, or another supported image use case. | `marketplaces/tiktok_shop/listings.js` |
@@ -1483,6 +1482,7 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | covered | Products | `POST /product/202309/products/{product_id}/prices/update` | Update Price | Update the price of multiple SKUs belonging to a product in the `ACTIVATE` status and not included in any ongoing promotions. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/products/activate` | Activate Products | Activate hidden products that are in the `Seller_deactivated` or `Platform_deactivated` status and display them in the TikTok Shop catalog. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/products/deactivate` | Deactivate Products | Deactivate products that are in the `Activate` status and hide them from buyers. | `marketplaces/tiktok_shop/listings.js` |
+| covered | Products | `POST /product/202309/products/listing_check` | Check Product Listing | Identify any issues with your product properties in advance to ensure your product is ready for listing. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202309/products/recover` | Recover Products | Recover products that are in the `Deleted` status. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202407/sizecharts/search` | Search Size Charts | Retrieve size charts that a seller has created. | `marketplaces/tiktok_shop/listings.js` |
 | covered | Products | `POST /product/202502/products/search` | Search Products | Retrieve a list of products that meet the specified conditions. | `marketplaces/tiktok_shop/listings.js`, `marketplaces/tiktok_shop/profile.js` |
@@ -1494,7 +1494,6 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Products | `GET /product/202309/global_products/{global_product_id}` | Get Global Product | Retrieve all properties of a global product that is in the "DRAFT", "UNPUBLISHED", or "PUBLISHED" status, and the corresponding local product IDs in the published markets. |  |
 | missing | Products | `GET /product/202312/prerequisites` | Check Listing Prerequisites | Check if a TikTok shop is ready to list products. |  |
 | missing | Products | `GET /product/202405/products/diagnoses` | Get Product Diagnoses | Diagnose multiple existing live (status: `ACTIVATE`) products to obtain information that helps you to improve the product content, enhancing product visibility and customer trust. |  |
-| missing | Products | `GET /product/202405/products/seo_words` | Get Products SEO Words | Obtain SEO suggestions for product titles of live products (status: `ACTIVATE`) to enhance product visibility. |  |
 | missing | Products | `GET /product/202405/products/suggestions` | Get Recommended Product Title And Description | Obtain AI-optimized product titles and descriptions for live products (status: `ACTIVATE`). |  |
 | missing | Products | `GET /product/202506/images/translation_tasks` | Get Image Translation Tasks | Retrieves the image translation task status and translated images for one or more previously submitted images. |  |
 | missing | Products | `GET /product/202507/global_listing_rules` | Get Global Listing Rules | Retrieves the global listing rules for a local shop that belongs to a global seller. |  |
@@ -1514,7 +1513,6 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Products | `POST /product/202309/global_products` | Create Global Product | Create global products to be sold in one or multiple shops outside of the seller's base country. |  |
 | missing | Products | `POST /product/202309/global_products/{global_product_id}/inventory/update` | Update Global Inventory | Update the inventory of a global product in `DRAFT`, `UNPUBLISHED`, or `PUBLISHED` status. |  |
 | missing | Products | `POST /product/202309/global_products/{global_product_id}/publish` | Publish Global Product | Publish and convert a global product to local products in one or multiple shops in supported markets. |  |
-| missing | Products | `POST /product/202309/products/listing_check` | Check Product Listing | Identify any issues with your product properties in advance to ensure your product is ready for listing. |  |
 | missing | Products | `POST /product/202312/global_products/search` | Search Global Products | Retrieve a list of global products that meet the specified conditions. |  |
 | missing | Products | `POST /product/202404/images/optimize` | Optimize Images | Optimize images used in your TikTok Shop by changing the background to white. |  |
 | missing | Products | `POST /product/202407/products/category_upgrade_task` | Create Category Upgrade Task | Create a task to upgrade live products (status: `ACTIVATE`) from a 3-level to a 7-level category tree. |  |

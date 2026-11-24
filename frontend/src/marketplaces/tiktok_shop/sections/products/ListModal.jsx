@@ -60,6 +60,8 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
     summaryStock,
     submit,
     slotCtx,
+    checkWarningsList,
+    checkWarningsShown,
   } = useListForm({ product, marketplace: sectionMarketplace, prefill, onSaved })
   return (
     <Modal title={`List "${product.title}"`} onClose={onClose} size="5xl" wide>
@@ -226,6 +228,12 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
 
         {error && <p className="text-sm font-medium text-red-600">{error}</p>}
 
+        {checkWarningsList.length > 0 && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+            <p className="font-medium">TikTok suggests:</p>
+            <ul className="mt-1 list-disc pl-5">{checkWarningsList.map((w) => <li key={w}>{w}</li>)}</ul>
+          </div>
+        )}
         <div className="flex justify-end gap-2 border-t border-gray-100 pt-2">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
@@ -235,9 +243,9 @@ export default function ListModal({ product, marketplace: sectionMarketplace, pr
             disabled={busy || !selectedShop || !caps.canList || title.length > titleMax || (caps.categorySearch && !categoryId)}
           >
             {busy
-              ? (saveMode === 'AS_DRAFT' ? 'Saving draft…' : 'Publishing…')
+              ? (saveMode === 'AS_DRAFT' ? 'Saving draft…' : 'Checking and publishing…')
               : selectedShop
-                ? (saveMode === 'AS_DRAFT' ? `Save draft to ${selectedShop.name}` : `Publish to ${selectedShop.name}`)
+                ? (saveMode === 'AS_DRAFT' ? `Save draft to ${selectedShop.name}` : checkWarningsShown ? 'Publish anyway' : `Publish to ${selectedShop.name}`)
                 : 'List Product'}
           </Button>
         </div>
