@@ -9,7 +9,7 @@ export default function Drawer({ title, subtitle, onClose, footer, children }) {
   const panel = useRef(null)
   // The latest close handler, so the setup below runs once (it must not pull focus while typing).
   const close = useRef(onClose)
-  close.current = onClose
+  useEffect(() => { close.current = onClose })
   useEffect(() => {
     // Esc closes the drawer unless something inside it (a popup) already handled the key.
     const onKey = (e) => { if (e.key === 'Escape' && !e.defaultPrevented) close.current() }
