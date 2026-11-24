@@ -11,12 +11,12 @@ const crypto = require('crypto')
 const config = require('./config')
 
 class TemuClient {
-  /** Publishing a new Temu goods record is still done in Seller Center. Stock can be pushed. */
+  /** New goods are listed with the Temu form (bg.local.goods.add); Temu reviews them first. */
   listingCapabilities = {
-    canList: false,
+    canList: true,
     apiName: 'Temu Open API',
     editAfterListing: ['quantity'],
-    note: 'Create the goods in Temu Seller Center. Stock changes made here are sent with bg.local.goods.stock.edit.',
+    note: 'New goods go to Temu for review before they are on sale. Stock changes are sent with bg.local.goods.stock.edit.',
   }
 
   /** bg.local.goods.list.query is filtered to goods on sale, so an off-sale (paused) goods missing from it is not ended. */

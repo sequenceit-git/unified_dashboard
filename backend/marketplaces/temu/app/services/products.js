@@ -289,6 +289,8 @@ async function listOnShop(ctx) {
       ? normalizedVariants.reduce((sum, v) => sum + v.stock, 0)
       : (ctx.body.stock !== undefined && ctx.body.stock !== '' ? Number(ctx.body.stock) : product.stock)
     const listingOptions = {
+      // The Temu listing form (marketplaces/temu/goodsPayload.js): category, attributes, SKUs.
+      ...(ctx.body.temuForm && typeof ctx.body.temuForm === 'object' ? { temuForm: ctx.body.temuForm } : {}),
       price,
       listPrice: ctx.body.listPrice !== undefined && ctx.body.listPrice !== '' ? Number(ctx.body.listPrice) : product.listPrice,
       stock,
@@ -335,7 +337,7 @@ async function listOnShop(ctx) {
         { new: true, upsert: true, runValidators: true },
       )
       await require('../../../../services/core/notify').listingStatusChanged(failed, shop, {}).catch(() => {})
-      throw new HttpError(422, { error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [] })
+      throw new HttpError(422, { error: apiErr.message, missingSpecifics: apiErr.missingSpecifics || [], ...(apiErr.problems ? { problems: apiErr.problems } : {}) })
     }
 
     // A shop may rename a draft SKU once the listing exists (eBay: EBAY-<item ID>).

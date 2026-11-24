@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 51 | 0 | 82 | 0 | 17 | — |
+| Temu | 133 | 53 | 0 | 80 | 0 | 16 | — |
 
 ## eBay
 
@@ -1582,13 +1582,12 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 | — | medium | medium | `temu.aftersales.upload.returnlabel` | — | Upload return label | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
-#### goods (40)
+#### goods (38)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
 | — | high | small | `temu.local.goods.list.retrieve` | — | Product list Retrieve | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
 | — | high | small | `temu.local.sku.list.retrieve` | — | Get SKU list | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
-| — | high | large | `bg.local.goods.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `bg.local.goods.partial.update` | — | Partial Edit Product | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `bg.local.goods.update` | — | Update Goods Draft On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.attributes.edit` | — | temu.local.goods.attributes.edit | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
@@ -1607,7 +1606,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | medium | `bg.local.goods.compliance.edit` | — | Edit product qualification information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.local.goods.compliance.extra.template.get` | — | Inquire Required Compliance Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.local.goods.compliance.info.fill.list.query` | — | Query compliance information fill in the drop-down list | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
-| — | medium | medium | `bg.local.goods.compliance.property.check` | — | Verify Product Attribute Settings | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `bg.local.goods.compliance.rules.get` | — | Query Mandatory Qualification Information | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | medium | medium | `temu.local.goods.compliance.v2.edit` | — | edit goods compliance interface v2 version | Product compliance: required certificates and qualification info, upload certificates, compliance labels. |
 | — | low | small | `bg.flash.open.upload.real.image` | — | Kaiping real shot picture upload | Upload real product photos (real-shot images). |
@@ -1727,8 +1725,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Order | `temu.order.cancel.appeal.result.get` | Merchant initiates order cancellation result query interface | Merchant queries the status of cancellation order appeal records |  |
 | missing | Order | `temu.order.cancel.outofstock.result.get` | Merchant order out of stock cancel result query | After applying for out-of-stock, since out-of-stock itself is an asynchronous operation, you need to obtain the latest out-of-stock review status through the query interface |  |
 | missing | Order verification | `temu.local.order.verification.upload` | Merchants upload verification information before shipping. | The interface supports uploading serial numbers (SN) / International Mobile Equipment Identity (IMEI) of high-value goods, or authentication information for second-hand goods. |  |
+| covered | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.category.recommend` | Query Recommended Category by Product Name | query recommended category by product name | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.cats.get` | Query Categories | Get Temu Categories | `marketplaces/temu/app/services/goodsHelpers.js` |
+| covered | Product | `bg.local.goods.compliance.property.check` | Verify Product Attribute Settings | Verify Product Attribute Settings | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.detail.query` | Query local goods detail | Query local goods detail | `marketplaces/temu/app/services/products.js` |
 | covered | Product | `bg.local.goods.image.upload` | Image material processing | Image material processing | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.list.query` | Get product list | Get product list | `marketplaces/temu/listings.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/price-reviews.js` |
@@ -1745,19 +1745,17 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `bg.local.goods.spec.id.get` | Search And Generate Merchant-Customized Specifications | Search And Generate Merchant-Customized Specifications | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `bg.local.goods.stock.edit` | Edit product stock | Edit product stock with full-update and diff-update | `marketplaces/temu/listings.js` |
 | covered | Product | `bg.local.goods.tax.code.get` | Get ITC list | local-local goods B | `marketplaces/temu/app/services/goodsHelpers.js` |
-| covered | Product | `bg.local.goods.template.get` | Query Product Attributes Template | query product attributes template | `marketplaces/temu/app/services/goodsHelpers.js` |
+| covered | Product | `bg.local.goods.template.get` | Query Product Attributes Template | query product attributes template | `marketplaces/temu/app/services/goodsHelpers.js`, `marketplaces/temu/listings.js` |
 | covered | Product | `temu.local.goods.brand.trademark.V2.get` | Query trademarks and properties | Query trademarks and properties | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.illegal.vocabulary.check` | check illeagl vocabulary | check illegal vocabulary | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |
 | missing | Product | `bg.goods.compliancelabel.get` | bg.goods.compliancelabel.get | page query goods compliance labels |  |
-| missing | Product | `bg.local.goods.add` | Add New Items On Temu | Add New Items On Temu |  |
 | missing | Product | `bg.local.goods.category.check` | goods category precheck | precheck category misplacement |  |
 | missing | Product | `bg.local.goods.compliance.edit` | Edit product qualification information | Edit product qualification information |  |
 | missing | Product | `bg.local.goods.compliance.extra.template.get` | Inquire Required Compliance Information | Inquire Required Compliance Information |  |
 | missing | Product | `bg.local.goods.compliance.info.fill.list.query` | Query compliance information fill in the drop-down list | local-local goods B, query compliance information fill in the drop-down list |  |
-| missing | Product | `bg.local.goods.compliance.property.check` | Verify Product Attribute Settings | Verify Product Attribute Settings |  |
 | missing | Product | `bg.local.goods.compliance.rules.get` | Query Mandatory Qualification Information | Query Mandatory Qualification Information |  |
 | missing | Product | `bg.local.goods.gallery.signature.get` | Get Signature | Get gallery Signature |  |
 | missing | Product | `bg.local.goods.out.sn.set` | Set contribution ID for goods | Set contribution ID for goods |  |

@@ -61,7 +61,7 @@ module.exports = {
     packageDetails: { required: false, note: '' },
     productStatus: { draft: 'Draft', active: 'Ready', archived: 'Archived' },
     listAction: 'List on Temu',
-    directIntro: 'Save goods to the catalog. New Temu goods are still created in Seller Center, then synced here.',
+    directIntro: 'New goods go to Temu for review before they are on sale.',
   },
   listingActions: [
     { id: 'unpublish', label: 'Take off sale', confirm: 'Take this goods off sale on Temu?', statuses: ['live', 'out_of_stock'] },

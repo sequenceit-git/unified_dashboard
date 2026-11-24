@@ -248,40 +248,8 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
         status: 'draft',
       }, token)
 
-      if (layout.canList && shop?._id) {
-        const aspectEntries = [
-          ...productSchema
-            .map((attr) => {
-              const val = aspects[attr.id]
-              if (Array.isArray(val)) return [attr.id, val.map((v) => String(v || '').trim()).filter(Boolean)]
-              return [attr.id, String(val || '').trim()]
-            })
-            .filter(([, val]) => (Array.isArray(val) ? val.length > 0 : Boolean(val))),
-          ...extras
-            .filter((row) => (
-              row.name.trim() && asText(row.value) && !productSchema.some((attr) => String(attr.name).toLowerCase() === row.name.trim().toLowerCase())
-            ))
-            .map((row) => [row.name.trim(), asText(row.value)]),
-        ]
-
-        await api.post(`/api/temu/goods/${product._id}/list`, {
-          shopId: shop._id,
-          price: finalPrice,
-          stock: normalizedVariants ? summaryStock : Math.max(1, Math.floor(Number(stock) || 1)),
-          title: draft.title.trim(),
-          description: draft.description,
-          images: draft.images.slice(0, maxImages),
-          ...(layout.package !== 'hidden' ? {
-            weight: Number(weight) || 1,
-            dimensions: { length: Number(length) || 10, width: Number(width) || 10, height: Number(height) || 5, unit: 'in' },
-          } : {}),
-          ...(categoryId ? { categoryId } : {}),
-          aspects: Object.fromEntries(aspectEntries),
-        }, token)
-        clearDirectListing(marketplace)
-        onCreated(product, { listed: true })
-        return
-      }
+      // Temu goods are listed with the Temu form (category, attributes, SKUs): the draft is saved here
+      // and GoodsPage opens that form (onCreated with listed: false).
       clearDirectListing(marketplace)
       onCreated(product, { listed: false })
     } catch (err) {

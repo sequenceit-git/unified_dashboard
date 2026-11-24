@@ -143,12 +143,6 @@
     "priority": "medium",
     "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
   },
-  "bg.local.goods.add": {
-    "section": "goods",
-    "size": "large",
-    "priority": "high",
-    "value": "Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed)."
-  },
   "bg.local.goods.category.check": {
     "section": "goods",
     "size": "medium",
@@ -168,12 +162,6 @@
     "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
   },
   "bg.local.goods.compliance.info.fill.list.query": {
-    "section": "goods",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product compliance: required certificates and qualification info, upload certificates, compliance labels."
-  },
-  "bg.local.goods.compliance.property.check": {
     "section": "goods",
     "size": "medium",
     "priority": "medium",

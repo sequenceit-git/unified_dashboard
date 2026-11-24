@@ -10,6 +10,7 @@ const cache = require('../../../../services/core/cache')
 const { HttpError } = require('../../../../utils/httpError')
 const { canUseSection } = require('../../../../middleware/auth')
 const { grantAware } = require('../../sections/helpers')
+const { mapTemplate } = require('../../goodsTemplate')
 
 const TTL = 10 * 60
 
@@ -51,23 +52,6 @@ async function recommend(ctx) {
   return res.catIdList || (res.catId ? [res.catId] : [])
 }
 
-/** A template property as the form uses it; `parent` = the attribute and values that show it. */
-function field(p) {
-  const condition = (p.showCondition || [])[0]
-  return {
-    pid: p.pid,
-    refPid: p.refPid,
-    templatePid: p.templatePid,
-    name: p.name,
-    required: Boolean(p.required),
-    multiple: Number(p.chooseMaxNum) > 1,
-    values: (p.values || []).map((v) => ({ vid: v.vid, value: v.value, ...(v.specId != null ? { specId: v.specId } : {}) })),
-    units: (p.valueUnitList || []).map((u) => ({ id: u.valueUnitId, name: u.valueUnit })),
-    parent: condition ? { refPid: condition.parentRefPid, vids: condition.parentVids || [] } : null,
-    ...(p.parentSpecId != null ? { parentSpecId: p.parentSpecId } : {}),
-  }
-}
-
 /** GET helpers/template?catId= — the category's attributes, variant types and size-chart rule. */
 async function template(ctx) {
   const catId = intParam(ctx.query.catId, 'catId')
@@ -77,14 +61,7 @@ async function template(ctx) {
       temuCall(ctx, 'bg.local.goods.template.get', { catId }),
       temuCall(ctx, 'bg.local.goods.size.element.get', { catId }).catch(() => null),
     ])
-    const info = t.templateInfo || {}
-    return {
-      attributes: (info.goodsProperties || []).filter((p) => !p.isSale).map(field),
-      variants: (info.goodsSpecProperties || []).map(field),
-      customVariants: (t.userInputParentSpecList || []).map((s) => ({ parentSpecId: s.parentSpecId, name: s.parentSpecName })),
-      maxVariantTypes: t.inputMaxSpecNum ?? null,
-      sizeChart: { required: Boolean(size?.sizeSpecElementRule?.isSizeChartRequired) },
-    }
+    return mapTemplate(t, size)
   })
 }
 

@@ -1,5 +1,9 @@
 /** Temu goods: inventory, stock, sale status, price. Methods use `this.call` (see service.js). */
 const { temuMoney } = require('./format')
+const { buildGoodsAdd } = require('./goodsPayload')
+const { mapTemplate } = require('./goodsTemplate')
+
+const badRequest = (message, extra = {}) => Object.assign(new Error(message), { status: 400, ...extra })
 
 module.exports = {
   async getInventory(accessToken, _options = {}) {
@@ -46,8 +50,35 @@ module.exports = {
     return { inventoryItems: items, complete }
   },
 
-  async createListing() {
-    throw new Error('Temu listing publish uses the US Partner goods create API. Confirm the type in partner-us before sending a product.')
+  /**
+   * Lists a new goods on Temu US from the dashboard's Temu form (`opts.temuForm`, see
+   * goodsPayload.js): the category's template is read again, the form is built into Temu's add
+   * body (problems by field → 400), Temu checks the attributes, then bg.local.goods.add. Temu
+   * reviews new goods, so the listing starts as pending ("Under review").
+   */
+  async createListing(accessToken, product, opts = {}) {
+    const form = opts.temuForm
+    if (!form || typeof form !== 'object') throw badRequest('Use the Temu listing form to list goods on Temu.')
+    const raw = await this.call('bg.local.goods.template.get', { access_token: accessToken, catId: Number(form.catId) })
+    const template = mapTemplate(raw)
+    const body = buildGoodsAdd(form, template)
+    const normalPropertyList = template.attributes.flatMap((a) => (body.goodsProperty.goodsProperties
+      .filter((p) => p.templatePid === a.templatePid && p.vid != null)
+      .map((p) => ({ pid: a.pid, refPid: a.refPid, vid: p.vid }))))
+    if (normalPropertyList.length) {
+      const check = await this.call('bg.local.goods.compliance.property.check', { access_token: accessToken, normalPropertyList })
+      if (check.isMatch === false) throw badRequest(check.errorMsg || 'Temu does not accept these attributes for this category.', { problems: [{ field: 'attributes', message: check.errorMsg || 'Temu does not accept these attributes for this category.' }] })
+    }
+    const res = await this.call('bg.local.goods.add', { access_token: accessToken, ...body })
+    const goodsId = String(res.goodsId)
+    const temuSkus = (res.skuInfoList || []).map((s) => ({ skuId: String(s.skuId), outSkuSn: s.outSkuSn || '', externalListingId: `${goodsId}:${s.skuId}` }))
+    return {
+      externalListingId: temuSkus[0]?.externalListingId || goodsId,
+      status: 'pending',
+      marketplaceStatus: 'Under review',
+      temuSkus,
+      ...(res.warnings?.length ? { warnings: res.warnings.map((w) => w.message).filter(Boolean) } : {}),
+    }
   },
 
   async updateStock(accessToken, sku, quantity, options = {}) {

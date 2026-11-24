@@ -1,238 +1,140 @@
-import { useListForm } from './hooks/useListForm'
+/**
+ * List a dashboard product on Temu US with Temu's own release flow: category → Temu's attributes
+ * → variant values and one row per SKU → photos → shipping template → Check → List on Temu.
+ * Temu reviews new goods, so they start "Under review". A refusal shows Temu's reason next to the
+ * field and keeps everything typed.
+ */
+import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../../../../auth/AuthContext'
+import { useApi } from '../../../../hooks/useApi'
+import { api, queryString } from '../../../../lib/api'
 import Button from '../../../../components/ui/Button'
 import { Input, Select } from '../../../../components/ui/Input'
 import Modal from '../../../../components/ui/Modal'
-import { marketplaceLabel } from '../../..'
 import ImageDropzone from '../../../../components/ui/ImageDropzone'
-import AttributeField from './components/AttributeField'
-import { CONDITIONS } from './listingConditions'
+import CategoryPicker from './listing/CategoryPicker'
+import TemplateFields from './listing/TemplateFields'
+import TemuVariants from './listing/TemuVariants'
+import { formFromProduct, problemsByField, skusFor, toTemuForm, validate } from './listing/temuForm'
 
-export default function ListModal({ product, marketplace: sectionMarketplace, prefill = null, onClose, onSaved }) {
-  const {
-    shopsRes,
-    shops,
-    shopId,
-    selectedShop,
-    marketplace,
-    caps,
-    price,
-    setPrice,
-    stock,
-    setStock,
-    title,
-    setTitle,
-    condition,
-    setCondition,
-    brand,
-    setBrand,
-    weight,
-    setWeight,
-    length,
-    setLength,
-    width,
-    setWidth,
-    height,
-    setHeight,
-    images,
-    setImages,
-    categories,
-    categoryId,
-    setCategoryId,
-    categoryState,
-    attributeError,
-    aspects,
-    error,
-    busy,
-    titleMax,
-    handleShopChange,
-    activeVariants,
-    required,
-    optional,
-    extraNames,
-    setAspect,
-    summaryPrice,
-    summaryStock,
-    submit,
-    selectedCategory,
-  } = useListForm({ product, marketplace: sectionMarketplace, prefill, onSaved })
+export default function ListModal({ product, onClose, onSaved }) {
+  const { token } = useAuth()
+  const shopsRes = useApi(token ? '/api/shops' : null)
+  const shop = (shopsRes.data || []).find((s) => s.marketplace === 'temu' && s.status === 'connected')
+  const [form, setForm] = useState(() => formFromProduct(product))
+  const [template, setTemplate] = useState(null)
+  const [templates, setTemplates] = useState([])
+  const [errors, setErrors] = useState({})
+  const [checkNote, setCheckNote] = useState('')
+  const [busy, setBusy] = useState('')
+  const [done, setDone] = useState('')
+
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }))
+  useEffect(() => {
+    api.get('/api/temu/goods/helpers/shipping-templates', token).then(setTemplates).catch((err) => setErrors((e) => ({ ...e, shippingTemplateId: err.message })))
+  }, [token])
+  useEffect(() => {
+    if (!form.catId) return
+    let stop = false
+    api.get(`/api/temu/goods/helpers/template${queryString({ catId: form.catId })}`, token)
+      .then((t) => { if (!stop) setTemplate(t) })
+      .catch((err) => { if (!stop) setErrors((e) => ({ ...e, catId: err.message })) })
+    return () => { stop = true }
+  }, [form.catId, token])
+
+  const setAttr = (pid, value) => setForm((f) => ({ ...f, attributes: { ...f.attributes, [pid]: value } }))
+  const setGroups = (variantGroups) => setForm((f) => ({ ...f, variantGroups, variants: skusFor(variantGroups.map((g) => g.values), f.variants, f) }))
+  const setSku = (i, patch) => setForm((f) => ({ ...f, variants: f.variants.map((s, j) => (j === i ? { ...s, ...patch } : s)) }))
+  const chooseCategory = (catId, catPath) => {
+    setTemplate(null)
+    set({ catId, catPath, attributes: {}, variantGroups: [], variants: [] })
+  }
+  const bullets = useMemo(() => (form.bulletPoints.length ? form.bulletPoints : ['']), [form.bulletPoints])
+
+  const check = async () => {
+    setBusy('check')
+    setCheckNote('')
+    try {
+      const { problems } = await api.post('/api/temu/goods/helpers/check', { title: form.title, description: form.description, bulletPoints: form.bulletPoints.filter(Boolean), outGoodsSn: form.outGoodsSn, skus: form.variants.map((v) => v.outSkuSn).filter(Boolean) }, token)
+      setCheckNote(problems.length ? problems.map((p) => p.message).join(' ') : 'Temu found no banned words or duplicate codes.')
+    } catch (err) {
+      setCheckNote(err.message)
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const found = validate(form, template || {})
+    setErrors(found)
+    if (Object.keys(found).length) return
+    if (!shop) return setErrors({ _: 'Connect the Temu shop in Settings first.' })
+    setBusy('list')
+    try {
+      // Temu fetches each photo once and gives its own url, which goods must use.
+      const sources = [...new Set([...form.images, ...form.variants.flatMap((v) => v.images || [])])]
+      const uploaded = await api.post('/api/temu/goods/helpers/images', { urls: sources }, token)
+      const temuUrl = (src) => uploaded.find((u) => u.source === src)?.url || src
+      await api.post(`/api/temu/goods/${product._id}/list`, {
+        shopId: shop._id,
+        title: form.title.trim(),
+        price: Number(form.variants[0].basePrice),
+        stock: form.variants.reduce((t, v) => t + Number(v.quantity || 0), 0),
+        images: form.images,
+        temuForm: toTemuForm(form, temuUrl),
+      }, token)
+      setDone('Sent to Temu. Temu reviews new goods before they go on sale; the next sync shows the result.')
+      onSaved?.(product)
+    } catch (err) {
+      setErrors(problemsByField(err.data || { error: err.message }))
+    } finally {
+      setBusy('')
+    }
+  }
+
   return (
-    <Modal title={`List "${product.title}"`} onClose={onClose} size="4xl" wide>
-      <form onSubmit={submit} className="space-y-4">
-        {shopsRes.data && !shops.length && (
-          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            {sectionMarketplace
-              ? `No ${marketplaceLabel(sectionMarketplace)} shop is connected. Connect it in Settings first.`
-              : 'No shop is connected. Connect one in Settings first.'}
-          </p>
-        )}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {shops.length > 1 ? (
-            <Select
-              label="Shop *"
-              value={shopId}
-              onChange={(e) => handleShopChange(e.target.value)}
-              options={[
-                { value: '', label: 'Choose a shop…' },
-                ...shops.map((s) => ({
-                  value: s._id,
-                  label: `${s.name}${sectionMarketplace ? '' : ` (${marketplaceLabel(s.marketplace)})`}${s.listing?.canList ? '' : ' · listing not available'}`,
-                })),
-              ]}
-            />
-          ) : selectedShop ? (
-            <div>
-              <span className="mb-1.5 block text-xs font-semibold text-gray-600">Shop</span>
-              <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-800">
-                {selectedShop.name} ({marketplaceLabel(selectedShop.marketplace)})
-              </p>
-            </div>
-          ) : null}
-          {caps.canList && activeVariants.length === 0 && (
-            <>
-              <Input label="Price ($) *" type="number" step="0.01" min="0.01" max={undefined} value={price} onChange={(e) => setPrice(e.target.value)} required />
-              <Input label="Stock to list *" type="number" min="1" max={undefined} step="1" value={stock} onChange={(e) => setStock(e.target.value)} required />
-            </>
-          )}
-          {caps.canList && activeVariants.length > 0 && (
-            <div className="sm:col-span-2 rounded-lg border border-indigo-200 bg-indigo-50/50 px-3 py-2 text-xs text-indigo-900 flex items-center justify-between">
-              <span><strong>{activeVariants.length} variants</strong> configured below</span>
-              <span>From <strong>${summaryPrice.toFixed(2)}</strong> · <strong>{summaryStock}</strong> total units</span>
-            </div>
-          )}
+    <Modal title={`List "${product.title}" on Temu`} onClose={onClose} size="4xl" wide>
+      {done ? (
+        <div className="space-y-3">
+          <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{done}</p>
+          <div className="flex justify-end"><Button onClick={onClose}>Close</Button></div>
         </div>
-
-        {selectedShop && !caps.canList && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-sm text-amber-800">
-            {caps.note || `Listing on ${marketplaceLabel(marketplace)} is not available.`}
+      ) : (
+        <form onSubmit={submit} className="space-y-4">
+          {errors._ && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errors._}</p>}
+          <Input label="Title (English, up to 500 characters) *" value={form.title} maxLength={500} onChange={(e) => set({ title: e.target.value })} />
+          {errors.title && <p className="text-xs text-red-600">{errors.title}</p>}
+          <CategoryPicker token={token} title={form.title} value={form.catId} path={form.catPath} onChange={chooseCategory} error={errors.catId} />
+          {form.catId && !template && <p className="text-xs text-gray-500">Loading Temu's attributes for this category…</p>}
+          {template && <TemplateFields template={template} form={form} setAttr={setAttr} errors={errors} />}
+          <ImageDropzone images={form.images} onChange={(images) => set({ images })} maxImages={10} label="Photos (JPEG/PNG, up to 3 MB; non-apparel square ≥ 800 px, apparel 3:4) *" />
+          {errors.images && <p className="text-xs text-red-600">{errors.images}</p>}
+          {template && <TemuVariants token={token} catId={form.catId} template={template} form={form} setGroups={setGroups} setSku={setSku} errors={errors} />}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Select label="Shipping template *" value={form.shippingTemplateId} options={templates.map((t) => ({ value: String(t.id), label: t.name }))} onChange={(e) => set({ shippingTemplateId: e.target.value })} placeholder={templates.length ? 'Select…' : 'Make one in Temu Seller Center first'} />
+            <Input label="Handling time (days)" type="number" min="1" value={form.handlingDays} onChange={(e) => set({ handlingDays: e.target.value })} />
+            <Input label="Goods code (optional)" value={form.outGoodsSn} maxLength={100} onChange={(e) => set({ outGoodsSn: e.target.value })} />
           </div>
-        )}
-
-        {selectedShop && caps.canList && (
-          <div className="space-y-3 rounded-lg border border-indigo-100 bg-indigo-50/40 p-3.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-900">
-                {marketplaceLabel(marketplace)} listing
-              </span>
-              <span className="rounded bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700">{caps.apiName}</span>
-            </div>
-            {caps.note && <p className="text-xs text-gray-600">{caps.note}</p>}
-
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="mb-1 text-xs font-semibold text-gray-700">Listing Title *</span>
-                <span className={`text-xs font-medium ${title.length > titleMax ? 'font-bold text-red-600' : title.length > titleMax * 0.9 ? 'text-amber-600' : 'text-gray-500'}`}>
-                  {title.length}/{titleMax}
-                </span>
-              </div>
-              <input
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={titleMax}
-                required
-              />
-            </div>
-
-            <>
-                  {caps.categorySearch && (
-                    <Select
-                      label={`${marketplaceLabel(marketplace)} category *`}
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                      options={
-                        categories.length
-                          ? categories.map((c) => ({ value: c.categoryId, label: c.path || c.categoryName }))
-                          : [{ value: '', label: categoryState.loading ? 'Finding categories from the title…' : 'No category yet' }]
-                      }
-                    />
-                  )}
-                  {caps.categoryAutoPick && (
-                    <p className="text-xs text-gray-700">
-                      <span className="font-semibold">Category: </span>
-                      {categoryState.loading ? 'Asking for a suggestion…' : selectedCategory?.path || 'Picked when you publish'}
-                    </p>
-                  )}
-                </>
-            {categoryState.error && <p className="text-xs text-red-600">{categoryState.error}</p>}
-
-            {caps.condition && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Select label="Condition" value={condition} onChange={(e) => setCondition(e.target.value)} options={CONDITIONS} />
-                <Input label="Brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Apple, Nike, Unbranded" />
-              </div>}
-
-            {(required.length > 0 || extraNames.length > 0) && (
-              <div className="border-t border-indigo-100 pt-2">
-                <span className="mb-1.5 block text-xs font-semibold text-gray-700">Required by {marketplaceLabel(marketplace)} for this category</span>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {required.map((attr) => (
-                    <AttributeField
-                      key={attr.id}
-                      attr={attr}
-                      requiredOverride
-                      value={aspects[attr.id] || ''}
-                      onChange={(value) => setAspect(attr.id, value)}
-                    />
-                  ))}
-                  {extraNames.map((name) => (
-                    <Input key={name} label={`${name} *`} value={aspects[name] || ''} onChange={(e) => setAspect(name, e.target.value)} />
-                  ))}
-                </div>
-              </div>
-            )}
-            {optional.length > 0 && (
-              <details className="border-t border-indigo-100 pt-2">
-                <summary className="cursor-pointer text-xs font-semibold text-gray-700">
-                  More details buyers filter by ({optional.length} optional)
-                </summary>
-                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {optional.slice(0, 30).map((attr) => (
-                    <AttributeField key={attr.id} attr={attr} value={aspects[attr.id] || ''} onChange={(value) => setAspect(attr.id, value)} />
-                  ))}
-                </div>
-              </details>
-            )}
-            {attributeError && <p className="text-xs text-red-600">{attributeError}</p>}
-
-            {caps.packageDetails && (
-              <div className="border-t border-indigo-100 pt-2">
-                <span className="mb-1.5 block text-xs font-semibold text-gray-700">Package Dimensions &amp; Weight</span>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <Input label="Weight (lbs)" type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
-                  <Input label="Length (in)" type="number" step="0.1" value={length} onChange={(e) => setLength(e.target.value)} />
-                  <Input label="Width (in)" type="number" step="0.1" value={width} onChange={(e) => setWidth(e.target.value)} />
-                  <Input label="Height (in)" type="number" step="0.1" value={height} onChange={(e) => setHeight(e.target.value)} />
-                </div>
-              </div>
-            )}
-
+          {errors.shippingTemplateId && <p className="text-xs text-red-600">{errors.shippingTemplateId}</p>}
+          <div className="space-y-2">
+            <span className="block text-xs font-semibold text-gray-600">Bullet points (up to 6)</span>
+            {bullets.map((b, i) => <Input key={i} value={b} onChange={(e) => set({ bulletPoints: Object.assign([...bullets], { [i]: e.target.value }) })} />)}
+            {bullets.length < 6 && <Button type="button" size="sm" variant="secondary" onClick={() => set({ bulletPoints: [...bullets, ''] })}>Add bullet point</Button>}
+            {errors.bulletPoints && <p className="text-xs text-red-600">{errors.bulletPoints}</p>}
           </div>
-        )}
-
-        {caps.canList && (
-          <div>
-            <ImageDropzone images={images} onChange={setImages} label={`Listing Images (up to ${caps.maxImages || 12})`} maxImages={caps.maxImages || 12} />
-            {images.length === 0 && <p className="mt-1 text-xs text-amber-600">At least 1 image is needed to publish.</p>}
+          <label className="block text-sm">
+            <span className="mb-1.5 block text-xs font-semibold text-gray-600">Description (plain text)</span>
+            <textarea className="w-full rounded-lg border px-3 py-2 dark:bg-slate-900" rows={5} maxLength={10000} value={form.description} onChange={(e) => set({ description: e.target.value })} />
+          </label>
+          {checkNote && <p className="text-xs text-gray-700">{checkNote}</p>}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
+            <Button variant="secondary" type="button" disabled={Boolean(busy)} onClick={check}>{busy === 'check' ? 'Checking…' : 'Check with Temu'}</Button>
+            <Button type="submit" disabled={Boolean(busy)}>{busy === 'list' ? 'Sending to Temu…' : 'List on Temu'}</Button>
           </div>
-        )}
-
-        {error && <p className="text-sm font-medium text-red-600">{error}</p>}
-
-        <div className="flex justify-end gap-2 border-t border-gray-100 pt-2">
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={busy || !selectedShop || !caps.canList || title.length > titleMax || (caps.categorySearch && !categoryId)}
-          >
-            {busy
-              ? ('Publishing…')
-              : selectedShop
-                ? (`Publish to ${selectedShop.name}`)
-                : 'List Product'}
-          </Button>
-        </div>
-      </form>
+        </form>
+      )}
     </Modal>
   )
 }
