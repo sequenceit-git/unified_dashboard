@@ -7,8 +7,8 @@ const ttPost = (token, shop, path, body = {}, query = { page_size: 50 }) => tikt
 
 const ttGet = (token, shop, path, query) => tiktok.call(token, 'GET', path, { shop, query })
 
-const ttRange = (days) => {
-  const to = new Date()
+const ttRange = (days, now = new Date()) => {
+  const to = now
   const from = new Date(to - days * 86400000)
   return { start_date_ge: from.toISOString().slice(0, 10), end_date_lt: to.toISOString().slice(0, 10) }
 }

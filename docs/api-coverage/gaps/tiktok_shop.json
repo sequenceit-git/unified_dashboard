@@ -185,24 +185,6 @@
     "priority": "medium",
     "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
   },
-  "GET /analytics/202509/shop_products/{product_id}/performance": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source."
-  },
-  "GET /analytics/202509/shop_skus/{sku_id}/performance": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source."
-  },
-  "GET /analytics/202509/shop_skus/performance": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-product and per-SKU performance: views, clicks, click-through and conversion rates, buyers and GMV, split by traffic source."
-  },
   "GET /analytics/202509/shop_videos/{video_id}/performance": {
     "section": "videos-live",
     "size": "small",
@@ -220,12 +202,6 @@
     "size": "small",
     "priority": "medium",
     "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
-  },
-  "GET /analytics/202510/shop/performance/{date}/performance_per_hour": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
   },
   "GET /analytics/202511/creators/bestselling": {
     "section": "analytics",
@@ -256,30 +232,6 @@
     "size": "small",
     "priority": "medium",
     "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
-  },
-  "GET /analytics/202606/shop_performances/metrics": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
-  },
-  "GET /analytics/202606/shop_performances/metrics/{metric_code}/diagnosis": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
-  },
-  "GET /analytics/202606/shop_performances/metrics/{metric_code}/problem_details": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
-  },
-  "GET /analytics/202606/shop_performances/metrics/{metric_code}/top_items": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
   },
   "GET /analytics/202609/shop_lives/overview_performance": {
     "section": "videos-live",
@@ -364,18 +316,6 @@
     "size": "small",
     "priority": "low",
     "value": "Off-site traffic (ads and pixels) overview and details."
-  },
-  "GET /analytics/202610/shop_performances/benefits": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
-  },
-  "GET /analytics/202610/shop_performances/overview": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "high",
-    "value": "Shop health: performance metrics with diagnosis, problem details and top items, benefits tier, hourly performance."
   },
   "GET /analytics/202611/ai_report/campaigns": {
     "section": "analytics",

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
-import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { queryString } from '../../../../lib/api'
 import { StatCard } from '../../../../components/ui/Card'
@@ -9,6 +8,7 @@ import { useApi } from '../../../../hooks/useApi'
 import MarketplaceChart from './MarketplaceChart'
 import RevenueChart from './RevenueChart'
 import TopProducts from './TopProducts'
+import SectionView from '../../SectionView'
 
 const RANGES = [
   { value: '30', label: 'Last 30 days' },
@@ -26,7 +26,8 @@ function rangeParams(days) {
   }
 }
 
-export default function AnalyticsPage() {
+/** Sales charts from the dashboard's own orders: the first tab of TikTok Shop Analytics. */
+function SalesCharts() {
   const { token } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
@@ -40,12 +41,9 @@ export default function AnalyticsPage() {
   const top = useApi(token ? `/api/tiktok/analytics/products${queryString({ from, to, limit: 10 })}` : null)
   const inv = useApi(token && marketplace ? `/api/tiktok/analytics/inventory` : null)
 
-  if (!section) return <RequireShopSection />
-
   return (
     <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <h1 className="text-xl sm:text-2xl font-bold">{section.label} analytics</h1>
+      <div className="flex justify-end">
         <div className="w-full sm:w-44">
           <Select
             value={days}
@@ -76,4 +74,9 @@ export default function AnalyticsPage() {
       </div>
     </div>
   )
+}
+
+/** TikTok Shop Analytics: sales charts, then TikTok's product, shop-health and hourly analytics. */
+export default function AnalyticsPage() {
+  return <SectionView sectionId="analytics" extraTabs={[{ id: 'sales', label: 'Sales', render: () => <SalesCharts /> }]} />
 }

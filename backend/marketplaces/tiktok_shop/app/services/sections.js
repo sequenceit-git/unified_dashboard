@@ -291,4 +291,38 @@ async function finances(ctx) {
     return finances || {}
 }
 
-module.exports = { connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, categories, attributes, categoryRules, brands, sizeCharts, finances}
+/** The section a detail/action belongs to, after the same access checks as the section itself. */
+async function sectionFor(ctx) {
+    const marketplace = 'tiktok_shop'
+    const section = profiles.PROFILES[marketplace]?.sections.find((item) => item.id === ctx.params.sectionId)
+    const loader = section && ADAPTER.sections[section.id]
+    if (!loader) throw new HttpError(404, { error: 'This shop has no such section' })
+    if (!canUseSection(ctx.authUser || ctx.user, marketplace, section.id, section.route)) {
+      throw new HttpError(403, { error: `You do not have access to ${section.label} on this shop` })
+    }
+    return { section, loader }
+}
+
+/** GET /sections/:sectionId/:actionId?id= — a read-only drill-down the section file defines (`details`). */
+async function sectionDetail(ctx) {
+    const { loader } = await sectionFor(ctx)
+    const detail = loader.details?.[ctx.params.actionId]
+    if (!detail) throw new HttpError(404, { error: 'No such detail' })
+    const id = String(ctx.query?.id || '').trim()
+    if (!id) throw new HttpError(400, { error: 'id is required' })
+    const shop = await connectedShop(ctx, 'tiktok_shop')
+    return marketplaceManager.withShopToken(shop, (token) => detail(token, shop, id))
+}
+
+/** POST /sections/:sectionId/:actionId — an action the section file defines (`actions`); returns `{ message }`. */
+async function sectionAction(ctx) {
+    const { section, loader } = await sectionFor(ctx)
+    const action = loader.actions?.[ctx.params.actionId]
+    if (!action) throw new HttpError(404, { error: 'No such action' })
+    const shop = await connectedShop(ctx, 'tiktok_shop')
+    const result = await marketplaceManager.withShopToken(shop, (token) => action(token, shop, String(ctx.body?.id ?? ''), ctx.body?.value))
+    await cache.del(`shop:${shop._id}:section:${section.id}`)
+    return result
+}
+
+module.exports = { connectedShop, section, sectionDetail, sectionAction, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, categories, attributes, categoryRules, brands, sizeCharts, finances}
