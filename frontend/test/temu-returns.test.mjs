@@ -15,12 +15,12 @@ const RETURNS = [
   { id: 'D', status: 'Refunded' },
   { id: 'E', status: 'Rejected' },
 ]
-const CANCELS = [{ cancelId: 'X', status: 'Pending' }, { cancelId: 'Y', status: 'Approved' }]
+const CANCELS = [{ cancelId: 'X', status: 'Pending' }, { cancelId: 'Y', status: 'Approved' }, { cancelId: 'Z', status: 'Return requested' }]
 
 test("what Temu lets the app do: approve open returns (not while Temu reviews) and open cancellations", async () => {
   const { canApproveReturn, canApproveCancel } = await load()
   assert.deepEqual(RETURNS.map((r) => canApproveReturn(r.status)), [true, true, false, false, false])
-  assert.deepEqual(CANCELS.map((c) => canApproveCancel(c.status)), [true, false])
+  assert.deepEqual(CANCELS.map((c) => canApproveCancel(c.status)), [true, false, false])
 })
 
 test('pills, needs attention and respond-by', async () => {
@@ -31,4 +31,11 @@ test('pills, needs attention and respond-by', async () => {
   assert.deepEqual(respondText({ status: 'Package shipped', respondBy: at(24) }, NOW), { text: 'overdue 1 day', late: true })
   assert.equal(respondText({ status: 'Refunded', respondBy: at(24) }, NOW), null)
   assert.deepEqual(sortOpenFirst(RETURNS).map((r) => r.id), ['B', 'A', 'C', 'D', 'E'])
+})
+
+test("a request Temu is reviewing isn't counted as overdue for the seller", async () => {
+  const { returnsAttention, respondText } = await load()
+  const reviewing = [{ id: 'R', status: 'Platform reviewing', respondBy: at(20) }]
+  assert.deepEqual(returnsAttention(reviewing, [], NOW), [])
+  assert.equal(respondText(reviewing[0], NOW), null)
 })

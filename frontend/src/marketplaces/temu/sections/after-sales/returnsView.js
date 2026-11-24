@@ -13,13 +13,14 @@ export function canApproveReturn(status) {
   return /pending|requested|open|buyer shipped|package shipped/i.test(s)
 }
 
+/** Cancellations waiting for an answer: Temu's "Pending" (status 1), as the loader counts them. */
 export function canApproveCancel(status) {
-  return /pending|requested|open|waiting/i.test(String(status || ''))
+  return String(status || '') === 'Pending'
 }
 
 /** For open requests: "in N days", "today" or "overdue N days" (null otherwise). */
 export function respondText(row, now = new Date()) {
-  if (!row?.respondBy || !isOpenReturn(row.status)) return null
+  if (!row?.respondBy || !canApproveReturn(row.status)) return null
   const due = new Date(row.respondBy)
   const days = Math.round((day(due) - day(now)) / DAY)
   if (due < now) return { text: `overdue ${Math.max(1, -days)} day${Math.max(1, -days) === 1 ? '' : 's'}`, late: true }
@@ -48,7 +49,8 @@ export function returnPills(returns, cancels) {
 
 export function returnsAttention(returns, cancels, now = new Date()) {
   const items = []
-  const open = (returns || []).filter((r) => isOpenReturn(r.status) && r.respondBy)
+  // Only requests the seller can answer (not while Temu itself reviews).
+  const open = (returns || []).filter((r) => canApproveReturn(r.status) && r.respondBy)
   const overdue = open.filter((r) => new Date(r.respondBy) < now).length
   const soon = open.filter((r) => { const d = new Date(r.respondBy); return d >= now && d - now <= 2 * DAY }).length
   const waiting = (cancels || []).filter((c) => canApproveCancel(c.status)).length

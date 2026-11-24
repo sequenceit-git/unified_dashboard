@@ -80,10 +80,13 @@ function Detail({ row, onClose, onRun }) {
           {(data.tables || []).map((t) => <SectionTable key={t.id} table={t} canAct={false} />)}
         </div>
       )}
-      {addressError && <p className="mt-3 text-sm text-rose-600">{addressError}</p>}
+      {addressError && <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">{addressError}</p>}
       {address && (
         <div className="mt-4 space-y-2">
           <h3 className="font-semibold">{address.title}</h3>
+          {(address.summary || []).map((s) => (
+            <p key={s.label} className="text-sm"><span className="text-gray-500 dark:text-slate-400">{s.label}: </span>{s.type === 'text' ? s.value : formatCell(s.type, s.value)}</p>
+          ))}
           {(address.tables || []).map((t) => <SectionTable key={t.id} table={t} canAct={false} />)}
         </div>
       )}
@@ -99,6 +102,8 @@ function Returns() {
   const [busy, setBusy] = useState('')
   const [notice, setNotice] = useState({ text: '', error: false })
   const [open, setOpen] = useState(null)
+  // When the page was opened: due dates are measured against it.
+  const [now] = useState(() => new Date())
   const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
   useSyncReload('orders', section?.marketplace, () => refetch())
   if (!section) return <RequireShopSection />
@@ -127,6 +132,7 @@ function Returns() {
     try {
       const res = await api.post(`${BASE}/${action.id}`, { id, ...(value !== undefined ? { value } : {}) }, token)
       setNotice({ text: res?.message || `${action.label}: done.`, error: false })
+      setOpen(null)
       reload()
       return { ok: true }
     } catch (err) {
@@ -134,8 +140,6 @@ function Returns() {
     }
   }
 
-  // The time this render shows due dates against (kept per data load, not re-read each render).
-  const now = data?.loadedAt ? new Date(data.loadedAt) : new Date(0)
   const rows = sortOpenFirst(returns || []).filter((r) => (pill === 'open' ? isOpenReturn(r.status) : pill === 'closed' ? !isOpenReturn(r.status) : true))
   const openCount = pills[0].count
 
@@ -151,7 +155,7 @@ function Returns() {
       <StatusPills pills={pills} active={pill} onChange={setPill} />
       <p className="text-xs text-gray-500 dark:text-slate-400">Temu lets the dashboard approve returns (full refund) and cancellations only. Decline or refund part in Temu Seller Center.</p>
       {notice.text && <p className={`text-sm ${notice.error ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{notice.text}</p>}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      {!(error && !data) && <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         {pill === 'cancellations' ? (
           <DataTable
             columns={[
@@ -191,7 +195,7 @@ function Returns() {
                   <RowActions
                     main={canApproveReturn(r.status)
                       ? { label: 'Approve & refund', primary: true, busy: busy === `r:${r.returnId}`, onClick: () => decide(`r:${r.returnId}`, '/api/temu/sections/after-sales/decide', { returnId: r.returnId, orderId: r.orderId, decision: 'APPROVE', ...(r.returnType ? { returnType: r.returnType } : {}), ...(r.rawStatus ? { rawStatus: r.rawStatus } : {}) }, `Approve the return and refund order ${r.orderId || r.returnId} in full?`) }
-                      : { label: 'Details', onClick: () => setOpen(r) }}
+                      : /platform reviewing/i.test(r.status) ? { label: 'Temu reviewing', onClick: () => setOpen(r) } : { label: 'Details', onClick: () => setOpen(r) }}
                     menu={canApproveReturn(r.status) ? [{ label: 'Details', onClick: () => setOpen(r) }] : []}
                   />
                 ),
@@ -205,7 +209,7 @@ function Returns() {
             rowKey="_key"
           />
         )}
-      </div>
+      </div>}
       {open && <Detail row={open} onClose={() => setOpen(null)} onRun={onRun} />}
     </div>
   )

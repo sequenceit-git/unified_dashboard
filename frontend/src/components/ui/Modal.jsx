@@ -14,6 +14,7 @@ export default function Modal({ title, onClose, children, wide = false, size = '
 
   return (
     <div
+      data-modal=""
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-0 sm:items-center sm:p-4 overflow-x-hidden"
       onClick={closeOnBackdrop ? onClose : undefined}
     >
