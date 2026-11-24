@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../../../auth/AuthContext'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
@@ -29,8 +30,11 @@ export default function OrdersPage() {
   const [syncing, setSyncing] = useState(false)
   const [syncMessage, setSyncMessage] = useState('')
   const [error, setError] = useState('')
-  const [pill, setPill] = useState('toShip')
-  const [q, setQ] = useState('')
+  const [pill, setPill] = useState(() => (new URLSearchParams(window.location.search).get('q') ? 'all' : 'toShip'))
+  // ?q= from a link (e.g. Shipping's Open order) searches that order.
+  const location = useLocation()
+  const linkedQ = new URLSearchParams(location.search).get('q') || ''
+  const [q, setQ] = useState(linkedQ)
   const [sort, setSort] = useState('-placedAt')
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
