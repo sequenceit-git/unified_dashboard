@@ -96,36 +96,61 @@ export default function TemuLabel({ orderId }) {
     </label>
   )
 
+  const stepClass = (on) => `flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${on ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`
+  const bought = can.open
+
   return (
-    <div className="space-y-2 text-sm">
-      <h3 className="font-semibold text-gray-900 dark:text-slate-100">Buy a Temu label</h3>
-      <div className="flex flex-wrap items-end gap-2">
-        {field('weight', 'Weight (lb)')}{field('length', 'Length (in)')}{field('width', 'Width (in)')}{field('height', 'Height (in)')}
-        <Button size="sm" type="button" variant="secondary" disabled={!ready || Boolean(busy)} onClick={quote}>{busy === 'quote' ? 'Asking Temu…' : 'See services'}</Button>
-      </div>
-      {can.check && <Button size="sm" type="button" variant="secondary" disabled={Boolean(busy)} onClick={checkAgain}>{busy === 'check' ? 'Asking Temu…' : 'Check again'}</Button>}
-      {services?.services?.length > 0 && (can.buy || can.retry) && (
-        <ul className="space-y-1">
-          {services.services.map((s) => (
-            <li key={s.channelId} className="flex items-center justify-between gap-2 rounded border px-2 py-1">
-              <span>{s.carrier} {s.service} <span className="text-xs text-gray-500">{s.estimate}</span></span>
-              <span className="flex items-center gap-2">{money(s.price)}<Button size="sm" type="button" disabled={Boolean(busy)} onClick={() => buy(s)}>{busy === `buy-${s.channelId}` ? 'Buying…' : can.retry ? 'Buy again' : 'Buy'}</Button></span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {services?.unavailable?.length > 0 && <p className="text-xs text-gray-500">Not available: {services.unavailable.map((u) => `${u.carrier} (${u.reason})`).join(', ')}</p>}
-      {note.text && <p className={`text-xs ${note.error ? 'text-rose-600' : 'text-emerald-700'}`}>{note.text}</p>}
-      {can.open && (
-        <div className="space-y-2">
-          <Button size="sm" type="button" disabled={busy === 'label'} onClick={openLabel}>{busy === 'label' ? 'Opening…' : 'Open label'}</Button>
-          <div className="flex flex-wrap items-end gap-2 text-xs">
-            <label><span className="block text-gray-500">Pickup from</span><input type="datetime-local" className="rounded border px-1 py-1 dark:bg-slate-900" value={window_.start} onChange={(e) => setWindow({ ...window_, start: e.target.value })} /></label>
-            <label><span className="block text-gray-500">until</span><input type="datetime-local" className="rounded border px-1 py-1 dark:bg-slate-900" value={window_.end} onChange={(e) => setWindow({ ...window_, end: e.target.value })} /></label>
-            <Button size="sm" type="button" variant="secondary" disabled={!window_.start || !window_.end || Boolean(busy)} onClick={bookPickup}>{busy === 'pickup' ? 'Booking…' : 'Book pickup'}</Button>
+    <div className="space-y-3 text-sm">
+      <h3 className="font-semibold text-gray-900 dark:text-slate-100">Temu label</h3>
+      <ol className="space-y-3">
+        <li className="flex gap-2">
+          <span className={stepClass(!services && !bought)}>1</span>
+          <div className="min-w-0 flex-1 space-y-2">
+            <p className="font-medium">Package size</p>
+            <div className="flex flex-wrap items-end gap-2">
+              {field('weight', 'Weight (lb)')}{field('length', 'Length (in)')}{field('width', 'Width (in)')}{field('height', 'Height (in)')}
+              <Button size="sm" type="button" variant="secondary" disabled={!ready || Boolean(busy)} onClick={quote}>{busy === 'quote' ? 'Asking Temu…' : 'See services'}</Button>
+            </div>
           </div>
-        </div>
-      )}
+        </li>
+        <li className="flex gap-2">
+          <span className={stepClass(Boolean(services) && !bought)}>2</span>
+          <div className="min-w-0 flex-1 space-y-2">
+            <p className="font-medium">Choose a service</p>
+            {!services && !can.check && <p className="text-xs text-gray-500">Temu lists its carriers and prices once the package size is in.</p>}
+            {can.check && <Button size="sm" type="button" variant="secondary" disabled={Boolean(busy)} onClick={checkAgain}>{busy === 'check' ? 'Asking Temu…' : 'Check again'}</Button>}
+            {services?.services?.length > 0 && (can.buy || can.retry) && (
+              <ul className="space-y-1">
+                {services.services.map((s) => (
+                  <li key={s.channelId} className="flex items-center justify-between gap-2 rounded-lg border px-2 py-1.5 dark:border-slate-700">
+                    <span>{s.carrier} {s.service} <span className="text-xs text-gray-500">{s.estimate}</span></span>
+                    <span className="flex items-center gap-2">{money(s.price)}<Button size="sm" type="button" disabled={Boolean(busy)} onClick={() => buy(s)}>{busy === `buy-${s.channelId}` ? 'Buying…' : can.retry ? 'Buy again' : 'Buy'}</Button></span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {services?.unavailable?.length > 0 && <p className="text-xs text-gray-500">Not available: {services.unavailable.map((u) => `${u.carrier} (${u.reason})`).join(', ')}</p>}
+          </div>
+        </li>
+        <li className="flex gap-2">
+          <span className={stepClass(bought)}>3</span>
+          <div className="min-w-0 flex-1 space-y-2">
+            <p className="font-medium">Print & pickup</p>
+            {!bought && <p className="text-xs text-gray-500">Once Temu confirms the label, open it here and book a pickup if you want one.</p>}
+            {bought && (
+              <>
+                <Button size="sm" type="button" disabled={busy === 'label'} onClick={openLabel}>{busy === 'label' ? 'Opening…' : 'Open label'}</Button>
+                <div className="flex flex-wrap items-end gap-2 text-xs">
+                  <label><span className="block text-gray-500">Pickup from</span><input type="datetime-local" className="rounded border px-1 py-1 dark:border-slate-700 dark:bg-slate-900" value={window_.start} onChange={(e) => setWindow({ ...window_, start: e.target.value })} /></label>
+                  <label><span className="block text-gray-500">until</span><input type="datetime-local" className="rounded border px-1 py-1 dark:border-slate-700 dark:bg-slate-900" value={window_.end} onChange={(e) => setWindow({ ...window_, end: e.target.value })} /></label>
+                  <Button size="sm" type="button" variant="secondary" disabled={!window_.start || !window_.end || Boolean(busy)} onClick={bookPickup}>{busy === 'pickup' ? 'Booking…' : 'Book pickup'}</Button>
+                </div>
+              </>
+            )}
+          </div>
+        </li>
+      </ol>
+      {note.text && <p className={`text-xs ${note.error ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{note.text}</p>}
     </div>
   )
 }

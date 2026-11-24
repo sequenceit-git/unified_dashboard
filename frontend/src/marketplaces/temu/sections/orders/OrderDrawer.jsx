@@ -4,7 +4,10 @@ import { api } from '../../../../lib/api'
 import { marketplaceLabel, getShop } from '../../..'
 import Badge, { statusColor } from '../../../../components/ui/Badge'
 import Button from '../../../../components/ui/Button'
-import Modal from '../../../../components/ui/Modal'
+import Drawer from '../../ui/Drawer'
+import TemuLabel from './TemuLabel'
+import TemuFollowUp from './TemuFollowUp'
+import { shipByText } from './ordersView'
 import { Select } from '../../../../components/ui/Input'
 import TemuOrderDetail from './TemuOrderDetail'
 
@@ -143,27 +146,73 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
   const canCancel = ['pending', 'paid', 'processing'].includes(order.status)
   const canRefund = order.status !== 'refunded' && order.status !== 'cancelled'
 
+  const shipBy = shipByText(order)
+  const toShip = order.status === 'paid'
+
   return (
-    <Modal title={`Order ${order.externalOrderId}`} onClose={onClose} wide>
+    <Drawer
+      title={`Order ${order.externalOrderId}`}
+      subtitle={(
+        <span className="flex flex-wrap items-center gap-2">
+          <Badge color={statusColor(order.status)}>{toShip ? 'To ship' : order.status}</Badge>
+          {shipBy && <span className={shipBy.late ? 'font-semibold text-rose-600 dark:text-rose-400' : ''}>Ship by: {shipBy.text}</span>}
+          {order.totals?.total ? <span>· ${order.totals.total.toFixed(2)}</span> : null}
+        </span>
+      )}
+      onClose={onClose}
+      footer={(
+        <>
+            {canCancel && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                disabled={busy}
+                onClick={() => cancelOrder('BUYER_ASKED_CANCEL')}
+              >
+                Cancel order
+              </Button>
+            )}
+          <Button variant="secondary" onClick={onClose}>Close</Button>
+        </>
+      )}
+    >
       <div className="space-y-4 text-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-2">
-            <Badge color={statusColor(order.status)}>{order.status}</Badge>
-            <Badge color="blue">{marketplaceLabel(order.marketplace)}</Badge>
-          </div>
-          {canCancel && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-              disabled={busy}
-              onClick={() => cancelOrder('BUYER_ASKED_CANCEL')}
-            >
-              Cancel order
+        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
+        {toShip && (
+          <section className="space-y-4 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3.5 dark:border-indigo-900 dark:bg-indigo-950/20">
+            <h3 className="text-base font-semibold">Ship this order</h3>
+            <TemuLabel orderId={order._id} />
+          </section>
+        )}
+        <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3 space-y-2">
+          <h3 className="font-semibold text-gray-900 dark:text-slate-100">{order.status === 'paid' ? 'Shipping your own way' : 'Shipping & tracking'}</h3>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Carrier: <span className="font-semibold text-gray-700 dark:text-gray-300">{order.shipping?.carrier || 'None'}</span>
+            {order.shipping?.trackingNumber && <> · Tracking: <span className="font-mono text-gray-700 dark:text-gray-300">{order.shipping.trackingNumber}</span></>}
+            {order.shipping?.deliveredAt && <> · Delivered: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{new Date(order.shipping.deliveredAt).toLocaleDateString()}</span></>}
+            {!order.shipping?.deliveredAt && order.shipping?.shippedAt && <> · Shipped: <span className="text-gray-600 dark:text-gray-400">{new Date(order.shipping.shippedAt).toLocaleDateString()}</span></>}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_auto] gap-2 pt-1">
+            <Select
+              value={carrier}
+              onChange={(e) => setCarrier(e.target.value)}
+              options={CARRIERS}
+              aria-label="Shipping Carrier"
+            />
+            <input
+              value={tracking}
+              onChange={(e) => setTracking(e.target.value)}
+              placeholder="Tracking number"
+              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            />
+            <Button variant="secondary" disabled={busy} onClick={saveTracking}>
+              Push tracking
             </Button>
-          )}
+          </div>
         </div>
 
+        <section className="rounded-xl border border-gray-200 p-3.5 dark:border-slate-800">
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-slate-100">Items</h3>
           <ul className="mt-1 space-y-1">
@@ -179,8 +228,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
           </p>
         </div>
 
-        <TemuOrderDetail orderId={order._id} />
-
+        </section>
         <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3.5 space-y-3">
           <div className="flex items-center justify-between border-b border-gray-200/60 dark:border-slate-800 pb-2">
             <h3 className="font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -262,33 +310,17 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3 space-y-2">
-          <h3 className="font-semibold text-gray-900 dark:text-slate-100">Shipping & tracking</h3>
-          <p className="text-xs text-gray-500 dark:text-slate-400">
-            Carrier: <span className="font-semibold text-gray-700 dark:text-gray-300">{order.shipping?.carrier || 'None'}</span>
-            {order.shipping?.trackingNumber && <> · Tracking: <span className="font-mono text-gray-700 dark:text-gray-300">{order.shipping.trackingNumber}</span></>}
-            {order.shipping?.deliveredAt && <> · Delivered: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{new Date(order.shipping.deliveredAt).toLocaleDateString()}</span></>}
-            {!order.shipping?.deliveredAt && order.shipping?.shippedAt && <> · Shipped: <span className="text-gray-600 dark:text-gray-400">{new Date(order.shipping.shippedAt).toLocaleDateString()}</span></>}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_auto] gap-2 pt-1">
-            <Select
-              value={carrier}
-              onChange={(e) => setCarrier(e.target.value)}
-              options={CARRIERS}
-              aria-label="Shipping Carrier"
-            />
-            <input
-              value={tracking}
-              onChange={(e) => setTracking(e.target.value)}
-              placeholder="Tracking number"
-              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-            <Button variant="secondary" disabled={busy} onClick={saveTracking}>
-              Push tracking
-            </Button>
-          </div>
-        </div>
-
+        <section className="rounded-xl border border-gray-200 p-3.5 dark:border-slate-800 space-y-2">
+          <h3 className="font-semibold text-gray-900 dark:text-slate-100">Buyer's full address</h3>
+          <TemuOrderDetail orderId={order._id} part="address" />
+        </section>
+        <section className="rounded-xl border border-gray-200 p-3.5 dark:border-slate-800">
+          <h3 className="font-semibold text-gray-900 dark:text-slate-100">Money on Temu</h3>
+          <TemuOrderDetail orderId={order._id} part="amounts" />
+        </section>
+        <section className="rounded-xl border border-gray-200 p-3.5 dark:border-slate-800">
+          <TemuFollowUp orderId={order._id} />
+        </section>
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-slate-100">Status</h3>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -385,8 +417,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
           </div>
         </div>
 
-        {error && <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>}
       </div>
-    </Modal>
+    </Drawer>
   )
 }

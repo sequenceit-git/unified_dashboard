@@ -8,14 +8,13 @@ import { useAuth } from '../../../../auth/AuthContext'
 import { api } from '../../../../lib/api'
 import { useApi } from '../../../../hooks/useApi'
 import Button from '../../../../components/ui/Button'
-import TemuFollowUp from './TemuFollowUp'
-import TemuLabel from './TemuLabel'
 
 const money = (a) => (a ? new Intl.NumberFormat(undefined, { style: 'currency', currency: a.currency || 'USD' }).format(a.value) : '—')
 
-export default function TemuOrderDetail({ orderId }) {
+/** `part`: 'amounts' (Temu's amounts and dates) or 'address' (the buyer's full address on request). */
+export default function TemuOrderDetail({ orderId, part }) {
   const { token } = useAuth()
-  const { data, loading, error } = useApi(orderId ? `/api/temu/orders/${orderId}/temu-detail` : null)
+  const { data, loading, error } = useApi(orderId && part === 'amounts' ? `/api/temu/orders/${orderId}/temu-detail` : null)
   const [address, setAddress] = useState(null)
   const [addressError, setAddressError] = useState('')
   const [fetching, setFetching] = useState(false)
@@ -32,10 +31,9 @@ export default function TemuOrderDetail({ orderId }) {
     }
   }
 
-  return (
-    <div className="space-y-3">
+  if (part === 'amounts') {
+    return (
       <div>
-        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Amounts on Temu</h3>
         {loading && <p className="mt-1 text-xs text-gray-500">Loading…</p>}
         {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
         {data?.amountsNote && <p className="mt-1 text-xs text-gray-500">{data.amountsNote}</p>}
@@ -56,10 +54,10 @@ export default function TemuOrderDetail({ orderId }) {
           </ul>
         )}
       </div>
-      <TemuLabel orderId={orderId} />
-      <TemuFollowUp orderId={orderId} />
+    )
+  }
+  return (
       <div>
-        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Buyer's full address</h3>
         {!address && (
           <div className="mt-1 flex items-center gap-2">
             <Button size="sm" variant="secondary" type="button" disabled={fetching} onClick={showAddress}>{fetching ? 'Loading…' : 'Show full address'}</Button>
@@ -74,6 +72,5 @@ export default function TemuOrderDetail({ orderId }) {
           </p>
         )}
       </div>
-    </div>
   )
 }
