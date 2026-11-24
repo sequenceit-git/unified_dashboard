@@ -16,6 +16,9 @@ import ImageDropzone from '../../../../components/ui/ImageDropzone'
 import CategoryPicker from './listing/CategoryPicker'
 import TemplateFields from './listing/TemplateFields'
 import { applyAiFill, missingForAi } from './listing/aiFill'
+import { TEMU_LIST_STEPS, problemsFrom } from './listing/listSteps'
+import StepPanel, { Step } from '../../ui/StepPanel'
+import StepProblems from '../../ui/StepProblems'
 import TemuVariants from './listing/TemuVariants'
 import { formFromProduct, newProductBody, problemsByField, skusFor, toTemuForm, validate } from './listing/temuForm'
 
@@ -28,21 +31,24 @@ export default function ListModal({ product, onClose, onSaved }) {
   const [saved, setSaved] = useState(product || null)
   const [template, setTemplate] = useState(null)
   const [templates, setTemplates] = useState([])
-  const [errors, setErrors] = useState({})
+  // Errors Temu or a load gave (cleared on the next try); the form's own checks follow every edit after a try.
+  const [server, setServer] = useState({})
+  const [tried, setTried] = useState(false)
+  const [step, setStep] = useState('basics')
   const [checkNote, setCheckNote] = useState('')
   const [busy, setBusy] = useState('')
   const [done, setDone] = useState('')
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }))
   useEffect(() => {
-    api.get('/api/temu/goods/helpers/shipping-templates', token).then(setTemplates).catch((err) => setErrors((e) => ({ ...e, shippingTemplateId: err.message })))
+    api.get('/api/temu/goods/helpers/shipping-templates', token).then(setTemplates).catch((err) => setServer((e) => ({ ...e, shippingTemplateId: err.message })))
   }, [token])
   useEffect(() => {
     if (!form.catId) return
     let stop = false
     api.get(`/api/temu/goods/helpers/template${queryString({ catId: form.catId })}`, token)
       .then((t) => { if (!stop) setTemplate(t) })
-      .catch((err) => { if (!stop) setErrors((e) => ({ ...e, catId: err.message })) })
+      .catch((err) => { if (!stop) setServer((e) => ({ ...e, catId: err.message })) })
     return () => { stop = true }
   }, [form.catId, token])
 
@@ -120,10 +126,14 @@ export default function ListModal({ product, onClose, onSaved }) {
 
   const submit = async (e) => {
     e.preventDefault()
+    setTried(true)
+    setServer({})
     const found = validate(form, template || {})
-    setErrors(found)
-    if (Object.keys(found).length) return
-    if (!shop) return setErrors({ _: 'Connect the Temu shop in Settings first.' })
+    if (Object.keys(found).length) {
+      setStep(problemsFrom(found)[0].step)
+      return
+    }
+    if (!shop) return setServer({ _: 'Connect the Temu shop in Settings first.' })
     setBusy('list')
     try {
       // Temu fetches each photo once and gives its own url, which goods must use.
@@ -146,26 +156,83 @@ export default function ListModal({ product, onClose, onSaved }) {
       setDone('Sent to Temu. Temu reviews new goods before they go on sale; the next sync shows the result.')
       onSaved?.(target)
     } catch (err) {
-      setErrors(problemsByField(err.data || { error: err.message }))
+      const fromTemu = problemsByField(err.data || { error: err.message })
+      setServer(fromTemu)
+      const first = problemsFrom(fromTemu)[0]
+      if (first) setStep(first.step)
     } finally {
       setBusy('')
     }
   }
 
-  return (
-    <Modal title={product ? `List "${product.title}" on Temu` : 'New goods on Temu'} onClose={onClose} size="4xl" wide>
-      {done ? (
+  const errors = { ...(tried ? validate(form, template || {}) : {}), ...server }
+  const problems = problemsFrom(errors)
+  const badSteps = new Set(problems.map((p) => p.step))
+  const card = 'space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900'
+  const title = product ? `List "${product.title}" on Temu` : 'New goods on Temu'
+
+  if (done) {
+    return (
+      <Modal title={title} onClose={onClose} size="4xl" wide>
         <div className="space-y-3">
-          <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{done}</p>
+          <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">{done}</p>
           <div className="flex justify-end"><Button onClick={onClose}>Close</Button></div>
         </div>
-      ) : (
-        <form onSubmit={submit} className="space-y-4">
-          {errors._ && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errors._}</p>}
-          <Input label="Title (English, up to 500 characters) *" value={form.title} maxLength={500} onChange={(e) => set({ title: e.target.value })} />
-          {errors.title && <p className="text-xs text-red-600">{errors.title}</p>}
-          <CategoryPicker token={token} title={form.title} value={form.catId} path={form.catPath} onChange={chooseCategory} error={errors.catId} />
-          {form.catId && !template && <p className="text-xs text-gray-500">Loading Temu's attributes for this category…</p>}
+      </Modal>
+    )
+  }
+
+  return (
+    <StepPanel
+      title={title}
+      steps={TEMU_LIST_STEPS}
+      active={step}
+      onStep={setStep}
+      problemSteps={badSteps}
+      onClose={onClose}
+      actions={(
+        <>
+          <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
+          <Button type="submit" form="temu-list-form" disabled={Boolean(busy)}>{busy === 'list' ? 'Sending to Temu…' : 'List on Temu'}</Button>
+        </>
+      )}
+    >
+      <form id="temu-list-form" noValidate onSubmit={submit} onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault() }}>
+        {product?.shopListing?.status === 'error' && product.shopListing.syncError && (
+          <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200">
+            <strong>Temu refused the last try:</strong> {product.shopListing.syncError}
+          </div>
+        )}
+
+        <Step id="basics" active={step}>
+          <StepProblems problems={problems} step="basics" />
+          <div className={card}>
+            <Input label="Title (English, up to 500 characters) *" value={form.title} maxLength={500} onChange={(e) => set({ title: e.target.value })} />
+            <ImageDropzone images={form.images} onChange={(images) => set({ images })} maxImages={10} label="Photos (JPEG/PNG, up to 3 MB; non-apparel square ≥ 800 px, apparel 3:4) *" />
+          </div>
+          <div className={card}>
+            <span className="block text-xs font-semibold text-gray-600 dark:text-slate-300">Bullet points (up to 6)</span>
+            {bullets.map((b, i) => <Input key={i} value={b} onChange={(e) => set({ bulletPoints: Object.assign([...bullets], { [i]: e.target.value }) })} />)}
+            {bullets.length < 6 && <Button type="button" size="sm" variant="secondary" onClick={() => set({ bulletPoints: [...bullets, ''] })}>Add bullet point</Button>}
+            <label className="block text-sm">
+              <span className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-slate-300">Description (plain text)</span>
+              <textarea className="w-full rounded-lg border px-3 py-2 dark:border-slate-700 dark:bg-slate-900" rows={5} maxLength={10000} value={form.description} onChange={(e) => set({ description: e.target.value })} />
+            </label>
+            <Input label="Goods code (optional)" value={form.outGoodsSn} maxLength={100} onChange={(e) => set({ outGoodsSn: e.target.value })} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" type="button" size="sm" disabled={Boolean(busy)} onClick={check}>{busy === 'check' ? 'Checking…' : 'Check with Temu'}</Button>
+              <span className="text-xs text-gray-500">Banned words and duplicate codes, before you list.</span>
+            </div>
+            {checkNote && <p className="text-xs text-gray-700 dark:text-slate-300">{checkNote}</p>}
+          </div>
+        </Step>
+
+        <Step id="category" active={step}>
+          <StepProblems problems={problems} step="category" />
+          <div className={card}>
+            <CategoryPicker token={token} title={form.title} value={form.catId} path={form.catPath} onChange={chooseCategory} error={errors.catId} />
+            {form.catId && !template && <p className="text-xs text-gray-500">Loading Temu's attributes for this category…</p>}
+          </div>
           {aiFill.busy && <p className="text-xs text-indigo-600 dark:text-indigo-300">✨ AI is filling the properties from what was found…</p>}
           {!aiFill.busy && aiFill.asked > 0 && !aiFill.error && (
             <p className="rounded-md bg-indigo-50 px-2 py-1 text-xs text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">
@@ -173,35 +240,64 @@ export default function ListModal({ product, onClose, onSaved }) {
             </p>
           )}
           {aiFill.error && <p className="text-xs text-amber-700 dark:text-amber-300">AI couldn't fill the properties: {aiFill.error}</p>}
-          {template && <TemplateFields template={template} form={form} setAttr={setAttr} errors={errors} />}
-          <ImageDropzone images={form.images} onChange={(images) => set({ images })} maxImages={10} label="Photos (JPEG/PNG, up to 3 MB; non-apparel square ≥ 800 px, apparel 3:4) *" />
-          {errors.images && <p className="text-xs text-red-600">{errors.images}</p>}
-          {template && <TemuVariants token={token} catId={form.catId} template={template} form={form} setGroups={setGroups} setSku={setSku} errors={errors} />}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Select label="Shipping template *" value={form.shippingTemplateId} options={templates.map((t) => ({ value: String(t.id), label: t.name }))} onChange={(e) => set({ shippingTemplateId: e.target.value })} placeholder={templates.length ? 'Select…' : 'Make one in Temu Seller Center first'} />
-            <Input label="Handling time (days)" type="number" min="1" value={form.handlingDays} onChange={(e) => set({ handlingDays: e.target.value })} />
-            <Input label="Goods code (optional)" value={form.outGoodsSn} maxLength={100} onChange={(e) => set({ outGoodsSn: e.target.value })} />
+          {template && <div className={card}><TemplateFields template={template} form={form} setAttr={setAttr} errors={errors} /></div>}
+          {!form.catId && <p className="text-sm text-gray-500">Choose a category to see Temu's properties for it.</p>}
+        </Step>
+
+        <Step id="skus" active={step}>
+          <StepProblems problems={problems} step="skus" />
+          {template ? (
+            <div className={card}>
+              <TemuVariants token={token} catId={form.catId} template={template} form={form} setGroups={setGroups} setSku={setSku} errors={errors} />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" type="button" size="sm" disabled={Boolean(busy) || !form.variants.length} onClick={suggest}>{busy === 'suggest' ? 'Asking Temu…' : 'Suggest prices'}</Button>
+                <span className="text-xs text-gray-500">Temu's recommended price per SKU (needs each SKU's weight and size).</span>
+              </div>
+              {checkNote && <p className="text-xs text-gray-700 dark:text-slate-300">{checkNote}</p>}
+            </div>
+          ) : <p className="text-sm text-gray-500">Choose a category first: Temu's variant types come from it.</p>}
+        </Step>
+
+        <Step id="shipping" active={step}>
+          <StepProblems problems={problems} step="shipping" />
+          <div className={card}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select label="Shipping template *" value={form.shippingTemplateId} options={templates.map((t) => ({ value: String(t.id), label: t.name }))} onChange={(e) => set({ shippingTemplateId: e.target.value })} placeholder={templates.length ? 'Select…' : 'Make one in Temu Seller Center first'} />
+              <Input label="Handling time (days)" type="number" min="1" value={form.handlingDays} onChange={(e) => set({ handlingDays: e.target.value })} />
+            </div>
           </div>
-          {errors.shippingTemplateId && <p className="text-xs text-red-600">{errors.shippingTemplateId}</p>}
-          <div className="space-y-2">
-            <span className="block text-xs font-semibold text-gray-600">Bullet points (up to 6)</span>
-            {bullets.map((b, i) => <Input key={i} value={b} onChange={(e) => set({ bulletPoints: Object.assign([...bullets], { [i]: e.target.value }) })} />)}
-            {bullets.length < 6 && <Button type="button" size="sm" variant="secondary" onClick={() => set({ bulletPoints: [...bullets, ''] })}>Add bullet point</Button>}
-            {errors.bulletPoints && <p className="text-xs text-red-600">{errors.bulletPoints}</p>}
+        </Step>
+
+        <Step id="review" active={step}>
+          {problems.length > 0 && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/40">
+              <p className="mb-1 text-sm font-semibold text-rose-800 dark:text-rose-200">Fix these before listing</p>
+              <ul className="space-y-1 text-sm">
+                {problems.map((p) => (
+                  <li key={`${p.field}:${p.message}`}>
+                    <button type="button" className="text-left text-rose-700 underline-offset-2 hover:underline dark:text-rose-300" onClick={() => setStep(p.step)}>
+                      {TEMU_LIST_STEPS.find((x) => x.id === p.step)?.label}: {p.message}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className={`${card} flex gap-4`}>
+            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border bg-gray-50 dark:border-slate-700 dark:bg-slate-800">
+              {form.images[0] ? <img src={form.images[0]} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center text-xs text-gray-400">No photo</span>}
+            </div>
+            <dl className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <dt className="text-gray-500">Title</dt><dd className="truncate">{form.title || '—'}</dd>
+              <dt className="text-gray-500">Category</dt><dd className="truncate">{form.catPath || '—'}</dd>
+              <dt className="text-gray-500">SKUs</dt><dd>{form.variants.length}</dd>
+              <dt className="text-gray-500">From</dt><dd>{form.variants.length ? `$${Math.min(...form.variants.map((v) => Number(v.basePrice) || Infinity)).toFixed(2)}` : '—'}</dd>
+              <dt className="text-gray-500">Stock</dt><dd>{form.variants.reduce((t, v) => t + Number(v.quantity || 0), 0)}</dd>
+            </dl>
           </div>
-          <label className="block text-sm">
-            <span className="mb-1.5 block text-xs font-semibold text-gray-600">Description (plain text)</span>
-            <textarea className="w-full rounded-lg border px-3 py-2 dark:bg-slate-900" rows={5} maxLength={10000} value={form.description} onChange={(e) => set({ description: e.target.value })} />
-          </label>
-          {checkNote && <p className="text-xs text-gray-700">{checkNote}</p>}
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
-            <Button variant="secondary" type="button" disabled={Boolean(busy) || !form.variants.length} onClick={suggest}>{busy === 'suggest' ? 'Asking Temu…' : 'Suggest prices'}</Button>
-            <Button variant="secondary" type="button" disabled={Boolean(busy)} onClick={check}>{busy === 'check' ? 'Checking…' : 'Check with Temu'}</Button>
-            <Button type="submit" disabled={Boolean(busy)}>{busy === 'list' ? 'Sending to Temu…' : 'List on Temu'}</Button>
-          </div>
-        </form>
-      )}
-    </Modal>
+          <p className="text-xs text-gray-500">Temu reviews new goods before they go on sale; anything it refuses is shown here with its reason.</p>
+        </Step>
+      </form>
+    </StepPanel>
   )
 }
