@@ -230,3 +230,18 @@ test('TikTok wave 1 endpoints are covered', () => {
   ]
   for (const id of WAVE1) assert.match(String(rows.get(id)), /^covered/, id)
 })
+
+// ---- Temu wave 1 (docs/superpowers/plans/2026-11-24-temu-api-wave1.md)
+test('Temu wave 1 methods are covered', () => {
+  const { shopCoverage } = require('../scripts/apiCoverage/compare')
+  const rows = new Map(shopCoverage('temu').map((r) => [r.id, r.status]))
+  const WAVE1 = [
+    'bg.open.accesstoken.info.get', 'bg.local.goods.detail.query', 'bg.local.goods.sku.list.query', 'bg.local.goods.publish.status.get',
+    'bg.local.goods.sku.out.sn.check', 'bg.local.goods.sku.out.sn.set', 'bg.order.detail.v2.get', 'temu.order.amount.v2.query',
+    'bg.order.decryptshippinginfo.get', 'temu.local.goods.sku.stock.query', 'bg.local.goods.sku.list.price.query',
+    'temu.local.goods.recommendedprice.query', 'bg.aftersales.aftersales.list.get', 'temu.aftersales.parentaftersales.detail.get',
+    'temu.searchrec.ad.reports.goods.query', 'bg.promotion.activity.candidate.goods.query', 'bg.promotion.activity.goods.enroll',
+    'bg.promotion.activity.goods.query', 'bg.promotion.activity.goods.operation.query',
+  ]
+  for (const id of WAVE1) assert.match(String(rows.get(id)), /^covered/, id)
+})

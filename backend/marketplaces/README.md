@@ -107,6 +107,24 @@ shared with another shop's pages):
   `GET /api/tiktok/products/seo-words`, `POST /api/tiktok/products/:id/listing-check` (the same
   body as `/list`, sent to TikTok's listing check; nothing is published).
 
+### Tabs, drill-downs, actions and granted methods (Temu)
+
+Temu's own section view (`frontend/src/marketplaces/temu/SectionView.jsx`, orange pill tabs; no
+other shop's pages or components):
+- Tables and tiles carry `tab`; `ownTabs` (a page's own content) stay when Temu's API for the
+  section isn't available.
+- A section file may export `details[name](token, shop, id)` and `actions[name](token, shop, id,
+  value)`, served by `GET|POST /api/temu/sections/:sectionId/:actionId` after the section's
+  access check; only the file's own names run (`Object.hasOwn`). Used by: after-sales
+  (`aftersales`), promotions (`enrolled`, action `enrol`).
+- Granted methods: `shop.grantedScopes` = the token's `apiScopeList` (stored at connect;
+  `POST /api/temu/shops/:id/refresh-permissions` reads it again). `sections/helpers.js`
+  `grantAware(shop, method, load)` says how to enable a method that isn't granted; a shop without
+  a stored list is never blocked.
+- Also: `GET /api/temu/goods/:goodsId/temu-detail`, `POST /api/temu/goods/:goodsId/sku-codes`,
+  `GET /api/temu/orders/:id/temu-detail`, `POST /api/temu/orders/:id/full-address` (on request,
+  `Cache-Control: no-store`, never stored), `GET /api/temu/inventory/temu-stock`.
+
 ## Add a shop
 
 1. Create `marketplaces/<new_key>/` with the files above and an `index.js` adapter.
