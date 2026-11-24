@@ -9,9 +9,9 @@ import Badge, { statusColor } from '../../../../components/ui/Badge'
 import Button from '../../../../components/ui/Button'
 import Card from '../../../../components/ui/Card'
 import DataTable from '../../../../components/ui/DataTable'
-import { Select } from '../../../../components/ui/Input'
 import Pagination from '../../../../components/ui/Pagination'
 import SearchInput from '../../../../components/ui/SearchInput'
+import StatusPills from '../../ui/StatusPills'
 import OrderDrawer from './OrderDrawer'
 
 const STATUSES = ['all', 'pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'returned', 'refunded']
@@ -22,6 +22,7 @@ export default function OrdersPage() {
   const marketplace = section?.marketplace
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
+  const [counts, setCounts] = useState({})
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMessage, setSyncMessage] = useState('')
@@ -33,6 +34,24 @@ export default function OrdersPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
+  const fetchCounts = async () => {
+    if (!marketplace) return
+    const entries = await Promise.all(
+      STATUSES.map(async (s) => {
+        try {
+          const res = await api.get(`/api/ebay/orders${queryString({ status: s, limit: 1 })}`, token)
+          return [s, res.total ?? 0]
+        } catch {
+          return [s, null]
+        }
+      }),
+    )
+    setCounts((prev) => ({
+      ...prev,
+      ...Object.fromEntries(entries.filter(([, count]) => count != null)),
+    }))
+  }
+
   const fetchRows = async ({ quiet = false } = {}) => {
     if (!marketplace) return
     if (!quiet) setLoading(true)
@@ -41,6 +60,7 @@ export default function OrdersPage() {
       const res = await api.get(`/api/ebay/orders${queryString({ status, q, sort, page, limit: 15 })}`, token)
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
+      if (!q.trim()) setCounts((prev) => ({ ...prev, [status]: res.total }))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -68,6 +88,11 @@ export default function OrdersPage() {
   }
 
   useEffect(() => {
+    fetchCounts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marketplace, refreshKey])
+
+  useEffect(() => {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,6 +101,7 @@ export default function OrdersPage() {
   useSyncReload('orders', marketplace, () => {
     if (syncing) return
     fetchRows({ quiet: true })
+    fetchCounts()
     if (selectedId?._id) {
       api.get(`/api/ebay/orders/${selectedId._id}`, token).then(setSelectedId).catch(() => {})
     }
@@ -88,6 +114,12 @@ export default function OrdersPage() {
 
   if (!section) return <RequireShopSection />
 
+  const pills = STATUSES.map((s) => ({
+    key: s,
+    label: s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1),
+    count: counts[s] ?? null,
+  }))
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -99,21 +131,10 @@ export default function OrdersPage() {
           {syncing ? 'Syncing...' : `Sync ${section.label}`}
         </Button>
       </div>
+      <StatusPills pills={pills} active={status} onChange={(s) => { setStatus(s); setPage(1) }} />
       <Card>
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex-1 min-w-0">
-            <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Order ID, tracking, buyer…" />
-          </div>
-          <div className="w-full sm:w-48">
-            <Select
-              value={status}
-              onChange={(e) => { setStatus(e.target.value); setPage(1) }}
-              options={STATUSES.map((s) => ({
-                value: s,
-                label: s === 'all' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1),
-              }))}
-            />
-          </div>
+        <div className="mb-3">
+          <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Order ID, tracking, buyer…" />
         </div>
         <DataTable
           columns={[
