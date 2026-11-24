@@ -1451,18 +1451,6 @@
     "priority": "medium",
     "value": "Create, edit and delete markdown sales and order-discount promotions (listing is already used)."
   },
-  "GET /sell/marketing/v1/promotion_report": {
-    "section": "promotions",
-    "size": "small",
-    "priority": "high",
-    "value": "Promotion results: sales, units, buyers and discount given per promotion."
-  },
-  "GET /sell/marketing/v1/promotion_summary_report": {
-    "section": "promotions",
-    "size": "small",
-    "priority": "high",
-    "value": "Promotion results: sales, units, buyers and discount given per promotion."
-  },
   "GET /sell/marketing/v1/email_campaign": {
     "section": "buyers",
     "size": "medium",

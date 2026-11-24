@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 429 | 63 | 0 | 357 | 9 | 83 | — |
+| eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 41 | 11 | 272 | 41 | 53 | 126 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
@@ -210,12 +210,10 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | medium | small | `GET /sell/finances/v1/transfer/{transfer_Id}` | sell.finances | getTransfer | Payout and transaction details: a single payout or transfer, and totals by transaction type. |
 | — | low | small | `Trading:GetAccount` | — | GetAccount | Legacy eBay invoice/account statement (the Finances API covers fees better). |
 
-#### promotions (10)
+#### promotions (8)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `GET /sell/marketing/v1/promotion_report` | sell.marketing.readonly | getPromotionReports | Promotion results: sales, units, buyers and discount given per promotion. |
-| — | high | small | `GET /sell/marketing/v1/promotion_summary_report` | sell.marketing.readonly | getPromotionSummaryReport | Promotion results: sales, units, buyers and discount given per promotion. |
 | — | medium | medium | `DELETE /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | deleteItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `DELETE /sell/marketing/v1/item_promotion/{promotion_id}` | sell.marketing | deleteItemPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
 | — | medium | medium | `GET /sell/marketing/v1/item_price_markdown/{promotion_id}` | sell.marketing | getItemPriceMarkdownPromotion | Create, edit and delete markdown sales and order-discount promotions (listing is already used). |
@@ -627,6 +625,8 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | M2M Public API Service | `POST /commerce/message/v1/bulk_update_conversation` | bulkUpdateConversation | This method can be used to update the conversationStatus of up to 10 conversations.The conversationId, existing conversationType, and updated conversationStatus for each conversation to modify are required in the convers |  |
 | missing | M2M Public API Service | `POST /commerce/message/v1/update_conversation` | updateConversation | This method can be used to update the conversationStatus or the read status of a specified conversation.Note: Only one of these statuses can be updated at a time using this method. |  |
 | covered | Marketing API | `GET /sell/marketing/v1/promotion` | getPromotions | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/profile.js`, `marketplaces/ebay/sections/promotions.js` |
+| covered | Marketing API | `GET /sell/marketing/v1/promotion_report` | getPromotionReports | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
+| covered | Marketing API | `GET /sell/marketing/v1/promotion_summary_report` | getPromotionSummaryReport | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/sections/promotions.js` |
 | covered | Marketing API | `POST /sell/marketing/v1/item_price_markdown` | createItemPriceMarkdownPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/listings.js` |
 | covered | Marketing API | `POST /sell/marketing/v1/promotion/{promotion_id}/pause` | pausePromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/listings.js` |
 | covered | Marketing API | `POST /sell/marketing/v1/promotion/{promotion_id}/resume` | resumePromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. | `marketplaces/ebay/listings.js` |
@@ -663,8 +663,6 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Marketing API | `GET /sell/marketing/v1/item_promotion/{promotion_id}` | getItemPromotion | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
 | missing | Marketing API | `GET /sell/marketing/v1/negative_keyword` | getNegativeKeywords | This method can be used to retrieve all of the negative keywords for ad groups in priority strategy campaigns that use the Cost Per Click (CPC) funding model.The results can be filtered using the campaign_ids, ad_group_i |  |
 | missing | Marketing API | `GET /sell/marketing/v1/negative_keyword/{negative_keyword_id}` | getNegativeKeyword | This method retrieves details on a specific negative keyword.In the request, specify the negative_keyword_id as a path parameter. |  |
-| missing | Marketing API | `GET /sell/marketing/v1/promotion_report` | getPromotionReports | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
-| missing | Marketing API | `GET /sell/marketing/v1/promotion_summary_report` | getPromotionSummaryReport | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
 | missing | Marketing API | `GET /sell/marketing/v1/promotion/{promotion_id}/get_listing_set` | getListingSet | Note: As of July 8th 2024, promotions are now being referred to as discounts on Seller Hub and eBay help pages. |  |
 | missing | Marketing API | `POST /sell/marketing/v1/ad_campaign` | createCampaign | This method can be used to create a Promoted Listings general, priority, or offsite campaign.A Promoted Listings campaign is the structure in which you place the ads or ad group for the listings you wish to promote.Note: |  |
 | missing | Marketing API | `POST /sell/marketing/v1/ad_campaign/{campaign_id}/ad` | createAdByListingId | This method adds a listing to an existing Promoted Listings campaign using a listingId value generated by the Trading API or Inventory API, or using a value generated by an ad group ID. |  |
