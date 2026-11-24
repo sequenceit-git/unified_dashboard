@@ -94,6 +94,11 @@ async function list(ctx) {
         { title: { $regex: q, $options: 'i' } },
         { sku: { $regex: q, $options: 'i' } },
       ]
+      // An eBay item number (digits) finds the product listed under it.
+      if (/^\d{6,}$/.test(ctx.query.q.trim())) {
+        const listed = await Listing.find({ marketplace: 'ebay', externalListingId: { $regex: q } }).select('productId').lean()
+        if (listed.length) filter.$or.push({ _id: { $in: listed.map((row) => row.productId) } })
+      }
     }
     if (ctx.query.stock === 'low') filter.$expr = { $lte: ['$stock', '$lowStockThreshold'] }
     if (ctx.query.stock === 'out') filter.stock = 0

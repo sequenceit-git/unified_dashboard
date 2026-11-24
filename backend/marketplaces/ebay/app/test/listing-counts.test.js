@@ -57,3 +57,13 @@ test('"Not listed" lists products with no eBay listing; "Ended" includes unsold'
     assert.ok(seen.listingFilters.some((f) => JSON.stringify(f.status) === JSON.stringify({ $in: ['ended', 'paused'] })))
   } finally { restore() }
 })
+
+test('search by eBay item number finds the listed product', async () => {
+  const { service, seen, restore } = load({ listings: [{ productId: 'p9', externalListingId: '123456789012' }] })
+  try {
+    await service.list({ ...admin, query: { q: '123456789012' } })
+    const or = seen.productFilters.at(-1).$or
+    assert.ok(or.some((c) => c._id && c._id.$in.includes('p9')), JSON.stringify(or))
+    assert.ok(seen.listingFilters.some((f) => f.externalListingId), 'looked up by item number')
+  } finally { restore() }
+})
