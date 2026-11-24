@@ -1163,18 +1163,6 @@
     "priority": "high",
     "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
   },
-  "POST /sell/marketing/v1/ad_campaign/{campaign_id}/clone": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
-  "POST /sell/marketing/v1/ad_campaign": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
   "DELETE /sell/marketing/v1/ad_campaign/{campaign_id}": {
     "section": "new: promoted listings",
     "size": "large",
@@ -1182,12 +1170,6 @@
     "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
   },
   "GET /sell/marketing/v1/ad_campaign/find_campaign_by_ad_reference": {
-    "section": "new: promoted listings",
-    "size": "large",
-    "priority": "high",
-    "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
-  },
-  "GET /sell/marketing/v1/ad_campaign/get_campaign_by_name": {
     "section": "new: promoted listings",
     "size": "large",
     "priority": "high",

@@ -197,3 +197,70 @@ test('remove and set rate act on the chosen listings', async () => {
     assert.equal(calls.length, before)
   } finally { restore() }
 })
+
+test('creating a campaign sends a cost-per-sale campaign and adds the chosen listings', async () => {
+  let created = false
+  const { advertising, restore, calls } = load({
+    get: {
+      'get_campaign_by_name': () => { if (!created) throw Object.assign(new Error('not found'), { status: 404 }); return campaign('77', 'SCHEDULED') },
+      '/sell/marketing/v1/ad_campaign/77': campaign('77', 'SCHEDULED'),
+    },
+    send: {
+      '/sell/marketing/v1/ad_campaign': (url) => { if (url === '/sell/marketing/v1/ad_campaign') created = true; return {} },
+      bulk_create_ads_by_listing_id: (url, body) => ({ responses: body.requests.map((r) => ({ listingId: r.listingId, statusCode: 201 })) }),
+    },
+  })
+  advertising.now = () => NOW
+  try {
+    const res = await advertising.actions.create('tok', { _id: 's1' }, 'campaigns', { name: ' Winter ', rate: '7', start: '2026-12-01', end: '2027-01-31', listings: ['111', '222'] })
+    const post = calls.find(([m, u]) => m === 'POST' && u === '/sell/marketing/v1/ad_campaign')
+    assert.deepEqual(post[2], { campaignName: 'Winter', marketplaceId: 'EBAY_US', startDate: '2026-12-01T00:00:00.000Z', endDate: '2027-01-31T23:59:59.000Z', fundingStrategy: { fundingModel: 'COST_PER_SALE', bidPercentage: '7.0' } })
+    assert.ok(calls.some(([m, u]) => m === 'GET' && u === '/sell/marketing/v1/ad_campaign/get_campaign_by_name?campaign_name=Winter'))
+    assert.deepEqual(calls.find(([, u]) => u.includes('/77/bulk_create_ads_by_listing_id'))[2].requests, [{ listingId: '111', bidPercentage: '7.0' }, { listingId: '222', bidPercentage: '7.0' }])
+    assert.equal(res.message, 'Campaign "Winter" created. Added 2 listings.')
+  } finally { restore() }
+})
+
+test('a name already used is refused before eBay is asked to create', async () => {
+  const { advertising, restore, calls } = load({ get: { get_campaign_by_name: campaign('9', 'RUNNING') } })
+  advertising.now = () => NOW
+  try {
+    await assert.rejects(advertising.actions.create('tok', {}, 'campaigns', { name: 'Camp 9' }), (e) => e.status === 400 && /A campaign named "Camp 9" already exists\./.test(e.body.error))
+    assert.equal(calls.filter(([m]) => m === 'POST').length, 0)
+  } finally { restore() }
+})
+
+test('start defaults to now; a past start or an end before the start is refused', async () => {
+  const { advertising, restore, calls } = load({
+    get: { get_campaign_by_name: (url) => { if (calls.some(([m]) => m === 'POST')) return campaign('5', 'RUNNING'); throw Object.assign(new Error('nf'), { status: 404 }) } },
+    send: { '/sell/marketing/v1/ad_campaign': {} },
+  })
+  advertising.now = () => NOW
+  try {
+    await assert.rejects(advertising.actions.create('tok', {}, 'campaigns', { name: 'A', start: '2026-11-01' }), (e) => e.status === 400)
+    await assert.rejects(advertising.actions.create('tok', {}, 'campaigns', { name: 'A', start: '2026-12-10', end: '2026-12-01' }), (e) => e.status === 400)
+    assert.equal(calls.filter(([m]) => m === 'POST').length, 0)
+    await advertising.actions.create('tok', {}, 'campaigns', { name: 'A' })
+    const post = calls.find(([m]) => m === 'POST')[2]
+    assert.equal(post.startDate, NOW.toISOString())
+    assert.equal(post.endDate, undefined)
+    assert.deepEqual(post.fundingStrategy, { fundingModel: 'COST_PER_SALE' })
+  } finally { restore() }
+})
+
+test('copy makes a new campaign from an ended rules-based one', async () => {
+  const source = campaign('3', 'ENDED', 'COST_PER_SALE', { campaignCriterion: { autoSelectFutureInventory: true } })
+  const { advertising, restore, calls } = load({
+    get: { '/sell/marketing/v1/ad_campaign?': { campaigns: [source, campaign('6', 'ENDED')] }, '/sell/marketing/v1/ad_campaign/3': source },
+    send: { '/clone': {} },
+  })
+  advertising.now = () => NOW
+  try {
+    const rows = (await advertising('tok', {}, { now: NOW })).tables[0].rows
+    assert.ok(rows.find((r) => r.id === '3').actions.some((a) => a.id === 'clone'))
+    assert.ok(!rows.find((r) => r.id === '6').actions.some((a) => a.id === 'clone'))
+    assert.ok((await advertising('tok', {}, { now: NOW })).tables[0].actions.some((a) => a.id === 'create'))
+    await advertising.actions.clone('tok', {}, '3', { name: 'Again' })
+    assert.deepEqual(calls.find(([m]) => m === 'POST'), ['POST', '/sell/marketing/v1/ad_campaign/3/clone', { campaignName: 'Again', startDate: NOW.toISOString(), fundingStrategy: source.fundingStrategy }])
+  } finally { restore() }
+})

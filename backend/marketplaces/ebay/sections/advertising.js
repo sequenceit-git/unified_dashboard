@@ -115,10 +115,42 @@ function adActions(listings, ads, suggested) {
   ]
 }
 
+/** Campaign dates from the form (yyyy-mm-dd): start today or later (today = now), end after the start. */
+function campaignDates(value, now) {
+  const today = now.toISOString().slice(0, 10)
+  const day = /^\d{4}-\d{2}-\d{2}$/
+  const start = String(value?.start || '').trim()
+  const end = String(value?.end || '').trim()
+  if (start && (!day.test(start) || start < today)) throw new HttpError(400, { error: 'The start date must be today or later.' })
+  const startDate = !start || start === today ? now.toISOString() : `${start}T00:00:00.000Z`
+  if (end && (!day.test(end) || `${end}T23:59:59.000Z` <= startDate)) throw new HttpError(400, { error: 'The end date must be after the start date.' })
+  return { startDate, ...(end ? { endDate: `${end}T23:59:59.000Z` } : {}) }
+}
+
+/** The campaign with this name, or null (eBay answers 404 when there is none). */
+async function campaignByName(token, name) {
+  try {
+    return await ebayGet(token, `/sell/marketing/v1/ad_campaign/get_campaign_by_name?campaign_name=${enc(name)}`)
+  } catch (err) {
+    if (err.status === 404) return null
+    throw err
+  }
+}
+
+const campaignForm = (listings) => ({ fields: [
+  { name: 'name', label: 'Campaign name', maxLength: 80 },
+  { name: 'rate', label: 'Ad rate %', type: 'number', optional: true, hint: "Leave empty to use eBay's suggested rate for each listing." },
+  { name: 'start', label: 'Starts', type: 'date', optional: true, hint: 'Empty: starts now.' },
+  { name: 'end', label: 'Ends', type: 'date', optional: true, hint: 'Empty: runs until you end it.' },
+  ...(listings.length ? [{ name: 'listings', label: 'Listings to promote', options: listings.map((l) => ({ value: l.listingId, label: `${l.title || 'Listing'} (${l.listingId})` })), multiple: true, optional: true }] : []),
+] })
+
 function campaignActions(c) {
   const status = String(c.campaignStatus || '').toUpperCase()
   const ads = [{ id: 'ads', label: 'Ads', detail: true }]
-  if (status === 'ENDED' || status === 'DELETED') return ads
+  // eBay copies only ended rules-based campaigns.
+  if (status === 'ENDED') return [...ads, ...(c.campaignCriterion ? [{ id: 'clone', label: 'Copy', input: { fields: [{ name: 'name', label: 'Name of the copy', maxLength: 80 }, { name: 'start', label: 'Starts', type: 'date', optional: true }] } }] : [])]
+  if (status === 'DELETED') return ads
   const name = c.campaignName || c.campaignId
   return [
     ...(status === 'RUNNING' ? [{ id: 'pause', label: 'Pause', confirm: `Pause campaign "${name}"? Its ads stop showing until you resume it.` }] : []),
@@ -132,6 +164,7 @@ function campaignActions(c) {
 
 async function advertising(token, shop, { now = new Date() } = {}) {
   let campaigns = []
+  const listings = await shopListings(shop).catch(() => [])
   const list = await tables([{
     id: 'campaigns',
     tab: 'Campaigns',
@@ -142,7 +175,6 @@ async function advertising(token, shop, { now = new Date() } = {}) {
       campaigns = await allCampaigns(token)
       // General campaigns that can still change get their ads and eBay's suggestions for the add/remove choices.
       const open = campaigns.filter((c) => c.fundingStrategy?.fundingModel === 'COST_PER_SALE' && !/ENDED|DELETED/i.test(c.campaignStatus || '')).slice(0, ACTION_LOOKUPS)
-      const listings = open.length ? await shopListings(shop).catch(() => []) : []
       const extra = new Map(await Promise.all(open.map(async (c) => {
         const [ads, suggested] = await Promise.all([
           campaignAds(token, c.campaignId).catch(() => null),
@@ -165,6 +197,7 @@ async function advertising(token, shop, { now = new Date() } = {}) {
       }))
     },
   }])
+  list[0].actions = [{ id: 'create', label: '+ New campaign', input: campaignForm(listings) }]
   const count = (status) => campaigns.filter((c) => c.campaignStatus === status).length
   const recentlyEnded = campaigns.filter((c) => c.campaignStatus === 'ENDED' && c.endDate && now - new Date(c.endDate) <= 90 * DAY).length
   return {
@@ -249,6 +282,34 @@ advertising.actions = {
     const refused = await bulk(token, `/sell/marketing/v1/ad_campaign/${enc(id)}/bulk_update_ads_bid_by_listing_id`, ids.map((listingId) => ({ listingId, bidPercentage: rate })))
     return { message: `Ad rate ${rate}% set on ${plural(ids.length - refused.length, 'listing')}.${refusedText(refused, 'changed')}`, refused }
   },
+  /** A new General (cost-per-sale) campaign, then the chosen listings added to it. */
+  create: async (token, shop, id, value) => {
+    const campaignName = String(value?.name ?? '').trim()
+    if (!campaignName) throw new HttpError(400, { error: 'Enter a campaign name.' })
+    const typed = String(value?.rate ?? '').trim() ? parseRate(value.rate) : null
+    const dates = campaignDates(value, advertising.now())
+    if (await campaignByName(token, campaignName)) throw new HttpError(400, { error: `A campaign named "${campaignName}" already exists.` })
+    await ebaySend(token, 'POST', '/sell/marketing/v1/ad_campaign', {
+      campaignName,
+      marketplaceId: 'EBAY_US',
+      ...dates,
+      fundingStrategy: { fundingModel: 'COST_PER_SALE', ...(typed ? { bidPercentage: typed } : {}) },
+    })
+    // eBay returns the new id only in a Location header: read it back by name.
+    const made = await campaignByName(token, campaignName)
+    let added = ''
+    if (made?.campaignId && chosen(value).length) added = ` ${(await advertising.actions['add-listings'](token, shop, String(made.campaignId), { listings: chosen(value), rate: typed || '' })).message}`
+    return { message: `Campaign "${campaignName}" created.${added}` }
+  },
+  /** A copy of an ended rules-based campaign (eBay's requirement), with its funding. */
+  clone: async (token, shop, id, value) => {
+    const campaignName = String(value?.name ?? '').trim()
+    if (!campaignName) throw new HttpError(400, { error: 'Enter a name for the copy.' })
+    const { startDate } = campaignDates({ start: value?.start }, advertising.now())
+    const source = await ebayGet(token, `/sell/marketing/v1/ad_campaign/${enc(id)}`)
+    await ebaySend(token, 'POST', `/sell/marketing/v1/ad_campaign/${enc(id)}/clone`, { campaignName, startDate, fundingStrategy: source.fundingStrategy })
+    return { message: `Campaign "${campaignName}" created from ${source.campaignName || id}.` }
+  },
   /** Priority (cost-per-click) campaigns only: General campaigns have no budget. */
   budget: async (token, shop, id, value) => {
     const amount = Number((value && typeof value === 'object' ? value.value : value) ?? NaN)
@@ -261,6 +322,7 @@ advertising.actions = {
   },
 }
 
+advertising.now = () => new Date()
 advertising.suggestedRates = suggestedRates
 advertising.campaignAds = campaignAds
 advertising.bulkAds = bulk
