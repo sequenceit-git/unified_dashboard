@@ -1,7 +1,10 @@
-/** Temu "returns" section: its tables (subsections) for the shop section page. */
+/**
+ * Temu "after-sales" section: returns/refunds (approve with the page's own button; details per
+ * request) and cancellation requests.
+ */
 const temu = require('../service')
-const { col, tables } = require('../../../services/marketplace/sectionKit')
-const { AFTERSALES_GROUP, temuTime, TEMU_AFTERSALES_STATUS } = require('./helpers')
+const { col, tables, words } = require('../../../services/marketplace/sectionKit')
+const { AFTERSALES_GROUP, temuTime, TEMU_AFTERSALES_STATUS, temuAmount } = require('./helpers')
 
 async function returns(token) {
   const end = Math.floor(Date.now() / 1000)
@@ -19,7 +22,8 @@ async function returns(token) {
         createAtStart: start,
         createAtEnd: end,
       })).data?.map((row) => ({
-        id: row.parentAfterSalesSn,
+        // "<request>|<order>": the detail call needs both.
+        id: `${row.parentAfterSalesSn}|${row.parentOrderSn}`,
         returnId: row.parentAfterSalesSn,
         cancelId: row.parentAfterSalesSn,
         order: row.parentOrderSn,
@@ -28,6 +32,7 @@ async function returns(token) {
         opened: temuTime(row.createAt),
         updated: temuTime(row.updateAt),
         respondBy: temuTime(row.operateExpireTimeMs),
+        actions: [{ id: 'aftersales', label: 'Details', detail: true }],
       })) || [],
     },
     {
@@ -61,6 +66,58 @@ async function returns(token) {
     ],
     tables: list,
   }
+}
+
+/** Read-only drill-downs: `details[action](token, shop, id) → { title, summary, tables }`. */
+returns.details = {
+  /** id = "<parentAfterSalesSn>|<parentOrderSn>": each line of the request and its record. */
+  aftersales: async (token, shop, id) => {
+    const [sn, orderSn] = String(id).split('|')
+    const [lines, detail] = await Promise.all([
+      temu.call('bg.aftersales.aftersales.list.get', { access_token: token, pageNo: 1, pageSize: 50, parentAfterSalesSnList: [sn] }),
+      temu.call('temu.aftersales.parentaftersales.detail.get', { access_token: token, parentAfterSalesSn: sn, ...(orderSn ? { parentOrderSn: orderSn } : {}) }),
+    ])
+    const byLine = new Map((detail.afterSalesList || []).map((l) => [String(l.afterSalesSn), l]))
+    const refund = detail.refundSummary || {}
+    const when = (ms) => (ms ? new Date(Number(ms)).toISOString() : '')
+    return {
+      title: `After-sales ${sn}`,
+      summary: [
+        { label: 'Refund to buyer', value: temuAmount(refund.buyerTotalRefund), type: 'money' },
+        { label: 'Your discount refunded', value: temuAmount(refund.discountFromSellerRefund), type: 'money' },
+        { label: 'Status', value: TEMU_AFTERSALES_STATUS[detail.parentAfterSalesStatus] || String(detail.parentAfterSalesStatus ?? '—'), type: 'text' },
+      ],
+      tables: [
+        {
+          id: 'lines',
+          title: 'Lines',
+          columns: [col('line', 'Line'), col('goods', 'Goods / SKU'), col('qty', 'Qty', 'number'), col('status', 'Status', 'status'), col('reason', 'Reason'), col('refund', 'Refund asked', 'money')],
+          rows: (lines.data || []).map((l) => {
+            const more = byLine.get(String(l.afterSalesSn)) || {}
+            return {
+              line: l.afterSalesSn,
+              goods: `${l.goodsId} / ${l.skuId}`,
+              qty: l.applyAfterSalesGoodsNumber ?? more.applyAfterSalesGoodsNumber ?? 0,
+              status: TEMU_AFTERSALES_STATUS[l.afterSalesStatus] || words(String(l.afterSalesStatus ?? '')),
+              reason: [more.afterSalesReasonDesc, more.buyerComment].filter(Boolean).join(': '),
+              refund: temuAmount(more.applyRefundAmount),
+            }
+          }),
+        },
+        {
+          id: 'history',
+          title: 'Record',
+          columns: [col('what', 'What'), col('value', 'Value')],
+          rows: [
+            { what: 'Order', value: detail.parentOrderSn || orderSn || '' },
+            { what: 'Status', value: TEMU_AFTERSALES_STATUS[detail.parentAfterSalesStatus] || String(detail.parentAfterSalesStatus ?? '') },
+            { what: 'Opened', value: when(detail.createAtMillis) },
+            { what: 'Last updated', value: when(detail.lastUpdateAtMillis) },
+          ].filter((r) => r.value),
+        },
+      ],
+    }
+  },
 }
 
 module.exports = returns

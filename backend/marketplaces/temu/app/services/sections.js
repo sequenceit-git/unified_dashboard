@@ -313,4 +313,40 @@ async function setAiReply(ctx) {
     return shop
 }
 
-module.exports = { refreshPermissions, connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, categories, attributes, categoryRules, brands, sizeCharts, finances, setAiReply }
+/** The section and its file, after the same access checks as the section page itself. */
+async function temuSectionFile(ctx) {
+    const section = profiles.PROFILES.temu?.sections.find((item) => item.id === ctx.params.sectionId)
+    const file = section && ADAPTER.sections[section.id]
+    if (!file) throw new HttpError(404, { error: 'This shop has no such section' })
+    if (!canUseSection(ctx.authUser || ctx.user, 'temu', section.id, section.route)) {
+      throw new HttpError(403, { error: `You do not have access to ${section.label} on this shop` })
+    }
+    return { section, file }
+}
+
+/** Only names the section file defines itself: never Object's own (constructor, __proto__, …). */
+const own = (map, name) => (map && Object.hasOwn(map, name) ? map[name] : null)
+
+/** GET /sections/:sectionId/:actionId?id= — a read-only drill-down the section file defines. */
+async function sectionDetail(ctx) {
+    const { file } = await temuSectionFile(ctx)
+    const detail = own(file.details, ctx.params.actionId)
+    if (!detail) throw new HttpError(404, { error: 'No such detail' })
+    const id = String(ctx.query?.id || '').trim()
+    if (!id) throw new HttpError(400, { error: 'id is required' })
+    const shop = await connectedShop(ctx, 'temu')
+    return marketplaceManager.withShopToken(shop, (token) => detail(token, shop, id))
+}
+
+/** POST /sections/:sectionId/:actionId — a row or table action the section file defines; `{ message }`. */
+async function sectionAction(ctx) {
+    const { section, file } = await temuSectionFile(ctx)
+    const action = own(file.actions, ctx.params.actionId)
+    if (!action) throw new HttpError(404, { error: 'No such action' })
+    const shop = await connectedShop(ctx, 'temu')
+    const result = await marketplaceManager.withShopToken(shop, (token) => action(token, shop, String(ctx.body?.id ?? ''), ctx.body?.value))
+    await cache.del(`shop:${shop._id}:section:${section.id}`)
+    return result
+}
+
+module.exports = { sectionDetail, sectionAction, refreshPermissions, connectedShop, section, sendOffer, decideReturn, decideCancellation, createPromotion, pausePromotion, resumePromotion, shipPackage, categories, attributes, categoryRules, brands, sizeCharts, finances, setAiReply }

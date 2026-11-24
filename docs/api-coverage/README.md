@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 33 | 0 | 100 | 0 | 24 | — |
+| Temu | 133 | 35 | 0 | 98 | 0 | 22 | — |
 
 ## eBay
 
@@ -1617,12 +1617,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | medium | `temu.searchrec.ad.modify` | — | Advertisement modify interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
 | — | medium | medium | `temu.searchrec.ad.roas.pred` | — | Advertising roas prediction interface | Run ads from the dashboard: create and edit ads, find eligible goods, ad details and change log, ROAS prediction. |
 
-#### after-sales (8)
+#### after-sales (6)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `bg.aftersales.aftersales.list.get` | — | Query sub after-sales order information | After-sales detail: each return/refund line and its full record. |
-| — | high | small | `temu.aftersales.parentaftersales.detail.get` | — | query aftersales detail | After-sales detail: each return/refund line and its full record. |
 | — | medium | medium | `bg.aftersales.parentreturnorder.get` | — | Query after-sales reverse logistics information. | Return logistics: return label, return address, carriers, reverse-shipment info. |
 | — | medium | medium | `temu.aftersales.carrier.get` | — | Query return carrier information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 | — | medium | medium | `temu.aftersales.returnaddress.get` | — | Get Return Order Buyer Address Information | Return logistics: return label, return address, carriers, reverse-shipment info. |
@@ -1852,14 +1850,14 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Promotions | `bg.promotion.activity.goods.operation.query` | querying the operation result of active goods. | query the result of operation in the local to local activity |  |
 | missing | Promotions | `bg.promotion.activity.goods.query` | paged query activity products | query the local to local activity goods |  |
 | missing | Promotions | `bg.promotion.activity.goods.update` | Update Activity Goods Information | update activity goods information in the local to local activity |  |
+| covered | Returns and after-sales | `bg.aftersales.aftersales.list.get` | Query sub after-sales order information | This interface is designed for use in an e-commerce platform, specifically for handling after-sales service requests related to product returns and refunds. The interface allows merchants or administrators to retrieve a | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `bg.aftersales.cancel.agree` | Agree cancel order | Agree cancel order | `marketplaces/temu/orders.js` |
 | covered | Returns and after-sales | `bg.aftersales.cancel.list.get` | Query cancel order after-sales information | Query cancel order after-sales information | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `bg.aftersales.parentaftersales.list.get` | Query the information of parent after-sales orders | This interface is designed to provide real-time updates on the current after-sales status of an order within an e-commerce platform. It allows merchants and buyers to retrieve detailed information about the progress of a | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/after-sales.js` |
+| covered | Returns and after-sales | `temu.aftersales.parentaftersales.detail.get` | query aftersales detail | This interface is designed to provide detailed information on after-sales orders in real time | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `temu.aftersales.refund.issue` | issue refund | This interface is designed to enable merchants to efficiently process refund requests within the e-commerce platform. | `marketplaces/temu/orders.js` |
-| missing | Returns and after-sales | `bg.aftersales.aftersales.list.get` | Query sub after-sales order information | This interface is designed for use in an e-commerce platform, specifically for handling after-sales service requests related to product returns and refunds. The interface allows merchants or administrators to retrieve a |  |
 | missing | Returns and after-sales | `bg.aftersales.parentreturnorder.get` | Query after-sales reverse logistics information. | This interface is designed to provide merchants or administrators within an e-commerce platform with detailed return logistics information for a set of after-sales service requests. |  |
 | missing | Returns and after-sales | `temu.aftersales.carrier.get` | Query return carrier information | This interface is designed to query return carrier information. |  |
-| missing | Returns and after-sales | `temu.aftersales.parentaftersales.detail.get` | query aftersales detail | This interface is designed to provide detailed information on after-sales orders in real time |  |
 | missing | Returns and after-sales | `temu.aftersales.returnaddress.get` | Get Return Order Buyer Address Information | temu.aftersales.returnaddress.get interface is designed to retrieve sensitive shipping address information for a specific return order. |  |
 | missing | Returns and after-sales | `temu.aftersales.returnlabel.prepare.get` | Query return label preparation information | This interface is designed to query return label preparation information. |  |
 | missing | Returns and after-sales | `temu.aftersales.signature.get` | Query signature information | This interface is designed to query signature information. |  |

@@ -431,12 +431,6 @@
     "priority": "high",
     "value": "Join Temu activities: eligible goods, enrol them, see and edit enrolled goods and enrolment results."
   },
-  "bg.aftersales.aftersales.list.get": {
-    "section": "after-sales",
-    "size": "small",
-    "priority": "high",
-    "value": "After-sales detail: each return/refund line and its full record."
-  },
   "bg.aftersales.parentreturnorder.get": {
     "section": "after-sales",
     "size": "medium",
@@ -448,12 +442,6 @@
     "size": "medium",
     "priority": "medium",
     "value": "Return logistics: return label, return address, carriers, reverse-shipment info."
-  },
-  "temu.aftersales.parentaftersales.detail.get": {
-    "section": "after-sales",
-    "size": "small",
-    "priority": "high",
-    "value": "After-sales detail: each return/refund line and its full record."
   },
   "temu.aftersales.returnaddress.get": {
     "section": "after-sales",

@@ -142,6 +142,26 @@ function sectionsRoutes(shopKey) {
       res.status(400).json({ error: err.message })
     }
   })
+  // Generic routes last: the named routes above win.
+  // GET /api/<shop>/sections/:sectionId/:actionId?id= — a section's read-only drill-down
+  router.get('/:sectionId/:actionId', async (req, res) => {
+    try {
+      res.json(await service.sectionDetail(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  // POST /api/<shop>/sections/:sectionId/:actionId — a section's row or table action
+  router.post('/:sectionId/:actionId', async (req, res) => {
+    try {
+      res.json(await service.sectionAction(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(400).json({ error: err.message })
+    }
+  })
   return router
 }
 
