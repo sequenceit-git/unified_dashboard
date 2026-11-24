@@ -9,7 +9,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 429 | 65 | 0 | 355 | 9 | 81 | — |
-| TikTok Shop | 365 | 51 | 11 | 262 | 41 | 43 | 116 |
+| TikTok Shop | 365 | 57 | 11 | 256 | 41 | 39 | 110 |
 | Temu | 133 | 21 | 0 | 112 | 0 | 30 | — |
 
 ## eBay
@@ -1083,17 +1083,11 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | available now | medium | small | `POST /return_refund/202604/rma/search` | Return & Refund Basic | Search Return Merchandise Authorizations | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
 | available now | medium | small | `POST /return_refund/202609/aftersales/review` | Return & Refund Basic | Review Aftersales Requests | Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review. |
 
-#### videos-live (24)
+#### videos-live (18)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| available now | high | small | `GET /analytics/202509/shop_videos/{video_id}/performance` | TikTok Shop Analytics | Get Shop Video Performance Details | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | high | small | `GET /analytics/202509/shop_videos/{video_id}/products/performance` | TikTok Shop Analytics | Get Shop Video Product Performance List | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | high | small | `GET /analytics/202609/shop_videos/batch_performance` | TikTok Shop Analytics | Get Shop Videos Performance Details | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | high | small | `GET /analytics/202609/shop_videos/overview_performance` | TikTok Shop Analytics | Get Shop Video Performance Overview | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
-| available now | medium | small | `GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes` | TikTok Shop Analytics | Get Shop LIVE Minute Performance | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
 | available now | medium | small | `GET /analytics/202512/shop/{live_id}/products_performance` | TikTok Shop Analytics | Get Shop LIVE Products Performance List | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
-| available now | medium | small | `GET /analytics/202609/shop_lives/overview_performance` | TikTok Shop Analytics | Get Shop LIVE Performance Overview | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
 | needs scope: Content Posting, Live Data | high | small | `GET /analytics/202403/videos/performances` | Content Posting, Live Data | Get Video Performances | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
 | needs scope: Bestsellers | high | small | `GET /analytics/202511/videos/bestselling` | Bestsellers | Get Bestselling Videos | Per-video performance: views, product clicks, orders and GMV from each shoppable video. |
 | needs scope: Live Data | medium | small | `GET /analytics/202502/live_rooms/{live_room_id}/core_stats` | Live Data | Get Live Room Core Stats | LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile. |
@@ -1351,11 +1345,17 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | covered | Analytics | `GET /analytics/202509/shop_products/{product_id}/performance` | Get Shop Product Performance Detail | Returns detailed performance metrics for the specified product. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered | Analytics | `GET /analytics/202509/shop_skus/{sku_id}/performance` | Get Shop SKU Performance Detail | Returns performance metrics for the specified SKU. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered | Analytics | `GET /analytics/202509/shop_skus/performance` | Get Shop SKU Performance List | Returns a paginated list of performance metrics for the shop's SKUs over the requested date range. | `marketplaces/tiktok_shop/sections/analytics.js` |
+| covered | Analytics | `GET /analytics/202509/shop_videos/{video_id}/performance` | Get Shop Video Performance Details | Returns detailed performance metrics for a (requested) video. | `marketplaces/tiktok_shop/sections/videos-live.js` |
+| covered | Analytics | `GET /analytics/202509/shop_videos/{video_id}/products/performance` | Get Shop Video Product Performance List | Returns performance metrics for a list of products promoted in a given video. | `marketplaces/tiktok_shop/sections/videos-live.js` |
+| covered | Analytics | `GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes` | Get Shop LIVE Minute Performance | Returns minute-level performance for a LIVE session after the session is finished. | `marketplaces/tiktok_shop/sections/videos-live.js` |
 | covered | Analytics | `GET /analytics/202510/shop/performance/{date}/performance_per_hour` | Get Shop Performance Per Hour | Returns hourly shop performance details for the requested date. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered | Analytics | `GET /analytics/202606/shop_performances/metrics` | Get SPS Metrics | Returns SPS metric details and benchmark thresholds for the authorized shop. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered | Analytics | `GET /analytics/202606/shop_performances/metrics/{metric_code}/diagnosis` | Get SPS Metric Diagnosis | Returns diagnosis details for a single SPS metric, including benchmark thresholds, trends, calculation details, and distribution details. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered | Analytics | `GET /analytics/202606/shop_performances/metrics/{metric_code}/problem_details` | Get SPS Metric Problem Details | Returns problem order or chat details for a selected SPS metric. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered | Analytics | `GET /analytics/202606/shop_performances/metrics/{metric_code}/top_items` | Get SPS Metric Top Items | Returns the top products for NRR, NBFR, or AHT, or the top logistics providers for OTDR. | `marketplaces/tiktok_shop/sections/analytics.js` |
+| covered | Analytics | `GET /analytics/202609/shop_lives/overview_performance` | Get Shop LIVE Performance Overview | Returns overall performance metrics for all LIVE stream sessions under a certain shop. | `marketplaces/tiktok_shop/sections/videos-live.js` |
+| covered | Analytics | `GET /analytics/202609/shop_videos/batch_performance` | Get Shop Videos Performance Details | Returns detailed performance metrics for the requested videos. | `marketplaces/tiktok_shop/sections/videos-live.js` |
+| covered | Analytics | `GET /analytics/202609/shop_videos/overview_performance` | Get Shop Video Performance Overview | Returns overall performance metrics for all videos under a shop. | `marketplaces/tiktok_shop/sections/videos-live.js` |
 | covered | Analytics | `GET /analytics/202610/shop_performances/benefits` | Get SPS Benefits | Returns the current SPS benefits for the authorized shop. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered | Analytics | `GET /analytics/202610/shop_performances/overview` | Get SPS Overview | Returns the SPS overview for the authorized shop, including the score, tier and dimensions. | `marketplaces/tiktok_shop/sections/analytics.js` |
 | covered (older version: `GET /analytics/202509/shop_products/performance`) | Analytics | `GET /analytics/202605/shop_products/performance` | Get Shop Product Performance List | Returns a paginated list of shop products and their total, seller-channel, affiliate-channel, and Shop Tab performance metrics for the specified date range. | `marketplaces/tiktok_shop/analytics.js` |
@@ -1370,17 +1370,11 @@ Scopes behind endpoints the dashboard calls successfully. Customer Service and t
 | missing | Analytics | `GET /analytics/202502/live_rooms/{live_room_id}/traffic_performances` | Get Live Room Traffic Performance | Returns traffic performance for a live room owned by the authenticated creator, including watch counts grouped by primary traffic source and sub-source for distribution analysis. |  |
 | missing | Analytics | `GET /analytics/202502/live_rooms/{live_room_id}/user_portraits` | Get Live Room User Portraits | Returns user portrait indicators for the specified live room, including age, gender, fan, advertisement, and region distributions. |  |
 | missing | Analytics | `GET /analytics/202502/live_rooms/{live_room_id}/view_trend_performances` | Get Live Room View Trends | Returns viewer count trend data points for the specified live room, grouped by online, entering, and leaving viewers. |  |
-| missing | Analytics | `GET /analytics/202509/shop_videos/{video_id}/performance` | Get Shop Video Performance Details | Returns detailed performance metrics for a (requested) video. |  |
-| missing | Analytics | `GET /analytics/202509/shop_videos/{video_id}/products/performance` | Get Shop Video Product Performance List | Returns performance metrics for a list of products promoted in a given video. |  |
-| missing | Analytics | `GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes` | Get Shop LIVE Minute Performance | Returns minute-level performance for a LIVE session after the session is finished. |  |
 | missing | Analytics | `GET /analytics/202511/creators/bestselling` | Get Bestselling Creators | Returns up to 100 creators, filtered by `author_type`, ranked by GMV in the selected `currency` for the reporting period ending on `date` and defined by `time_slot`. |  |
 | missing | Analytics | `GET /analytics/202511/lives/bestselling` | Get Bestselling LIVE Sessions | Get up to 100 LIVE sessions ranked by GMV for the period defined by `date` and `time_slot`. |  |
 | missing | Analytics | `GET /analytics/202511/products/bestselling` | Get Bestselling Products | Returns up to 100 products ranked by GMV for the target date range. |  |
 | missing | Analytics | `GET /analytics/202511/videos/bestselling` | Get Bestselling Videos | Returns up to 100 videos ranked by gross merchandise value (GMV) in descending order for the date range selected by `date` and `time_slot`. |  |
 | missing | Analytics | `GET /analytics/202512/shop/{live_id}/products_performance` | Get Shop LIVE Products Performance List | Returns sale performance for each product in a shop-related LIVE session from the official account or marketing accounts. |  |
-| missing | Analytics | `GET /analytics/202609/shop_lives/overview_performance` | Get Shop LIVE Performance Overview | Returns overall performance metrics for all LIVE stream sessions under a certain shop. |  |
-| missing | Analytics | `GET /analytics/202609/shop_videos/batch_performance` | Get Shop Videos Performance Details | Returns detailed performance metrics for the requested videos. |  |
-| missing | Analytics | `GET /analytics/202609/shop_videos/overview_performance` | Get Shop Video Performance Overview | Returns overall performance metrics for all videos under a shop. |  |
 | missing | Analytics | `GET /analytics/202610/acc/brands` | Get ACC Brands | Get authorized ACC brands and their associated industries for the current shop. |  |
 | missing | Analytics | `GET /analytics/202610/acc/overview` | Get ACC Audience Overview | Get ACC audience key metrics, benchmarks, and trends. |  |
 | missing | Analytics | `GET /analytics/202610/acc/penetration` | Get ACC Audience Penetration | Retrieve viewed, clicked, and ordered audience counts and penetration ratios for a brand over the selected reporting window. |  |

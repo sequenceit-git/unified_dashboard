@@ -185,24 +185,6 @@
     "priority": "medium",
     "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
   },
-  "GET /analytics/202509/shop_videos/{video_id}/performance": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
-  },
-  "GET /analytics/202509/shop_videos/{video_id}/products/performance": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
-  },
-  "GET /analytics/202510/shop_lives/{live_id}/performance_per_minutes": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "medium",
-    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
-  },
   "GET /analytics/202511/creators/bestselling": {
     "section": "analytics",
     "size": "small",
@@ -232,24 +214,6 @@
     "size": "small",
     "priority": "medium",
     "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
-  },
-  "GET /analytics/202609/shop_lives/overview_performance": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "medium",
-    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
-  },
-  "GET /analytics/202609/shop_videos/batch_performance": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
-  },
-  "GET /analytics/202609/shop_videos/overview_performance": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
   },
   "GET /analytics/202610/acc/brands": {
     "section": "analytics",
