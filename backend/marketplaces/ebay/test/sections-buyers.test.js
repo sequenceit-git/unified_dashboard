@@ -81,3 +81,63 @@ test('a reply over 500 characters is refused before calling eBay', async () => {
     assert.equal(sent.length, 0)
   } finally { restore() }
 })
+
+const AWAITING = (page) => ({
+  pagination: { total: 3 },
+  lineItems: page === 0
+    ? [{ orderLineItemId: 'L1', listingId: '111', transactionId: 'T1', listingTitle: 'Jeans', listingPrice: { value: '20.00', currency: 'USD' } }, { orderLineItemId: 'L2', listingId: '222', transactionId: 'T2', listingTitle: 'Shirt' }]
+    : [{ orderLineItemId: 'L3', listingId: '333', transactionId: 'T3', listingTitle: 'Hat' }],
+})
+
+function loadAwaiting(calls, { denied = false } = {}) {
+  const restore = stubModules({
+    './helpers': {
+      scopeAware: require('../sections/helpers').scopeAware,
+      ebayApiz: () => 'https://apiz.ebay.com',
+      ebayGet: async (token, url) => {
+        calls.push(['GET', url])
+        if (url.includes('awaiting_feedback')) {
+          if (denied) throw Object.assign(new Error('Insufficient permissions to fulfill the request.'), { status: 403 })
+          return AWAITING(Number(new URL(url, 'https://x').searchParams.get('offset')) ? 1 : 0)
+        }
+        return url.includes('feedback_rating_summary') ? SUMMARY : ENTRIES
+      },
+    },
+    '../client': { ebaySend: async (token, method, url, body) => { calls.push([method, url, body]); return { feedbackId: 'NEW' } } },
+  })
+  return { buyers: freshRequire('marketplaces/ebay/sections/buyers.js'), restore }
+}
+
+test('orders waiting for your feedback are listed', async () => {
+  const calls = []
+  const { buyers, restore } = loadAwaiting(calls)
+  try {
+    const t = (await buyers('tok', { accountUsername: 'my-store' })).tables.find((x) => x.id === 'awaiting')
+    assert.equal(t.tab, 'Feedback')
+    assert.deepEqual(t.rows.map((r) => [r.id, r.item]), [['L1', 'Jeans'], ['L2', 'Shirt'], ['L3', 'Hat']])
+    assert.ok(calls.some(([, u]) => u === '/commerce/feedback/v1/awaiting_feedback?filter=userRole:SELLER&limit=100&offset=0'))
+    assert.equal(t.rows[0].actions[0].id, 'leave-feedback')
+  } finally { restore() }
+})
+
+test('leaving feedback sends a positive rating and the comment', async () => {
+  const calls = []
+  const { buyers, restore } = loadAwaiting(calls)
+  try {
+    const res = await buyers.actions['leave-feedback']('tok', {}, 'L3', ' Fast payment, thanks! ')
+    assert.deepEqual(calls.find(([m]) => m === 'POST'), ['POST', '/commerce/feedback/v1/feedback', { listingId: '333', transactionId: 'T3', orderLineItemId: 'L3', commentType: 'POSITIVE', commentText: 'Fast payment, thanks!' }])
+    assert.match(res.message, /Feedback left/)
+    const before = calls.length
+    for (const text of ['', 'x'.repeat(501)]) await assert.rejects(buyers.actions['leave-feedback']('tok', {}, 'L3', text), (e) => e.status === 400)
+    assert.equal(calls.length, before)
+    await assert.rejects(buyers.actions['leave-feedback']('tok', {}, 'L9', 'ok'), (e) => e.status === 404)
+  } finally { restore() }
+})
+
+test('without commerce.feedback the awaiting table asks for a reconnect', async () => {
+  const { buyers, restore } = loadAwaiting([], { denied: true })
+  try {
+    const t = (await buyers('tok', { accountUsername: 'my-store' })).tables.find((x) => x.id === 'awaiting')
+    assert.match(t.error, /Reconnect eBay/)
+  } finally { restore() }
+})

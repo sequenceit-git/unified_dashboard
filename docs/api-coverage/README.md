@@ -8,7 +8,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 
 | Shop | Endpoints | Covered | Older version | Missing | Not for sellers | High-priority gaps | Gaps available now |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| eBay | 430 | 103 | 0 | 318 | 9 | 44 | — |
+| eBay | 430 | 105 | 0 | 316 | 9 | 42 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
 | Temu | 133 | 40 | 0 | 93 | 0 | 17 | — |
 
@@ -29,12 +29,10 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | — | low | medium | `GET /sell/feed/v1/customer_service_metric_task/{task_id}` | sell.analytics.readonly | getCustomerServiceMetricTask | Download the customer-service metric report as a file. |
 | — | low | medium | `POST /sell/feed/v1/customer_service_metric_task` | sell.analytics.readonly | createCustomerServiceMetricTask | Download the customer-service metric report as a file. |
 
-#### buyers (14)
+#### buyers (12)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | medium | `GET /commerce/feedback/v1/awaiting_feedback` | commerce.feedback | getItemsAwaitingFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
-| — | high | medium | `POST /commerce/feedback/v1/feedback` | commerce.feedback | leaveFeedback | Feedback: received and left feedback, rating summary, reply to feedback and leave feedback for buyers. |
 | — | medium | small | `Trading:GetFeedback` | — | GetFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
 | — | medium | small | `Trading:GetItemsAwaitingFeedback` | — | GetItemsAwaitingFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
 | — | medium | small | `Trading:LeaveFeedback` | — | LeaveFeedback | Feedback through the Trading API (the REST Feedback API covers the same). |
@@ -508,11 +506,11 @@ Researched 2026-11-23. Sources: <https://developer.ebay.com/api-docs/master/buy/
 | missing | Feed API | `POST /sell/feed/v1/task` | createTask | This method creates an upload task or a download task without filter criteria. |  |
 | missing | Feed API | `POST /sell/feed/v1/task/{task_id}/upload_file` | uploadFile | This method associates the specified file with the specified task ID and uploads the input file. |  |
 | missing | Feed API | `PUT /sell/feed/v1/schedule/{schedule_id}` | updateSchedule | This method updates an existing schedule. |  |
+| covered | Feedback API | `GET /commerce/feedback/v1/awaiting_feedback` | getItemsAwaitingFeedback | This method retrieves line items awaiting feedback from the user's order partner. | `marketplaces/ebay/sections/buyers.js` |
 | covered | Feedback API | `GET /commerce/feedback/v1/feedback` | getFeedback | This method enables users to retrieve feedback for any specified user ID and feedback type (sent or received). | `marketplaces/ebay/app/services/sections.js`, `marketplaces/ebay/sections/buyers.js` |
 | covered | Feedback API | `GET /commerce/feedback/v1/feedback_rating_summary` | getFeedbackRatingSummary | This method provides a detailed overview of feedback ratings associated with a user in the eBay marketplace. | `marketplaces/ebay/sections/buyers.js` |
+| covered | Feedback API | `POST /commerce/feedback/v1/feedback` | leaveFeedback | This method creates and submits feedback to the user's order partner for a line item in the order. | `marketplaces/ebay/sections/buyers.js` |
 | covered | Feedback API | `POST /commerce/feedback/v1/respond_to_feedback` | respondToFeedback | This method allows users to respond to feedback provided by the order partner for a specific line item in an order. | `marketplaces/ebay/app/services/sections.js` |
-| missing | Feedback API | `GET /commerce/feedback/v1/awaiting_feedback` | getItemsAwaitingFeedback | This method retrieves line items awaiting feedback from the user's order partner. |  |
-| missing | Feedback API | `POST /commerce/feedback/v1/feedback` | leaveFeedback | This method creates and submits feedback to the user's order partner for a line item in the order. |  |
 | covered | Finances API | `GET /sell/finances/v1/billing_activity` | getBillingActivities | Important! Due to EU &amp; UK Payments regulatory requirements, an additional security verification via Digital Signatures is required for certain API calls that are made on behalf of EU/UK sellers, including all Finance | `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/order_earnings` | getOrderEarnings | This method returns detailed order-level financial data for each order associated with a seller account. | `marketplaces/ebay/sections/payouts.js` |
 | covered | Finances API | `GET /sell/finances/v1/order_earnings_summary` | getOrderEarningsSummary | This method returns a summarized view of order earnings information for one or more orders associated with a seller account. | `marketplaces/ebay/sections/payouts.js` |
