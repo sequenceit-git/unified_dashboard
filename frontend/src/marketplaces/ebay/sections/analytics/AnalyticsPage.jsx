@@ -9,6 +9,7 @@ import { useShopSection } from '../../../../hooks/useShopSection'
 import { queryString } from '../../../../lib/api'
 import { Select } from '../../../../components/ui/Input'
 import { useApi } from '../../../../hooks/useApi'
+import Tabs from '../../../../components/ui/Tabs'
 import ReconnectNotice from '../../ReconnectNotice'
 import NeedsAttention from './NeedsAttention'
 import { SalesTiles, TrafficTiles } from './ResultTiles'
@@ -24,6 +25,7 @@ export default function AnalyticsPage() {
   const section = useShopSection()
   const [days, setDays] = useState('30')
   const [detail, setDetail] = useState(null)
+  const [tab, setTab] = useState('overview')
   // Whole days ending yesterday (eBay's traffic has no today), moved to eBay's last traffic day if earlier.
   const [endDay, setEndDay] = useState(() => yesterday())
   const { current, previous } = useMemo(() => periodRanges(days, endDay), [days, endDay])
@@ -61,31 +63,46 @@ export default function AnalyticsPage() {
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">{section.label} analytics</h1>
-          <p className="text-xs text-gray-500">{current.from} to {current.to} (US Pacific days, as eBay counts them){latest && <> · eBay traffic up to {latest}</>}</p>
+          <p className="text-xs text-gray-500">
+            {tab === 'overview'
+              ? <>{current.from} to {current.to} (US Pacific days, as eBay counts them){latest && <> · eBay traffic up to {latest}</>}</>
+              : tab === 'listings' ? 'Each listing over the last 30 days' : "eBay's current seller level and service rates"}
+          </p>
         </div>
-        <div className="w-full sm:w-44">
-          <Select value={days} onChange={(e) => setDays(e.target.value)} options={PERIODS} aria-label="Analytics period" />
-        </div>
+        {tab === 'overview' && (
+          <div className="w-full sm:w-44">
+            <Select value={days} onChange={(e) => setDays(e.target.value)} options={PERIODS} aria-label="Analytics period" />
+          </div>
+        )}
       </div>
 
       <ReconnectNotice />
 
       <NeedsAttention items={items} loading={loader.loading || inv.loading} error={checkError} onRetry={() => { loader.refetch(); inv.refetch() }} onDetail={setDetail} />
 
-      <SalesTiles now={summary.data} before={prevSummary.data} loading={salesLoading} error={summary.error || prevSummary.error || ''} onRetry={() => { summary.refetch(); prevSummary.refetch() }} />
-      <TrafficTiles now={trafficTotals(traffic.data?.days)} before={trafficTotals(prevTraffic.data?.days)} loading={trafficLoading} error={trafficError} onRetry={retryTraffic} />
-
-      <RevenueChart
-        data={revenue.data ? withPrevious(revenue.data, prevRevenue.data, days, current.from) : null}
-        loading={revenue.loading || prevRevenue.loading || settling}
-        error={revenue.error || prevRevenue.error || ''}
-        onRetry={() => { revenue.refetch(); prevRevenue.refetch() }}
+      <Tabs
+        tabs={[{ id: 'overview', label: 'Overview' }, { id: 'listings', label: 'Listing insights' }, { id: 'seller', label: 'Seller level' }]}
+        active={tab}
+        onChange={setTab}
       />
-      <TrafficChart days={traffic.data ? fillDays(traffic.data.days, current.from, current.to) : null} loading={trafficLoading} error={trafficError} />
 
-      <ListingsTable table={table('traffic')} loading={loader.loading} error={loader.error} onRetry={loader.refetch} />
+      {tab === 'overview' && (
+        <div className="space-y-4">
+          <SalesTiles now={summary.data} before={prevSummary.data} loading={salesLoading} error={summary.error || prevSummary.error || ''} onRetry={() => { summary.refetch(); prevSummary.refetch() }} />
+          <TrafficTiles now={trafficTotals(traffic.data?.days)} before={trafficTotals(prevTraffic.data?.days)} loading={trafficLoading} error={trafficError} onRetry={retryTraffic} />
+          <RevenueChart
+            data={revenue.data ? withPrevious(revenue.data, prevRevenue.data, days, current.from) : null}
+            loading={revenue.loading || prevRevenue.loading || settling}
+            error={revenue.error || prevRevenue.error || ''}
+            onRetry={() => { revenue.refetch(); prevRevenue.refetch() }}
+          />
+          <TrafficChart days={traffic.data ? fillDays(traffic.data.days, current.from, current.to) : null} loading={trafficLoading} error={trafficError} />
+        </div>
+      )}
 
-      <SellerLevel standards={standards} service={service} loading={loader.loading} error={loader.error} onRetry={loader.refetch} onDetail={setDetail} />
+      {tab === 'listings' && <ListingsTable table={table('traffic')} loading={loader.loading} error={loader.error} onRetry={loader.refetch} />}
+
+      {tab === 'seller' && <SellerLevel standards={standards} service={service} loading={loader.loading} error={loader.error} onRetry={loader.refetch} onDetail={setDetail} />}
 
       {detail && <DetailModal action={detail.action} id={detail.id} onClose={() => setDetail(null)} />}
     </div>
