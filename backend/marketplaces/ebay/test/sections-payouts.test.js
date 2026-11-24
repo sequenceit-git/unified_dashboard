@@ -64,14 +64,24 @@ test('earnings rows show net after fees and refunds', async () => {
   } finally { restore() }
 })
 
-test('earnings without the scope ask for a reconnect while payouts still load', async () => {
+test('without eBay\'s earnings permission, earnings per order come from the transactions', async () => {
+  const before = FIXTURES['transaction?']
+  FIXTURES['transaction?'] = { transactions: [
+    { transactionType: 'SALE', bookingEntry: 'CREDIT', orderId: '01-222', transactionDate: '2026-11-21T10:00:00.000Z', buyer: { username: 'bob' }, amount: USD(44), totalFeeBasisAmount: USD(50), totalFeeAmount: USD(6), orderLineItems: [{ marketplaceFees: [{ feeType: 'FINAL_VALUE_FEE', amount: USD(5) }, { feeType: 'AD_FEE', amount: USD(1) }] }] },
+    { transactionType: 'SHIPPING_LABEL', bookingEntry: 'DEBIT', orderId: '01-222', amount: USD(4) },
+    { transactionType: 'REFUND', bookingEntry: 'DEBIT', orderId: '01-222', amount: USD(10) },
+    { transactionType: 'TRANSFER', bookingEntry: 'DEBIT', amount: USD(3) },
+  ] }
   const { payouts, restore } = load((url) => (/order_earnings/.test(url) ? Object.assign(new Error('Insufficient permissions'), { status: 403 }) : null))
   try {
     const { tables, summary } = await payouts('tok')
-    assert.equal(tables.find((t) => t.id === 'earnings').error, 'Reconnect eBay in Settings to allow order earnings.')
+    const earnings = tables.find((t) => t.id === 'earnings')
+    assert.equal(earnings.error, undefined)
+    assert.match(earnings.note, /transactions/)
+    assert.deepEqual(earnings.rows.map((r) => [r.orderId, r.buyer, r.gross.value, r.ebayFees.value, r.adFees.value, r.shippingLabels.value, r.refunds.value, r.net.value]), [['01-222', 'bob', 50, 5, 1, 4, 10, 30]])
+    assert.deepEqual(summary.filter((s) => s.tab === 'Order earnings').map((s) => [s.label, s.value.value]), [['Gross sales', 50], ['Fees and costs', 10], ['Refunds', 10], ['Net earnings', 30]])
     assert.equal(tables.find((t) => t.id === 'payouts').rows.length, 1)
-    assert.equal(summary.filter((s) => s.tab === 'Order earnings').length, 0)
-  } finally { restore() }
+  } finally { restore(); FIXTURES['transaction?'] = before }
 })
 
 test('the eBay bill asks for the last 90 days (eBay requires a filter)', async () => {

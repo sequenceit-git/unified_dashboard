@@ -30,13 +30,14 @@ module.exports = {
     'https://api.ebay.com/oauth/api_scope/commerce.message',
   ],
   /**
-   * Scopes added later (analytics, order earnings, payment disputes, feedback). Shops connected
+   * Scopes added later (analytics, payment disputes, feedback). sell.finances.earnings.read is
+   * left out: eBay refuses it for this app (invalid_scope), so order earnings come from transactions. Shops connected
    * before them must reconnect once. EBAY_EXTRA_SCOPES (space- or comma-separated) replaces this
    * list; EBAY_EXTRA_SCOPES="" asks for none, e.g. if the eBay keyset refuses one, since a refused
    * scope breaks the consent page for everyone.
    */
   extraScopes: (process.env.EBAY_EXTRA_SCOPES === undefined
-    ? ['sell.analytics.readonly', 'sell.finances.earnings.read', 'sell.payment.dispute', 'commerce.feedback']
+    ? ['sell.analytics.readonly', 'sell.payment.dispute', 'commerce.feedback']
     : process.env.EBAY_EXTRA_SCOPES.split(/[\s,]+/).filter(Boolean)
   ).map((s) => (s.startsWith('https://') ? s : `https://api.ebay.com/oauth/api_scope/${s}`)),
   get scopes() {

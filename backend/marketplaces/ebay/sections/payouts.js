@@ -11,6 +11,65 @@ const sum = (fees) => {
   return { value: Math.round(list.reduce((t, f) => t + Number(f.amount.value), 0) * 100) / 100, currency: list[0].amount.currency || 'USD' }
 }
 const isAdFee = (fee) => /AD_FEE|PROMOTED/i.test(fee?.feeType || '')
+const amountOf = (m) => (m?.value != null ? Number(m.value) : 0)
+const round = (n) => Math.round(n * 100) / 100
+const isDenied = (err) => err?.status === 403 || /permission|scope|reconnect/i.test(err?.message || '')
+
+/**
+ * Earnings per order from sale, label and refund transactions (sell.finances, which every shop
+ * has), for when eBay won't give the app its order-earnings permission.
+ */
+function earningsFromTransactions(transactions) {
+  const orders = new Map()
+  const order = (id) => {
+    if (!orders.has(id)) orders.set(id, { orderId: id, date: null, buyer: '', gross: 0, ebayFees: 0, adFees: 0, shippingLabels: 0, refunds: 0, currency: null, sale: false })
+    return orders.get(id)
+  }
+  for (const t of transactions || []) {
+    if (!t.orderId) continue
+    const o = order(t.orderId)
+    o.currency ||= t.amount?.currency
+    if (t.transactionType === 'SALE') {
+      const fees = (t.orderLineItems || []).flatMap((l) => l.marketplaceFees || [])
+      o.sale = true
+      o.date ||= t.transactionDate
+      o.buyer ||= t.buyer?.username || ''
+      o.gross += amountOf(t.totalFeeBasisAmount) || amountOf(t.amount) + amountOf(t.totalFeeAmount)
+      o.ebayFees += fees.filter((f) => !isAdFee(f)).reduce((s, f) => s + amountOf(f.amount), 0)
+      o.adFees += fees.filter(isAdFee).reduce((s, f) => s + amountOf(f.amount), 0)
+    } else if (t.transactionType === 'SHIPPING_LABEL') {
+      o.shippingLabels += (t.bookingEntry === 'CREDIT' ? -1 : 1) * amountOf(t.amount)
+    } else if (t.transactionType === 'REFUND') {
+      o.refunds += (t.bookingEntry === 'CREDIT' ? -1 : 1) * amountOf(t.amount)
+    }
+  }
+  const m = (value, currency) => ({ value: round(value), currency: currency || 'USD' })
+  return [...orders.values()].filter((o) => o.sale).map((o) => ({
+    orderId: o.orderId,
+    date: o.date,
+    buyer: o.buyer,
+    gross: m(o.gross, o.currency),
+    ebayFees: m(o.ebayFees, o.currency),
+    adFees: m(o.adFees, o.currency),
+    shippingLabels: m(o.shippingLabels, o.currency),
+    refunds: m(o.refunds, o.currency),
+    net: m(o.gross - o.ebayFees - o.adFees - o.shippingLabels - o.refunds, o.currency),
+  }))
+}
+
+/** The Order earnings tiles, added up from the per-order rows. */
+function transactionTotals(rows) {
+  if (!rows?.length) return []
+  const currency = rows[0].gross.currency
+  const total = (pick) => ({ value: round(rows.reduce((t, r) => t + pick(r), 0)), currency })
+  return [
+    { tab: 'Order earnings', label: 'Gross sales', value: total((r) => r.gross.value), type: 'money' },
+    { tab: 'Order earnings', label: 'Fees and costs', value: total((r) => r.ebayFees.value + r.adFees.value + r.shippingLabels.value), type: 'money' },
+    { tab: 'Order earnings', label: 'Refunds', value: total((r) => r.refunds.value), type: 'money' },
+    { tab: 'Order earnings', label: 'Net earnings', value: total((r) => r.net.value), type: 'money' },
+  ]
+}
+
 const signed = (amount, entry) => {
   const m = money(amount)
   if (m && entry === 'DEBIT') m.value = -m.value
@@ -22,6 +81,22 @@ async function payouts(token, shop, { now = new Date() } = {}) {
   const billFilter = `transactionDate:[${new Date(now.getTime() - 90 * 86400000).toISOString()}..${now.toISOString()}]`.replace(/[[\]]/g, encodeURIComponent)
   // Full paths written out at each call: the API coverage report finds endpoints by their path.
   const host = ebayApiz()
+  let fromTransactions = false
+  const orderEarnings = async () => (await ebayGet(token, `${host}/sell/finances/v1/order_earnings?limit=50`)).orders?.map((row) => {
+    const s = row.orderEarningsSummary || {}
+    const fees = s.expenses?.marketplaceFees || []
+    return {
+      orderId: row.orderId,
+      date: row.orderCreationDate,
+      buyer: row.buyer?.username || '',
+      gross: money(s.grossAmount),
+      ebayFees: sum(fees.filter((f) => !isAdFee(f))),
+      adFees: sum(fees.filter(isAdFee)),
+      shippingLabels: money(s.expenses?.shippingLabels),
+      refunds: money(s.refunds),
+      net: money(s.orderEarnings),
+    }
+  }) || []
   const [summary, funds, earningsSummary, list] = await Promise.all([
     ebayGet(token, `${host}/sell/finances/v1/payout_summary`).catch(() => null),
     ebayGet(token, `${host}/sell/finances/v1/seller_funds_summary`).catch(() => null),
@@ -63,21 +138,16 @@ async function payouts(token, shop, { now = new Date() } = {}) {
         title: 'Earnings per order',
         note: "What each order left you after eBay's fees, ad fees, shipping labels and refunds (eBay's own figures).",
         columns: [col('orderId', 'Order'), col('date', 'Date', 'date'), col('buyer', 'Buyer'), col('gross', 'Gross', 'money'), col('ebayFees', 'eBay fees', 'money'), col('adFees', 'Ad fees', 'money'), col('shippingLabels', 'Shipping labels', 'money'), col('refunds', 'Refunds', 'money'), col('net', 'Net', 'money')],
-        load: scopeAware(async () => (await ebayGet(token, `${host}/sell/finances/v1/order_earnings?limit=50`)).orders?.map((row) => {
-          const s = row.orderEarningsSummary || {}
-          const fees = s.expenses?.marketplaceFees || []
-          return {
-            orderId: row.orderId,
-            date: row.orderCreationDate,
-            buyer: row.buyer?.username || '',
-            gross: money(s.grossAmount),
-            ebayFees: sum(fees.filter((f) => !isAdFee(f))),
-            adFees: sum(fees.filter(isAdFee)),
-            shippingLabels: money(s.expenses?.shippingLabels),
-            refunds: money(s.refunds),
-            net: money(s.orderEarnings),
+        load: async () => {
+          try {
+            return await orderEarnings()
+          } catch (err) {
+            if (!isDenied(err)) throw err
+            // No order-earnings permission: work it out from the transactions instead.
+            fromTransactions = true
+            return earningsFromTransactions((await ebayGet(token, `${host}/sell/finances/v1/transaction?limit=200`)).transactions)
           }
-        }) || [], 'order earnings'),
+        },
       },
       {
         id: 'billing',
@@ -96,6 +166,9 @@ async function payouts(token, shop, { now = new Date() } = {}) {
       },
     ]),
   ])
+  if (fromTransactions) {
+    list.find((t) => t.id === 'earnings').note = "Worked out from your eBay transactions (sales, fees, labels, refunds): eBay doesn't give this app its order-earnings report."
+  }
   return {
     summary: [
       ...(funds ? [
@@ -109,6 +182,7 @@ async function payouts(token, shop, { now = new Date() } = {}) {
         { tab: 'Payouts', label: 'Payouts', value: summary.payoutCount, type: 'number' },
         { tab: 'Payouts', label: 'Transactions', value: summary.transactionCount, type: 'number' },
       ] : []),
+      ...(!earningsSummary && fromTransactions ? transactionTotals(list.find((t) => t.id === 'earnings')?.rows) : []),
       ...(earningsSummary ? [
         { tab: 'Order earnings', label: 'Gross sales', value: money(earningsSummary.grossAmount), type: 'money' },
         { tab: 'Order earnings', label: 'Fees and costs', value: money(earningsSummary.expenses), type: 'money' },

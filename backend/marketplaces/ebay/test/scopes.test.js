@@ -2,7 +2,8 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const { freshRequire } = require('../../../test/helpers/stub')
 
-const NEW = ['sell.analytics.readonly', 'sell.finances.earnings.read', 'sell.payment.dispute', 'commerce.feedback']
+// sell.finances.earnings.read is not asked for: eBay refuses it for this app (invalid_scope); earnings come from transactions.
+const NEW = ['sell.analytics.readonly', 'sell.payment.dispute', 'commerce.feedback']
 const FULL = (s) => `https://api.ebay.com/oauth/api_scope/${s}`
 
 function withEnv(value, fn) {
@@ -13,10 +14,11 @@ function withEnv(value, fn) {
   try { return fn() } finally { if (had) process.env.EBAY_EXTRA_SCOPES = old; else delete process.env.EBAY_EXTRA_SCOPES }
 }
 
-test('the consent link asks for the four new scopes', () => withEnv(undefined, () => {
+test('the consent link asks for the new scopes, not the refused earnings one', () => withEnv(undefined, () => {
   const { EbayClient } = freshRequire('marketplaces/ebay/client.js')
   const scope = decodeURIComponent(new URL(new EbayClient().getAuthUrl('s')).searchParams.get('scope'))
   for (const s of NEW) assert.ok(scope.split(' ').includes(FULL(s)), s)
+  assert.ok(!scope.includes('sell.finances.earnings.read'))
 }))
 
 test('extra scopes can be switched off without a deploy', () => withEnv('', () => {
@@ -43,9 +45,9 @@ test('a new connection records the scopes it asked for', async () => {
 test('an older shop is told what a reconnect turns on', () => withEnv(undefined, () => {
   freshRequire('marketplaces/ebay/config.js')
   const adapter = require('..')
-  assert.deepEqual(adapter.missingScopes({ grantedScopes: [] }).map((m) => m.feature), ['Listing traffic and seller level', 'Order earnings', 'Payment disputes', 'Feedback'])
+  assert.deepEqual(adapter.missingScopes({ grantedScopes: [] }).map((m) => m.feature), ['Listing traffic and seller level', 'Payment disputes', 'Feedback'])
   const config = require('../config')
   assert.deepEqual(adapter.missingScopes({ grantedScopes: config.scopes }), [])
   const { describe } = freshRequire('services/marketplace/profiles.js')
-  assert.equal(describe('ebay', { status: 'connected', grantedScopes: [] }).missingScopes.length, 4)
+  assert.equal(describe('ebay', { status: 'connected', grantedScopes: [] }).missingScopes.length, 3)
 }))
