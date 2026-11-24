@@ -10,7 +10,7 @@ Statuses: **covered** — called; **covered (older version)** — called at an o
 |---|---:|---:|---:|---:|---:|---:|---:|
 | eBay | 430 | 112 | 0 | 309 | 9 | 40 | — |
 | TikTok Shop | 365 | 71 | 11 | 242 | 41 | 30 | 96 |
-| Temu | 133 | 94 | 0 | 39 | 0 | 5 | — |
+| Temu | 133 | 96 | 0 | 37 | 0 | 4 | — |
 
 ## eBay
 
@@ -1566,11 +1566,10 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 |---|---|---|---|---|---|---|
 | — | medium | medium | `temu.aftersales.signature.get` | — | Query signature information | Return logistics: return label, return address, carriers, reverse-shipment info. |
 
-#### goods (27)
+#### goods (26)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
 |---|---|---|---|---|---|---|
-| — | high | small | `temu.local.goods.list.retrieve` | — | Product list Retrieve | Full goods detail and SKU list (attributes, images, variations) and the newer list calls. |
 | — | high | large | `bg.local.goods.update` | — | Update Goods Draft On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.v2.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
 | — | high | large | `temu.local.goods.v3.add` | — | Add New Items On Temu | Create, edit and delete Temu listings from the dashboard (today goods are only read and their stock/price/status changed). |
@@ -1618,12 +1617,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | — | medium | small | `bg.logistics.shipment.sub.confirm` | — | Add additional tracking information in batch api | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
 | — | medium | small | `bg.logistics.shipped.package.confirm` | — | bg logistics shipped package confirm | Shipment information, extra tracking numbers, confirm shipped packages, tracking events. |
 
-#### new: account (1)
-
-| Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
-|---|---|---|---|---|---|---|
-| — | low | small | `temu.local.mall.tags.get` | — | get store tags | Store tags (store type and programs). |
-
 #### new: cooperative warehouse (5)
 
 | Access | Priority | Size | Endpoint | Scope | Name | What it gives the seller |
@@ -1646,11 +1639,11 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Ads | `temu.searchrec.ad.log.query` | Advertisement log query interface | Advertisement log query | `marketplaces/temu/sections/ads.js` |
 | covered | Ads | `temu.searchrec.ad.modify` | Advertisement modify interface | Advertisement modify | `marketplaces/temu/sections/ads.js` |
 | covered | Ads | `temu.searchrec.ad.reports.goods.query` | Advertisement goods data report (goods dimension) interface | Advertisement goods data report (goods dimension) | `marketplaces/temu/sections/ads.js` |
-| covered | Ads | `temu.searchrec.ad.reports.mall.query` | Advertisement overall data report (mall dimension) interface | Advertisement overall data report (mall dimension) | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/helpers.js` |
+| covered | Ads | `temu.searchrec.ad.reports.mall.query` | Advertisement overall data report (mall dimension) interface | Advertisement overall data report (mall dimension) | `marketplaces/temu/profile.js`, `marketplaces/temu/sections/analytics.js`, `marketplaces/temu/sections/helpers.js` |
 | covered | Ads | `temu.searchrec.ad.roas.pred` | Advertising roas prediction interface | Advertising roas prediction | `marketplaces/temu/sections/ads.js` |
 | covered | Authorization | `bg.open.accesstoken.create` | Get Access Token | Temu's authorization callback interface allows developers to receive notifications when a user has successfully authorized their application. When after the user grants permission, Temu will redirect back to the develope | `marketplaces/temu/client.js` |
 | covered | Authorization | `bg.open.accesstoken.info.get` | Get Accesstoken Detail Information | This interface allows merchants to view the API permissions associated with their currently authorized token, providing a list of authorized API endpoints. | `marketplaces/temu/app/services/sections.js`, `marketplaces/temu/client.js` |
-| missing | Authorization | `temu.local.mall.tags.get` | get store tags | This API allows sellers to retrieve the list of store tags currently assigned to their store. |  |
+| covered | Authorization | `temu.local.mall.tags.get` | get store tags | This API allows sellers to retrieve the list of store tags currently assigned to their store. | `marketplaces/temu/sections/analytics.js` |
 | covered | Compliance | `bg.arbok.open.cert.queryNeedUploadItems` | bg.arbok.open.cert.queryNeedUploadItems | ￼External key customers have their own development capabilities and can call APIs to query the content to be uploaded | `marketplaces/temu/app/services/compliance.js` |
 | covered | Compliance | `bg.arbok.open.cert.uploadProductCert` | bg.arbok.open.cert.uploadProductCert | External key customers have their own development capabilities and can call APIs to submit qualifications | `marketplaces/temu/app/services/compliance.js` |
 | covered | Compliance | `bg.arbok.open.product.cert.query` | query product cert | Some large stores with R&D capabilities, after using the Kaiping interface to upload qualifications in batches, need to query the reasons for the rejection of product qualifications in batches | `marketplaces/temu/app/services/compliance.js` |
@@ -1703,6 +1696,7 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | covered | Product | `temu.local.goods.brand.trademark.V2.get` | Query trademarks and properties | Query trademarks and properties | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.delete` | Product deletion | Product deletion | `marketplaces/temu/listings.js` |
 | covered | Product | `temu.local.goods.illegal.vocabulary.check` | check illeagl vocabulary | check illegal vocabulary | `marketplaces/temu/app/services/goodsHelpers.js` |
+| covered | Product | `temu.local.goods.list.retrieve` | Product list Retrieve | local goods list search | `marketplaces/temu/sections/analytics.js` |
 | covered | Product | `temu.local.goods.recommendedprice.query` | Batch query recommended price | Support merchants in querying the recommended supply prices. | `marketplaces/temu/sections/price-reviews.js` |
 | covered | Product | `temu.local.goods.sku.net.content.unit.query` | Query the name of physical unit for Unit-count-field | Query multi-language information of sku transfer type net content unit | `marketplaces/temu/app/services/goodsHelpers.js` |
 | covered | Product | `temu.local.goods.sku.stock.query` | local goods query product stock | local-local goods B | `marketplaces/temu/app/services/inventory.js` |
@@ -1722,7 +1716,6 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Product | `temu.local.goods.cats.rules.get` | Query the rules for posting products | Query the rules for posting products |  |
 | missing | Product | `temu.local.goods.compliance.v2.edit` | edit goods compliance interface v2 version | edit goods compliance interface v2 version |  |
 | missing | Product | `temu.local.goods.image.v2.upload` | Image material processing | Image material processing |  |
-| missing | Product | `temu.local.goods.list.retrieve` | Product list Retrieve | local goods list search |  |
 | missing | Product | `temu.local.goods.missing.attributes.get` | temu.local.goods.missing.attributes.get | temu.local.goods.missing.attributes.get |  |
 | missing | Product | `temu.local.goods.pre.sale.status.edit` | Temu Pre-sale Bulk Enable/Disable API | This API allows batch enabling or disabling the pre-sale status for multiple SKUs belonging to a product item. |  |
 | missing | Product | `temu.local.goods.spec.info.get` | Query specification information | Used to query the specification value information in different languages corresponding to the platform's specification ID |  |
@@ -1738,8 +1731,8 @@ Researched 2026-11-23. Sources: <https://partner.temu.com/documentation>, <https
 | missing | Promotions | `bg.promotion.activity.goods.update` | Update Activity Goods Information | update activity goods information in the local to local activity |  |
 | covered | Returns and after-sales | `bg.aftersales.aftersales.list.get` | Query sub after-sales order information | This interface is designed for use in an e-commerce platform, specifically for handling after-sales service requests related to product returns and refunds. The interface allows merchants or administrators to retrieve a | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `bg.aftersales.cancel.agree` | Agree cancel order | Agree cancel order | `marketplaces/temu/orders.js` |
-| covered | Returns and after-sales | `bg.aftersales.cancel.list.get` | Query cancel order after-sales information | Query cancel order after-sales information | `marketplaces/temu/sections/after-sales.js` |
-| covered | Returns and after-sales | `bg.aftersales.parentaftersales.list.get` | Query the information of parent after-sales orders | This interface is designed to provide real-time updates on the current after-sales status of an order within an e-commerce platform. It allows merchants and buyers to retrieve detailed information about the progress of a | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/after-sales.js` |
+| covered | Returns and after-sales | `bg.aftersales.cancel.list.get` | Query cancel order after-sales information | Query cancel order after-sales information | `marketplaces/temu/sections/after-sales.js`, `marketplaces/temu/sections/analytics.js` |
+| covered | Returns and after-sales | `bg.aftersales.parentaftersales.list.get` | Query the information of parent after-sales orders | This interface is designed to provide real-time updates on the current after-sales status of an order within an e-commerce platform. It allows merchants and buyers to retrieve detailed information about the progress of a | `marketplaces/temu/orders.js`, `marketplaces/temu/profile.js`, `marketplaces/temu/sections/after-sales.js`, `marketplaces/temu/sections/analytics.js` |
 | covered | Returns and after-sales | `bg.aftersales.parentreturnorder.get` | Query after-sales reverse logistics information. | This interface is designed to provide merchants or administrators within an e-commerce platform with detailed return logistics information for a set of after-sales service requests. | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `temu.aftersales.carrier.get` | Query return carrier information | This interface is designed to query return carrier information. | `marketplaces/temu/sections/after-sales.js` |
 | covered | Returns and after-sales | `temu.aftersales.parentaftersales.detail.get` | query aftersales detail | This interface is designed to provide detailed information on after-sales orders in real time | `marketplaces/temu/sections/after-sales.js` |

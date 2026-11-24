@@ -9,6 +9,7 @@ import { useApi } from '../../../../hooks/useApi'
 import MarketplaceChart from './MarketplaceChart'
 import RevenueChart from './RevenueChart'
 import TopProducts from './TopProducts'
+import SectionView from '../../SectionView'
 
 const RANGES = [
   { value: '30', label: 'Last 30 days' },
@@ -42,10 +43,11 @@ export default function AnalyticsPage() {
 
   if (!section) return <RequireShopSection />
 
-  return (
+  // The page's own sales charts stay the first tab; Temu's insights follow from the section loader.
+  const sales = (
     <div className="space-y-4 max-w-full min-w-0 overflow-x-hidden">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <h1 className="text-xl sm:text-2xl font-bold">{section.label} analytics</h1>
+        <span />
         <div className="w-full sm:w-44">
           <Select
             value={days}
@@ -76,4 +78,5 @@ export default function AnalyticsPage() {
       </div>
     </div>
   )
+  return <SectionView sectionId="analytics" title={`${section.label} analytics`} ownTabs={[{ id: 'sales', label: 'Sales', render: () => sales }]} />
 }

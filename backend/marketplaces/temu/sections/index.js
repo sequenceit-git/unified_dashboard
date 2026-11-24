@@ -5,4 +5,5 @@ module.exports = {
   'after-sales': require('./after-sales'),
   'price-reviews': require('./price-reviews'),
   shipping: require('./shipping'),
+  analytics: require('./analytics'),
 }
