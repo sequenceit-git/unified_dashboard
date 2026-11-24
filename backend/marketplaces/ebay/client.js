@@ -234,4 +234,18 @@ async function ebaySend(token, method, url, body) {
   return payload
 }
 
-module.exports = { EbayClient, ebayFetch, ebaySend }
+/** A GET whose answer is a file (e.g. a gzipped report): the raw bytes. */
+async function ebayFetchBuffer(token, url) {
+  const res = await fetch(url.startsWith('http') ? url : `${config.apiBaseUrl}${url}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: '*/*', 'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US' },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    const error = new Error(body.errors?.[0]?.message || `eBay returned ${res.status}`)
+    error.status = res.status
+    throw error
+  }
+  return Buffer.from(await res.arrayBuffer())
+}
+
+module.exports = { EbayClient, ebayFetch, ebaySend, ebayFetchBuffer }

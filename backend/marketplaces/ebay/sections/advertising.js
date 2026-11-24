@@ -5,7 +5,8 @@
  */
 const { money, words, col, tables } = require('../../../services/marketplace/sectionKit')
 const { ebayGet } = require('./helpers')
-const { ebaySend } = require('../client')
+const zlib = require('node:zlib')
+const { ebaySend, ebayFetchBuffer } = require('../client')
 const { HttpError } = require('../../../utils/httpError')
 const Listing = require('../../../models/Listing')
 const Product = require('../../../models/Product')
@@ -16,6 +17,13 @@ const MAX_PAGES = 20
 const DAY = 86400000
 const BATCH = 500 // eBay's limit per bulk ads call and per Recommendation API call
 const ACTION_LOOKUPS = 10 // General campaigns whose ads and suggestions are read per load
+const REPORT_TYPES = {
+  CAMPAIGN_PERFORMANCE_REPORT: 'Campaign performance',
+  LISTING_PERFORMANCE_REPORT: 'Listing performance',
+  ACCOUNT_PERFORMANCE_REPORT: 'Account performance',
+}
+const REPORT_DAYS = ['7', '30', '90']
+const REPORT_ROWS = 500
 const TYPES = { COST_PER_SALE: 'General (cost per sale)', COST_PER_CLICK: 'Priority (cost per click)' }
 
 /** Every campaign of the seller (all pages, up to 20 × 100). */
@@ -115,6 +123,25 @@ function adActions(listings, ads, suggested) {
   ]
 }
 
+/** A report file (gzip or plain TSV with a header line) as table columns and rows; numbers stay numbers. */
+function readReport(buffer) {
+  const text = (buffer[0] === 0x1f && buffer[1] === 0x8b ? zlib.gunzipSync(buffer) : buffer).toString('utf8').replace(/^\uFEFF/, '')
+  const [head, ...lines] = text.split(/\r?\n/).filter((l) => l.trim() !== '')
+  const names = (head || '').split('\t')
+  const cells = lines.map((l) => l.split('\t'))
+  const numeric = names.map((n, i) => !/(_id|id)$/i.test(n) && cells.length > 0 && cells.every((c) => c[i] === undefined || c[i] === '' || Number.isFinite(Number(c[i]))))
+  const label = (n) => { const t = String(n).replace(/_/g, ' ').trim(); return t.charAt(0).toUpperCase() + t.slice(1) }
+  return {
+    columns: names.map((n, i) => col(`c${i}`, label(n), numeric[i] ? 'number' : 'text')),
+    rows: cells.map((c) => Object.fromEntries(names.map((n, i) => [`c${i}`, numeric[i] ? (c[i] === '' || c[i] === undefined ? null : Number(c[i])) : (c[i] ?? '')]))),
+  }
+}
+
+const reportForm = () => ({ fields: [
+  { name: 'type', label: 'Report', options: Object.entries(REPORT_TYPES).map(([value, label]) => ({ value, label })) },
+  { name: 'days', label: 'Period', options: REPORT_DAYS.map((d) => ({ value: d, label: `Last ${d} days` })) },
+] })
+
 /** Campaign dates from the form (yyyy-mm-dd): start today or later (today = now), end after the start. */
 function campaignDates(value, now) {
   const today = now.toISOString().slice(0, 10)
@@ -197,6 +224,27 @@ async function advertising(token, shop, { now = new Date() } = {}) {
       }))
     },
   }])
+  const [reports] = await tables([{
+    id: 'reports',
+    tab: 'Reports',
+    title: 'Ad reports',
+    note: 'eBay builds a report in the background (usually minutes). Press Refresh to see when it is ready, then View.',
+    columns: [col('type', 'Report'), col('period', 'Period'), col('status', 'Status', 'status'), col('requested', 'Requested', 'date'), col('message', 'Details')],
+    load: async () => ((await ebayGet(token, '/sell/marketing/v1/ad_report_task?limit=50')).reportTasks || []).map((t) => ({
+      id: String(t.reportTaskId),
+      type: REPORT_TYPES[t.reportType] || words(t.reportType),
+      period: t.dateFrom && t.dateTo ? `${t.dateFrom.slice(0, 10)} – ${t.dateTo.slice(0, 10)}` : '',
+      status: words(t.reportTaskStatus),
+      requested: t.reportTaskCreationDate || null,
+      message: t.reportTaskStatusMessage || '',
+      actions: [
+        ...(t.reportTaskStatus === 'SUCCESS' && t.reportId ? [{ id: 'report', label: 'View', detail: true }] : []),
+        { id: 'delete-report', label: 'Delete', danger: true, confirm: 'Delete this report?' },
+      ],
+    })),
+  }])
+  reports.actions = [{ id: 'request-report', label: '+ Request report', input: reportForm() }]
+  list.push(reports)
   list[0].actions = [{ id: 'create', label: '+ New campaign', input: campaignForm(listings) }]
   const count = (status) => campaigns.filter((c) => c.campaignStatus === status).length
   const recentlyEnded = campaigns.filter((c) => c.campaignStatus === 'ENDED' && c.endDate && now - new Date(c.endDate) <= 90 * DAY).length
@@ -212,6 +260,22 @@ async function advertising(token, shop, { now = new Date() } = {}) {
 
 /** Read-only drill-downs: `details[name](token, shop, id) → { title, summary?, tables }`. */
 advertising.details = {
+  /** A finished report task's file as a table (first 500 rows). */
+  report: async (token, shop, id) => {
+    const task = await ebayGet(token, `/sell/marketing/v1/ad_report_task/${enc(id)}`)
+    if (task.reportTaskStatus !== 'SUCCESS' || !task.reportId) throw new HttpError(400, { error: 'eBay has not finished this report yet. Press Refresh in a few minutes.' })
+    const { columns, rows } = readReport(await ebayFetchBuffer(token, `/sell/marketing/v1/ad_report/${enc(task.reportId)}`))
+    return {
+      title: `${REPORT_TYPES[task.reportType] || 'Ad report'}${task.dateFrom ? ` (${task.dateFrom.slice(0, 10)} – ${String(task.dateTo || '').slice(0, 10)})` : ''}`,
+      tables: [{
+        id: 'report',
+        title: 'Report',
+        ...(rows.length > REPORT_ROWS ? { note: `Showing the first ${REPORT_ROWS} of ${rows.length} rows.` } : {}),
+        columns,
+        rows: rows.slice(0, REPORT_ROWS),
+      }],
+    }
+  },
   /** A campaign's ads: listing, title, ad rate and status. */
   ads: async (token, shop, id) => {
     const [ads, listings] = await Promise.all([campaignAds(token, id), shopListings(shop).catch(() => [])])
@@ -282,6 +346,32 @@ advertising.actions = {
     const refused = await bulk(token, `/sell/marketing/v1/ad_campaign/${enc(id)}/bulk_update_ads_bid_by_listing_id`, ids.map((listingId) => ({ listingId, bidPercentage: rate })))
     return { message: `Ad rate ${rate}% set on ${plural(ids.length - refused.length, 'listing')}.${refusedText(refused, 'changed')}`, refused }
   },
+  /** Asks eBay to build a report with every metric it offers for that type (up to its maximum). */
+  'request-report': async (token, shop, id, value) => {
+    const reportType = String(value?.type || '')
+    const days = String(value?.days || '')
+    if (!Object.hasOwn(REPORT_TYPES, reportType)) throw new HttpError(400, { error: 'Choose a report.' })
+    if (!REPORT_DAYS.includes(days)) throw new HttpError(400, { error: 'Choose a period.' })
+    const meta = await ebayGet(token, `/sell/marketing/v1/ad_report_metadata/${enc(reportType)}`)
+    const metricKeys = (meta.metricMetadata || []).map((m) => m.metricKey).filter(Boolean).slice(0, meta.maxNumberOfMetricsToRequest || undefined)
+    const dimension = (meta.dimensionMetadata || [])[0]?.dimensionKey
+    const now = advertising.now()
+    await ebaySend(token, 'POST', '/sell/marketing/v1/ad_report_task', {
+      reportType,
+      dateFrom: new Date(now.getTime() - Number(days) * DAY).toISOString(),
+      dateTo: now.toISOString(),
+      marketplaceId: 'EBAY_US',
+      fundingModels: ['COST_PER_SALE'],
+      ...(dimension ? { dimensions: [{ dimensionKey: dimension }] } : {}),
+      metricKeys,
+      reportFormat: 'TSV_GZIP',
+    })
+    return { message: `eBay is building the report (${REPORT_TYPES[reportType]}, last ${days} days). Press Refresh in a few minutes.` }
+  },
+  'delete-report': async (token, shop, id) => {
+    await ebaySend(token, 'DELETE', `/sell/marketing/v1/ad_report_task/${enc(id)}`)
+    return { message: 'Report deleted.' }
+  },
   /** A new General (cost-per-sale) campaign, then the chosen listings added to it. */
   create: async (token, shop, id, value) => {
     const campaignName = String(value?.name ?? '').trim()
@@ -323,6 +413,7 @@ advertising.actions = {
 }
 
 advertising.now = () => new Date()
+advertising.readReport = readReport
 advertising.suggestedRates = suggestedRates
 advertising.campaignAds = campaignAds
 advertising.bulkAds = bulk

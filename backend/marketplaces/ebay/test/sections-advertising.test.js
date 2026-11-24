@@ -16,7 +16,7 @@ const CAMPAIGNS = [
 ]
 
 /** eBay stub: `get` and `send` answer by path; every call is recorded. */
-function load({ get = {}, send = {}, calls = [], listings = [], products = [] } = {}) {
+function load({ get = {}, send = {}, calls = [], listings = [], products = [], files = {} } = {}) {
   const answer = (table, method, url, body) => {
     calls.push([method, url, body])
     const key = Object.keys(table).find((k) => url.includes(k))
@@ -29,7 +29,10 @@ function load({ get = {}, send = {}, calls = [], listings = [], products = [] } 
       ebayApiz: () => 'https://apiz.ebay.com',
       scopeAware: (fn) => fn,
     },
-    '../client': { ebaySend: async (token, method, url, body) => answer(send, method, url, body) },
+    '../client': {
+      ebaySend: async (token, method, url, body) => answer(send, method, url, body),
+      ebayFetchBuffer: async (token, url) => answer(files, 'FILE', url),
+    },
     '/models/Listing': modelStub(() => listings),
     '/models/Product': modelStub(() => products),
   })
@@ -232,7 +235,7 @@ test('a name already used is refused before eBay is asked to create', async () =
 
 test('start defaults to now; a past start or an end before the start is refused', async () => {
   const { advertising, restore, calls } = load({
-    get: { get_campaign_by_name: (url) => { if (calls.some(([m]) => m === 'POST')) return campaign('5', 'RUNNING'); throw Object.assign(new Error('nf'), { status: 404 }) } },
+    get: { get_campaign_by_name: () => { if (calls.some(([m]) => m === 'POST')) return campaign('5', 'RUNNING'); throw Object.assign(new Error('nf'), { status: 404 }) } },
     send: { '/sell/marketing/v1/ad_campaign': {} },
   })
   advertising.now = () => NOW
@@ -262,5 +265,90 @@ test('copy makes a new campaign from an ended rules-based one', async () => {
     assert.ok((await advertising('tok', {}, { now: NOW })).tables[0].actions.some((a) => a.id === 'create'))
     await advertising.actions.clone('tok', {}, '3', { name: 'Again' })
     assert.deepEqual(calls.find(([m]) => m === 'POST'), ['POST', '/sell/marketing/v1/ad_campaign/3/clone', { campaignName: 'Again', startDate: NOW.toISOString(), fundingStrategy: source.fundingStrategy }])
+  } finally { restore() }
+})
+
+const zlib = require('node:zlib')
+const tsv = (lines) => zlib.gzipSync(Buffer.from(lines.join('\n')))
+
+test('report tasks are listed with status', async () => {
+  const { advertising, restore } = load({
+    get: {
+      '/sell/marketing/v1/ad_campaign?': { campaigns: [] },
+      '/sell/marketing/v1/ad_report_task?': { reportTasks: [
+        { reportTaskId: 'T1', reportType: 'CAMPAIGN_PERFORMANCE_REPORT', reportTaskStatus: 'SUCCESS', reportId: 'R1', dateFrom: '2026-10-25T00:00:00.000Z', dateTo: '2026-11-24T00:00:00.000Z', reportTaskCreationDate: '2026-11-24T09:00:00.000Z' },
+        { reportTaskId: 'T2', reportType: 'LISTING_PERFORMANCE_REPORT', reportTaskStatus: 'PENDING', dateFrom: '2026-11-17T00:00:00.000Z', dateTo: '2026-11-24T00:00:00.000Z' },
+        { reportTaskId: 'T3', reportType: 'ACCOUNT_PERFORMANCE_REPORT', reportTaskStatus: 'FAILED', reportTaskStatusMessage: 'No data for the period' },
+      ] },
+    },
+  })
+  try {
+    const { tables } = await advertising('tok', {}, { now: NOW })
+    const t = tables.find((x) => x.id === 'reports')
+    assert.equal(t.tab, 'Reports')
+    const row = (id) => t.rows.find((r) => r.id === id)
+    assert.deepEqual([row('T1').type, row('T1').status, row('T1').period], ['Campaign performance', 'Success', '2026-10-25 – 2026-11-24'])
+    assert.ok(row('T1').actions.some((a) => a.id === 'report' && a.detail))
+    assert.ok(!row('T2').actions.some((a) => a.id === 'report'))
+    assert.equal(row('T3').message, 'No data for the period')
+    assert.ok(t.rows.every((r) => r.actions.some((a) => a.id === 'delete-report')))
+    assert.deepEqual(t.actions[0].input.fields.map((f) => [f.name, f.options.map((o) => o.value)]), [
+      ['type', ['CAMPAIGN_PERFORMANCE_REPORT', 'LISTING_PERFORMANCE_REPORT', 'ACCOUNT_PERFORMANCE_REPORT']], ['days', ['7', '30', '90']],
+    ])
+  } finally { restore() }
+})
+
+test("requesting a report uses eBay's metrics for that report type", async () => {
+  const { advertising, restore, calls } = load({
+    get: { '/sell/marketing/v1/ad_report_metadata/CAMPAIGN_PERFORMANCE_REPORT': { maxNumberOfMetricsToRequest: 2, dimensionMetadata: [{ dimensionKey: 'campaign_id' }, { dimensionKey: 'day' }], metricMetadata: [{ metricKey: 'impressions' }, { metricKey: 'clicks' }, { metricKey: 'sales' }] } },
+    send: { '/sell/marketing/v1/ad_report_task': {} },
+  })
+  advertising.now = () => NOW
+  try {
+    const res = await advertising.actions['request-report']('tok', {}, 'reports', { type: 'CAMPAIGN_PERFORMANCE_REPORT', days: '30' })
+    assert.deepEqual(calls.find(([m]) => m === 'POST'), ['POST', '/sell/marketing/v1/ad_report_task', {
+      reportType: 'CAMPAIGN_PERFORMANCE_REPORT', dateFrom: '2026-10-25T10:00:00.000Z', dateTo: '2026-11-24T10:00:00.000Z', marketplaceId: 'EBAY_US',
+      fundingModels: ['COST_PER_SALE'], dimensions: [{ dimensionKey: 'campaign_id' }], metricKeys: ['impressions', 'clicks'], reportFormat: 'TSV_GZIP',
+    }])
+    assert.match(res.message, /eBay is building the report/)
+    await assert.rejects(advertising.actions['request-report']('tok', {}, 'reports', { type: 'NOPE', days: '30' }), (e) => e.status === 400)
+    await assert.rejects(advertising.actions['request-report']('tok', {}, 'reports', { type: 'CAMPAIGN_PERFORMANCE_REPORT', days: '12' }), (e) => e.status === 400)
+  } finally { restore() }
+})
+
+test('a finished report opens as a table', async () => {
+  const { advertising, restore, calls } = load({
+    get: { '/sell/marketing/v1/ad_report_task/T1': { reportTaskId: 'T1', reportId: 'R1', reportType: 'CAMPAIGN_PERFORMANCE_REPORT', reportTaskStatus: 'SUCCESS' } },
+    files: { '/sell/marketing/v1/ad_report/R1': tsv(['campaign_id\timpressions\tsales', '1\t1200\t45.5', '4\t30\t0']) },
+  })
+  try {
+    const detail = await advertising.details.report('tok', {}, 'T1')
+    assert.ok(calls.some(([m, u]) => m === 'FILE' && u === '/sell/marketing/v1/ad_report/R1'))
+    const t = detail.tables[0]
+    assert.deepEqual(t.columns.map((c) => [c.key, c.label, c.type]), [['c0', 'Campaign id', 'text'], ['c1', 'Impressions', 'number'], ['c2', 'Sales', 'number']])
+    assert.deepEqual(t.rows[0], { c0: '1', c1: 1200, c2: 45.5 })
+    assert.equal(advertising.readReport(Buffer.from('a\tb\nx\t2')).rows[0].c1, 2)
+  } finally { restore() }
+})
+
+test('a report over 500 rows shows the first 500 and says so', async () => {
+  const lines = ['listing_id\tclicks', ...Array.from({ length: 620 }, (_, i) => `${i}\t${i}`)]
+  const { advertising, restore } = load({
+    get: { '/sell/marketing/v1/ad_report_task/T1': { reportTaskId: 'T1', reportId: 'R1', reportTaskStatus: 'SUCCESS' } },
+    files: { '/sell/marketing/v1/ad_report/R1': tsv(lines) },
+  })
+  try {
+    const t = (await advertising.details.report('tok', {}, 'T1')).tables[0]
+    assert.equal(t.rows.length, 500)
+    assert.match(t.note, /first 500 of 620 rows/)
+    await assert.rejects(load({ get: { '/sell/marketing/v1/ad_report_task/T2': { reportTaskStatus: 'PENDING' } } }).advertising.details.report('tok', {}, 'T2'), (e) => e.status === 400)
+  } finally { restore() }
+})
+
+test('deleting a report task calls eBay', async () => {
+  const { advertising, restore, calls } = load({ send: { '/sell/marketing/v1/ad_report_task/': {} } })
+  try {
+    await advertising.actions['delete-report']('tok', {}, 'T2')
+    assert.deepEqual(calls[0], ['DELETE', '/sell/marketing/v1/ad_report_task/T2', undefined])
   } finally { restore() }
 })

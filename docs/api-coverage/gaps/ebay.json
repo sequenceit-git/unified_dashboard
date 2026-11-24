@@ -1271,43 +1271,7 @@
     "priority": "high",
     "value": "Promoted Listings (eBay ads): create and run campaigns, add listings as ads, set ad rates and bids, keywords, budgets, suggested items and rates."
   },
-  "GET /sell/marketing/v1/ad_report/{report_id}": {
-    "section": "new: promoted listings",
-    "size": "medium",
-    "priority": "high",
-    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
-  },
   "GET /sell/marketing/v1/ad_report_metadata": {
-    "section": "new: promoted listings",
-    "size": "medium",
-    "priority": "high",
-    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
-  },
-  "GET /sell/marketing/v1/ad_report_metadata/{report_type}": {
-    "section": "new: promoted listings",
-    "size": "medium",
-    "priority": "high",
-    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
-  },
-  "GET /sell/marketing/v1/ad_report_task": {
-    "section": "new: promoted listings",
-    "size": "medium",
-    "priority": "high",
-    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
-  },
-  "POST /sell/marketing/v1/ad_report_task": {
-    "section": "new: promoted listings",
-    "size": "medium",
-    "priority": "high",
-    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
-  },
-  "GET /sell/marketing/v1/ad_report_task/{report_task_id}": {
-    "section": "new: promoted listings",
-    "size": "medium",
-    "priority": "high",
-    "value": "Promoted Listings performance: impressions, clicks, sales and ad fees per campaign and per listing."
-  },
-  "DELETE /sell/marketing/v1/ad_report_task/{report_task_id}": {
     "section": "new: promoted listings",
     "size": "medium",
     "priority": "high",
