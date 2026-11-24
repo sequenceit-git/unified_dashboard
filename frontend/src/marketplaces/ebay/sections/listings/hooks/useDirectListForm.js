@@ -8,14 +8,12 @@ import {
   isNewCondition,
   normalizeEbayCategoryRules,
   resolveEbayCondition,
-  validateBestOffer,
-  validateEbayIdentifierCode,
-  validateVariantsForEbay,
 } from '../listing/rules'
 import { listingFormFor, useShopProfile } from '../../../../../hooks/useShopProfiles'
 import { clearDirectListing, startDirectFetch, useDirectListing } from './useDirectListing'
 import { useApi } from '../../../../../hooks/useApi'
-import { cleanShippingPayer, validateShippingPayer } from '../listing/shippingPayer'
+import { cleanShippingPayer } from '../listing/shippingPayer'
+import { directProblems } from '../listing/directSteps'
 
 const HIDDEN = new Set(['targetMarketplace', 'sourceUrl', 'gtin', 'aiOpportunityScore', 'listingUrl', 'estimatedCost'])
 
@@ -52,7 +50,8 @@ function attributeMap(raw) {
  * Paste a product link, then review it in that shop's own listing format.
  */
 
-export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
+export function useDirectListForm({ shopLabel, marketplace, onCreated, onBlocked }) {
+  const [problems, setProblems] = useState([])
   const { token } = useAuth()
   const { profile } = useShopProfile(marketplace)
   const shopsRes = useApi('/api/shops')
@@ -214,46 +213,37 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
   })
 
   const create = async () => {
-    if (!draft.title.trim()) return update({ error: 'Add a title.' })
-    if (draft.title.length > titleMax) return update({ error: `${shopLabel} titles can be at most ${titleMax} characters.` })
-    if ((subtitle || '').length > subtitleMax) {
-      return update({ error: `eBay subtitles can be at most ${subtitleMax} characters.` })
+    const found = directProblems({
+      shopLabel,
+      title: draft.title,
+      titleMax,
+      subtitle,
+      subtitleMax,
+      variants: activeVariants,
+      price: draft.price,
+      stock,
+      canList: layout.canList,
+      upcRequired: parsedEbayRules.upcEnabled === 'Required',
+      identifierCode,
+      bestOfferAllowed: parsedEbayRules.bestOfferEnabled !== false,
+      bestOffer,
+      summaryPrice,
+      ebayShipping,
+      images: draft.images.length,
+      packageRequired,
+      weight,
+      needsCategory: layout.category === 'search' && layout.canList,
+      categoryId,
+      missingRequired: required.filter((attr) => !hasAspectValue(aspects[attr.id])).map((attr) => attr.name),
+      hasShop: Boolean(shop?._id),
+    })
+    setProblems(found)
+    if (found.length) {
+      update({ error: '' })
+      onBlocked?.(found[0].step)
+      return
     }
-
-    if (activeVariants.length > 0) {
-      const varErr = validateVariantsForEbay(activeVariants, { requireStock: true })
-      if (varErr) return update({ error: varErr })
-    } else {
-      const numPrice = Number(draft.price)
-      if (!(numPrice > 0)) {
-        return update({ error: 'Set your selling price.' })
-      }
-      if (layout.canList && (!(Number(stock) >= 1))) {
-        return update({ error: 'Set stock to at least 1 before listing.' })
-      }
-      if (parsedEbayRules.upcEnabled === 'Required' && !String(identifierCode?.code || '').trim()) {
-          return update({ error: 'This eBay category requires a product identifier (or click "Does not apply").' })
-        }
-        const idErr = validateEbayIdentifierCode(identifierCode)
-        if (idErr) return update({ error: idErr })
-    }
-
-    if (parsedEbayRules.bestOfferEnabled !== false) {
-      const boErr = validateBestOffer(bestOffer, activeVariants.length > 0 ? summaryPrice : Number(draft.price))
-      if (boErr) return update({ error: boErr })
-    }
-
-    const shipErr = validateShippingPayer(ebayShipping)
-    if (shipErr) return update({ error: shipErr })
-
-    if (!draft.images.length) return update({ error: 'Add at least one image.' })
-    if (packageRequired && !(Number(weight) > 0)) return update({ error: `${shopLabel} needs the package weight and size.` })
-    if (layout.category === 'search' && layout.canList && !categoryId) return update({ error: `Pick a ${shopLabel} category.` })
-
     const named = namedValues()
-    const missing = required.filter((attr) => !hasAspectValue(aspects[attr.id]))
-      if (missing.length) return update({ error: `Fill in: ${missing.map((attr) => attr.name).join(', ')}.` })
-    if (layout.canList && !shop?._id) return update({ error: `Connect ${shopLabel} in Settings first.` })
 
     update({ saving: true, error: '' })
     try {
@@ -376,6 +366,7 @@ export function useDirectListForm({ shopLabel, marketplace, onCreated }) {
   }
 
   return {
+    problems,
     url,
     useAi,
     fetching,

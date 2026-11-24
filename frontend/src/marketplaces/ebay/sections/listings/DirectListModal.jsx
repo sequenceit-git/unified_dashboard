@@ -1,12 +1,15 @@
+import { useState } from 'react'
 import { useDirectListForm } from './hooks/useDirectListForm'
 import Button from '../../../../components/ui/Button'
 import { Input, Select } from '../../../../components/ui/Input'
-import Modal from '../../../../components/ui/Modal'
 import AttributeField from './components/AttributeField'
 import { hasAspectValue } from './listing/attributes'
 import { clearDirectListing } from './hooks/useDirectListing'
 import { CONDITIONS } from './listingConditions'
-import DraftFields from './listing/draftFields/Fields'
+import { FoundFields, PriceFields, ShippingFields } from './listing/draftFields/Fields'
+import StepPanel, { Step } from '../../ui/StepPanel'
+import StepProblems from '../../ui/StepProblems'
+import { DIRECT_STEPS } from './listing/directSteps'
 
 const SOURCE_LABEL = {
   ebay_api: 'Read from eBay',
@@ -20,6 +23,7 @@ const textareaClass = 'w-full rounded-lg border border-gray-200 bg-white px-3 py
  * Paste a product link, then review it in that shop's own listing format.
  */
 export default function DirectListModal({ shopLabel, marketplace, onClose, onCreated }) {
+  const [step, setStep] = useState('link')
   const {
     url,
     useAi,
@@ -32,6 +36,8 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     mpn,
     dispatchTimeMax,
     bestOffer,
+    ebayShipping,
+    problems,
     identifierCode,
     weight,
     length,
@@ -68,7 +74,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     summaryPrice,
     summaryStock,
     create,
-  } = useDirectListForm({ shopLabel, marketplace, onCreated })
+  } = useDirectListForm({ shopLabel, marketplace, onCreated, onBlocked: setStep })
   const categoryField = (
     <>
       {layout.category === 'search' ? (
@@ -226,6 +232,7 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     conditionDescription,
     dispatchTimeMax,
     draft,
+    ebayShipping,
     ebayConditionOptions,
     identifierCode,
     layout,
@@ -247,80 +254,139 @@ export default function DirectListModal({ shopLabel, marketplace, onClose, onCre
     titleField,
     update,
   }
-  const draftFields = draft && <DraftFields ctx={slotCtx} />
+  // Once the page is read, start where the work is: checking what was found.
+  const current = !draft && step !== 'link' ? 'link' : step
+  const badSteps = new Set(problems.map((p) => p.step))
+  const card = 'space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900'
+  const needDraft = <p className="text-sm text-gray-500">Read a product link first.</p>
 
   return (
-    <Modal title={`Direct listing · ${shopLabel}`} onClose={onClose} size="5xl" closeOnBackdrop={!fetching && !saving}>
-      <div className="mb-3 rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-900">
-        <p className="font-semibold">{shopLabel} listing format</p>
-        <p className="mt-0.5">{profile?.productForm?.directIntro || layout.intro}</p>
-        {layout.note && <p className="mt-1 text-indigo-800">{layout.note}</p>}
-        {layout.apiName && <p className="mt-1 text-[11px] text-indigo-700">Uses {layout.apiName}</p>}
-      </div>
-
-      <form onSubmit={fetchDetails} className="space-y-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <Input
-              label="Product link"
-              type="url"
-              value={url}
-              onChange={(e) => update({ url: e.target.value })}
-              placeholder="https://www.ebay.com/itm/…, an Amazon page, a brand store page…"
-              required
-            />
-          </div>
-          <Button type="submit" disabled={fetching || !url.trim()}>
-            {fetching ? 'Reading the page…' : draft ? 'Fetch again' : 'Fetch details'}
-          </Button>
-        </div>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <input type="checkbox" checked={useAi} disabled={fetching} onChange={(e) => update({ useAi: e.target.checked })} />
-          Use AI (GPT-5 mini) to clean up the title and description, fill in {layout.specifics?.label?.toLowerCase() || 'details'}, and look the page up if the site blocks it
-        </label>
-        {fetching && <p className="text-xs text-gray-500">Reading the page with GPT-5 mini. You can close this window — the request keeps running.</p>}
-      </form>
-
-      {draft && (
-        <div className="mt-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700">{SOURCE_LABEL[draft.source] || draft.source}</span>
-            {draft.aiUsed && <span className="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-700">Cleaned up by AI</span>}
-            <a href={draft.sourceUrl} target="_blank" rel="noreferrer" className="truncate text-indigo-600 hover:underline">{draft.sourceUrl}</a>
-          </div>
-          {draft.warnings?.length > 0 && (
-            <ul className="space-y-1 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
-              {draft.warnings.map((warning) => <li key={warning}>{warning}</li>)}
-            </ul>
+    <StepPanel
+      title={`✨ Direct listing · ${shopLabel}`}
+      steps={DIRECT_STEPS}
+      active={current}
+      onStep={setStep}
+      problemSteps={badSteps}
+      onClose={onClose}
+      actions={(
+        <>
+          {(draft || url) && !fetching && (
+            <Button variant="ghost" type="button" onClick={() => { clearDirectListing(marketplace); onClose() }}>Start over</Button>
           )}
-          {draftFields}
-        </div>
+          <Button variant="secondary" type="button" onClick={onClose}>{fetching || draft || url ? 'Hide' : 'Cancel'}</Button>
+          {draft && (
+            <Button type="button" onClick={create} disabled={saving || fetching}>
+              {saving ? (layout.canList ? 'Publishing…' : 'Saving…') : (layout.canList ? layout.listAction : `Save to ${shopLabel}`)}
+            </Button>
+          )}
+        </>
       )}
+    >
+      <Step id="link" active={current}>
+        <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-900 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100">
+          <p className="font-semibold">{shopLabel} listing format</p>
+          <p className="mt-0.5">{profile?.productForm?.directIntro || layout.intro}</p>
+          {layout.note && <p className="mt-1">{layout.note}</p>}
+          {layout.apiName && <p className="mt-1 text-[11px]">Uses {layout.apiName}</p>}
+        </div>
+        <form onSubmit={async (e) => { await fetchDetails(e); setStep('found') }} className={card}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <Input
+                label="Product link"
+                type="url"
+                value={url}
+                onChange={(e) => update({ url: e.target.value })}
+                placeholder="https://www.ebay.com/itm/…, an Amazon page, a brand store page…"
+                required
+              />
+            </div>
+            <Button type="submit" disabled={fetching || !url.trim()}>
+              {fetching ? 'Reading the page…' : draft ? 'Read again' : 'Read the page'}
+            </Button>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
+            <input type="checkbox" checked={useAi} disabled={fetching} onChange={(e) => update({ useAi: e.target.checked })} />
+            Use AI (GPT-5 mini) to clean up the title and description, fill in {layout.specifics?.label?.toLowerCase() || 'details'}, and look the page up if the site blocks it
+          </label>
+          {fetching && <p className="text-xs text-gray-500">✨ Reading the page. You can close this window — the request keeps running, and the draft waits here.</p>}
+          {draft && !fetching && <p className="text-xs text-emerald-700">Done. <button type="button" className="underline" onClick={() => setStep('found')}>Check what was found →</button></p>}
+        </form>
+      </Step>
+
+      <Step id="found" active={current}>
+        {!draft ? needDraft : (
+          <>
+            <StepProblems problems={problems} step="found" />
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700">{SOURCE_LABEL[draft.source] || draft.source}</span>
+              {draft.aiUsed && <span className="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-700">✨ AI suggested the wording</span>}
+              <a href={draft.sourceUrl} target="_blank" rel="noreferrer" className="truncate text-indigo-600 hover:underline">{draft.sourceUrl}</a>
+            </div>
+            {draft.warnings?.length > 0 && (
+              <ul className="space-y-1 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
+                {draft.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+              </ul>
+            )}
+            <div className={card}><FoundFields ctx={slotCtx} /></div>
+          </>
+        )}
+      </Step>
+
+      <Step id="category" active={current}>
+        {!draft ? needDraft : (
+          <>
+            <StepProblems problems={problems} step="category" />
+            <div className={card}>{categoryField}</div>
+            {specificsFields && <div className={card}>{specificsFields}</div>}
+          </>
+        )}
+      </Step>
+
+      <Step id="price" active={current}>
+        {!draft ? needDraft : (
+          <>
+            <StepProblems problems={problems} step="price" />
+            <div className={card}><PriceFields ctx={slotCtx} /></div>
+            <div className={card}><ShippingFields ctx={slotCtx} /></div>
+          </>
+        )}
+      </Step>
+
+      <Step id="review" active={current}>
+        {!draft ? needDraft : (
+          <>
+            {problems.length > 0 && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/40">
+                <p className="mb-1 text-sm font-semibold text-rose-800 dark:text-rose-200">Fix these first</p>
+                <ul className="space-y-1 text-sm">
+                  {problems.map((p) => (
+                    <li key={`${p.step}:${p.message}`}>
+                      <button type="button" className="text-left text-rose-700 underline-offset-2 hover:underline dark:text-rose-300" onClick={() => setStep(p.step)}>
+                        {DIRECT_STEPS.find((x) => x.id === p.step)?.label}: {p.message}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className={`${card} flex gap-4`}>
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border bg-gray-50 dark:border-slate-700 dark:bg-slate-800">
+                {draft.images?.[0] ? <img src={draft.images[0]} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center text-xs text-gray-400">No photo</span>}
+              </div>
+              <dl className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <dt className="text-gray-500">Title</dt><dd className="truncate">{draft.title || '—'}</dd>
+                <dt className="text-gray-500">Category</dt><dd className="truncate">{selectedCategory?.path || categoryId || '—'}</dd>
+                <dt className="text-gray-500">Price</dt><dd>{activeVariants.length ? `from $${summaryPrice.toFixed(2)}` : draft.price ? `$${Number(draft.price).toFixed(2)}` : '—'}</dd>
+                <dt className="text-gray-500">Stock</dt><dd>{activeVariants.length ? summaryStock : stock}</dd>
+                <dt className="text-gray-500">Photos</dt><dd>{draft.images?.length || 0}</dd>
+              </dl>
+            </div>
+          </>
+        )}
+      </Step>
 
       {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
-
-      <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-3">
-        {(draft || url) && !fetching && (
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={() => {
-              clearDirectListing(marketplace)
-              onClose()
-            }}
-          >
-            Start over
-          </Button>
-        )}
-        <Button variant="secondary" type="button" onClick={onClose}>{fetching || draft || url ? 'Hide' : 'Cancel'}</Button>
-        {draft && (
-          <Button type="button" onClick={create} disabled={saving || fetching}>
-            {saving
-              ? (layout.canList ? ('Publishing…') : 'Saving…')
-              : (layout.canList ? (layout.listAction) : `Save to ${shopLabel}`)}
-          </Button>
-        )}
-      </div>
-    </Modal>
+    </StepPanel>
   )
 }
