@@ -51,4 +51,4 @@ async function researchListing({ title, description = '', brand = '' }) {
   return { title: ai || fitWords(title, max), aiTitle: Boolean(ai) }
 }
 
-module.exports = { researchListing, fitWords }
+module.exports = { researchListing, fitWords, RULES }

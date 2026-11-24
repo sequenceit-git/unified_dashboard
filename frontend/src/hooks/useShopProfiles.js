@@ -175,7 +175,7 @@ const DIRECT_DEFAULTS = {
     package: 'hidden',
     packageNote: '',
     category: 'text',
-    intro: 'Save the goods to the catalog. Publishing to Temu from EcomPilot is not available yet.',
+    intro: "Read a product page, check what was found, then save: Temu's own form opens next to pick the category, fill the template (the AI fills what it can) and list on Temu.",
   },
 }
 

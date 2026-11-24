@@ -46,13 +46,14 @@ export default function ListModal({ product, onClose, onSaved }) {
     return () => { stop = true }
   }, [form.catId, token])
 
-  // Product Discovery finds: once the category's template loads, the AI fills its empty required properties.
+  // Goods from Product Discovery or Direct listing: once the category's template loads, the AI fills its
+  // empty required properties from what was found (title, description, the page's specifics).
   const [aiFill, setAiFill] = useState({ busy: false, filled: [], asked: 0, error: '' })
   const aiDoneFor = useRef(null)
   const formNow = useRef(form)
   formNow.current = form
   useEffect(() => {
-    if (product?.source !== 'research_bot' || !template || !form.catId || aiDoneFor.current === form.catId) return
+    if (!['research_bot', 'url_import'].includes(product?.source) || !template || !form.catId || aiDoneFor.current === form.catId) return
     aiDoneFor.current = form.catId
     const missing = missingForAi(template, formNow.current)
     if (!missing.length) return
@@ -165,10 +166,10 @@ export default function ListModal({ product, onClose, onSaved }) {
           {errors.title && <p className="text-xs text-red-600">{errors.title}</p>}
           <CategoryPicker token={token} title={form.title} value={form.catId} path={form.catPath} onChange={chooseCategory} error={errors.catId} />
           {form.catId && !template && <p className="text-xs text-gray-500">Loading Temu's attributes for this category…</p>}
-          {aiFill.busy && <p className="text-xs text-indigo-600 dark:text-indigo-300">✨ AI is filling the properties from what Product Discovery found…</p>}
+          {aiFill.busy && <p className="text-xs text-indigo-600 dark:text-indigo-300">✨ AI is filling the properties from what was found…</p>}
           {!aiFill.busy && aiFill.asked > 0 && !aiFill.error && (
             <p className="rounded-md bg-indigo-50 px-2 py-1 text-xs text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">
-              ✨ AI filled {aiFill.filled.length} of {aiFill.asked} empty required properties from what Product Discovery found. Check them before listing.
+              ✨ AI filled {aiFill.filled.length} of {aiFill.asked} empty required properties from what was found. Check them before listing.
             </p>
           )}
           {aiFill.error && <p className="text-xs text-amber-700 dark:text-amber-300">AI couldn't fill the properties: {aiFill.error}</p>}

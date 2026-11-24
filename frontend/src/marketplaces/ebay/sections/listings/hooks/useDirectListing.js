@@ -98,6 +98,11 @@ export function startDirectFetch(marketplace, { url, useAi, token, titleMax, att
           condition: data.condition || 'NEW',
           attributes: attrs,
         },
+        // Weight and size read from the page (else the usual defaults), so the package starts right.
+        weight: data.weight || 1,
+        length: data.dimensions?.length || 10,
+        width: data.dimensions?.width || 10,
+        height: data.dimensions?.height || 5,
         brandId: '',
         listPrice: '',
         sellerSku: '',

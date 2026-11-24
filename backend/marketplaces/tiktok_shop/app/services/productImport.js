@@ -9,6 +9,18 @@ const registry = require('../../..')
 const { getAiConfig } = require('../../../../services/system/aiSettings')
 const { checkUrl, safeFetch } = require('../../../../utils/safeUrl')
 const ADAPTER = require('../..')
+// This shop's own title rules (length, style, brand), the same ones Product Discovery uses.
+const { RULES } = require('../../researchListing')
+const { specMeasurements } = require('../../../../services/research/measurements')
+
+/** Weight (lb) and size (in) from what the AI read and the page's specifics. */
+function draftMeasurements(ai, attributes) {
+  return specMeasurements([
+    { name: 'Weight', value: ai?.weight || '' },
+    { name: 'Dimensions', value: ai?.dimensions || '' },
+    ...Object.entries(attributes || {}).map(([name, value]) => ({ name, value: String(value ?? '') })),
+  ])
+}
 
 const MAX_HTML_BYTES = 3 * 1024 * 1024
 const BROWSER_HEADERS = {
@@ -227,7 +239,9 @@ function aiFields(marketplace) {
     ? '\n  "condition": "NEW, LIKE_NEW, USED_GOOD or FOR_PARTS_OR_NOT_WORKING",'
     : ''
   return `{
-  "title": "buyer-friendly listing title, at most ${titleMax} characters, no store names or promo words",
+  "title": "listing title, at most ${titleMax} characters. ${RULES}",
+  "weight": "the item or package weight with its unit as printed, e.g. 500 g or 1.2 lb, or null",
+  "dimensions": "length x width x height with the unit as printed, e.g. 20 x 10 x 5 cm, or null",
   "description": "plain-text description for a marketplace listing: a short intro, then key features one per line starting with '- '. No links, no mention of the source store",
   "brand": "brand name or Unbranded",${condition}
   "price": number or null,
@@ -327,6 +341,7 @@ async function importProductFromUrl(rawUrl, { useAi = true, marketplace } = {}) 
     sourcePrice: base.price || null,
     currency: base.currency || 'USD',
     category: String(ai?.category || base.category || ''),
+    ...draftMeasurements(ai, attributes),
     gtin: base.gtin || '',
     images,
     attributes,
@@ -379,4 +394,4 @@ async function fillShopAttributes({ title, description, brand, attributes, schem
   return next
 }
 
-module.exports = { importProductFromUrl, fillShopAttributes }
+module.exports = { importProductFromUrl, fillShopAttributes, aiFields, draftMeasurements }
