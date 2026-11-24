@@ -13,6 +13,7 @@ import { CONDITIONS } from './listingConditions'
 import ProductListPrice from './listing/productFields/ListPrice'
 import ProductIdentifier from './listing/productFields/Identifier'
 import SearchKeywords from './components/SearchKeywords'
+import TikTokOptimizePanel from './components/TikTokOptimizePanel'
 
 // Bookkeeping keys kept in `attributes` that aren't item specifics.
 const HIDDEN_ATTRIBUTES = new Set(['targetMarketplace', 'sourceUrl', 'gtin', 'aiOpportunityScore', 'listingUrl', 'estimatedCost'])
@@ -91,6 +92,7 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
   const listingStatus = listingBadge(profile, shopListing)
   const listingActions = listingActionsFor(profile, shopListing)
   const variantsLocked = Boolean(product && shopListing?.externalListingId)
+  const tiktokProductId = shopListing?.externalListingId ? String(shopListing.externalListingId).split(':')[0] : ''
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
   const setImages = (imgs) => setForm((prev) => ({ ...prev, images: imgs }))
@@ -237,6 +239,12 @@ export default function ProductModal({ product, marketplace, onClose, onSaved, o
                 />
               </div>
               <SearchKeywords productId={shopListing?.externalListingId} />
+              <TikTokOptimizePanel
+                productId={tiktokProductId}
+                title={form.title}
+                description={form.description}
+                onApplyTitle={(nextTitle) => setForm((prev) => ({ ...prev, title: nextTitle }))}
+              />
             </div>
 
             <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs space-y-3">

@@ -69,8 +69,16 @@ async function hourlyRows(token, shop, now) {
   }))
 }
 
+const soft = (err) => {
+  if (/scope|permission|authorize|403/i.test(err?.message || '')) throw err
+  return {}
+}
+
 async function analytics(token, shop, { now = new Date() } = {}) {
+  const range = ttRange(30, now)
   let healthTiles = []
+  let accTiles = []
+  let offSiteTiles = []
   const list = await tables([
     {
       id: 'skus',
@@ -114,8 +122,136 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       columns: [col('hour', 'Hour'), col('gmv', 'GMV', 'money'), col('orders', 'Orders', 'number'), col('visitors', 'Visitors', 'number'), col('productClicks', 'Product clicks', 'number')],
       load: scopeAware(() => hourlyRows(token, shop, now), SCOPE),
     },
+    {
+      id: 'accPreferences',
+      tab: 'Audience (ACC)',
+      title: 'Audience segments & preferences',
+      columns: [col('name', 'Preference / segment'), col('group', 'Dimension'), col('share', 'Share'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
+      load: scopeAware(async () => {
+        const [ov, pen, prefSum, prefs] = await Promise.all([
+          ttGet(token, shop, '/analytics/202610/acc/overview', range).catch(soft),
+          ttGet(token, shop, '/analytics/202610/acc/penetration', range).catch(soft),
+          ttGet(token, shop, '/analytics/202610/acc/preferences/summary', range).catch(soft),
+          ttGet(token, shop, '/analytics/202610/acc/preferences', range).catch(soft),
+        ])
+        const audienceVal = ov.total_customers ?? ov.audience_size ?? ov.active_customers ?? null
+        const penRate = pen.penetration_rate ?? pen.rate ?? null
+        accTiles = [
+          { tab: 'Audience (ACC)', label: 'Audience reach', value: audienceVal ?? '—', type: audienceVal != null ? 'number' : 'text' },
+          { tab: 'Audience (ACC)', label: 'Buyer penetration', value: penRate != null ? `${penRate}%` : '—', type: 'text' },
+          { tab: 'Audience (ACC)', label: 'Top affinity', value: prefSum.top_category || prefSum.dominant_preference || prefSum.summary || '—', type: 'text' },
+        ]
+        const rows = prefs.preferences || prefs.segments || firstList(prefs)
+        return rows.map((r) => ({
+          name: r.name || r.preference_name || r.segment_name || r.label || r.trait || '',
+          group: r.dimension || r.group || r.type || '',
+          share: r.share != null ? `${r.share}%` : (r.ratio != null ? `${r.ratio}%` : (r.percentage || '')),
+          orders: r.orders ?? r.sku_orders ?? null,
+          gmv: r.gmv?.amount != null ? money(r.gmv) : null,
+        }))
+      }, SCOPE),
+    },
+    {
+      id: 'accCategories',
+      tab: 'Audience (ACC)',
+      title: 'Product category affinity',
+      columns: [col('category', 'Category'), col('affinity', 'Affinity index'), col('share', 'Buyer share'), col('gmv', 'GMV', 'money')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202610/acc/preferences/product/categories', range).catch(soft)
+        return (res.categories || firstList(res)).map((c) => ({
+          category: c.category_name || c.name || c.title || '',
+          affinity: c.affinity_index ?? c.index ?? c.score ?? '',
+          share: c.share != null ? `${c.share}%` : (c.percentage || ''),
+          gmv: c.gmv?.amount != null ? money(c.gmv) : null,
+        }))
+      }, SCOPE),
+    },
+    {
+      id: 'accLiveFactors',
+      tab: 'Audience (ACC)',
+      title: 'LIVE audience & conversion factors',
+      columns: [col('factor', 'Factor'), col('impact', 'Impact / score'), col('signal', 'Signal')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202610/acc/preferences/live/factors', range).catch(soft)
+        return (res.factors || firstList(res)).map((f) => ({
+          factor: f.factor_name || f.name || f.title || '',
+          impact: f.impact ?? f.score ?? f.value ?? '',
+          signal: f.description || f.signal || f.summary || '',
+        }))
+      }, SCOPE),
+    },
+    {
+      id: 'accBrands',
+      tab: 'Audience (ACC)',
+      title: 'Brand affinity',
+      columns: [col('brand', 'Brand'), col('affinity', 'Affinity index'), col('share', 'Audience share')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202610/acc/brands', range).catch(soft)
+        return (res.brands || firstList(res)).map((b) => ({
+          brand: b.brand_name || b.name || '',
+          affinity: b.affinity_index ?? b.index ?? b.score ?? '',
+          share: b.share != null ? `${b.share}%` : (b.percentage || ''),
+        }))
+      }, SCOPE),
+    },
+    {
+      id: 'offSiteDetails',
+      tab: 'Off-site & pixels',
+      title: 'Off-site channel performance',
+      columns: [col('channel', 'Channel / campaign'), col('visits', 'Visits', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money'), col('roas', 'ROAS')],
+      load: scopeAware(async () => {
+        const [ov, det] = await Promise.all([
+          ttGet(token, shop, '/analytics/202610/off_site/overview', range).catch(soft),
+          ttGet(token, shop, '/analytics/202610/off_site/details', range).catch(soft),
+        ])
+        const gmvObj = ov.gmv?.amount != null ? ov.gmv : (ov.off_site_gmv?.amount != null ? ov.off_site_gmv : null)
+        offSiteTiles = [
+          { tab: 'Off-site & pixels', label: 'Off-site GMV', value: gmvObj ? money(gmvObj) : '—', type: gmvObj ? 'money' : 'text' },
+          { tab: 'Off-site & pixels', label: 'Attributed orders', value: ov.orders ?? ov.attributed_orders ?? ov.sku_orders ?? 0, type: 'number' },
+          { tab: 'Off-site & pixels', label: 'Off-site clicks / visits', value: ov.visits ?? ov.clicks ?? ov.traffic ?? 0, type: 'number' },
+        ]
+        return (det.details || det.channels || firstList(det)).map((d) => ({
+          channel: d.channel_name || d.campaign_name || d.source || d.name || '',
+          visits: d.visits ?? d.clicks ?? d.traffic ?? 0,
+          orders: d.orders ?? d.attributed_orders ?? d.sku_orders ?? 0,
+          gmv: d.gmv?.amount != null ? money(d.gmv) : null,
+          roas: d.roas != null ? `${d.roas}x` : '',
+        }))
+      }, SCOPE),
+    },
+    {
+      id: 'offSiteInsights',
+      tab: 'Off-site & pixels',
+      title: 'Off-site attribution insights',
+      columns: [col('title', 'Insight'), col('type', 'Type'), col('metric', 'Metric'), col('detail', 'Summary')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202610/off_site/insights', range).catch(soft)
+        return (res.insights || firstList(res)).map((i) => ({
+          title: i.title || i.name || i.insight_name || '',
+          type: i.type || i.category || '',
+          metric: i.metric_value ?? i.value ?? i.impact ?? '',
+          detail: i.summary || i.description || i.recommendation || '',
+        }))
+      }, SCOPE),
+    },
+    {
+      id: 'offSitePixels',
+      tab: 'Off-site & pixels',
+      title: 'Tracking pixels',
+      columns: [col('pixelId', 'Pixel ID'), col('name', 'Name'), col('status', 'Status', 'status'), col('events', 'Events', 'number')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202610/off_site/pixels').catch(soft)
+        return (res.pixels || firstList(res)).map((p) => ({
+          id: String(p.pixel_id || p.id || ''),
+          pixelId: String(p.pixel_id || p.id || ''),
+          name: p.pixel_name || p.name || '',
+          status: p.status || '',
+          events: p.events_count ?? p.events ?? null,
+        }))
+      }, SCOPE),
+    },
   ])
-  return { summary: healthTiles, tables: list }
+  return { summary: [...healthTiles, ...accTiles, ...offSiteTiles], tables: list }
 }
 
 /** Read-only drill-downs: `details[action](token, shop, id) → { title, summary?, tables }`. */

@@ -3,6 +3,8 @@ import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
 import { useShopProfile } from '../../../../hooks/useShopProfiles'
 import Button from '../../../../components/ui/Button'
+import Card from '../../../../components/ui/Card'
+import SectionView from '../../SectionView'
 import CatalogTab from './CatalogTab'
 import DirectListModal from './DirectListModal'
 import { hasDirectListingWork, useDirectListing } from './hooks/useDirectListing'
@@ -45,30 +47,23 @@ export default function ProductsPage() {
   const pageLabel = profile?.sections.find((item) => item.id === 'products')?.label || 'Products'
   const listAction = profile?.productForm?.listAction || `List on ${section.label}`
 
-  return (
-    <div className="flex flex-col">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <h1 className="text-xl sm:text-2xl font-bold">{section.label} {pageLabel.toLowerCase()}</h1>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => setShowDirect(true)}>
-            {directSession.fetching ? 'Direct listing…' : directWork ? 'Continue listing' : 'Direct listing'}
-          </Button>
-          <Button onClick={() => setShowNew(true)}>New product</Button>
-        </div>
-      </div>
-      {directWork && !showDirect && (
-        <button
-          type="button"
-          onClick={() => setShowDirect(true)}
-          className="mt-3 w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-left text-sm text-indigo-900 hover:bg-indigo-100"
-        >
-          {directSession.fetching
-            ? 'Direct listing is still reading the product page. Click to watch it finish — the request was not cancelled.'
-            : 'A Direct listing draft is waiting. Click to continue from where you left off.'}
-        </button>
-      )}
-      <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="p-4">
+  const catalogTab = {
+    id: 'catalog',
+    label: 'Catalog',
+    render: () => (
+      <div className="space-y-3">
+        {directWork && !showDirect && (
+          <button
+            type="button"
+            onClick={() => setShowDirect(true)}
+            className="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-left text-sm text-indigo-900 hover:bg-indigo-100"
+          >
+            {directSession.fetching
+              ? 'Direct listing is still reading the product page. Click to watch it finish — the request was not cancelled.'
+              : 'A Direct listing draft is waiting. Click to continue from where you left off.'}
+          </button>
+        )}
+        <Card>
           <CatalogTab
             onEdit={setEditing}
             onList={setListing}
@@ -77,27 +72,48 @@ export default function ProductsPage() {
             marketplace={marketplace}
             listLabel={listAction}
           />
-        </div>
+        </Card>
       </div>
-      {(showNew || editing) && (
-        <ProductModal
-          product={editing}
-          marketplace={marketplace}
-          onClose={() => { setShowNew(false); setEditing(null) }}
-          onSaved={editing ? saved : created}
-          onListingChanged={() => setRefreshKey((k) => k + 1)}
-        />
+    ),
+  }
+
+  return (
+    <SectionView
+      sectionId="products"
+      title={`${section.label} ${pageLabel.toLowerCase()}`}
+      extraTabs={[catalogTab]}
+      headerActions={() => (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setShowDirect(true)}>
+            {directSession.fetching ? 'Direct listing…' : directWork ? 'Continue listing' : 'Direct listing'}
+          </Button>
+          <Button size="sm" onClick={() => setShowNew(true)}>New product</Button>
+        </div>
       )}
-      {showDirect && <DirectListModal shopLabel={section.label} marketplace={marketplace} onClose={() => setShowDirect(false)} onCreated={created} />}
-      {listing && (
-        <ListModal
-          product={listing}
-          marketplace={marketplace}
-          prefill={listPrefill}
-          onClose={() => { setListing(null); setListPrefill(null); setRefreshKey((k) => k + 1) }}
-          onSaved={saved}
-        />
+    >
+      {() => (
+        <>
+          {(showNew || editing) && (
+            <ProductModal
+              product={editing}
+              marketplace={marketplace}
+              onClose={() => { setShowNew(false); setEditing(null) }}
+              onSaved={editing ? saved : created}
+              onListingChanged={() => setRefreshKey((k) => k + 1)}
+            />
+          )}
+          {showDirect && <DirectListModal shopLabel={section.label} marketplace={marketplace} onClose={() => setShowDirect(false)} onCreated={created} />}
+          {listing && (
+            <ListModal
+              product={listing}
+              marketplace={marketplace}
+              prefill={listPrefill}
+              onClose={() => { setListing(null); setListPrefill(null); setRefreshKey((k) => k + 1) }}
+              onSaved={saved}
+            />
+          )}
+        </>
       )}
-    </div>
+    </SectionView>
   )
 }

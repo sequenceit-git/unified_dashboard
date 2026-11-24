@@ -7,6 +7,7 @@ import Button from '../../../../components/ui/Button'
 import Modal from '../../../../components/ui/Modal'
 import { Select } from '../../../../components/ui/Input'
 import PriceDetail from './PriceDetail'
+import TikTokOrderOps from './TikTokOrderOps'
 
 const CARRIERS = [
   { value: 'USPS', label: 'USPS' },
@@ -180,6 +181,8 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
         </div>
 
         <PriceDetail orderId={order._id} />
+
+        <TikTokOrderOps order={order} onChanged={onSaved} />
 
         <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3.5 space-y-3">
           <div className="flex items-center justify-between border-b border-gray-200/60 dark:border-slate-800 pb-2">

@@ -1,6 +1,15 @@
 /** orders: methods mixed into the service (they use `this.call` and other service methods). */
 const { normalizeOrder, CARRIER_ALIASES } = require('./format')
 
+async function callLatest(primary, fallback) {
+  try {
+    return await primary()
+  } catch (err) {
+    if (!/version|not found|404/i.test(err?.message || '')) throw err
+    return fallback()
+  }
+}
+
 module.exports = {
   async getOrders(accessToken, { shop, limit = 1000, since = null } = {}) {
     const now = Math.floor(Date.now() / 1000)
@@ -48,7 +57,7 @@ module.exports = {
     const rows = []
     let pageToken = ''
     do {
-      const data = await this.call(accessToken, 'POST', '/return_refund/202309/returns/search', {
+      const opts = {
         shop,
         query: {
           page_size: 50,
@@ -57,7 +66,11 @@ module.exports = {
           ...(pageToken ? { page_token: pageToken } : {}),
         },
         body: {},
-      })
+      }
+      const data = await callLatest(
+        () => this.call(accessToken, 'POST', '/return_refund/202602/returns/search', opts),
+        () => this.call(accessToken, 'POST', '/return_refund/202309/returns/search', opts),
+      )
       rows.push(...(data.return_orders || []))
       pageToken = data.next_page_token || ''
     } while (pageToken && rows.length < limit)
@@ -68,7 +81,7 @@ module.exports = {
     const rows = []
     let pageToken = ''
     do {
-      const data = await this.call(accessToken, 'POST', '/return_refund/202309/cancellations/search', {
+      const opts = {
         shop,
         query: {
           page_size: 50,
@@ -77,7 +90,11 @@ module.exports = {
           ...(pageToken ? { page_token: pageToken } : {}),
         },
         body: {},
-      })
+      }
+      const data = await callLatest(
+        () => this.call(accessToken, 'POST', '/return_refund/202602/cancellations/search', opts),
+        () => this.call(accessToken, 'POST', '/return_refund/202309/cancellations/search', opts),
+      )
       rows.push(...(data.cancellations || []))
       pageToken = data.next_page_token || ''
     } while (pageToken && rows.length < limit)
@@ -209,10 +226,10 @@ module.exports = {
       ...(lineItemIds.length ? { order_line_item_ids: lineItemIds } : {}),
     }
 
-    return this.call(accessToken, 'POST', `/fulfillment/202309/orders/${encodeURIComponent(orderId)}/packages`, {
-      shop,
-      body,
-    })
+    return callLatest(
+      () => this.call(accessToken, 'POST', `/fulfillment/202610/orders/${encodeURIComponent(orderId)}/packages`, { shop, body }),
+      () => this.call(accessToken, 'POST', `/fulfillment/202309/orders/${encodeURIComponent(orderId)}/packages`, { shop, body }),
+    )
   },
 
   /**
@@ -238,13 +255,17 @@ module.exports = {
       ADDRESS_ISSUES: 'seller_cancel_reason_undeliverable_address',
     }
     const cancel_reason = reasonMap[reason] || 'seller_cancel_reason_out_of_stock'
-    return this.call(accessToken, 'POST', '/return_refund/202309/cancellations', {
+    const opts = {
       shop,
       body: {
         order_id: String(orderId),
         cancel_reason,
       },
-    })
+    }
+    return callLatest(
+      () => this.call(accessToken, 'POST', '/return_refund/202602/cancellations', opts),
+      () => this.call(accessToken, 'POST', '/return_refund/202309/cancellations', opts),
+    )
   },
 
   /**
@@ -326,7 +347,7 @@ module.exports = {
       CUSTOMER_SERVICE: 'ecom_order_delivered_refund_reason_missing_product_seller',
       OTHER: 'ecom_order_delivered_refund_reason_wrong_product_seller',
     }
-    return this.call(accessToken, 'POST', '/return_refund/202309/returns', {
+    const returnOpts = {
       shop,
       body: {
         order_id: String(orderId),
@@ -337,7 +358,11 @@ module.exports = {
         ...(lineItemIds.length ? { order_line_item_ids: lineItemIds } : {}),
         ...(skuCounts.size ? { skus: [...skuCounts.entries()].map(([sku_id, qty]) => ({ sku_id, quantity: qty })) } : {}),
       },
-    })
+    }
+    return callLatest(
+      () => this.call(accessToken, 'POST', '/return_refund/202602/returns', returnOpts),
+      () => this.call(accessToken, 'POST', '/return_refund/202309/returns', returnOpts),
+    )
   },
 
   /**
@@ -406,14 +431,18 @@ module.exports = {
     else if (upperType === 'REPLACEMENT') apiDecision = 'REJECT_REPLACEMENT'
     else if (upperType === 'RETURN_AND_REFUND') apiDecision = 'REJECT_RETURN'
 
-    return this.call(accessToken, 'POST', `/return_refund/202309/returns/${encodeURIComponent(returnId)}/reject`, {
+    const rejectOpts = {
       shop,
       body: {
         decision: apiDecision,
         reject_reason: rejectReason || 'seller_reject_apply_package_has_not_exceeded_estimated_delivery_time',
         comment: note || 'Return request declined according to shop policy',
       },
-    })
+    }
+    return callLatest(
+      () => this.call(accessToken, 'POST', `/return_refund/202606/returns/${encodeURIComponent(returnId)}/reject`, rejectOpts),
+      () => this.call(accessToken, 'POST', `/return_refund/202309/returns/${encodeURIComponent(returnId)}/reject`, rejectOpts),
+    )
   },
 
   /**

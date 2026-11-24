@@ -15,6 +15,11 @@ const DATA = {
   '/analytics/202509/shop_videos/701/products/performance': { products: [{ id: 'P1', name: 'Phone case', units_sold: 3, gmv: MONEY(50), product_clicks: 70 }] },
   '/analytics/202509/shop_videos/701/performance': { performance: { intervals: [{ start_date: '2026-11-10', traffic: { views: 600 }, sales: { overall: { gmv: MONEY(50), items_sold: 3 } } }] } },
   '/analytics/202510/shop_lives/901/performance_per_minutes': { performance: { intervals: [{ start_time: 1764000000, sales: { gmv: MONEY(10), items_sold: 1 }, traffic: { viewers: 30, product_clicks: 5 } }, { start_time: 1764000060, sales: { gmv: MONEY(20), items_sold: 1 }, traffic: { viewers: 42, product_clicks: 9 } }] } },
+  '/analytics/202512/shop/901/products_performance': { products: [{ id: 'P2', name: 'Live tripod', product_clicks: 25, sku_orders: 2, units_sold: 2, gmv: MONEY(30) }] },
+  '/analytics/202511/videos/bestselling': { videos: [{ id: 'BV1', title: 'Top clip', username: 'creator1', views: 5000, sku_orders: 20, gmv: MONEY(400) }] },
+  '/analytics/202511/lives/bestselling': { live_stream_sessions: [{ id: 'BL1', title: 'Top live', username: 'host1', viewers: 1200, sku_orders: 10, gmv: MONEY(250) }] },
+  '/analytics/202511/products/bestselling': { products: [{ id: 'BP1', name: 'Hero item', sku_orders: 35, units_sold: 40, gmv: MONEY(800) }] },
+  '/analytics/202511/creators/bestselling': { creators: [{ id: 'C1', nickname: 'Alice', username: 'alice_shop', sku_orders: 15, units_sold: 18, gmv: MONEY(320) }] },
 }
 
 function load() {
@@ -42,7 +47,9 @@ test('video results list views to GMV per video', async () => {
     assert.equal(calls.find(([p]) => p.endsWith('batch_performance'))[1].video_ids, '701')
     assert.ok(data.summary.some((s) => s.tab === 'Video results' && s.label === 'Video views' && s.value === 900))
     assert.ok(data.summary.some((s) => s.tab === 'LIVE results' && s.label === 'LIVE GMV'))
-    assert.deepEqual(data.tables.map((x) => x.tab), ['Videos & LIVE', 'Videos & LIVE', 'Video results', 'LIVE results'])
+    assert.deepEqual(data.tables.map((x) => x.tab), ['Videos & LIVE', 'Videos & LIVE', 'Video results', 'LIVE results', 'Bestsellers', 'Bestsellers', 'Bestsellers', 'Bestsellers'])
+    const topProducts = data.tables.find((x) => x.id === 'bestsellingProducts')
+    assert.deepEqual([topProducts.rows[0].title, topProducts.rows[0].unitsSold, topProducts.rows[0].gmv.value], ['Hero item', 40, 800])
   } finally { restore() }
 })
 
@@ -57,12 +64,14 @@ test('video detail shows the products sold from it', async () => {
   } finally { restore() }
 })
 
-test('live detail is per minute', async () => {
+test('live detail is per minute and includes products sold', async () => {
   const { videos, restore } = load()
   try {
     const rows = (await videos('tok', {})).tables.find((x) => x.id === 'lives').rows
     assert.equal(rows[0].id, '901')
     const detail = await videos.details.live('tok', {}, '901')
+    assert.deepEqual(detail.tables.map((t) => t.id), ['minutes', 'products'])
     assert.deepEqual(detail.tables[0].rows.map((r) => [r.viewers, r.gmv.value]), [[30, 10], [42, 20]])
+    assert.deepEqual([detail.tables[1].rows[0].product, detail.tables[1].rows[0].unitsSold], ['Live tripod', 2])
   } finally { restore() }
 })

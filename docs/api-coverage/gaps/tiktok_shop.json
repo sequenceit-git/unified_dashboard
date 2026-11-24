@@ -23,12 +23,6 @@
     "priority": "low",
     "value": "Global (cross-border) products: one product published to several regional shops."
   },
-  "DELETE /promotion/202309/activities/{activity_id}/products": {
-    "section": "promotions",
-    "size": "small",
-    "priority": "medium",
-    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
-  },
   "DELETE /seller/202611/materials": {
     "section": "new: shop materials",
     "size": "small",
@@ -185,102 +179,6 @@
     "priority": "medium",
     "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
   },
-  "GET /analytics/202511/creators/bestselling": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "medium",
-    "value": "Market best sellers: top products, videos, LIVEs and creators in your categories."
-  },
-  "GET /analytics/202511/lives/bestselling": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "medium",
-    "value": "Market best sellers: top products, videos, LIVEs and creators in your categories."
-  },
-  "GET /analytics/202511/products/bestselling": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "medium",
-    "value": "Market best sellers: top products, videos, LIVEs and creators in your categories."
-  },
-  "GET /analytics/202511/videos/bestselling": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "high",
-    "value": "Per-video performance: views, product clicks, orders and GMV from each shoppable video."
-  },
-  "GET /analytics/202512/shop/{live_id}/products_performance": {
-    "section": "videos-live",
-    "size": "small",
-    "priority": "medium",
-    "value": "LIVE session stats: viewers, traffic sources, GMV and viewer trends per minute, product stats and audience profile."
-  },
-  "GET /analytics/202610/acc/brands": {
-    "section": "analytics",
-    "size": "medium",
-    "priority": "low",
-    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
-  },
-  "GET /analytics/202610/acc/overview": {
-    "section": "analytics",
-    "size": "medium",
-    "priority": "low",
-    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
-  },
-  "GET /analytics/202610/acc/penetration": {
-    "section": "analytics",
-    "size": "medium",
-    "priority": "low",
-    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
-  },
-  "GET /analytics/202610/acc/preferences": {
-    "section": "analytics",
-    "size": "medium",
-    "priority": "low",
-    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
-  },
-  "GET /analytics/202610/acc/preferences/live/factors": {
-    "section": "analytics",
-    "size": "medium",
-    "priority": "low",
-    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
-  },
-  "GET /analytics/202610/acc/preferences/product/categories": {
-    "section": "analytics",
-    "size": "medium",
-    "priority": "low",
-    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
-  },
-  "GET /analytics/202610/acc/preferences/summary": {
-    "section": "analytics",
-    "size": "medium",
-    "priority": "low",
-    "value": "Audience insight: customer preferences, brands, penetration and LIVE/product preference factors."
-  },
-  "GET /analytics/202610/off_site/details": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "low",
-    "value": "Off-site traffic (ads and pixels) overview and details."
-  },
-  "GET /analytics/202610/off_site/insights": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "low",
-    "value": "Off-site traffic (ads and pixels) overview and details."
-  },
-  "GET /analytics/202610/off_site/overview": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "low",
-    "value": "Off-site traffic (ads and pixels) overview and details."
-  },
-  "GET /analytics/202610/off_site/pixels": {
-    "section": "analytics",
-    "size": "small",
-    "priority": "low",
-    "value": "Off-site traffic (ads and pixels) overview and details."
-  },
   "GET /analytics/202611/ai_report/campaigns": {
     "section": "analytics",
     "size": "medium",
@@ -377,24 +275,6 @@
     "priority": "medium",
     "value": "Fulfilled by TikTok: warehouses, inbound shipments, FBT stock and multi-channel outbound orders."
   },
-  "GET /fulfillment/202309/combinable_packages/search": {
-    "section": "packages",
-    "size": "medium",
-    "priority": "high",
-    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
-  },
-  "GET /fulfillment/202309/orders/split_attributes": {
-    "section": "packages",
-    "size": "small",
-    "priority": "low",
-    "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
-  },
-  "GET /fulfillment/202309/packages/{package_id}/handover_time_slots": {
-    "section": "packages",
-    "size": "small",
-    "priority": "medium",
-    "value": "Package detail, handover time slots and order tracking."
-  },
   "GET /fulfillment/202508/tts_tracking_validation": {
     "section": "packages",
     "size": "small",
@@ -425,12 +305,6 @@
     "priority": "low",
     "value": "Logistics: global warehouses, shipping templates and order tracking."
   },
-  "GET /order/202406/orders/{order_id}/external_orders": {
-    "section": "orders",
-    "size": "small",
-    "priority": "low",
-    "value": "External orders link, proof-of-delivery and blind-box results."
-  },
   "GET /product/202309/categories/{category_id}/global_attributes": {
     "section": "new: global products",
     "size": "large",
@@ -455,24 +329,6 @@
     "priority": "low",
     "value": "Global (cross-border) products: one product published to several regional shops."
   },
-  "GET /product/202312/prerequisites": {
-    "section": "products",
-    "size": "small",
-    "priority": "low",
-    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
-  },
-  "GET /product/202405/products/diagnoses": {
-    "section": "products",
-    "size": "small",
-    "priority": "high",
-    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
-  },
-  "GET /product/202405/products/suggestions": {
-    "section": "products",
-    "size": "small",
-    "priority": "high",
-    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
-  },
   "GET /product/202506/images/translation_tasks": {
     "section": "products",
     "size": "small",
@@ -486,30 +342,6 @@
     "value": "Global (cross-border) products: one product published to several regional shops."
   },
   "GET /product/202507/products/{product_id}/replicated_products": {
-    "section": "products",
-    "size": "small",
-    "priority": "low",
-    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
-  },
-  "GET /product/202604/opportunities/{opportunity_id}": {
-    "section": "products",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
-  },
-  "GET /product/202604/opportunities/submissions": {
-    "section": "products",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
-  },
-  "GET /product/202606/skpps/{product_id}": {
-    "section": "products",
-    "size": "small",
-    "priority": "low",
-    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
-  },
-  "GET /product/202606/skpps/sum": {
     "section": "products",
     "size": "small",
     "priority": "low",
@@ -550,18 +382,6 @@
     "size": "medium",
     "priority": "low",
     "value": "Search videos: link products, keywords and comments to search-result videos."
-  },
-  "GET /promotion/202309/activities/{activity_id}": {
-    "section": "promotions",
-    "size": "small",
-    "priority": "medium",
-    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
-  },
-  "GET /promotion/202406/coupons/{coupon_id}": {
-    "section": "promotions",
-    "size": "small",
-    "priority": "medium",
-    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
   },
   "GET /promotion/202611/campaign_groups": {
     "section": "promotions",
@@ -616,24 +436,6 @@
     "size": "medium",
     "priority": "medium",
     "value": "TikTok platform campaigns: browse campaigns and see registrations."
-  },
-  "GET /return_refund/202601/decision_eligibility": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
-  "GET /return_refund/202602/orders/{order_id}/aftersale_eligibility": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
-  "GET /return_refund/202606/review_decision": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
   },
   "GET /seller/202309/permissions": {
     "section": "new: account",
@@ -1037,30 +839,6 @@
     "priority": "low",
     "value": "Other fulfillment: file/image/invoice upload, customs info, bundles, proof of delivery, shipping info updates."
   },
-  "POST /fulfillment/202309/orders/{order_id}/split": {
-    "section": "packages",
-    "size": "medium",
-    "priority": "high",
-    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
-  },
-  "POST /fulfillment/202309/packages/{package_id}/uncombine": {
-    "section": "packages",
-    "size": "medium",
-    "priority": "high",
-    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
-  },
-  "POST /fulfillment/202309/packages/combine": {
-    "section": "packages",
-    "size": "medium",
-    "priority": "high",
-    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
-  },
-  "POST /fulfillment/202309/packages/deliver": {
-    "section": "packages",
-    "size": "medium",
-    "priority": "high",
-    "value": "Ship from the dashboard: ship packages, mark delivered, combine/uncombine and split packages."
-  },
   "POST /fulfillment/202407/bundles": {
     "section": "packages",
     "size": "small",
@@ -1127,25 +905,7 @@
     "priority": "low",
     "value": "Developer tools endpoint (file upload initialisation)."
   },
-  "POST /order/202406/orders/external_order_search": {
-    "section": "orders",
-    "size": "small",
-    "priority": "low",
-    "value": "External orders link, proof-of-delivery and blind-box results."
-  },
-  "POST /order/202406/orders/external_orders": {
-    "section": "orders",
-    "size": "small",
-    "priority": "low",
-    "value": "External orders link, proof-of-delivery and blind-box results."
-  },
   "POST /order/202605/orders/blind_box_result/callback": {
-    "section": "orders",
-    "size": "small",
-    "priority": "low",
-    "value": "External orders link, proof-of-delivery and blind-box results."
-  },
-  "POST /order/202606/pod_details/search": {
     "section": "orders",
     "size": "small",
     "priority": "low",
@@ -1187,12 +947,6 @@
     "priority": "low",
     "value": "Global (cross-border) products: one product published to several regional shops."
   },
-  "POST /product/202404/images/optimize": {
-    "section": "products",
-    "size": "small",
-    "priority": "low",
-    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
-  },
   "POST /product/202407/products/category_upgrade_task": {
     "section": "products",
     "size": "small",
@@ -1222,12 +976,6 @@
     "size": "medium",
     "priority": "medium",
     "value": "Product safety compliance (EU GPSR): manufacturers and responsible persons, and compliance audits."
-  },
-  "POST /product/202411/products/diagnose_optimize": {
-    "section": "products",
-    "size": "small",
-    "priority": "high",
-    "value": "Listing quality: diagnosis of each product, fix suggestions and SEO keywords buyers search for."
   },
   "POST /product/202501/compliance/manufacturers/search": {
     "section": "products",
@@ -1271,25 +1019,7 @@
     "priority": "low",
     "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
   },
-  "POST /product/202604/opportunities/{opportunity_id}/submit": {
-    "section": "products",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
-  },
-  "POST /product/202604/opportunities/query": {
-    "section": "products",
-    "size": "medium",
-    "priority": "medium",
-    "value": "Product opportunities: items buyers search for that the shop could list, and submit products for them."
-  },
   "POST /product/202604/products/gpa_upgrade_task": {
-    "section": "products",
-    "size": "small",
-    "priority": "low",
-    "value": "Product helpers: brands, size charts, image tools, attributes and categories, package estimates, appeals and task-based listing."
-  },
-  "POST /product/202606/skpps/search": {
     "section": "products",
     "size": "small",
     "priority": "low",
@@ -1355,36 +1085,6 @@
     "priority": "low",
     "value": "Search videos: link products, keywords and comments to search-result videos."
   },
-  "POST /promotion/202607/activities/{activity_id}/republish": {
-    "section": "promotions",
-    "size": "small",
-    "priority": "medium",
-    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
-  },
-  "POST /return_refund/202405/returns/shipping_documents": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
-  "POST /return_refund/202602/refunds/calculate": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
-  "POST /return_refund/202603/aftersales/search": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
-  "POST /return_refund/202604/rma/search": {
-    "section": "returns-cancellations",
-    "size": "small",
-    "priority": "medium",
-    "value": "Returns and refunds: reject reasons, return records, eligibility, refund calculation, return shipping documents, after-sales review."
-  },
   "POST /return_refund/202609/aftersales/review": {
     "section": "returns-cancellations",
     "size": "small",
@@ -1444,11 +1144,5 @@
     "size": "medium",
     "priority": "low",
     "value": "Search videos: link products, keywords and comments to search-result videos."
-  },
-  "PUT /promotion/202309/activities/{activity_id}": {
-    "section": "promotions",
-    "size": "small",
-    "priority": "medium",
-    "value": "Promotion details and edits: read one activity or coupon, update, republish and remove products."
   }
 }

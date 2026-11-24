@@ -7,6 +7,20 @@ const ttPost = (token, shop, path, body = {}, query = { page_size: 50 }) => tikt
 
 const ttGet = (token, shop, path, query) => tiktok.call(token, 'GET', path, { shop, query })
 
+const ttPut = (token, shop, path, body = {}, query = {}) => tiktok.call(token, 'PUT', path, { shop, query, body })
+
+const ttDelete = (token, shop, path, body = {}, query = {}) => tiktok.call(token, 'DELETE', path, { shop, query, body })
+
+/** Runs `primary` and falls back to `fallback` only when the API path/version is unsupported or unstubbed. */
+async function withVersionFallback(primary, fallback) {
+  try {
+    return await primary()
+  } catch (err) {
+    if (!/version|not found|404|unexpected \//i.test(err?.message || '')) throw err
+    return fallback()
+  }
+}
+
 const ttRange = (days, now = new Date()) => {
   const to = now
   const from = new Date(to - days * 86400000)
@@ -32,4 +46,4 @@ function scopeAware(load, scope) {
   }
 }
 
-module.exports = { ttMoney, ttPost, ttGet, ttRange, scopeAware }
+module.exports = { ttMoney, ttPost, ttGet, ttPut, ttDelete, withVersionFallback, ttRange, scopeAware }

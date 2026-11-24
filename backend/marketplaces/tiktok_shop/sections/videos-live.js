@@ -4,7 +4,7 @@
  * video's products and daily results, or a LIVE session minute by minute.
  */
 const { seconds, col, tables } = require('../../../services/marketplace/sectionKit')
-const { ttMoney, ttGet, ttRange, scopeAware } = require('./helpers')
+const { ttMoney, ttGet, ttRange, withVersionFallback, scopeAware } = require('./helpers')
 
 const SCOPE = 'TikTok Shop Analytics'
 const money = (m) => (m ? ttMoney(m.amount, m.currency) : null)
@@ -15,14 +15,13 @@ const TOP_VIDEOS = 20
 
 async function videosLive(token, shop, { now = new Date() } = {}) {
   const range = ttRange(30, now)
-  const callWithFallback = async (primary, fallback) => {
-    try {
-      return await ttGet(token, shop, primary, { ...range, page_size: 50 })
-    } catch (err) {
-      if (!/version|not found|404/i.test(err.message || '')) throw err
-      return ttGet(token, shop, fallback, { ...range, page_size: 50 })
-    }
-  }
+  const callWithFallback = async (primary, secondary, legacy) => withVersionFallback(
+    () => ttGet(token, shop, primary, { ...range, page_size: 50 }),
+    () => (legacy ? withVersionFallback(
+      () => ttGet(token, shop, secondary, { ...range, page_size: 50 }),
+      () => ttGet(token, shop, legacy, { ...range, page_size: 50 }),
+    ) : ttGet(token, shop, secondary, { ...range, page_size: 50 })),
+  )
   let videoIds = []
   const tiles = []
   const list = await tables([
@@ -32,7 +31,7 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       title: 'Shoppable videos (last 30 days)',
       columns: [col('title', 'Video'), col('creator', 'Creator'), col('posted', 'Posted', 'date'), col('views', 'Views', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
       load: async () => {
-        const rows = (await callWithFallback('/analytics/202509/shop_videos/performance', '/analytics/202409/shop_videos/performance')).videos?.map((row) => ({
+        const rows = (await callWithFallback('/analytics/202605/shop_videos/performance', '/analytics/202509/shop_videos/performance', '/analytics/202409/shop_videos/performance')).videos?.map((row) => ({
           id: String(row.id),
           title: row.title || row.id,
           creator: row.username || '',
@@ -51,7 +50,7 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       tab: 'Videos & LIVE',
       title: 'LIVE sessions (last 30 days)',
       columns: [col('title', 'Session'), col('creator', 'Host'), col('start', 'Started', 'date'), col('viewers', 'Viewers', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
-      load: async () => (await callWithFallback('/analytics/202509/shop_lives/performance', '/analytics/202508/shop_lives/performance')).live_stream_sessions?.map((row) => ({
+      load: async () => (await callWithFallback('/analytics/202609/shop_lives/performance', '/analytics/202509/shop_lives/performance', '/analytics/202508/shop_lives/performance')).live_stream_sessions?.map((row) => ({
         id: String(row.id),
         title: row.title || row.id,
         creator: row.username || '',
@@ -116,11 +115,82 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
         return days
       }, SCOPE),
     },
+    {
+      id: 'bestsellingVideos',
+      tab: 'Bestsellers',
+      title: 'Bestselling videos (last 30 days)',
+      columns: [col('title', 'Video'), col('creator', 'Creator'), col('views', 'Views', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202511/videos/bestselling', { ...range, page_size: 20 })
+        return (res.videos || res.bestselling_videos || []).map((v) => ({
+          id: String(v.id || v.video_id || ''),
+          title: v.title || v.video_title || String(v.id || v.video_id || ''),
+          creator: v.username || v.creator_name || '',
+          views: Number(v.views ?? v.video_views ?? 0),
+          orders: Number(v.sku_orders ?? v.orders ?? 0),
+          gmv: money(v.gmv),
+        }))
+      }, 'Bestsellers'),
+    },
+    {
+      id: 'bestsellingLives',
+      tab: 'Bestsellers',
+      title: 'Bestselling LIVE sessions (last 30 days)',
+      columns: [col('title', 'Session'), col('creator', 'Creator'), col('viewers', 'Viewers', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202511/lives/bestselling', { ...range, page_size: 20 })
+        return (res.live_stream_sessions || res.lives || res.bestselling_lives || []).map((l) => ({
+          id: String(l.id || l.live_id || ''),
+          title: l.title || l.live_title || String(l.id || l.live_id || ''),
+          creator: l.username || l.creator_name || '',
+          viewers: Number(l.viewers ?? l.interaction_performance?.viewers ?? 0),
+          orders: Number(l.sku_orders ?? l.sales_performance?.sku_orders ?? l.orders ?? 0),
+          gmv: money(l.gmv || l.sales_performance?.gmv),
+        }))
+      }, 'Bestsellers'),
+    },
+    {
+      id: 'bestsellingProducts',
+      tab: 'Bestsellers',
+      title: 'Bestselling products (last 30 days)',
+      columns: [col('title', 'Product'), col('productId', 'Product ID'), col('orders', 'Orders', 'number'), col('unitsSold', 'Units sold', 'number'), col('gmv', 'GMV', 'money')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202511/products/bestselling', { ...range, page_size: 20 })
+        return (res.products || res.bestselling_products || []).map((p) => ({
+          id: String(p.id || p.product_id || ''),
+          productId: String(p.id || p.product_id || ''),
+          title: p.name || p.title || p.product_name || String(p.id || p.product_id || ''),
+          orders: Number(p.sku_orders ?? p.orders ?? 0),
+          unitsSold: Number(p.units_sold ?? p.items_sold ?? 0),
+          gmv: money(p.gmv),
+        }))
+      }, 'Bestsellers'),
+    },
+    {
+      id: 'bestsellingCreators',
+      tab: 'Bestsellers',
+      title: 'Bestselling creators (last 30 days)',
+      columns: [col('name', 'Creator'), col('handle', 'Username'), col('orders', 'Orders', 'number'), col('unitsSold', 'Units sold', 'number'), col('gmv', 'GMV', 'money')],
+      load: scopeAware(async () => {
+        const res = await ttGet(token, shop, '/analytics/202511/creators/bestselling', { ...range, page_size: 20 })
+        return (res.creators || res.bestselling_creators || []).map((c) => ({
+          id: String(c.id || c.creator_id || c.username || ''),
+          name: c.nickname || c.name || c.username || '',
+          handle: c.username ? `@${String(c.username).replace(/^@/, '')}` : '',
+          orders: Number(c.sku_orders ?? c.orders ?? 0),
+          unitsSold: Number(c.units_sold ?? c.items_sold ?? 0),
+          gmv: money(c.gmv),
+        }))
+      }, 'Bestsellers'),
+    },
   ])
+  const count = (id) => list.find((t) => t.id === id)?.rows.length ?? 0
   return {
     summary: [
-      { tab: 'Videos & LIVE', label: 'Videos', value: list[0].rows.length, type: 'number' },
-      { tab: 'Videos & LIVE', label: 'LIVE sessions', value: list[1].rows.length, type: 'number' },
+      { tab: 'Videos & LIVE', label: 'Videos', value: count('videos'), type: 'number' },
+      { tab: 'Videos & LIVE', label: 'LIVE sessions', value: count('lives'), type: 'number' },
+      { tab: 'Bestsellers', label: 'Top videos', value: count('bestsellingVideos'), type: 'number' },
+      { tab: 'Bestsellers', label: 'Top products', value: count('bestsellingProducts'), type: 'number' },
       ...tiles,
     ],
     tables: [...list, ...results],
@@ -154,23 +224,43 @@ videosLive.details = {
       ],
     }
   },
-  /** A LIVE session minute by minute: viewers, clicks and sales. */
+  /** A LIVE session minute by minute and the products it sold. */
   live: async (token, shop, id) => {
-    const res = await ttGet(token, shop, `/analytics/202510/shop_lives/${enc(id)}/performance_per_minutes`)
+    const [res, prodRes] = await Promise.all([
+      ttGet(token, shop, `/analytics/202510/shop_lives/${enc(id)}/performance_per_minutes`),
+      ttGet(token, shop, `/analytics/202512/shop/${enc(id)}/products_performance`).catch(() => null),
+    ])
+    const liveTables = [{
+      id: 'minutes',
+      title: 'Minute by minute',
+      columns: [col('time', 'Time (UTC)'), col('viewers', 'Viewers', 'number'), col('productClicks', 'Product clicks', 'number'), col('itemsSold', 'Items sold', 'number'), col('gmv', 'GMV', 'money')],
+      rows: (res.performance?.intervals || []).map((i) => ({
+        time: i.start_time ? new Date(Number(i.start_time) * 1000).toISOString().slice(11, 16) : '',
+        viewers: i.traffic?.viewers ?? 0,
+        productClicks: i.traffic?.product_clicks ?? 0,
+        itemsSold: i.sales?.items_sold ?? 0,
+        gmv: money(i.sales?.gmv),
+      })),
+    }]
+    const products = prodRes?.products || prodRes?.performance?.products || []
+    if (products.length) {
+      liveTables.push({
+        id: 'products',
+        title: 'Products sold in LIVE',
+        columns: [col('product', 'Product'), col('productId', 'ID'), col('clicks', 'Clicks', 'number'), col('orders', 'Orders', 'number'), col('unitsSold', 'Units sold', 'number'), col('gmv', 'GMV', 'money')],
+        rows: products.map((p) => ({
+          product: p.name || p.title || p.product_name || String(p.id || p.product_id || ''),
+          productId: String(p.id || p.product_id || ''),
+          clicks: Number(p.product_clicks ?? p.clicks ?? 0),
+          orders: Number(p.sku_orders ?? p.orders ?? 0),
+          unitsSold: Number(p.units_sold ?? p.items_sold ?? 0),
+          gmv: money(p.gmv),
+        })),
+      })
+    }
     return {
       title: res.performance?.overall?.live_title || `LIVE ${id}`,
-      tables: [{
-        id: 'minutes',
-        title: 'Minute by minute',
-        columns: [col('time', 'Time (UTC)'), col('viewers', 'Viewers', 'number'), col('productClicks', 'Product clicks', 'number'), col('itemsSold', 'Items sold', 'number'), col('gmv', 'GMV', 'money')],
-        rows: (res.performance?.intervals || []).map((i) => ({
-          time: i.start_time ? new Date(Number(i.start_time) * 1000).toISOString().slice(11, 16) : '',
-          viewers: i.traffic?.viewers ?? 0,
-          productClicks: i.traffic?.product_clicks ?? 0,
-          itemsSold: i.sales?.items_sold ?? 0,
-          gmv: money(i.sales?.gmv),
-        })),
-      }],
+      tables: liveTables,
     }
   },
 }

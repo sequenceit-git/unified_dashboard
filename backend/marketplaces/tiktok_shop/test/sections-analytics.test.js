@@ -150,3 +150,31 @@ test('other shop health failures still show as errors', async () => {
     assert.match(health.error, /timeout/)
   } finally { restore() }
 })
+
+test('Audience (ACC) and Off-site & pixels tabs populate tiles and tables', async () => {
+  const { analytics, restore } = load({
+    '/analytics/202610/acc/overview': { total_customers: 4200 },
+    '/analytics/202610/acc/penetration': { penetration_rate: 18.5 },
+    '/analytics/202610/acc/preferences/summary': { top_category: 'Home & Kitchen' },
+    '/analytics/202610/acc/preferences': { preferences: [{ name: 'Repeat buyers', dimension: 'Loyalty', share: 42, orders: 120, gmv: MONEY(3200) }] },
+    '/analytics/202610/acc/preferences/product/categories': { categories: [{ category_name: 'Kitchen', affinity_index: '1.4', share: 60, gmv: MONEY(2100) }] },
+    '/analytics/202610/acc/preferences/live/factors': { factors: [{ factor_name: 'Live demos', impact: 'High', description: 'Boosts conversion' }] },
+    '/analytics/202610/acc/brands': { brands: [{ brand_name: 'BrandA', affinity_index: '1.2', share: 30 }] },
+    '/analytics/202610/off_site/overview': { gmv: MONEY(950), orders: 24, visits: 800 },
+    '/analytics/202610/off_site/details': { details: [{ channel_name: 'Search Ads', visits: 500, orders: 15, gmv: MONEY(600), roas: '3.2' }] },
+    '/analytics/202610/off_site/insights': { insights: [{ title: 'Evening peak', type: 'Timing', metric_value: '+22%', summary: 'Higher ROAS after 6pm' }] },
+    '/analytics/202610/off_site/pixels': { pixels: [{ pixel_id: 'PX1', pixel_name: 'Main Store Pixel', status: 'ACTIVE', events_count: 1400 }] },
+  })
+  try {
+    const data = await analytics('tok', {}, { now: NOW })
+    assert.ok(data.summary.some((s) => s.tab === 'Audience (ACC)' && s.label === 'Audience reach' && s.value === 4200))
+    assert.ok(data.summary.some((s) => s.tab === 'Off-site & pixels' && s.label === 'Off-site GMV' && s.value.value === 950))
+    assert.equal(data.tables.find((t) => t.id === 'accPreferences').rows[0].name, 'Repeat buyers')
+    assert.equal(data.tables.find((t) => t.id === 'accCategories').rows[0].category, 'Kitchen')
+    assert.equal(data.tables.find((t) => t.id === 'accLiveFactors').rows[0].factor, 'Live demos')
+    assert.equal(data.tables.find((t) => t.id === 'accBrands').rows[0].brand, 'BrandA')
+    assert.equal(data.tables.find((t) => t.id === 'offSiteDetails').rows[0].roas, '3.2x')
+    assert.equal(data.tables.find((t) => t.id === 'offSiteInsights').rows[0].title, 'Evening peak')
+    assert.equal(data.tables.find((t) => t.id === 'offSitePixels').rows[0].pixelId, 'PX1')
+  } finally { restore() }
+})

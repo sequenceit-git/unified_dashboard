@@ -3,7 +3,7 @@
  * their transactions), payments, withdrawals, and orders not settled yet (with their money detail).
  */
 const { seconds, words, col, tables } = require('../../../services/marketplace/sectionKit')
-const { ttMoney, ttGet, scopeAware } = require('./helpers')
+const { ttMoney, ttGet, withVersionFallback, scopeAware } = require('./helpers')
 
 const SCOPE = 'Finance Information'
 const enc = encodeURIComponent
@@ -38,7 +38,10 @@ async function finance(token, shop) {
       tab: 'Statements',
       title: 'Payments',
       columns: [col('id', 'Payment'), col('date', 'Created', 'date'), col('paid', 'Paid', 'date'), col('amount', 'Amount', 'money'), col('status', 'Status', 'status')],
-      load: async () => (await ttGet(token, shop, '/finance/202309/payments', { page_size: 50, sort_field: 'create_time', sort_order: 'DESC' })).payments?.map((row) => ({
+      load: async () => (await withVersionFallback(
+        () => ttGet(token, shop, '/finance/202605/payments', { page_size: 50, sort_field: 'create_time', sort_order: 'DESC' }),
+        () => ttGet(token, shop, '/finance/202309/payments', { page_size: 50, sort_field: 'create_time', sort_order: 'DESC' }),
+      )).payments?.map((row) => ({
         id: row.id,
         date: seconds(row.create_time),
         paid: seconds(row.paid_time),

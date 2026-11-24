@@ -4,7 +4,7 @@ const { stubModules, freshRequire } = require('../../../test/helpers/stub')
 
 const PACKAGES = (statuses) => ({ packages: statuses.map(([id, s]) => ({ id, package_status: s, orders: [{ id: `O-${id}` }] })) })
 
-function load({ packages, shipErrors = [] }) {
+function load({ packages, combinable = [], shipErrors = [], deliverErrors = [], handover = null }) {
   const calls = []
   const restore = stubModules({
     './helpers': {
@@ -13,12 +13,21 @@ function load({ packages, shipErrors = [] }) {
         calls.push(['POST', path, body])
         if (path === '/fulfillment/202309/packages/search') return packages
         if (path === '/fulfillment/202309/packages/ship') return { errors: shipErrors }
+        if (path === '/fulfillment/202309/packages/combine') return { packages: [{ id: 'PC-1' }], errors: [] }
+        if (path === '/fulfillment/202309/packages/P-MULTI/uncombine') return { packages: [{ id: 'P10' }, { id: 'P11' }] }
+        if (path === '/fulfillment/202309/packages/deliver') return { errors: deliverErrors }
         throw new Error(`unexpected ${path}`)
       },
       ttGet: async (token, shop, path) => {
         calls.push(['GET', path])
         if (path === '/fulfillment/202309/packages/P1') return { package_id: 'P1', package_status: 'IN_TRANSIT', orders: [{ id: 'O1' }], shipping_provider_name: 'USPS', tracking_number: '9400', create_time: 1764000000 }
+        if (path === '/fulfillment/202309/packages/P-MULTI') return { package_id: 'P-MULTI', package_status: 'PROCESSING', orders: [{ id: 'O10' }, { id: 'O11' }] }
+        if (path === '/fulfillment/202309/packages/P1/handover_time_slots') {
+          if (handover) return handover
+          throw new Error(`unexpected ${path}`)
+        }
         if (path === '/fulfillment/202309/orders/O1/tracking') return { tracking: [{ description: 'Picked up', update_time_millis: 1764000000000 }, { description: 'In transit', update_time_millis: 1764100000000 }] }
+        if (path === '/fulfillment/202309/combinable_packages/search') return { combinable_packages: combinable }
         throw new Error(`unexpected ${path}`)
       },
     },
@@ -93,5 +102,39 @@ test('ship-all asks TikTok for packages to ship and follows every page', async (
     assert.deepEqual(searches.map(([, body, q]) => [body.package_status, q.page_token || '']), [['PROCESSING', ''], ['PROCESSING', 't2']])
     assert.deepEqual(calls.find(([p]) => p.endsWith('/packages/ship'))[1].packages.map((p) => p.id), ['A1', 'A2'])
     assert.equal(res.message, 'Shipped 2 packages.')
+  } finally { restore() }
+})
+
+test('combinable tab, combine, uncombine, deliver, and handover slots', async () => {
+  const { packages, calls, restore } = load({
+    packages: {
+      packages: [
+        { id: 'P-MULTI', package_status: 'PROCESSING', orders: [{ id: 'O10' }, { id: 'O11' }] },
+        { id: 'P2', package_status: 'IN_TRANSIT', orders: [{ id: 'O2' }] },
+      ],
+    },
+    combinable: [{ id: 'CMB1', order_ids: ['O3', 'O4'] }],
+    handover: { can_drop_off: true, can_pickup: true, pickup_slots: [{ start_time: 1764000000, end_time: 1764003600 }] },
+  })
+  try {
+    const data = await packages('tok', {})
+    const pkgRows = data.tables[0].rows
+    assert.ok(pkgRows[0].actions.some((a) => a.id === 'uncombine'))
+    assert.ok(pkgRows[1].actions.some((a) => a.id === 'deliver'))
+    assert.equal(data.tables[1].id, 'combinable')
+    assert.equal(data.tables[1].rows[0].orderCount, 2)
+
+    const combRes = await packages.actions.combine('tok', {}, 'CMB1')
+    assert.match(combRes.message, /Combined 2 orders into package PC-1/)
+
+    const uncombRes = await packages.actions.uncombine('tok', {}, 'P-MULTI')
+    assert.match(uncombRes.message, /Uncombined package P-MULTI into 2 packages/)
+
+    const delivRes = await packages.actions.deliver('tok', {}, 'P2')
+    assert.equal(delivRes.message, 'Marked package P2 as delivered.')
+
+    const detail = await packages.details.package('tok', {}, 'P1')
+    assert.deepEqual(detail.tables.map((t) => t.id), ['tracking', 'handover'])
+    assert.ok(calls.some(([, p]) => p.endsWith('/handover_time_slots')))
   } finally { restore() }
 })
