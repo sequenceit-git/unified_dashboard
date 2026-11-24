@@ -14,7 +14,16 @@ export function formatCell(type, value) {
     case 'date': return new Date(value).toLocaleDateString()
     case 'number': return Number(value).toLocaleString()
     case 'status': return <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300">{value}</span>
-    case 'link': return <a href={value} target="_blank" rel="noreferrer" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Open</a>
+    case 'link': {
+      const url = typeof value === 'string' ? value : value?.url
+      const label = (typeof value === 'object' ? value?.label : '') || 'Open'
+      if (!url || !/^https?:\/\//i.test(url)) return label && label !== 'Open' ? label : '—'
+      return (
+        <a href={url} target="_blank" rel="noreferrer" className="line-clamp-2 max-w-md font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+          {label}
+        </a>
+      )
+    }
     default: return <span className="line-clamp-2 max-w-md">{value}</span>
   }
 }

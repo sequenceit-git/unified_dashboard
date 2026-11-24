@@ -12,6 +12,11 @@ const add = (a, b) => (a || b ? { value: Math.round(((a?.value || 0) + (b?.value
 const postTime = (t) => (t ? (/^\d+$/.test(String(t)) ? seconds(t) : String(t).replace(' ', 'T')) : null)
 const enc = encodeURIComponent
 const TOP_VIDEOS = 20
+const linkCol = (key, label, urlKey = 'url') => ({ ...col(key, label), urlKey })
+const videoUrl = (id, username) => (id ? `https://www.tiktok.com/@${username ? enc(String(username).replace(/^@/, '')) : '_'}/video/${enc(String(id))}` : '')
+const userUrl = (username) => (username ? `https://www.tiktok.com/@${enc(String(username).replace(/^@/, ''))}` : '')
+const liveUrl = (username) => (username ? `https://www.tiktok.com/@${enc(String(username).replace(/^@/, ''))}/live` : '')
+const shopProductUrl = (id) => (id ? `https://shop.tiktok.com/view/product/${enc(String(id))}` : '')
 
 async function withBestsellingDate(call, now = new Date()) {
   const date = new Date(now - 2 * 86400000).toISOString().slice(0, 10)
@@ -40,12 +45,14 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       id: 'videos',
       tab: 'Videos & LIVE',
       title: 'Shoppable videos (last 30 days)',
-      columns: [col('title', 'Video'), col('creator', 'Creator'), col('posted', 'Posted', 'date'), col('views', 'Views', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
+      columns: [linkCol('title', 'Video'), linkCol('creator', 'Creator', 'creatorUrl'), col('posted', 'Posted', 'date'), col('views', 'Views', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
       load: async () => {
         const rows = (await callWithFallback('/analytics/202605/shop_videos/performance', '/analytics/202509/shop_videos/performance', '/analytics/202409/shop_videos/performance')).videos?.map((row) => ({
           id: String(row.id),
           title: row.title || row.id,
+          url: videoUrl(row.id, row.username),
           creator: row.username || '',
+          creatorUrl: userUrl(row.username),
           posted: postTime(row.video_post_time),
           views: Number(row.views ?? 0),
           orders: Number(row.sku_orders ?? 0),
@@ -60,7 +67,7 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       id: 'lives',
       tab: 'Videos & LIVE',
       title: 'LIVE sessions (last 30 days)',
-      columns: [col('title', 'Session'), col('creator', 'Host'), col('start', 'Started', 'date'), col('viewers', 'Viewers', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
+      columns: [linkCol('title', 'Session'), linkCol('creator', 'Host', 'creatorUrl'), col('start', 'Started', 'date'), col('viewers', 'Viewers', 'number'), col('orders', 'Orders', 'number'), col('gmv', 'GMV', 'money')],
       load: async () => {
         const TYPES = ['OFFICIAL_ACCOUNTS', 'MARKETING_ACCOUNTS', 'AFFILIATE_ACCOUNTS']
         const settled = await Promise.allSettled(TYPES.map((t) => callWithFallback('/analytics/202609/shop_lives/performance', '/analytics/202509/shop_lives/performance', '/analytics/202508/shop_lives/performance', t)))
@@ -76,7 +83,9 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
         return sessions.map((row) => ({
           id: String(row.id),
           title: row.title || row.id,
+          url: liveUrl(row.username),
           creator: row.username || '',
+          creatorUrl: userUrl(row.username),
           start: seconds(row.start_time),
           viewers: Number(row.interaction_performance?.viewers ?? row.viewers ?? 0),
           orders: Number(row.sales_performance?.sku_orders ?? 0),
@@ -92,7 +101,7 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       tab: 'Video results',
       title: `Results per video (top ${TOP_VIDEOS}, last 30 days)`,
       note: 'Views, product clicks and sales each video brought in.',
-      columns: [col('title', 'Video'), col('posted', 'Posted', 'date'), col('views', 'Views', 'number'), col('likes', 'Likes', 'number'), col('productClicks', 'Product clicks', 'number'), col('itemsSold', 'Items sold', 'number'), col('gmv', 'GMV', 'money')],
+      columns: [linkCol('title', 'Video'), col('posted', 'Posted', 'date'), col('views', 'Views', 'number'), col('likes', 'Likes', 'number'), col('productClicks', 'Product clicks', 'number'), col('itemsSold', 'Items sold', 'number'), col('gmv', 'GMV', 'money')],
       load: scopeAware(async () => {
         const [overview, batch] = await Promise.all([
           ttGet(token, shop, '/analytics/202609/shop_videos/overview_performance', { ...range, account_type: 'ALL' }).catch(() => null),
@@ -120,7 +129,7 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
             itemsSold: t.itemsSold + (i.sales?.overall?.items_sold || 0),
             gmv: add(t.gmv, money(i.sales?.overall?.gmv)),
           }), { views: 0, likes: 0, productClicks: 0, itemsSold: 0, gmv: null })
-          return { id: String(v.video_id), title: v.video?.title || v.video_id, posted: postTime(v.video?.video_post_time), ...sum, actions: [{ id: 'video', label: 'Details', detail: true }] }
+          return { id: String(v.video_id), title: v.video?.title || v.video_id, url: videoUrl(v.video_id), posted: postTime(v.video?.video_post_time), ...sum, actions: [{ id: 'video', label: 'Details', detail: true }] }
         }).sort((a, b) => (b.gmv?.value || 0) - (a.gmv?.value || 0))
       }, SCOPE),
     },
@@ -143,73 +152,91 @@ async function videosLive(token, shop, { now = new Date() } = {}) {
       id: 'bestsellingVideos',
       tab: 'Bestsellers',
       title: 'Bestselling videos (last 30 days)',
-      columns: [col('rank', '#', 'number'), col('title', 'Video / Product'), col('creator', 'Creator'), col('views', 'Views', 'number'), col('likes', 'Likes', 'number'), col('gmvRange', 'GMV')],
+      columns: [col('rank', '#', 'number'), linkCol('title', 'Video / Product'), col('creator', 'Creator'), col('views', 'Views', 'number'), col('likes', 'Likes', 'number'), col('gmvRange', 'GMV')],
       load: scopeAware(async () => {
         const res = await withBestsellingDate((q) => ttGet(token, shop, '/analytics/202511/videos/bestselling', q), now)
-        return (res.videos || res.bestselling_videos || []).map((v) => ({
-          id: String(v.id || v.video_id || ''),
-          rank: v.rank ?? null,
-          title: v.title || v.video_title || v.product_infos?.[0]?.product_name || String(v.id || v.video_id || ''),
-          creator: v.nick_name || v.username || v.creator_name || '',
-          views: Number(v.views ?? v.video_views ?? 0),
-          likes: Number(v.likes ?? v.sku_orders ?? 0),
-          gmvRange: v.gmv_range || (v.gmv?.amount != null ? `${v.gmv.amount} ${v.gmv.currency || 'USD'}` : '—'),
-        }))
+        return (res.videos || res.bestselling_videos || []).map((v) => {
+          const vid = String(v.id || v.video_id || '')
+          return {
+            id: vid,
+            rank: v.rank ?? null,
+            title: v.title || v.video_title || v.product_infos?.[0]?.product_name || vid,
+            url: videoUrl(vid) || shopProductUrl(v.product_infos?.[0]?.product_id),
+            creator: v.nick_name || v.username || v.creator_name || '',
+            views: Number(v.views ?? v.video_views ?? 0),
+            likes: Number(v.likes ?? v.sku_orders ?? 0),
+            gmvRange: v.gmv_range || (v.gmv?.amount != null ? `${v.gmv.amount} ${v.gmv.currency || 'USD'}` : '—'),
+          }
+        })
       }, 'Bestsellers'),
     },
     {
       id: 'bestsellingLives',
       tab: 'Bestsellers',
       title: 'Bestselling LIVE sessions (last 30 days)',
-      columns: [col('rank', '#', 'number'), col('title', 'Session'), col('creator', 'Creator'), col('durationMin', 'Duration (min)', 'number'), col('gmvRange', 'GMV')],
+      columns: [col('rank', '#', 'number'), linkCol('title', 'Session'), linkCol('creator', 'Creator', 'creatorUrl'), col('durationMin', 'Duration (min)', 'number'), col('gmvRange', 'GMV')],
       load: scopeAware(async () => {
         const res = await withBestsellingDate((q) => ttGet(token, shop, '/analytics/202511/lives/bestselling', q), now)
-        return (res.lives || res.live_stream_sessions || res.bestselling_lives || []).map((l) => ({
-          id: String(l.id || l.live_id || ''),
-          rank: l.rank ?? null,
-          title: l.title || l.live_title || String(l.id || l.live_id || ''),
-          creator: l.creator_nick_name || l.creator_name || l.username || '',
-          durationMin: l.duration != null ? Math.round(Number(l.duration) / 60) : Number(l.viewers ?? 0),
-          gmvRange: l.gmv_range || (l.gmv?.amount != null ? `${l.gmv.amount} ${l.gmv.currency || 'USD'}` : '—'),
-        }))
+        return (res.lives || res.live_stream_sessions || res.bestselling_lives || []).map((l) => {
+          const handle = l.creator_name || l.username || ''
+          return {
+            id: String(l.id || l.live_id || ''),
+            rank: l.rank ?? null,
+            title: l.title || l.live_title || String(l.id || l.live_id || ''),
+            url: liveUrl(handle),
+            creator: l.creator_nick_name || handle,
+            creatorUrl: userUrl(handle),
+            durationMin: l.duration != null ? Math.round(Number(l.duration) / 60) : Number(l.viewers ?? 0),
+            gmvRange: l.gmv_range || (l.gmv?.amount != null ? `${l.gmv.amount} ${l.gmv.currency || 'USD'}` : '—'),
+          }
+        })
       }, 'Bestsellers'),
     },
     {
       id: 'bestsellingProducts',
       tab: 'Bestsellers',
       title: 'Bestselling products (last 30 days)',
-      columns: [col('rank', '#', 'number'), col('title', 'Product'), col('productId', 'Product ID'), col('shopOrRating', 'Shop / Rating'), col('gmvRange', 'GMV')],
+      columns: [col('rank', '#', 'number'), linkCol('title', 'Product'), linkCol('productId', 'Product ID'), col('shopOrRating', 'Shop / Rating'), col('gmvRange', 'GMV')],
       load: scopeAware(async () => {
         const res = await withBestsellingDate((q) => ttGet(token, shop, '/analytics/202511/products/bestselling', q), now)
-        return (res.products || res.bestselling_products || []).map((p) => ({
-          id: String(p.id || p.product_id || ''),
-          rank: p.rank ?? null,
-          productId: String(p.id || p.product_id || ''),
-          title: p.name || p.title || p.product_name || String(p.id || p.product_id || ''),
-          shopOrRating: [p.shop_name, p.rating && `★ ${p.rating}`].filter(Boolean).join(' · ') || (p.units_sold != null ? `${p.units_sold} sold` : ''),
-          gmvRange: p.gmv_range || (p.gmv?.amount != null ? `${p.gmv.amount} ${p.gmv.currency || 'USD'}` : '—'),
-        }))
+        return (res.products || res.bestselling_products || []).map((p) => {
+          const pid = String(p.id || p.product_id || '')
+          return {
+            id: pid,
+            rank: p.rank ?? null,
+            productId: pid,
+            title: p.name || p.title || p.product_name || pid,
+            url: shopProductUrl(pid),
+            shopOrRating: [p.shop_name, p.rating && `★ ${p.rating}`].filter(Boolean).join(' · ') || (p.units_sold != null ? `${p.units_sold} sold` : ''),
+            gmvRange: p.gmv_range || (p.gmv?.amount != null ? `${p.gmv.amount} ${p.gmv.currency || 'USD'}` : '—'),
+          }
+        })
       }, 'Bestsellers'),
     },
     {
       id: 'bestsellingCreators',
       tab: 'Bestsellers',
       title: 'Bestselling creators (last 30 days)',
-      columns: [col('rank', '#', 'number'), col('name', 'Creator'), col('handle', 'Username'), col('followers', 'Followers', 'number'), col('gmvRange', 'GMV')],
+      columns: [col('rank', '#', 'number'), linkCol('name', 'Creator'), linkCol('handle', 'Username'), col('followers', 'Followers', 'number'), col('gmvRange', 'GMV')],
       load: scopeAware(async () => {
         const res = await withBestsellingDate((q) => ttGet(token, shop, '/analytics/202511/creators/bestselling', { ...q, author_type: 'ALL' }), now)
-        return (res.creators || res.bestselling_creators || []).map((c) => ({
-          id: String(c.open_id || c.id || c.user_name || c.username || ''),
-          rank: c.rank ?? null,
-          name: c.nick_name || c.nickname || c.name || c.user_name || c.username || '',
-          handle: (c.user_name || c.username) ? `@${String(c.user_name || c.username).replace(/^@/, '')}` : '',
-          followers: Number(c.followers_count ?? c.units_sold ?? 0),
-          gmvRange: c.gmv_range || (c.gmv?.amount != null ? `${c.gmv.amount} ${c.gmv.currency || 'USD'}` : '—'),
-        }))
+        return (res.creators || res.bestselling_creators || []).map((c) => {
+          const rawHandle = c.user_name || c.username || ''
+          return {
+            id: String(c.open_id || c.id || rawHandle),
+            rank: c.rank ?? null,
+            name: c.nick_name || c.nickname || c.name || rawHandle,
+            handle: rawHandle ? `@${String(rawHandle).replace(/^@/, '')}` : '',
+            url: userUrl(rawHandle),
+            followers: Number(c.followers_count ?? c.units_sold ?? 0),
+            gmvRange: c.gmv_range || (c.gmv?.amount != null ? `${c.gmv.amount} ${c.gmv.currency || 'USD'}` : '—'),
+          }
+        })
       }, 'Bestsellers'),
     },
   ])
-  const count = (id) => list.find((t) => t.id === id)?.rows.length ?? 0
+  const allTables = [...list, ...results]
+  const count = (id) => allTables.find((t) => t.id === id)?.rows.length ?? 0
   return {
     summary: [
       { tab: 'Videos & LIVE', label: 'Videos', value: count('videos'), type: 'number' },

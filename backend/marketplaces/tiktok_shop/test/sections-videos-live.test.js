@@ -17,7 +17,7 @@ const DATA = {
   '/analytics/202510/shop_lives/901/performance_per_minutes': { performance: { intervals: [{ start_time: 1764000000, sales: { gmv: MONEY(10), items_sold: 1 }, traffic: { viewers: 30, product_clicks: 5 } }, { start_time: 1764000060, sales: { gmv: MONEY(20), items_sold: 1 }, traffic: { viewers: 42, product_clicks: 9 } }] } },
   '/analytics/202512/shop/901/products_performance': { products: [{ id: 'P2', name: 'Live tripod', product_clicks: 25, sku_orders: 2, units_sold: 2, gmv: MONEY(30) }] },
   '/analytics/202511/videos/bestselling': { videos: [{ id: 'BV1', rank: 1, nick_name: 'creator1', views: 5000, likes: 320, gmv_range: '$300 - $500', product_infos: [{ product_name: 'Top clip' }] }] },
-  '/analytics/202511/lives/bestselling': { lives: [{ id: 'BL1', rank: 1, title: 'Top live', creator_nick_name: 'host1', duration: 3600, gmv_range: '$200 - $400' }] },
+  '/analytics/202511/lives/bestselling': { lives: [{ id: 'BL1', rank: 1, title: 'Top live', creator_name: 'host1', creator_nick_name: 'Host One', duration: 3600, gmv_range: '$200 - $400' }] },
   '/analytics/202511/products/bestselling': { products: [{ id: 'BP1', rank: 1, name: 'Hero item', shop_name: 'Demo Shop', rating: '4.9', gmv_range: '$500 - $1000' }] },
   '/analytics/202511/creators/bestselling': { creators: [{ open_id: 'C1', rank: 1, nick_name: 'Alice', user_name: 'alice_shop', followers_count: 12000, gmv_range: '$250 - $500' }] },
 }
@@ -48,8 +48,19 @@ test('video results list views to GMV per video', async () => {
     assert.ok(data.summary.some((s) => s.tab === 'Video results' && s.label === 'Video views' && s.value === 900))
     assert.ok(data.summary.some((s) => s.tab === 'LIVE results' && s.label === 'LIVE GMV'))
     assert.deepEqual(data.tables.map((x) => x.tab), ['Videos & LIVE', 'Videos & LIVE', 'Video results', 'LIVE results', 'Bestsellers', 'Bestsellers', 'Bestsellers', 'Bestsellers'])
+    const topVideos = data.tables.find((x) => x.id === 'bestsellingVideos')
+    const topLives = data.tables.find((x) => x.id === 'bestsellingLives')
     const topProducts = data.tables.find((x) => x.id === 'bestsellingProducts')
+    const topCreators = data.tables.find((x) => x.id === 'bestsellingCreators')
+    assert.equal(topVideos.rows[0].url, 'https://www.tiktok.com/@_/video/BV1')
+    assert.equal(topLives.rows[0].url, 'https://www.tiktok.com/@host1/live')
+    assert.equal(topLives.rows[0].creatorUrl, 'https://www.tiktok.com/@host1')
     assert.deepEqual([topProducts.rows[0].title, topProducts.rows[0].shopOrRating, topProducts.rows[0].gmvRange], ['Hero item', 'Demo Shop · ★ 4.9', '$500 - $1000'])
+    assert.equal(topProducts.rows[0].url, 'https://shop.tiktok.com/view/product/BP1')
+    assert.equal(topCreators.rows[0].url, 'https://www.tiktok.com/@alice_shop')
+    assert.ok(data.summary.some((s) => s.tab === 'Bestsellers' && s.label === 'Top videos' && s.value === 1))
+    assert.ok(data.summary.some((s) => s.tab === 'Bestsellers' && s.label === 'Top products' && s.value === 1))
+    assert.equal(data.tables.find((x) => x.id === 'videos').rows[0].url, 'https://www.tiktok.com/@shop/video/701')
     for (const suffix of ['shop_videos/performance', 'shop_videos/overview_performance', 'shop_lives/overview_performance']) {
       const hit = calls.find(([p]) => p.endsWith(suffix))
       assert.equal(hit?.[1]?.account_type, 'ALL', `expected account_type=ALL on ${suffix}`)

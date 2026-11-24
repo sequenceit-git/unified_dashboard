@@ -18,7 +18,16 @@ export default function SectionTable({ table, canAct = true, renderRowActions, o
   const own = canAct && renderRowActions?.(table)
   const loaderActions = canAct && table.rows.some((row) => row.actions?.length)
 
-  const columns = table.columns.map((column) => ({ ...column, render: (row) => formatCell(column.type, row[column.key]) }))
+  const columns = table.columns.map((column) => ({
+    ...column,
+    render: (row) => {
+      const url = column.urlKey ? row[column.urlKey] : null
+      if (url && row[column.key] != null && row[column.key] !== '') {
+        return formatCell('link', { label: row[column.key], url })
+      }
+      return formatCell(column.type, row[column.key])
+    },
+  }))
   if (own || loaderActions) {
     columns.push({
       key: '_action',
