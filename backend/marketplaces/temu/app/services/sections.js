@@ -44,7 +44,8 @@ async function section(ctx) {
     if (data === undefined) {
       data = await marketplaceManager.withShopToken(shop, (token) => ADAPTER.sections[section.id](token, shop))
       data.loadedAt = new Date().toISOString()
-      if (!data.tables.some((table) => table.error)) await cache.set(key, data, 10 * 60)
+      // Not kept: results with a failed table, and "Temu Ads isn't on" (it changes on reconnect).
+      if (!data.adsOff && !data.tables.some((table) => table.error)) await cache.set(key, data, 10 * 60)
     }
     return { id: section.id, label: section.label, shopName: shop.name, ...data }
 }

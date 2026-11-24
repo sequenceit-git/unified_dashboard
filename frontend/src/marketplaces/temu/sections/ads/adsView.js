@@ -24,5 +24,6 @@ export function roasTone(roas) {
 
 /** The shop's Temu connection or account has no Ads (not a passing error). */
 export function adsOff(table) {
-  return Boolean(table?.error) && /does not allow|needs "[^"]*" enabled|not (?:open|enabled|authori[sz]ed)|no permission|permission denied|not opened|advertis\w* (?:is )?not/i.test(table.error)
+  // Only ad-specific wording: a token problem ("not authorized") is shown as an error instead.
+  return Boolean(table?.error) && /needs "temu\.searchrec\.ad[^"]*" enabled|not opened advertis|advertis\w* (?:is )?not (?:open|enabled|available)/i.test(table.error)
 }

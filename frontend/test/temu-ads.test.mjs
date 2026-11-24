@@ -31,8 +31,10 @@ test('sorting: highest spend first; ROAS tone', async () => {
 
 test('Temu Ads not on for the shop vs a real error', async () => {
   const { adsOff } = await load()
-  assert.equal(adsOff({ error: 'Your Temu connection does not allow temu.searchrec.ad.reports.mall.query' }), true)
+  assert.equal(adsOff({ error: 'This needs "temu.searchrec.ad.reports.mall.query" enabled for the app in the Temu partner account, then reconnect the shop in Settings.' }), true)
   assert.equal(adsOff({ error: 'The mall has not opened advertising' }), true)
+  assert.equal(adsOff({ error: 'access token not authorized' }), false, 'an expired or revoked token is a connection problem, not Ads off')
+  assert.equal(adsOff({ error: 'permission denied' }), false)
   assert.equal(adsOff({ error: 'Temu timed out' }), false)
   assert.equal(adsOff(undefined), false)
 })

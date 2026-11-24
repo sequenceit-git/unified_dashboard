@@ -2,7 +2,7 @@
  * New Temu ads as steps: goods → daily budget & target ROAS → review (Temu says which goods can
  * advertise and its predicted ROAS, read only) → create.
  */
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
 import { api, queryString } from '../../../../lib/api'
 import Button from '../../../../components/ui/Button'
@@ -39,17 +39,22 @@ export default function NewAdsPanel({ options, onClose, onDone }) {
   const ids = [...picked].sort()
   const key = ids.join(',')
 
-  // Review: ask Temu once per set of goods (read only).
-  const go = async (next) => {
+  // Review: ask Temu once per set of goods (read only); a reply for an older set is dropped.
+  const latest = useRef('')
+  const go = async (next, force = false) => {
     setStep(next)
-    if (next !== 'review' || !ids.length || check.key === key) return
+    if (next !== 'review' || !ids.length || ids.length > 50) return
+    if (!force && check.key === key && !check.error) return
+    latest.current = key
     setCheck({ key, loading: true, error: '', data: null })
     try {
-      setCheck({ key, loading: false, error: '', data: await api.get(`${BASE}/eligibility${queryString({ id: key })}`, token) })
+      const data = await api.get(`${BASE}/eligibility${queryString({ id: key })}`, token)
+      if (latest.current === key) setCheck({ key, loading: false, error: '', data })
     } catch (err) {
-      setCheck({ key, loading: false, error: err.message, data: null })
+      if (latest.current === key) setCheck({ key, loading: false, error: err.message, data: null })
     }
   }
+  const current = check.key === key ? check : { loading: false, error: '', data: null }
   const toggle = (id) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const close = () => {
     if (busy) return
@@ -114,9 +119,9 @@ export default function NewAdsPanel({ options, onClose, onDone }) {
       </Step>
       <Step id="review" active={step}>
         {problems.length > 0 && <p className="text-sm text-amber-700 dark:text-amber-300">Fix {problems.length} thing{problems.length === 1 ? '' : 's'} first: {problems[0].message}</p>}
-        {check.loading && <Spinner />}
-        {check.error && <ErrorState message={check.error} onRetry={() => { setCheck({ key: '', loading: false, error: '', data: null }); go('review') }} />}
-        {check.data && (
+        {current.loading && <Spinner />}
+        {current.error && <ErrorState message={current.error} onRetry={() => go('review', true)} />}
+        {current.data && (
           <div className="space-y-3 text-sm">
             <p>{eligible.length} of {ids.length} goods can advertise · {positive(budget) ? `$${Number(budget).toFixed(2)} a day each` : 'no budget yet'} · target ROAS {String(roas).trim() || 'Temu’s suggestion'}</p>
             {eligible.length > 0 && (

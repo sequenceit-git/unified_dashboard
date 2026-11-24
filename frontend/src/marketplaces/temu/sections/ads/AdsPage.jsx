@@ -154,7 +154,7 @@ function Ads() {
                         const edit = (r.actions || []).find((a) => a.id === 'edit-ad')
                         return (
                           <span className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                            {edit && <ActionButton action={{ ...edit, label: 'Edit' }} rowId={r.id} onRun={onRun} onDetail={() => {}} />}
+                            {edit && <ActionButton action={edit} rowId={r.id} onRun={onRun} onDetail={() => {}} />}
                             <Button size="sm" variant="secondary" onClick={() => setViewing(r)}>Details</Button>
                           </span>
                         )
