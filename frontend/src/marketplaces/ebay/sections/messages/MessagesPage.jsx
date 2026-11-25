@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../../auth/AuthContext'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
@@ -13,7 +13,7 @@ import ConversationList from './ConversationList'
 import ThreadView from './ThreadView'
 import PageHeader from '../../ui/PageHeader'
 import StatusPills from '../../ui/StatusPills'
-import { INBOX_PILLS } from './messagesView'
+import { INBOX_PILLS, nextActive, sortConvos } from './messagesView'
 
 export default function MessagesPage() {
   const { token, isAdmin } = useAuth()
@@ -29,6 +29,8 @@ export default function MessagesPage() {
   const [error, setError] = useState('')
   const [activeId, setActiveId] = useState(null)
   const [mobileThread, setMobileThread] = useState(false)
+  // Pick a thread automatically on the next load (first load, or a new filter/page) only.
+  const autoPick = useRef(true)
 
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = useMemo(() => shopsRes.data || [], [shopsRes.data])
@@ -95,15 +97,13 @@ export default function MessagesPage() {
             api.get(`/api/ebay/messages/conversations${queryString({ ...base, shopId: id })}`, token),
           ),
         )
-        const merged = parts
-          .flatMap((p) => p.data || [])
-          .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt))
+        const merged = sortConvos(parts.flatMap((p) => p.data || []))
         res = { data: merged, page: 1, pages: 1, total: parts.reduce((n, p) => n + (p.total || 0), 0) }
       }
       setConvos(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
-      if (res.data.length && !res.data.find((c) => c._id === activeId)) setActiveId(res.data[0]._id)
-      if (res.data.length === 0) setActiveId(null)
+      setActiveId((current) => nextActive({ activeId: current, list: res.data, auto: autoPick.current }))
+      autoPick.current = false
     } catch (e) {
       setError(e.message)
     } finally {
@@ -111,7 +111,7 @@ export default function MessagesPage() {
     }
   }
 
-  useEffect(() => { fetchConvos() }, [marketplace, status, type, page, shopsRes.loading]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { autoPick.current = true; fetchConvos() }, [marketplace, status, type, page, shopsRes.loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The sync worker checks the inbox in the background; reload when it finishes.
   const [threadRefresh, setThreadRefresh] = useState(0)
@@ -167,7 +167,7 @@ export default function MessagesPage() {
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading || shopsRes.loading ? <Spinner /> : error ? <ErrorState message={error} onRetry={fetchConvos} /> :
               convos.length === 0 ? <EmptyState message={noShopForTab ? `Connect ${section.label} in Settings` : 'No conversations'} /> : (
-                <ConversationList convos={convos} activeId={activeId} onSelect={(id) => { setActiveId(id); setMobileThread(true) }} />
+                <ConversationList convos={convos} activeId={activeId} onSelect={(id) => { setActiveId(id); setMobileThread(true); setConvos((list) => list.map((c) => (c._id === id ? { ...c, unreadCount: 0 } : c))) }} />
               )}
           </div>
           <div className="border-t border-gray-100 px-3 dark:border-slate-800">

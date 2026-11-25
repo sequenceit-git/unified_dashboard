@@ -19,9 +19,9 @@ export function shortTime(value, now = new Date()) {
   return d.toLocaleDateString([], { day: 'numeric', month: 'short' })
 }
 
-/** The order the conversation is about (populated by the server), as the card on top of the thread. */
+/** The order the conversation is about (`order` from the server, or the populated `orderId`), as the card on top of the thread. */
 export function itemCard(thread) {
-  const order = thread?.orderId
+  const order = thread?.order || thread?.orderId
   if (!order || typeof order !== 'object') return null
   const items = order.items || []
   return {
@@ -32,4 +32,19 @@ export function itemCard(thread) {
     status: order.status,
     total: order.totals?.total ?? null,
   }
+}
+
+/**
+ * The thread to show after the list loads. A thread is picked automatically only on the first load
+ * or a new filter (`auto`); an open one stays open even when it leaves the list (e.g. read, so no
+ * longer Unread), so opening the list never marks other buyers' threads read.
+ */
+export function nextActive({ activeId, list, auto }) {
+  if (auto) return list[0]?._id || null
+  return activeId || null
+}
+
+/** Unread first (most unread), then newest: the server's order, for lists merged across shops. */
+export function sortConvos(list) {
+  return [...list].sort((a, b) => (b.unreadCount || 0) - (a.unreadCount || 0) || new Date(b.lastMessageAt) - new Date(a.lastMessageAt))
 }

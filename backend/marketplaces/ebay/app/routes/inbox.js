@@ -1,5 +1,5 @@
 const express = require('express')
-const { conversationQuery } = require('../services/inboxQuery')
+const { conversationQuery, threadOrder } = require('../services/inboxQuery')
 const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection } = require('../../../../middleware/auth')
 const { paging, paged } = require('../../../../utils/query')
 const Conversation = require('../../../../models/Conversation')
@@ -65,7 +65,8 @@ function inboxRoutes(shopKey) {
         await convo.save().catch(() => {})
       }
       const messages = await Message.find({ conversationId: convo._id }).sort({ sentAt: 1 }).limit(200)
-      res.json({ ...convo.toObject(), messages })
+      const order = await threadOrder(convo).catch(() => null)
+      res.json({ ...convo.toObject(), order, messages })
     } catch (err) {
       res.status(400).json({ error: err.message })
     }

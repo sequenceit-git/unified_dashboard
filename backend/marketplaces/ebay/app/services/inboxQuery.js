@@ -12,4 +12,16 @@ function conversationQuery(query = {}) {
   return { filter, sort: { unreadCount: -1, lastMessageAt: -1 } }
 }
 
-module.exports = { conversationQuery }
+/**
+ * The order a thread is about, for the item card: the conversation's own order when it has one,
+ * else the buyer's latest order in that shop (sync doesn't link conversations to orders).
+ */
+async function threadOrder(convo) {
+  if (convo?.orderId && typeof convo.orderId === 'object' && convo.orderId.externalOrderId) return convo.orderId
+  const customerId = convo?.customerId?._id || convo?.customerId
+  if (!customerId || !convo?.shopId) return null
+  const Order = require('../../../../models/Order')
+  return Order.findOne({ shopId: convo.shopId, customerId }).sort({ placedAt: -1 }).select('externalOrderId status items totals placedAt').lean()
+}
+
+module.exports = { conversationQuery, threadOrder }

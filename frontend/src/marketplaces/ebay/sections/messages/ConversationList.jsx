@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import Badge from '../../../../components/ui/Badge'
 import { shortTime } from './messagesView'
 
 /** Conversations: buyer, last line and time; unread ones bold with their count. */
 export default function ConversationList({ convos, activeId, onSelect }) {
-  const now = new Date()
+  const [now] = useState(() => new Date())
   return (
     <ul className="divide-y divide-gray-100 dark:divide-slate-800">
       {convos.map((c) => {

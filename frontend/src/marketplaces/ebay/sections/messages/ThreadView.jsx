@@ -39,7 +39,8 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
   useEffect(() => { if (refreshKey) load({ quiet: true }) }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async () => {
-    if (!draft.trim()) return
+    // One send at a time (Ctrl/⌘+Enter pressed twice must not message the buyer twice).
+    if (busy || !draft.trim()) return
     setBusy(true)
     setSendError('')
     try {

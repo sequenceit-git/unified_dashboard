@@ -22,6 +22,8 @@ const conversationSchema = new mongoose.Schema(
 
 conversationSchema.index({ shopId: 1, externalThreadId: 1 }, { unique: true, sparse: true })
 conversationSchema.index({ shopId: 1, status: 1, lastMessageAt: -1 })
+// Inbox lists: unread first, then newest.
+conversationSchema.index({ shopId: 1, status: 1, unreadCount: -1, lastMessageAt: -1 })
 conversationSchema.index({ customerId: 1 })
 
 module.exports = mongoose.model('Conversation', conversationSchema, 'conversations')
