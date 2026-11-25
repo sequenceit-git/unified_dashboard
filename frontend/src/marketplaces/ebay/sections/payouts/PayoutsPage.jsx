@@ -17,7 +17,8 @@ import Drawer from '../../ui/Drawer'
 import SectionTable from '../../SectionTable'
 import ReconnectNotice from '../../ReconnectNotice'
 import { formatCell } from '../../sectionFormat'
-import { PAYOUT_PILLS, fundsTiles, payoutSummary, tilesFor } from './payoutsView'
+import Pagination from '../../../../components/ui/Pagination'
+import { PAYOUT_PILLS, fundsTiles, pageOf, payoutSummary, tilesFor } from './payoutsView'
 
 const BASE = '/api/ebay/sections/payouts'
 const MUTED = 'text-gray-500 dark:text-slate-400'
@@ -55,6 +56,7 @@ function PayoutDrawer({ row, onClose }) {
 
 function Payouts() {
   const [pill, setPill] = useState('payouts')
+  const [page, setPage] = useState(1)
   const [fresh, setFresh] = useState(0)
   const [open, setOpen] = useState(null)
   const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
@@ -64,6 +66,8 @@ function Payouts() {
   const tables = data?.tables || []
   const current = PAYOUT_PILLS.find((p) => p.key === pill) || PAYOUT_PILLS[0]
   const table = tables.find((t) => t.id === current.table)
+  // Lists show 15 rows a page, as before.
+  const paged = pageOf(table?.rows, page)
   const hasDetail = (r) => (r.actions || []).some((a) => a.id === 'payout')
   const columns = (table?.columns || [])
     .filter((c) => c.type !== 'link' || c.key)
@@ -81,27 +85,27 @@ function Payouts() {
         actions={<Button variant="secondary" disabled={loading} onClick={() => setFresh(Date.now())}>{loading ? 'Refreshing…' : 'Refresh'}</Button>}
       />
       {error && <ErrorState message={error} onRetry={refetch} />}
-      {loading && !data && <Spinner />}
       <Tiles items={fundsTiles(data?.summary)} strong />
       <StatusPills
         pills={PAYOUT_PILLS.map((p) => { const t = tables.find((x) => x.id === p.table); return { key: p.key, label: p.label, count: t && !t.error ? t.rows.length : null } })}
         active={current.key}
-        onChange={setPill}
+        onChange={(k) => { setPill(k); setPage(1) }}
       />
-      {data && <Tiles items={tilesFor(data.summary, table)} />}
+      {data && <Tiles items={tilesFor(data.summary, table, current)} />}
       {!(error && !data) && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           {table?.title && <h2 className="mb-1 font-semibold">{table.title}</h2>}
           {table?.note && <p className={`mb-2 text-xs ${MUTED}`}>{table.note}</p>}
           <DataTable
             columns={columns}
-            rows={(table?.rows || []).map((r, i) => ({ ...r, _key: r.id || `${current.table}-${i}` }))}
+            rows={paged.rows.map((r, i) => ({ ...r, _key: r.id || `${current.table}-${paged.page}-${i}` }))}
             loading={loading && !data}
             error={table?.error || ''}
             onRetry={() => setFresh(Date.now())}
             onRowClick={current.table === 'payouts' ? (r) => hasDetail(r) && setOpen(r) : undefined}
             rowKey="_key"
           />
+          {paged.pages > 1 && <Pagination page={paged.page} pages={paged.pages} total={(table?.rows || []).length} onPage={setPage} />}
         </div>
       )}
       {open && <PayoutDrawer key={open.id} row={open} onClose={() => setOpen(null)} />}
