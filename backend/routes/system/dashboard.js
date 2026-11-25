@@ -35,16 +35,18 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
     const since = new Date(Date.now() - 30 * 86400000)
     const orderFilter = shopFilter(req, resources.orders)
     const listingFilter = shopFilter(req, resources.listings)
+    const conversationFilter = shopFilter(req, resources.conversations)
     const buyerFilter = req.user.role === 'sub_admin'
       ? { 'identities.shopId': { $in: req.allowedShopIds || [] } }
       : {}
-    // Sub-admins: only products listed on their shops.
-    const productFilterPromise = (async () => (req.user.role === 'sub_admin'
-      ? { _id: { $in: await resources.listings.find({ shopId: { $in: req.allowedShopIds || [] } }).distinct('productId') } }
-      : {}))()
+    // Listed products for every role so unlisted drafts never inflate stock alerts.
+    const productFilterPromise = resources.listings
+      .find(listingFilter)
+      .distinct('productId')
+      .then((ids) => ({ _id: { $in: ids } }))
     const lowStockPromise = productFilterPromise.then((filter) => resources.products.countDocuments({ ...filter, $expr: { $lte: ['$stock', '$lowStockThreshold'] } }))
     const shopScope = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds || [] } } : {}
-    const extrasPromise = productFilterPromise.then((productFilter) => overviewExtras({ orderFilter, listingFilter, shopScope, productFilter }))
+    const extrasPromise = productFilterPromise.then((productFilter) => overviewExtras({ orderFilter, listingFilter, conversationFilter, shopScope, productFilter }))
     const [connectedShops, revenueRows, readyToShip, liveListings, orders30, buyers, openInbox, lowStock] = await Promise.all([
       // Sub-admins count only the shops they can open.
       resources.shops.find({
@@ -72,8 +74,10 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
       }),
       resources.customers.countDocuments(buyerFilter),
       resources.conversations.countDocuments({
-        ...shopFilter(req, resources.conversations),
+        ...conversationFilter,
         status: 'open',
+        replyable: { $ne: false },
+        unreadCount: { $gt: 0 },
       }),
       lowStockPromise,
     ])
@@ -87,6 +91,7 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
         marketplaces: KEYS.length,
         revenue: +(revenueRows[0]?.revenue || 0).toFixed(2),
         orders30,
+        soldOrders30: extras.soldOrders30 ?? null,
         buyers,
         readyToShip,
         liveListings,

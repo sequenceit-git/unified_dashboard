@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../../auth/AuthContext'
 import RequireShopSection from '../../../../components/RequireShopSection'
 import { useShopSection } from '../../../../hooks/useShopSection'
@@ -19,9 +20,13 @@ export default function MessagesPage() {
   const { token, isAdmin } = useAuth()
   const section = useShopSection()
   const marketplace = section?.marketplace
+  const [searchParams, setSearchParams] = useSearchParams()
+  const paramType = searchParams.get('type')
+  const type = INBOX_PILLS.some((p) => p.key === paramType) ? paramType : 'buyers'
   const [status, setStatus] = useState('open')
-  const [type, setType] = useState('buyers')
-  const [page, setPage] = useState(1)
+  const [pageState, setPageState] = useState({ type, page: 1 })
+  const page = pageState.type === type ? pageState.page : 1
+  const setPage = (nextPage) => setPageState({ type, page: nextPage })
   const [convos, setConvos] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
   const [loading, setLoading] = useState(true)
@@ -159,7 +164,19 @@ export default function MessagesPage() {
         </div>}
       />
       <div className="mt-2">
-        <StatusPills pills={INBOX_PILLS.map((p) => ({ ...p, count: p.key === type ? meta.total : null }))} active={type} onChange={(k) => { setType(k); setPage(1) }} />
+        <StatusPills
+          pills={INBOX_PILLS.map((p) => ({ ...p, count: p.key === type ? meta.total : null }))}
+          active={type}
+          onChange={(k) => {
+            setPageState({ type: k, page: 1 })
+            setSearchParams((prev) => {
+              const next = new URLSearchParams(prev)
+              if (k === 'buyers') next.delete('type')
+              else next.set('type', k)
+              return next
+            }, { replace: true })
+          }}
+        />
       </div>
 
       <div className="mt-3 flex min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900">
