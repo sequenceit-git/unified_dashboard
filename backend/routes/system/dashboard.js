@@ -2,6 +2,7 @@ const express = require('express')
 const { requireAuth, loadAccess, requireMainRoute, requireRole, shopFilter } = require('../../middleware/auth')
 const { cachedResponse } = require('../../services/core/cache')
 const { KEYS } = require('../../marketplaces')
+const { overviewExtras } = require('../../services/system/overview')
 
 const resources = {
   users: require('../../models/User'),
@@ -37,16 +38,13 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
     const buyerFilter = req.user.role === 'sub_admin'
       ? { 'identities.shopId': { $in: req.allowedShopIds || [] } }
       : {}
-    const lowStockPromise = (async () => {
-      const filter = { $expr: { $lte: ['$stock', '$lowStockThreshold'] } }
-      if (req.user.role === 'sub_admin') {
-        const productIds = await resources.listings
-          .find({ shopId: { $in: req.allowedShopIds || [] } })
-          .distinct('productId')
-        filter._id = { $in: productIds }
-      }
-      return resources.products.countDocuments(filter)
-    })()
+    // Sub-admins: only products listed on their shops.
+    const productFilterPromise = (async () => (req.user.role === 'sub_admin'
+      ? { _id: { $in: await resources.listings.find({ shopId: { $in: req.allowedShopIds || [] } }).distinct('productId') } }
+      : {}))()
+    const lowStockPromise = productFilterPromise.then((filter) => resources.products.countDocuments({ ...filter, $expr: { $lte: ['$stock', '$lowStockThreshold'] } }))
+    const shopScope = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds || [] } } : {}
+    const extrasPromise = productFilterPromise.then((productFilter) => overviewExtras({ orderFilter, listingFilter, shopScope, buyerFilter, productFilter }))
     const [connectedShops, revenueRows, readyToShip, liveListings, orders30, buyers, openInbox, lowStock] = await Promise.all([
       // Sub-admins count only the shops they can open.
       resources.shops.find({
@@ -79,6 +77,7 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
       }),
       lowStockPromise,
     ])
+    const extras = await extrasPromise
     const connectedMarkets = new Set(connectedShops.map((shop) => shop.marketplace))
     const responseData = {
       db: 'unified_dashboard',
@@ -94,6 +93,9 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
         openInbox,
         lowStock,
       },
+      // Overview page parts (previous 30 days, daily, byShop, attention, toShipNext, topProducts, errors).
+      ...extras,
+      loadedAt: new Date().toISOString(),
     }
     res.json(responseData)
   } catch (err) {
