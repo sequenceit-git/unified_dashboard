@@ -147,26 +147,29 @@ export default function CatalogTab({ listing = 'all', listLabel, canRestock = tr
     }
   }
 
-  const relist = (profile?.listingActions || []).find((a) => a.id === 'relist') || { id: 'relist', label: 'Relist on TikTok Shop' }
+  const nextFor = (r) => {
+    const shopActions = listingActionsFor(profile, r.shopListing)
+    return { shopActions, next: mainAction(r, { canRestock, listLabel, shopActions }) }
+  }
   const mainFor = (r) => {
-    const next = mainAction(r, { canRestock, listLabel })
+    const { next } = nextFor(r)
     const run = {
       list: () => onList(r),
       fix: () => onList(r),
       edit: () => onEdit(r),
       restock: () => onRestock(r),
-      relist: () => runShopAction(r, relist),
+      shop: () => runShopAction(r, next.action),
     }[next.id]
     return { label: next.label, primary: next.id !== 'edit', busy: busy === String(r._id), onClick: run }
   }
   const menuFor = (r) => {
-    const next = mainAction(r, { canRestock, listLabel }).id
+    const { next, shopActions } = nextFor(r)
     const listed = ['live', 'out_of_stock', 'pending'].includes(r.shopListing?.status)
     const canDelete = !listed || r.shopListing?.status === 'ended' || r.shopListing?.status === 'error'
     return [
-      ...(next !== 'edit' ? [{ label: 'Edit', onClick: () => onEdit(r) }] : []),
+      ...(next.id !== 'edit' ? [{ label: 'Edit', onClick: () => onEdit(r) }] : []),
       ...(r.shopListing?.listingUrl ? [{ label: 'View on TikTok Shop', onClick: () => window.open(r.shopListing.listingUrl, '_blank', 'noopener') }] : []),
-      ...listingActionsFor(profile, r.shopListing).filter((a) => !(a.id === 'relist' && next === 'relist')).map((a) => ({ label: a.label, danger: a.danger, onClick: () => runShopAction(r, a) })),
+      ...shopActions.filter((a) => a !== next.action).map((a) => ({ label: a.label, danger: a.danger, onClick: () => runShopAction(r, a) })),
       ...(canDelete ? [{ label: 'Delete', danger: true, onClick: () => remove(r._id) }] : []),
     ]
   }

@@ -32,11 +32,17 @@ const admin = { user: { id: 'u1', role: 'super_admin' }, query: {}, body: {}, pa
 
 test('counts per TikTok listing state for the status pills', async () => {
   const { service, restore } = load({
-    products: [{ _id: 'a' }, { _id: 'b' }, { _id: 'c' }, { _id: 'd' }, { _id: 'e' }, { _id: 'f' }],
-    listings: [{ productId: 'a', status: 'live' }, { productId: 'b', status: 'live' }, { productId: 'c', status: 'error' }, { productId: 'd', status: 'out_of_stock' }, { productId: 'e', status: 'paused' }],
+    products: [{ _id: 'a' }, { _id: 'b' }, { _id: 'c' }, { _id: 'd' }, { _id: 'e' }, { _id: 'f' }, { _id: 'g' }, { _id: 'h' }, { _id: 'i' }],
+    listings: [
+      { productId: 'a', status: 'live' }, { productId: 'b', status: 'live' }, { productId: 'c', status: 'error' },
+      { productId: 'd', status: 'out_of_stock' }, { productId: 'e', status: 'paused', marketplaceStatus: 'SELLER_DEACTIVATED' },
+      { productId: 'g', status: 'paused', marketplaceStatus: 'FREEZE' }, { productId: 'h', status: 'ended', marketplaceStatus: 'DELETED' },
+      { productId: 'i', status: 'paused', marketplaceStatus: 'PLATFORM_DEACTIVATED' },
+    ],
   })
   try {
-    assert.deepEqual(await service.counts(admin), { all: 6, live: 2, unlisted: 1, out_of_stock: 1, ended: 1, error: 1, pending: 0 })
+    // Deactivated counts every paused listing; suspended is the part of it TikTok suspended or froze.
+    assert.deepEqual(await service.counts(admin), { all: 9, live: 2, unlisted: 1, out_of_stock: 1, paused: 3, ended: 1, error: 1, pending: 0, suspended: 2 })
   } finally { restore() }
 })
 

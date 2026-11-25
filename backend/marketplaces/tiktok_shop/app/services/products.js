@@ -134,21 +134,27 @@ async function list(ctx) {
     return result
 }
 
-/** GET /counts — products per TikTok listing state for the Products status pills. */
+// TikTok took these off sale itself (stored as paused); the seller can't publish them again.
+const SUSPENDED_RAW = new Set(['PLATFORM_DEACTIVATED', 'FREEZE'])
+
+/**
+ * GET /counts — products per TikTok listing state for the Products status pills: paused is TikTok's
+ * Deactivated, ended its Deleted; suspended (also within paused) is what TikTok suspended or froze.
+ */
 async function counts(ctx) {
     const ids = await scopedIds(ctx)
     const productFilter = { marketplace: 'tiktok_shop', ...(ids ? { _id: { $in: ids } } : {}) }
     // Only products the list can show, each counted once (a listing without its product is left out).
     const productIds = new Set((await Product.distinct('_id', productFilter)).map(String))
-    const listings = await Listing.find({ marketplace: 'tiktok_shop', ...(ids ? { productId: { $in: ids } } : {}) }).select('productId status').lean()
-    const out = { all: productIds.size, live: 0, unlisted: 0, out_of_stock: 0, ended: 0, error: 0, pending: 0 }
+    const listings = await Listing.find({ marketplace: 'tiktok_shop', ...(ids ? { productId: { $in: ids } } : {}) }).select('productId status marketplaceStatus').lean()
+    const out = { all: productIds.size, live: 0, unlisted: 0, out_of_stock: 0, paused: 0, ended: 0, error: 0, pending: 0, suspended: 0 }
     const listed = new Set()
     for (const row of listings) {
       const id = String(row.productId)
       if (!productIds.has(id) || listed.has(id)) continue
       listed.add(id)
-      const key = row.status === 'paused' ? 'ended' : row.status
-      if (key in out && key !== 'all' && key !== 'unlisted') out[key] += 1
+      if (row.status in out && !['all', 'unlisted', 'suspended'].includes(row.status)) out[row.status] += 1
+      if (row.status === 'paused' && SUSPENDED_RAW.has(row.marketplaceStatus)) out.suspended += 1
     }
     out.unlisted = Math.max(0, out.all - listed.size)
     return out
