@@ -12,6 +12,7 @@ import PageHeader from '../../ui/PageHeader'
 import StatusPills from '../../ui/StatusPills'
 import { buyerPills, buyerSummary, feedbackFrom } from './buyersView'
 import { useApi } from '../../../../hooks/useApi'
+import { useSyncReload } from '../../../../hooks/useLiveEvents'
 import Button from '../../../../components/ui/Button'
 import Badge, { statusColor } from '../../../../components/ui/Badge'
 import { ErrorState } from '../../../../components/ui/Feedback'
@@ -47,7 +48,9 @@ export default function BuyersPage() {
   const fbTable = (id) => (fb.data?.tables || []).find((t) => t.id === id)
   const received = fbTable('received')
   const awaiting = fbTable('awaiting')
-  const fbCounts = fb.data ? { received: received && !received.error ? received.rows.length : null, awaiting: awaiting && !awaiting.error ? awaiting.rows.length : null } : null
+  // eBay is asked for 50 entries at a time: a full page reads "50+".
+  const countOf = (t) => (t && !t.error ? (t.rows.length >= 50 ? '50+' : t.rows.length) : null)
+  const fbCounts = fb.data ? { received: countOf(received), awaiting: countOf(awaiting) } : null
   const positive = (fb.data?.summary || []).find((s) => s.label === 'Positive feedback')?.value ?? null
   // Reply / Leave feedback: the section's own actions; the feedback reloads fresh after one.
   const run = async (action, row, value) => {
@@ -78,11 +81,16 @@ export default function BuyersPage() {
     }
   }
 
+  // Only All / Repeat change the buyer list (not the feedback pills).
+  const repeatOnly = pill === 'repeat'
   useEffect(() => {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketplace, q, sort, page, pill])
+  }, [marketplace, q, sort, page, repeatOnly])
+
+  // After an orders sync: buyers and feedback update (the cached address again after a forced Refresh).
+  useSyncReload(['orders'], 'ebay', () => { if (fresh) setFresh(0); else fb.refetch(); fetchRows() })
 
   const open = async (row) => {
     setOpenError('')
@@ -100,17 +108,17 @@ export default function BuyersPage() {
       <ReconnectNotice />
       <PageHeader
         title="eBay buyers"
-        summary={buyerSummary(counts, q, positive)}
+        summary={[buyerSummary(counts, q, positive), fb.data?.loadedAt && `updated ${new Date(fb.data.loadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`].filter(Boolean).join(' · ')}
         actions={<Button variant="secondary" disabled={fb.loading} onClick={() => { setNotice(''); setFresh(Date.now()); fetchRows() }}>{fb.loading ? 'Refreshing…' : 'Refresh'}</Button>}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <StatusPills pills={buyerPills(counts, fbCounts)} active={pill} onChange={(k) => { setPill(k); setPage(1) }} />
+        <StatusPills pills={buyerPills(counts, fbCounts)} active={pill} onChange={(k) => { setPill(k); setPage(1); setNotice('') }} />
         {(pill === 'all' || pill === 'repeat') && <div className="w-full sm:w-72"><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search name, email, phone…" /></div>}
       </div>
       {openError && <p className="text-sm text-rose-600 dark:text-rose-400">{openError}</p>}
       {notice && <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>}
       {fb.error && (pill === 'received' || pill === 'awaiting') && <ErrorState message={fb.error} onRetry={fb.refetch} />}
-      {(pill === 'received' || pill === 'awaiting') && (() => {
+      {(pill === 'received' || pill === 'awaiting') && !(fb.error && !fb.data) && (() => {
         const t = pill === 'received' ? received : awaiting
         const tiles = pill === 'received' ? (fb.data?.summary || []).filter((s) => s.tab === 'Feedback') : []
         return (
@@ -224,6 +232,7 @@ export default function BuyersPage() {
           feedback={feedbackFrom(received && !received.error ? received.rows : [], selected)}
           feedbackError={received?.error || fb.error || ''}
           run={run}
+          notice={notice}
           onClose={() => setSelected(null)}
           onSaved={async () => {
             setSelected(await api.get(`/api/ebay/buyers/${selected._id}`, token))

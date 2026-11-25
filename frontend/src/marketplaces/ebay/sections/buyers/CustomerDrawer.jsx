@@ -11,7 +11,7 @@ import ActionButton from '../../ActionButton'
 import { orderLink } from './buyersView'
 
 /** One buyer: contact & address (edit), stats, accounts, order history and the feedback they left (Reply). */
-export default function CustomerDrawer({ customer, onClose, onSaved, feedback = [], feedbackError = '', run }) {
+export default function CustomerDrawer({ customer, onClose, onSaved, feedback = [], feedbackError = '', run, notice = '' }) {
   const { token } = useAuth()
   const buyerIdentity = (customer.identities || []).find((i) => getShop(i.marketplace)?.buyer?.email)
   const [name, setName] = useState(customer.name || '')
@@ -104,7 +104,7 @@ export default function CustomerDrawer({ customer, onClose, onSaved, feedback = 
           <Input label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
 
           <div className="sm:col-span-3 border-t border-gray-100 pt-3 dark:border-slate-800">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Shipping Address</h4>
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Shipping Address</h4>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
               <div className="sm:col-span-2">
                 <Input label="Street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Address line 1" />
@@ -165,6 +165,7 @@ export default function CustomerDrawer({ customer, onClose, onSaved, feedback = 
 
         <div>
           <h3 className="font-semibold">Feedback from this buyer</h3>
+          {notice && <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>}
           {feedbackError && <p className="text-xs text-rose-600 dark:text-rose-400">Feedback couldn't be loaded: {feedbackError}</p>}
           <ul className="mt-1 space-y-1">
             {feedback.map((f) => (
