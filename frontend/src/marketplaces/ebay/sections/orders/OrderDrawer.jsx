@@ -4,7 +4,8 @@ import { api } from '../../../../lib/api'
 import { marketplaceLabel, getShop } from '../../..'
 import Badge, { statusColor } from '../../../../components/ui/Badge'
 import Button from '../../../../components/ui/Button'
-import Modal from '../../../../components/ui/Modal'
+import Drawer from '../../ui/Drawer'
+import { shipByText } from './ordersView'
 import { Select } from '../../../../components/ui/Input'
 
 const CARRIERS = [
@@ -34,7 +35,7 @@ const NEXT = {
   refunded: [],
 }
 
-export default function OrderDrawer({ order, onClose, onSaved }) {
+export default function OrderDrawer({ order, onClose, onSaved, focus }) {
   const { token } = useAuth()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -97,7 +98,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
     if (status === 'cancelled') return cancelOrder('BUYER_ASKED_CANCEL')
     if (status === 'shipped' && getShop(order.marketplace)?.shipNeedsTracking) {
       if (tracking.trim()) return saveTracking()
-      return setError(`Enter a carrier and tracking number above and click "Push tracking" to mark a ${marketplaceLabel(order.marketplace)} order shipped.`)
+      return setError(`Enter a carrier and tracking number above and click "Add tracking" to mark a ${marketplaceLabel(order.marketplace)} order shipped.`)
     }
     return mutate(() => api.patch(`/api/ebay/orders/${order._id}/status`, { status }, token))
   }
@@ -141,27 +142,67 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
 
   const canCancel = ['pending', 'paid', 'processing'].includes(order.status)
   const canRefund = order.status !== 'refunded' && order.status !== 'cancelled'
+  const toShip = ['paid', 'processing'].includes(order.status)
+  const due = shipByText(order)
+  const itemsTotal = (order.items || []).reduce((t, it) => t + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0), 0)
+  const box = 'rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3.5 space-y-2'
+
+  // Shipping & tracking: first for orders to ship (where Add tracking lands), lower down otherwise.
+  const shippingPart = (
+    <div className={`${box} ${focus === 'ship' ? 'ring-2 ring-indigo-400' : ''}`}>
+      <h3 className="font-semibold text-gray-900 dark:text-slate-100">{toShip ? 'Ship this order' : 'Shipping & tracking'}</h3>
+      <p className="text-xs text-gray-500 dark:text-slate-400">
+        Carrier: <span className="font-semibold text-gray-700 dark:text-gray-300">{order.shipping?.carrier || 'None'}</span>
+        {order.shipping?.trackingNumber && <> · Tracking: <span className="font-mono text-gray-700 dark:text-gray-300">{order.shipping.trackingNumber}</span></>}
+        {order.shipping?.deliveredAt && <> · Delivered: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{new Date(order.shipping.deliveredAt).toLocaleDateString()}</span></>}
+        {!order.shipping?.deliveredAt && order.shipping?.shippedAt && <> · Shipped: <span className="text-gray-600 dark:text-gray-400">{new Date(order.shipping.shippedAt).toLocaleDateString()}</span></>}
+      </p>
+      {toShip && <p className="text-xs text-gray-500 dark:text-slate-400">Add the carrier and tracking number: eBay marks the order shipped and the buyer gets the tracking.</p>}
+      <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_auto] gap-2 pt-1">
+        <Select value={carrier} onChange={(e) => setCarrier(e.target.value)} options={CARRIERS} aria-label="Shipping Carrier" />
+        <input
+          value={tracking}
+          onChange={(e) => setTracking(e.target.value)}
+          placeholder="Tracking number"
+          autoFocus={focus === 'ship'}
+          className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+        />
+        <Button variant={toShip ? 'primary' : 'secondary'} disabled={busy || !tracking.trim()} onClick={saveTracking}>
+          {order.shipping?.trackingNumber ? 'Update tracking' : 'Add tracking'}
+        </Button>
+      </div>
+    </div>
+  )
 
   return (
-    <Modal title={`Order ${order.externalOrderId}`} onClose={onClose} wide>
+    <Drawer
+      title={`Order ${order.externalOrderId}`}
+      subtitle={(
+        <span className="flex flex-wrap items-center gap-2">
+          <Badge color={statusColor(order.status)}>{order.status}</Badge>
+          <span>${order.totals?.total?.toFixed(2)}</span>
+          {order.placedAt && <span>· placed {new Date(order.placedAt).toLocaleDateString()}</span>}
+          {due && <span className={due.late ? 'font-semibold text-rose-600 dark:text-rose-400' : ''}>· ship by {new Date(order.shipping.shipBy).toLocaleDateString()} ({due.text})</span>}
+        </span>
+      )}
+      onClose={onClose}
+      footer={(
+        <>
+          <span className="flex flex-wrap gap-2">
+            {canRefund && !showRefundForm && <Button size="sm" variant="secondary" disabled={busy} onClick={() => setShowRefundForm(true)}>Issue refund</Button>}
+            {canCancel && (
+              <Button size="sm" variant="secondary" className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" disabled={busy} onClick={() => cancelOrder('BUYER_ASKED_CANCEL')}>
+                Cancel order
+              </Button>
+            )}
+          </span>
+          <Button size="sm" variant="secondary" onClick={onClose}>Close</Button>
+        </>
+      )}
+    >
       <div className="space-y-4 text-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-2">
-            <Badge color={statusColor(order.status)}>{order.status}</Badge>
-            <Badge color="blue">{marketplaceLabel(order.marketplace)}</Badge>
-          </div>
-          {canCancel && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-              disabled={busy}
-              onClick={() => cancelOrder('BUYER_ASKED_CANCEL')}
-            >
-              Cancel order
-            </Button>
-          )}
-        </div>
+        {error && <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>}
+        {toShip && shippingPart}
 
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-slate-100">Items</h3>
@@ -173,9 +214,10 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
               </li>
             ))}
           </ul>
-          <p className="mt-1.5 text-right font-bold text-gray-900 dark:text-slate-100">
-            Total: ${order.totals?.total?.toFixed(2)}
-          </p>
+          <div className="mt-1.5 space-y-0.5 text-right">
+            {Math.abs(itemsTotal - (order.totals?.total || 0)) > 0.005 && <p className="text-xs text-gray-500 dark:text-slate-400">Items ${itemsTotal.toFixed(2)} · shipping, tax and other charges ${((order.totals?.total || 0) - itemsTotal).toFixed(2)}</p>}
+            <p className="font-bold text-gray-900 dark:text-slate-100">Total: ${order.totals?.total?.toFixed(2)} {order.totals?.currency && order.totals.currency !== 'USD' ? order.totals.currency : ''}</p>
+          </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3.5 space-y-3">
@@ -259,32 +301,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 p-3 space-y-2">
-          <h3 className="font-semibold text-gray-900 dark:text-slate-100">Shipping & tracking</h3>
-          <p className="text-xs text-gray-500 dark:text-slate-400">
-            Carrier: <span className="font-semibold text-gray-700 dark:text-gray-300">{order.shipping?.carrier || 'None'}</span>
-            {order.shipping?.trackingNumber && <> · Tracking: <span className="font-mono text-gray-700 dark:text-gray-300">{order.shipping.trackingNumber}</span></>}
-            {order.shipping?.deliveredAt && <> · Delivered: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{new Date(order.shipping.deliveredAt).toLocaleDateString()}</span></>}
-            {!order.shipping?.deliveredAt && order.shipping?.shippedAt && <> · Shipped: <span className="text-gray-600 dark:text-gray-400">{new Date(order.shipping.shippedAt).toLocaleDateString()}</span></>}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_auto] gap-2 pt-1">
-            <Select
-              value={carrier}
-              onChange={(e) => setCarrier(e.target.value)}
-              options={CARRIERS}
-              aria-label="Shipping Carrier"
-            />
-            <input
-              value={tracking}
-              onChange={(e) => setTracking(e.target.value)}
-              placeholder="Tracking number"
-              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-            <Button variant="secondary" disabled={busy} onClick={saveTracking}>
-              Push tracking
-            </Button>
-          </div>
-        </div>
+        {!toShip && shippingPart}
 
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-slate-100">Status</h3>
@@ -300,15 +317,6 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
         <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-slate-800">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-slate-100">Returns & refunds</h3>
-            {canRefund && !showRefundForm && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setShowRefundForm(true)}
-              >
-                Issue refund
-              </Button>
-            )}
           </div>
 
           {showRefundForm && (
@@ -324,6 +332,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
                     step="0.01"
                     min="0.01"
                     max={order.totals?.total || undefined}
+                    autoFocus
                     value={refundAmount}
                     onChange={(e) => setRefundAmount(e.target.value)}
                     className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
@@ -382,8 +391,7 @@ export default function OrderDrawer({ order, onClose, onSaved }) {
           </div>
         </div>
 
-        {error && <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>}
       </div>
-    </Modal>
+    </Drawer>
   )
 }
