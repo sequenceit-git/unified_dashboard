@@ -90,6 +90,7 @@
       "GET /products/",
       "POST /products/import-url",
       "POST /products/fill-attributes",
+      "GET /products/counts",
       "GET /products/categories",
       "GET /products/seo-words",
       "GET /products/:id",

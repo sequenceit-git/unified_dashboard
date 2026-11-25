@@ -65,6 +65,7 @@ function listingStatusFilter(value) {
     case 'error':
       return { status: value }
     case 'inactive': return { status: { $in: ['paused', 'pending'] } }
+    case 'closed': return { status: { $in: ['ended', 'paused'] } }
     default: return {}
   }
 }
@@ -91,6 +92,11 @@ async function list(ctx) {
         { title: { $regex: q, $options: 'i' } },
         { sku: { $regex: q, $options: 'i' } },
       ]
+      // A TikTok product id (digits) finds the product listed under it.
+      if (/^\d{6,}$/.test(ctx.query.q.trim())) {
+        const listed = await Listing.find({ marketplace: 'tiktok_shop', externalListingId: { $regex: q } }).select('productId').lean()
+        if (listed.length) filter.$or.push({ _id: { $in: listed.map((row) => row.productId) } })
+      }
     }
     if (ctx.query.stock === 'low') filter.$expr = { $lte: ['$stock', '$lowStockThreshold'] }
     if (ctx.query.stock === 'out') filter.stock = 0
@@ -126,6 +132,26 @@ async function list(ctx) {
       })
     }
     return result
+}
+
+/** GET /counts — products per TikTok listing state for the Products status pills. */
+async function counts(ctx) {
+    const ids = await scopedIds(ctx)
+    const productFilter = { marketplace: 'tiktok_shop', ...(ids ? { _id: { $in: ids } } : {}) }
+    // Only products the list can show, each counted once (a listing without its product is left out).
+    const productIds = new Set((await Product.distinct('_id', productFilter)).map(String))
+    const listings = await Listing.find({ marketplace: 'tiktok_shop', ...(ids ? { productId: { $in: ids } } : {}) }).select('productId status').lean()
+    const out = { all: productIds.size, live: 0, unlisted: 0, out_of_stock: 0, ended: 0, error: 0, pending: 0 }
+    const listed = new Set()
+    for (const row of listings) {
+      const id = String(row.productId)
+      if (!productIds.has(id) || listed.has(id)) continue
+      listed.add(id)
+      const key = row.status === 'paused' ? 'ended' : row.status
+      if (key in out && key !== 'all' && key !== 'unlisted') out[key] += 1
+    }
+    out.unlisted = Math.max(0, out.all - listed.size)
+    return out
 }
 
 /** POST /import-url */
@@ -518,4 +544,4 @@ async function seoWords(ctx) {
     return (res.products || []).map((p) => ({ productId: String(p.id), words: (p.seo_words || []).map((w) => ({ word: w.text })) }))
 }
 
-module.exports = { listingCheck, seoWords, list, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
+module.exports = { listingCheck, seoWords, list, counts, importFromUrl, fillAttributes, categories, get, create, update, remove, listOnShop, listingAction, sync, updatePrice }
