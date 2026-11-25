@@ -32,20 +32,16 @@ test('sidebar subsections are unchanged', async () => {
 /** A section's action columns (src/marketplaces/<key>/sections/<id>/tableActions.jsx). */
 const actions = async (key, id) => (await load(`/src/marketplaces/${key}/sections/${id}/tableActions.jsx`)).default.tableActions
 // Temu's Returns & refunds page has its own buttons (temu/sections/after-sales/returnsView.js, tested in temu-returns.test.mjs).
-// eBay's Returns & cases and Best offers pages have their own buttons (their *View.js, tested in ebay-returns / ebay-offers).
-const SECTIONS_WITH_ACTIONS = { ebay: ['promotions'], tiktok_shop: ['returns-cancellations', 'promotions', 'packages'] }
+// eBay's Returns & cases, Best offers and Promotions pages have their own buttons (their *View.js, tested in ebay-*.test.mjs).
+const SECTIONS_WITH_ACTIONS = { tiktok_shop: ['returns-cancellations', 'promotions', 'packages'] }
 
 test('section tables with actions per shop', async () => {
   const wired = async (key) => Object.fromEntries(await Promise.all(SECTIONS_WITH_ACTIONS[key].map(async (id) => [id, Object.keys(await actions(key, id)).sort()])))
-  assert.deepEqual(await wired('ebay'), { promotions: ['activities', 'promotions'] })
   assert.deepEqual(await wired('tiktok_shop'), { 'returns-cancellations': ['cancellations', 'returns'], promotions: ['activities', 'promotions'], packages: ['packages'] })
 })
 
-test('promotions: eBay hides markdown sales, TikTok deactivates and cannot resume', async () => {
+test('promotions: TikTok deactivates and cannot resume (eBay: ebay-promotions.test.mjs)', async () => {
   const ctx = { onAction: () => {} }
-  const ebay = (await actions('ebay', 'promotions')).promotions
-  assert.deepEqual(texts(ebay({ promotionId: 1, status: 'Running', type: 'Markdown sale' }, ctx)), [])
-  assert.deepEqual(texts(ebay({ promotionId: 1, status: 'Paused', type: 'Order discount' }, ctx)), ['Resume'])
   const tt = (await actions('tiktok_shop', 'promotions')).promotions
   assert.deepEqual(texts(tt({ promotionId: 1, status: 'Ongoing' }, ctx)), ['Deactivate'])
   assert.deepEqual(texts(tt({ promotionId: 1, status: 'Deactivated' }, ctx)), [])
