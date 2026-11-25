@@ -43,3 +43,9 @@ test('new campaign: listings from the loader, checks per step', async () => {
   assert.deepEqual(newCampaignProblems({ name: 'Spring', rate: '', start: '', end: '' }), [])
   assert.deepEqual(newCampaignProblems({ name: ' ', rate: '1', start: '2026-12-10', end: '2026-12-01' }).map((p) => p.step), ['rate', 'details', 'details'])
 })
+
+test('ENDING counts as ended; a one-day campaign is allowed', async () => {
+  const { campaignRows, newCampaignProblems } = await load()
+  assert.equal(campaignRows({ tables: [{ id: 'campaigns', rows: [{ id: 'x', rawStatus: 'ENDING' }] }] })[0].state, 'ended')
+  assert.deepEqual(newCampaignProblems({ name: 'One day', rate: '', start: '2026-12-01', end: '2026-12-01' }), [])
+})

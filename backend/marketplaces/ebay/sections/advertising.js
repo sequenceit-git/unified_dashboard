@@ -156,8 +156,10 @@ function campaignDates(value, now) {
   const day = /^\d{4}-\d{2}-\d{2}$/
   const start = String(value?.start || '').trim()
   const end = String(value?.end || '').trim()
-  if (start && (!day.test(start) || start < today)) throw new HttpError(400, { error: 'The start date must be today or later.' })
-  const startDate = !start || start === today ? now.toISOString() : `${start}T00:00:00.000Z`
+  // A seller's "today" can already be yesterday in UTC (US evenings): up to a day behind starts now.
+  const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10)
+  if (start && (!day.test(start) || start < yesterday)) throw new HttpError(400, { error: 'The start date must be today or later.' })
+  const startDate = !start || start <= today ? now.toISOString() : `${start}T00:00:00.000Z`
   if (end && (!day.test(end) || `${end}T23:59:59.000Z` <= startDate)) throw new HttpError(400, { error: 'The end date must be after the start date.' })
   return { startDate, ...(end ? { endDate: `${end}T23:59:59.000Z` } : {}) }
 }
@@ -215,8 +217,16 @@ async function advertising(token, shop, { now = new Date() } = {}) {
           campaignAds(token, c.campaignId).catch(() => null),
           ebayGet(token, `/sell/marketing/v1/ad_campaign/${enc(c.campaignId)}/suggest_items?limit=100`).then((r) => r.suggestedItems || []).catch(() => []),
         ])
-        return [String(c.campaignId), ads ? adActions(listings, ads, suggested) : []]
+        return [String(c.campaignId), ads ? adActions(listings, ads, suggested) : null]
       })))
+      // Why a campaign that could take ad changes has none on the page.
+      const adsNote = (c) => {
+        if (/ENDED|DELETED/i.test(c.campaignStatus || '')) return undefined
+        if (c.fundingStrategy?.fundingModel === 'COST_PER_CLICK') return 'Priority campaigns: ads and bids are changed in eBay Seller Hub.'
+        if (!extra.has(String(c.campaignId))) return `Ad changes load for the first ${ACTION_LOOKUPS} open General campaigns. Refresh after ending others, or use eBay Seller Hub.`
+        if (extra.get(String(c.campaignId)) === null) return "eBay didn't return this campaign's ads just now. Press Refresh to try again."
+        return undefined
+      }
       return campaigns.map((c) => ({
         id: String(c.campaignId),
         name: c.campaignName || String(c.campaignId),
@@ -229,6 +239,7 @@ async function advertising(token, shop, { now = new Date() } = {}) {
         start: c.startDate || null,
         end: c.endDate || null,
         actions: [...(extra.get(String(c.campaignId)) || []), ...campaignActions(c)],
+        adsNote: adsNote(c),
       }))
     },
   }])

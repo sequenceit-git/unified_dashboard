@@ -386,3 +386,30 @@ test('a batch eBay refuses as a whole is reported and the other batches still co
     assert.ok(res.message.startsWith('Added 500 listings.'))
   } finally { restore() }
 })
+
+test("a seller's today that is already yesterday in UTC starts now (US evening)", async () => {
+  const { advertising, restore, calls } = load({
+    get: { get_campaign_by_name: () => { if (calls.some(([m]) => m === 'POST')) return campaign('6', 'RUNNING'); throw Object.assign(new Error('nf'), { status: 404 }) } },
+    send: { '/sell/marketing/v1/ad_campaign': {} },
+  })
+  advertising.now = () => new Date('2026-11-25T03:00:00.000Z') // 19:00 on 24 Nov in California
+  try {
+    await advertising.actions.create('tok', {}, 'campaigns', { name: 'Evening', start: '2026-11-24' })
+    assert.equal(calls.find(([m]) => m === 'POST')[2].startDate, '2026-11-25T03:00:00.000Z')
+    await assert.rejects(advertising.actions.create('tok', {}, 'campaigns', { name: 'Old', start: '2026-11-23' }), (e) => e.status === 400)
+  } finally { restore() }
+})
+
+test('campaigns whose ads were not read say so (beyond the lookups, Priority, or eBay failed)', async () => {
+  const { advertising, restore } = load({
+    get: { '/sell/marketing/v1/ad_campaign?': pages(CAMPAIGNS, 100), '/ad?': { ads: [] }, suggest_items: { suggestedItems: [] }, ad_report_task: { reportTasks: [] } },
+  })
+  advertising.now = () => NOW
+  try {
+    const rows = (await advertising('tok', { _id: 's1' })).tables[0].rows
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r]))
+    assert.equal(byId['1'].adsNote, undefined)
+    assert.match(byId['4'].adsNote, /Priority/)
+    assert.equal(byId['3'].adsNote, undefined, 'ended campaigns take no ad changes anyway')
+  } finally { restore() }
+})

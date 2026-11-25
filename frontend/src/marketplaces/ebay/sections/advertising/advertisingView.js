@@ -4,7 +4,7 @@
  */
 
 const AD_ACTIONS = ['add-listings', 'set-rate', 'remove-listings']
-const state = (raw) => (/RUNNING/i.test(raw) ? 'running' : /PAUSED/i.test(raw) ? 'paused' : /ENDED|DELETED/i.test(raw) ? 'ended' : 'scheduled')
+const state = (raw) => (/RUNNING/i.test(raw) ? 'running' : /PAUSED/i.test(raw) ? 'paused' : /ENDED|ENDING|DELETED/i.test(raw) ? 'ended' : 'scheduled')
 
 const tableOf = (section, id) => (section?.tables || []).find((t) => t.id === id)
 
@@ -50,7 +50,8 @@ export function newCampaignProblems({ name, rate, start, end }) {
     const r = Number(rate)
     if (!Number.isFinite(r) || r < 2 || r > 100) problems.push({ step: 'rate', field: 'rate', message: "The ad rate is from 2% to 100% (or leave it empty for eBay's suggested rate)." })
   }
-  if (start && end && new Date(end) <= new Date(start)) problems.push({ step: 'details', field: 'end', message: 'The end is after the start.' })
+  // A campaign may start and end on the same day (it runs to the end of that day).
+  if (start && end && new Date(end) < new Date(start)) problems.push({ step: 'details', field: 'end', message: 'The end is after the start.' })
   if (!String(name || '').trim()) problems.push({ step: 'details', field: 'name', message: 'Give the campaign a name.' })
   return problems
 }

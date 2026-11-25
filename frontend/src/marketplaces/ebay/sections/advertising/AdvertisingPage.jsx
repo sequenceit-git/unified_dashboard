@@ -43,11 +43,11 @@ function useRun(token, onDone) {
   }
 }
 
-function DetailDrawer({ title, subtitle, path, actions, row, run, onClose }) {
+function DetailDrawer({ title, subtitle, path, actions, row, run, onClose, note }) {
   const { data, loading, error, refetch } = useApi(path)
   return (
     <Drawer
-      title={data?.title || title}
+      title={title || data?.title}
       subtitle={subtitle}
       onClose={onClose}
       footer={<>
@@ -55,6 +55,7 @@ function DetailDrawer({ title, subtitle, path, actions, row, run, onClose }) {
         <Button size="sm" variant="secondary" onClick={onClose}>Close</Button>
       </>}
     >
+      {note && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">{note}</p>}
       {loading && <Spinner />}
       {error && <ErrorState message={error} onRetry={refetch} />}
       {data?.summary?.length > 0 && (
@@ -83,7 +84,10 @@ function Advertising() {
   const campaignsT = (data?.tables || []).find((t) => t.id === 'campaigns')
   const reportsT = (data?.tables || []).find((t) => t.id === 'reports')
   const reports = reportsT && !reportsT.error ? reportsT.rows : null
-  const active = pill || (rows?.some((r) => r.state === 'running') ? 'running' : 'all')
+  const pills = campaignPills(rows, reports)
+  // A chosen pill that has since disappeared (e.g. the last paused one resumed) falls back.
+  const fallback = rows?.some((r) => r.state === 'running') ? 'running' : 'all'
+  const active = pill && pills.some((p) => p.key === pill) ? pill : fallback
   const shown = (rows || []).filter((r) => active === 'all' || r.state === active)
   const s = Object.fromEntries((data?.summary || []).map((x) => [x.label, x.value]))
   const requestReport = (reportsT?.actions || []).find((a) => a.id === 'request-report')
@@ -104,7 +108,7 @@ function Advertising() {
         </>}
       />
       {error && <ErrorState message={error} onRetry={refetch} />}
-      <StatusPills pills={campaignPills(rows, reports)} active={active} onChange={setPill} />
+      <StatusPills pills={pills} active={active} onChange={setPill} />
       {notice && <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>}
       {!(error && !data) && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -139,7 +143,7 @@ function Advertising() {
             </>
           ) : (
             <>
-              {campaignsT?.note && <p className={`mb-2 text-xs ${MUTED}`}>{campaignsT.note}</p>}
+              {campaignsT?.note && <p className={`mb-2 text-xs ${MUTED}`}>{campaignsT.note} Spend, sales and return on ad spend come from ad reports (the Reports pill).</p>}
               <DataTable
                 columns={[
                   { key: 'name', label: 'Campaign', render: (r) => <span className="block max-w-[280px]"><span className="block truncate font-medium">{r.name}</span><span className={`text-xs ${MUTED}`}>{r.type}</span></span> },
@@ -180,6 +184,7 @@ function Advertising() {
             subtitle={<span className="flex flex-wrap items-center gap-2"><Badge color={statusColor(openRow.status)}>{openRow.status}</Badge><span>{openRow.type}</span>{openRow.rate != null && <span>· {openRow.rate}% ad rate</span>}</span>}
             path={`${BASE}/ads${queryString({ id: openRow.id })}`}
             actions={[...ads, ...campaign]}
+            note={openRow.adsNote}
             row={openRow}
             run={run}
             onClose={() => setOpen(null)}

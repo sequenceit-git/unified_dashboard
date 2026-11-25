@@ -1,5 +1,5 @@
 /**
- * New eBay Promoted Listings campaign as steps: listings (eBay's suggestions first) → ad rate (empty:
+ * New eBay Promoted Listings campaign as steps: listings → ad rate (empty:
  * eBay's suggested rate per listing) → name & dates → review. A General (pay when it sells) campaign,
  * created by the loader's own create action.
  */
@@ -67,7 +67,7 @@ export default function NewCampaignPanel({ options, onClose, onDone }) {
       </>}
     >
       <Step id="listings" active={step}>
-        <p className="text-xs text-gray-500 dark:text-slate-400">A General campaign: you pay the ad rate (a % of the sale) only when a buyer clicks the ad and buys. Listings eBay suggests are marked and listed first. You can also add listings later.</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400">A General campaign: you pay the ad rate (a % of the sale) only when a buyer clicks the ad and buys. You can also add listings later: once the campaign exists, Add listings marks the ones eBay suggests.</p>
         <Input label="Search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Title or item id" />
         <p className="text-sm text-gray-500 dark:text-slate-400">{picked.size} picked</p>
         <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border dark:divide-slate-800 dark:border-slate-700">
