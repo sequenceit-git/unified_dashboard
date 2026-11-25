@@ -32,19 +32,13 @@ test('sidebar subsections are unchanged', async () => {
 /** A section's action columns (src/marketplaces/<key>/sections/<id>/tableActions.jsx). */
 const actions = async (key, id) => (await load(`/src/marketplaces/${key}/sections/${id}/tableActions.jsx`)).default.tableActions
 // Temu's Returns & refunds page has its own buttons (temu/sections/after-sales/returnsView.js, tested in temu-returns.test.mjs).
-const SECTIONS_WITH_ACTIONS = { ebay: ['returns-cases', 'offers', 'promotions'], tiktok_shop: ['returns-cancellations', 'promotions', 'packages'] }
+// eBay's Returns & cases page has its own buttons too (ebay/sections/returns-cases/returnsView.js, tested in ebay-returns.test.mjs).
+const SECTIONS_WITH_ACTIONS = { ebay: ['offers', 'promotions'], tiktok_shop: ['returns-cancellations', 'promotions', 'packages'] }
 
 test('section tables with actions per shop', async () => {
   const wired = async (key) => Object.fromEntries(await Promise.all(SECTIONS_WITH_ACTIONS[key].map(async (id) => [id, Object.keys(await actions(key, id)).sort()])))
-  assert.deepEqual(await wired('ebay'), { 'returns-cases': ['cancellations', 'returns'], offers: ['eligible'], promotions: ['activities', 'promotions'] })
+  assert.deepEqual(await wired('ebay'), { offers: ['eligible'], promotions: ['activities', 'promotions'] })
   assert.deepEqual(await wired('tiktok_shop'), { 'returns-cancellations': ['cancellations', 'returns'], promotions: ['activities', 'promotions'], packages: ['packages'] })
-})
-
-test('eBay returns: approve and decline', async () => {
-  const ctx = { onAction: () => {} }
-  const ebay = await actions('ebay', 'returns-cases')
-  assert.deepEqual(texts(ebay.returns({ status: 'Requested' }, ctx)), ['Approve', 'Decline'])
-  assert.deepEqual(texts(ebay.cancellations({ status: 'Closed' }, ctx)), ['Processed'])
 })
 
 test('promotions: eBay hides markdown sales, TikTok deactivates and cannot resume', async () => {
