@@ -13,10 +13,10 @@ export default function ShopStep({ ctx }) {
               Step 1
             </p>
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Target Marketplace Shop
+              Marketplace Shop Scope
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Select which store this sub-admin is assigned to manage. The permissions below will adapt exclusively to this shop.
+              Choose a shop tab to configure its subsections below. Selecting subsections across multiple shops grants access to each selected shop.
             </p>
           </div>
 

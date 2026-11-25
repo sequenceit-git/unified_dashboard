@@ -35,6 +35,23 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('auth:expired', onExpired)
   }, [logout])
 
+  useEffect(() => {
+    if (!token) return
+    let active = true
+    api.get('/api/auth/me', token)
+      .then((freshUser) => {
+        if (!active || !freshUser) return
+        setUser(freshUser)
+        try {
+          localStorage.setItem('user', JSON.stringify(freshUser))
+        } catch {
+          // Ignore storage errors.
+        }
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [token])
+
   const save = (t, u) => {
     setToken(t)
     setUser(u)

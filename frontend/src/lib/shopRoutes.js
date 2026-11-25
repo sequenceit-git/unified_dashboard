@@ -2,7 +2,7 @@
  * Shop page routing helpers. Each shop names its sections after its own API (eBay `listings`,
  * Temu `goods`); `renamedSections` on the shop maps the older names to the new ones.
  */
-import { getShop } from '../marketplaces'
+import { SHOPS, getShop } from '../marketplaces'
 
 /** Shop pages that sit behind a main-route permission (the other sections check access themselves). */
 const GATED_ROUTES = ['analytics', 'products', 'inventory', 'orders', 'customers', 'inbox']
@@ -30,4 +30,31 @@ export function sameSectionOn(fromUrlId, section, toUrlId) {
   const from = getShop(fromUrlId)
   const original = from ? originalId(from, section) : section
   return getShop(toUrlId)?.renamedSections?.[original] || original
+}
+
+/** First accessible destination path for a user based on their routes, shops, and subsections. */
+export function firstAllowedPath(user) {
+  if (!user) return null
+  if (user.role === 'super_admin') return '/'
+  const routes = Array.isArray(user.mainRoutes) ? user.mainRoutes : []
+  if (routes.includes('dashboard')) return '/'
+  if (routes.includes('market-research')) return '/market-research'
+  const hasExplicitMarkets = Array.isArray(user.marketplaces)
+  if (hasExplicitMarkets && user.marketplaces.length === 0) return null
+  const allowedMarkets = hasExplicitMarkets ? user.marketplaces : []
+  const allowedSections = Array.isArray(user.allowedSections) ? user.allowedSections : []
+  for (const shop of SHOPS) {
+    if (allowedMarkets.length && !allowedMarkets.includes(shop.key)) continue
+    for (const sub of shop.subsections || []) {
+      if (!routes.includes(sub.route)) continue
+      if (
+        allowedSections.length === 0 ||
+        allowedSections.includes(sub.id) ||
+        allowedSections.includes(`${shop.key}:${sub.id}`)
+      ) {
+        return `/${shop.urlId}/${sub.id}`
+      }
+    }
+  }
+  return null
 }

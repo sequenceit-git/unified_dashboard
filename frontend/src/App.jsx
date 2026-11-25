@@ -6,7 +6,7 @@ import ShopSectionGate from './components/ShopSectionGate'
 import { Spinner } from './components/ui/Feedback'
 import LegacyShopRedirect from './components/LegacyShopRedirect'
 import { SHOPS } from './marketplaces'
-import { gateFor, renamedPath } from './lib/shopRoutes'
+import { firstAllowedPath, gateFor, renamedPath } from './lib/shopRoutes'
 import Login from './pages/auth/Login'
 import Overview from './pages/dashboard/Overview'
 import ProductDiscoveryPage from './pages/discovery/ProductDiscoveryPage'
@@ -32,15 +32,16 @@ function PublicOnly({ children }) {
 
 function RouteAccess({ route, children }) {
   const { hasRoute, user } = useAuth()
+  const { pathname } = useLocation()
   if (hasRoute(route)) return children
-  const firstRoute = user?.mainRoutes?.find((name) => name !== route)
-  if (firstRoute) return <Navigate to={`/${firstRoute === 'dashboard' ? '' : firstRoute}`} replace />
+  const next = firstAllowedPath(user)
+  if (next && next !== pathname) return <Navigate to={next} replace />
   return <p className="p-8 text-center">No application sections have been assigned to this account.</p>
 }
 
 function AdminOnly({ children }) {
-  const { isAdmin } = useAuth()
-  return isAdmin ? children : <Navigate to="/" replace />
+  const { isAdmin, user } = useAuth()
+  return isAdmin ? children : <Navigate to={firstAllowedPath(user) || '/'} replace />
 }
 
 export default function App() {

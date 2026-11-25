@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { firstAllowedPath } from '../../lib/shopRoutes'
 import { ThemeToggle } from '../../theme/ThemeContext'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -14,15 +15,13 @@ export default function Login() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const done = () => navigate('/', { replace: true })
-
   const submit = async (e) => {
     e.preventDefault()
     setBusy(true)
     setError('')
     try {
-      await login(email, password)
-      done()
+      const loggedIn = await login(email, password)
+      navigate(firstAllowedPath(loggedIn) || '/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -41,7 +40,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={submit} className="mt-4 space-y-3">
-          <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
+          <Input label="Username or email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
           <Input
             label="Password"
             type="password"

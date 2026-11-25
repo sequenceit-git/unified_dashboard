@@ -6,8 +6,8 @@ import Card from '../../components/ui/Card'
 import { EmptyState, ErrorState, Spinner } from '../../components/ui/Feedback'
 import Modal from '../../components/ui/Modal'
 import SearchInput from '../../components/ui/SearchInput'
-import { MARKETPLACE_SUBSECTIONS } from '../../lib/access'
-import { SHOP_THEMES, DEFAULT_THEME, formatDateSafe, formatDateTimeSafe, AccessPill } from './subAdminShared'
+import { MARKETPLACE_SUBSECTIONS, PLATFORM_ROUTES } from '../../lib/access'
+import { SHOP_THEMES, DEFAULT_THEME, formatDateSafe, formatDateTimeSafe, AccessPill, marketsOf, platformRoutesOf, shopNamesList } from './subAdminShared'
 import EditAccessModal from './components/EditAccessModal'
 
 export default function SubAdminManagementPage() {
@@ -28,6 +28,8 @@ export default function SubAdminManagementPage() {
     deleteBusy,
     deleteError,
     setDeleteError,
+    actionError,
+    setActionError,
     successBanner,
     setSuccessBanner,
     togglingId,
@@ -84,13 +86,29 @@ export default function SubAdminManagementPage() {
         </div>
       )}
 
+      {/* Action Error Notification */}
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300"
+        >
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError('')}
+            className="text-xs font-semibold text-rose-700 hover:underline dark:text-rose-400"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Shop Metric Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={() => setShopFilter('all')}
-          className={`cursor-pointer rounded-xl border p-4 transition-all ${
+          className={`cursor-pointer rounded-xl border p-4 text-left transition-all ${
             shopFilter === 'all'
               ? 'border-indigo-500 bg-indigo-50/60 shadow-xs dark:bg-indigo-950/30'
               : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
@@ -98,15 +116,14 @@ export default function SubAdminManagementPage() {
         >
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">All Sub-Admins</p>
           <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{counts.total}</p>
-        </div>
+        </button>
 
         {SHOPS.map((shop) => (
-          <div
+          <button
             key={shop.key}
-            role="button"
-            tabIndex={0}
+            type="button"
             onClick={() => setShopFilter(shop.key)}
-            className={`cursor-pointer rounded-xl border p-4 transition-all ${
+            className={`cursor-pointer rounded-xl border p-4 text-left transition-all ${
               shopFilter === shop.key
                 ? shop.theme.card
                 : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-800 dark:bg-slate-900'
@@ -117,7 +134,7 @@ export default function SubAdminManagementPage() {
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{shop.theme.adminsLabel}</p>
             </div>
             <p className={`mt-1 text-2xl font-bold ${shop.theme.count}`}>{counts.byShop[shop.key]}</p>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -246,6 +263,8 @@ export default function SubAdminManagementPage() {
               })
             })
 
+            const platformSubs = platformRoutesOf(user, PLATFORM_ROUTES)
+
             return (
               <Card key={user._id} className="relative flex flex-col justify-between transition-all hover:shadow-md">
                 <div>
@@ -321,13 +340,19 @@ export default function SubAdminManagementPage() {
                     </div>
                   </div>
 
-                  {/* Subsections & Access summary */}
+                  {/* Platform Modules & Subsections */}
                   <div className="mt-4 space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
-                        {userMarkets.length > 1 ? 'Assigned Subsections' : `${theme.shortLabel} Subsections`} ({activeSubs.length})
-                      </p>
-                    </div>
+                    {platformSubs.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[10px]">Modules:</span>
+                        {platformSubs.map(([key, label]) => (
+                          <AccessPill key={key} variant="indigo">{label}</AccessPill>
+                        ))}
+                      </div>
+                    )}
+                    <p className="font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-[11px]">
+                      {userMarkets.length > 1 ? 'Assigned Subsections' : `${theme.shortLabel} Subsections`} ({activeSubs.length})
+                    </p>
 
                     <div className="flex flex-wrap gap-1.5">
                       {activeSubs.length > 0 ? (
@@ -340,7 +365,7 @@ export default function SubAdminManagementPage() {
                           </AccessPill>
                         ))
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500 italic">No subsections assigned</span>
+                        <span className="text-gray-400 dark:text-gray-500 italic">No shop subsections assigned</span>
                       )}
                     </div>
                   </div>
@@ -408,7 +433,7 @@ export default function SubAdminManagementPage() {
                     Are you sure you want to delete <span className="font-bold underline">{deletingUser.name}</span> (<span className="font-mono">{deletingUser.username || deletingUser.email}</span>)?
                   </p>
                   <p className="text-xs text-red-700 dark:text-red-400 mt-2">
-                    All shop permissions for <span className="font-semibold">{SHOP_THEMES[deletingUser.marketplace || deletingUser.marketplaces?.[0] || KEYS[0]]?.label || 'Marketplace'}</span> will be permanently revoked, and this account will be removed immediately.
+                    All shop permissions for <span className="font-semibold">{shopNamesList(marketsOf(deletingUser))}</span> will be permanently revoked, and this account will be removed immediately.
                   </p>
                 </div>
               </div>

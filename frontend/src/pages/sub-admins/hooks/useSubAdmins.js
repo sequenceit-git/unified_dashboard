@@ -18,6 +18,7 @@ export function useSubAdmins() {
   const [deletingUser, setDeletingUser] = useState(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [successBanner, setSuccessBanner] = useState('')
   const [togglingId, setTogglingId] = useState(null)
 
@@ -29,6 +30,7 @@ export function useSubAdmins() {
       await api.del(`/api/auth/users/${deletingUser._id}`, token)
       const name = deletingUser.name
       setDeletingUser(null)
+      setActionError('')
       setSuccessBanner(`Sub-admin "${name}" has been permanently deleted.`)
       setTimeout(() => setSuccessBanner(''), 5000)
       await usersRes.refetch()
@@ -43,11 +45,14 @@ export function useSubAdmins() {
   const handleToggleStatus = async (user) => {
     const nextStatus = user.status === 'active' ? 'disabled' : 'active'
     setTogglingId(user._id)
+    setActionError('')
     try {
       await api.patch(`/api/auth/users/${user._id}`, { status: nextStatus }, token)
-      usersRes.refetch()
+      setSuccessBanner(`${user.name} has been ${nextStatus === 'active' ? 'activated' : 'suspended'}.`)
+      setTimeout(() => setSuccessBanner(''), 5000)
+      await usersRes.refetch()
     } catch (err) {
-      alert(`Could not update status: ${err.message}`)
+      setActionError(`Could not update status for ${user.name}: ${err.message}`)
     } finally {
       setTogglingId(null)
     }
@@ -119,6 +124,8 @@ export function useSubAdmins() {
     setDeleteBusy,
     deleteError,
     setDeleteError,
+    actionError,
+    setActionError,
     successBanner,
     setSuccessBanner,
     togglingId,

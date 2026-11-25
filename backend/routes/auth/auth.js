@@ -31,6 +31,16 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/users — super_admin creates sub_admins (or more admins)
 router.use(requireAuth, loadAccess)
 
+// GET /api/auth/me — current authenticated user with up-to-date permissions and shops
+router.get('/me', async (req, res) => {
+  try {
+    res.json(await service.me(ctxOf(req)))
+  } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // POST /api/auth/users — super_admin creates sub_admins and their access
 router.post('/users', requireRole('super_admin'), async (req, res) => {
   try {

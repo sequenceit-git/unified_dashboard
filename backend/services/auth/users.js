@@ -358,4 +358,16 @@ async function listUsers(_ctx) {
   })
 }
 
-module.exports = { listUsers, register, login, createUser, updateUser, deleteUser }
+/** GET /me: current user summary (keeps sub-admin routes, shops and sections fresh). */
+async function me(ctx) {
+  const user = await User.findById(ctx.user.id).select('-passwordHash')
+  if (!user || user.isDeleted) {
+    throw new HttpError(401, { error: 'This account has been deleted. Contact your administrator.' })
+  }
+  if (user.status !== 'active') {
+    throw new HttpError(401, { error: 'User is inactive or no longer exists' })
+  }
+  return await userSummary(user)
+}
+
+module.exports = { listUsers, register, login, me, createUser, updateUser, deleteUser }

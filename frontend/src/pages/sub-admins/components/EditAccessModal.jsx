@@ -5,7 +5,7 @@ import { api } from '../../../lib/api'
 import Button from '../../../components/ui/Button'
 import Modal from '../../../components/ui/Modal'
 import { PLATFORM_ROUTES, MARKETPLACE_SUBSECTIONS } from '../../../lib/access'
-import { SHOP_THEMES, DEFAULT_THEME, choiceCardClass } from '../subAdminShared'
+import { SHOP_THEMES, DEFAULT_THEME, choiceCardClass, emptySectionsByShop, marketsOf, shopNamesList } from '../subAdminShared'
 
 export default function EditAccessModal({ user, token, onClose, onSaved, onDeleted }) {
   const existingMarkets = Array.isArray(user?.marketplaces) && user.marketplaces.length > 0
@@ -83,10 +83,7 @@ export default function EditAccessModal({ user, token, onClose, onSaved, onDelet
 
   const clearAllPermissions = () => {
     setMainRoutes([])
-    setSectionsByShop((prev) => ({
-      ...prev,
-      [activeShop]: [],
-    }))
+    setSectionsByShop(emptySectionsByShop())
   }
 
   const handleSwitchShop = (nextMarket) => {
@@ -172,7 +169,7 @@ export default function EditAccessModal({ user, token, onClose, onSaved, onDelet
           >
             <p className="font-semibold">Permanently Delete Sub-Admin</p>
             <p className="mt-1 text-xs">
-              Are you sure you want to permanently delete <span className="font-bold">{user.name} (@{user.username || user.email})</span>? All permissions for {theme.label} will be revoked and this account will be removed immediately.
+              Are you sure you want to permanently delete <span className="font-bold">{user.name} (@{user.username || user.email})</span>? All permissions for {shopNamesList(marketsOf(user))} will be revoked and this account will be removed immediately.
             </p>
           </div>
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

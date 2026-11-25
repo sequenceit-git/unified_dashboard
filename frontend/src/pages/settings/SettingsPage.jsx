@@ -9,28 +9,29 @@ import { isFirstLoad, useApi } from '../../hooks/useApi'
 import { useLiveEvents } from '../../hooks/useLiveEvents'
 import { useShopProfiles } from '../../hooks/useShopProfiles'
 import { api } from '../../lib/api'
-import { SHOP_SECTIONS } from '../../lib/shops'
+import { allowedShopSections } from '../../hooks/useShopSection'
 import { marketplaceLabel } from '../../marketplaces'
 import AiAgentSettings from './AiAgentSettings'
 
-const CONNECTABLE = SHOP_SECTIONS.map((section) => ({ id: section.marketplace, label: section.label }))
-
-function statusLabel(shop, configured) {
+function statusLabel(shop, configured, isAdmin) {
   if (shop?.status === 'connected') return 'Connected'
   if (shop?.status === 'error') return 'Needs reconnecting'
+  if (!isAdmin) return 'Not connected'
   if (configured) return 'Ready to connect'
   return 'Credentials needed'
 }
 
-function statusClass(shop, configured) {
+function statusClass(shop, configured, isAdmin) {
   if (shop?.status === 'connected') return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
   if (shop?.status === 'error') return 'bg-red-50 text-red-700 ring-red-600/20'
+  if (!isAdmin) return 'bg-gray-100 text-gray-600 ring-gray-500/20'
   if (configured) return 'bg-blue-50 text-blue-700 ring-blue-600/20'
   return 'bg-amber-50 text-amber-700 ring-amber-600/20'
 }
 
 export default function SettingsPage() {
-  const { token, isAdmin } = useAuth()
+  const { token, isAdmin, user } = useAuth()
+  const visibleMarkets = allowedShopSections(user, isAdmin).map((section) => ({ id: section.marketplace, label: section.label }))
   const configsRes = useApi(token && isAdmin ? '/api/shops/configs' : null)
   const shopsRes = useApi(token ? '/api/shops' : null)
   const shops = shopsRes.data || []
@@ -181,8 +182,14 @@ export default function SettingsPage() {
 
       {isAdmin && configsRes.error && <ErrorState message={configsRes.error} onRetry={configsRes.refetch} />}
 
+      {visibleMarkets.length === 0 && !isAdmin && (
+        <p className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500">
+          No marketplace shops are assigned to this account.
+        </p>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {CONNECTABLE.map((market) => {
+        {visibleMarkets.map((market) => {
           const shop = shopFor(market.id)
           const configured = Boolean(configsRes.data?.[market.id]?.configured)
           const environment = configsRes.data?.[market.id]?.environment
@@ -199,8 +206,8 @@ export default function SettingsPage() {
                     {environment ? ` · ${environment}` : ''}
                   </p>
                 </div>
-                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${statusClass(shop, configured)}`}>
-                  {statusLabel(shop, configured)}
+                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${statusClass(shop, configured, isAdmin)}`}>
+                  {statusLabel(shop, configured, isAdmin)}
                 </span>
               </div>
 

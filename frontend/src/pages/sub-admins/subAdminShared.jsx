@@ -49,6 +49,20 @@ export function AccessPill({ children, variant = 'indigo' }) {
   )
 }
 
+export function emptySectionsByShop() {
+  return Object.fromEntries(KEYS.map((key) => [key, []]))
+}
+
+export function shopNamesList(markets) {
+  const labels = (markets || []).map((m) => SHOP_THEMES[m]?.shortLabel || m).filter(Boolean)
+  return labels.length ? labels.join(', ') : 'assigned shops'
+}
+
+export function platformRoutesOf(user, platformRoutes) {
+  const routes = Array.isArray(user?.mainRoutes) ? user.mainRoutes : []
+  return platformRoutes.filter(([key]) => routes.includes(key))
+}
+
 export function choiceCardClass(on) {
   return `flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
     on

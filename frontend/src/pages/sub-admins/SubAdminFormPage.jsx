@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button'
 import { ErrorState, Spinner } from '../../components/ui/Feedback'
 import Modal from '../../components/ui/Modal'
 import { SHOPS as REGISTRY_SHOPS } from '../../marketplaces'
+import { shopNamesList } from './subAdminShared'
 
 /** Shop cards for the form, from the marketplace registry (src/marketplaces/<key>/index.js). */
 const SHOPS = REGISTRY_SHOPS.map((shop) => ({
@@ -44,6 +45,7 @@ export default function SubAdminFormPage() {
     setDeleteError,
     handleDelete,
     selectedShop,
+    assignedMarkets,
     nativeSubsections,
     currentShopSections,
     handleSelectShop,
@@ -58,6 +60,9 @@ export default function SubAdminFormPage() {
   if (editing && usersRes.loading) return <Spinner />
   if (editing && (usersRes.error || !existing)) return <ErrorState message={usersRes.error || 'Sub-admin not found'} />
 
+  const targetLabel = assignedMarkets.length > 1 ? 'Multi-Shop Sub-Admin' : selectedShop.label
+  const assignedNames = shopNamesList(assignedMarkets.length ? assignedMarkets : [activeShop])
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-12">
       {/* Header Breadcrumb */}
@@ -70,7 +75,7 @@ export default function SubAdminFormPage() {
         </Link>
         <span className="text-gray-300 dark:text-gray-700">/</span>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {editing ? `Edit ${selectedShop.label}` : `Create ${selectedShop.label}`}
+          {editing ? `Edit ${targetLabel}` : `Create ${targetLabel}`}
         </h1>
       </div>
 
@@ -119,7 +124,7 @@ export default function SubAdminFormPage() {
               </Button>
             </Link>
             <Button type="submit" disabled={busy || deleteBusy}>
-              {busy ? 'Saving…' : editing ? 'Save Changes' : `Create ${selectedShop.label}`}
+              {busy ? 'Saving…' : editing ? 'Save Changes' : `Create ${targetLabel}`}
             </Button>
           </div>
         </div>
@@ -146,7 +151,7 @@ export default function SubAdminFormPage() {
                     Are you sure you want to delete <span className="font-bold underline">{name}</span> (<span className="font-mono">{username}</span>)?
                   </p>
                   <p className="text-xs text-red-700 dark:text-red-400 mt-2">
-                    All shop permissions for <span className="font-semibold">{selectedShop.label}</span> will be permanently revoked and their account removed immediately.
+                    All shop permissions for <span className="font-semibold">{assignedNames}</span> will be permanently revoked and their account removed immediately.
                   </p>
                 </div>
               </div>

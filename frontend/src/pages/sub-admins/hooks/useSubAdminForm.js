@@ -6,6 +6,7 @@ import { api } from '../../../lib/api'
 import { useApi } from '../../../hooks/useApi'
 import { PLATFORM_ROUTES, MARKETPLACE_SUBSECTIONS } from '../../../lib/access'
 import { SHOPS as REGISTRY_SHOPS, KEYS } from '../../../marketplaces'
+import { emptySectionsByShop } from '../subAdminShared'
 
 /** Shop cards for the form, from the marketplace registry (src/marketplaces/<key>/index.js). */
 const SHOPS = REGISTRY_SHOPS.map((shop) => ({
@@ -29,9 +30,7 @@ export function useSubAdminForm() {
   const connectedShops = Array.isArray(shopsRes.data) ? shopsRes.data : []
 
   const [activeShop, setActiveShop] = useState(KEYS[0])
-  const [sectionsByShop, setSectionsByShop] = useState(() => Object.fromEntries(
-    KEYS.map((key, i) => [key, i === 0 ? (MARKETPLACE_SUBSECTIONS[key] || []).map((s) => s.id) : []]),
-  ))
+  const [sectionsByShop, setSectionsByShop] = useState(() => emptySectionsByShop())
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -97,12 +96,7 @@ export function useSubAdminForm() {
       }
       setSectionsByShop(byShop)
     } else {
-      // Default: clean slate for new sub-admin, no unwanted default selections
-      setSectionsByShop({
-        ebay: [],
-        tiktok_shop: [],
-        temu: [],
-      })
+      setSectionsByShop(emptySectionsByShop())
       setActiveShop(KEYS[0])
     }
   }, [existing])
@@ -152,11 +146,10 @@ export function useSubAdminForm() {
 
   const clearAllPermissions = () => {
     setMainRoutes([])
-    setSectionsByShop((prev) => ({
-      ...prev,
-      [activeShop]: [],
-    }))
+    setSectionsByShop(emptySectionsByShop())
   }
+
+  const assignedMarkets = Object.keys(sectionsByShop).filter((m) => (sectionsByShop[m] || []).length > 0)
 
   const save = async (event) => {
     event.preventDefault()
@@ -171,12 +164,12 @@ export function useSubAdminForm() {
     if (!editing && !password) {
       return setError('Password is required for new sub-admins.')
     }
+    if ((!editing && password.length < 8) || (editing && password && password.length < 8)) {
+      return setError('Password must be at least 8 characters.')
+    }
 
     // Find active shops that have sections selected
-    const activeMarkets = Object.keys(sectionsByShop).filter(
-      (m) => (sectionsByShop[m] || []).length > 0
-    )
-    const finalMarkets = activeMarkets.length > 0 ? activeMarkets : [activeShop]
+    const finalMarkets = assignedMarkets.length > 0 ? assignedMarkets : [activeShop]
 
     // Derive mainRoutes: platform routes + parent routes of all selected subsections across all active shops
     const platformSelected = mainRoutes.filter((r) => PLATFORM_ROUTES.some(([k]) => k === r))
@@ -269,6 +262,7 @@ export function useSubAdminForm() {
     setDeleteError,
     handleDelete,
     selectedShop,
+    assignedMarkets,
     nativeSubsections,
     currentShopSections,
     handleSelectShop,

@@ -297,7 +297,7 @@ async function sizeCharts(ctx) {
 async function finances(ctx) {
     const shop = await Shop.findById(ctx.params.id)
     if (!shop) throw new HttpError(404, { error: 'Shop not found' })
-    if (!canAccessShop(ctx, shop._id) || !canUseSection(ctx.authUser || ctx.user, shop.marketplace, 'finances', 'analytics')) {
+    if (!canAccessShop(ctx, shop._id) || !canUseSection(ctx.authUser || ctx.user, shop.marketplace, 'analytics', 'analytics')) {
       throw new HttpError(403, { error: 'You do not have permission for this shop' })
     }
     const finances = await marketplaceManager.getFinances(shop)
