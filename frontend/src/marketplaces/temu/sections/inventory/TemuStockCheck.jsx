@@ -37,7 +37,7 @@ export default function TemuStockCheck() {
     <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
-          {check.differ.length > 0 && `${check.differ.length} SKU${check.differ.length === 1 ? '' : 's'} differ on Temu. `}
+          {check.differ.length > 0 && `${check.differ.length} ${check.differ.length === 1 ? 'SKU differs' : 'SKUs differ'} on Temu. `}
           {check.onlyOnTemu > 0 && `${check.onlyOnTemu} Temu SKU${check.onlyOnTemu === 1 ? ' is' : 's are'} not linked to a dashboard product.`}
         </span>
         {check.differ.length > 0 && <Button size="sm" variant="secondary" onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Show'}</Button>}
