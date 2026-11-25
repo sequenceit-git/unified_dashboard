@@ -3,6 +3,7 @@ const { paging, paged, escapeRegex } = require('../../../../utils/query')
 const InventoryLog = require('../../../../models/InventoryLog')
 const Product = require('../../../../models/Product')
 const Listing = require('../../../../models/Listing')
+const Shop = require('../../../../models/Shop')
 const marketplaceManager = require('../manager')
 const events = require('../../../../services/core/events')
 const { HttpError } = require('../../../../utils/httpError')
@@ -29,20 +30,12 @@ async function lowStock(ctx) {
 async function logs(ctx) {
     const conditions = []
 
-    if (ctx.query.marketplace) {
-      const marketplace = 'ebay'
-      if (!marketplace) throw new HttpError(400, { error: 'Unknown marketplace' })
-      const [listingProductIds, shopIds] = await Promise.all([
-        Listing.find({ marketplace }).distinct('productId'),
-        Listing.find({ marketplace }).distinct('shopId'),
-      ])
-      conditions.push({
-        $or: [
-          { shopId: { $in: shopIds } },
-          { productId: { $in: listingProductIds } },
-        ],
-      })
-    }
+    // Always eBay's own history: changes on eBay shops or to eBay products (each shop has its own).
+    const [shopIds, productIds] = await Promise.all([
+      Shop.find({ marketplace: 'ebay' }).distinct('_id'),
+      Product.find({ marketplace: 'ebay' }).distinct('_id'),
+    ])
+    conditions.push({ $or: [{ shopId: { $in: shopIds } }, { productId: { $in: productIds } }] })
 
     if (ctx.query.productId) conditions.push({ productId: ctx.query.productId })
     if (ctx.query.shopId) conditions.push({ shopId: ctx.query.shopId })

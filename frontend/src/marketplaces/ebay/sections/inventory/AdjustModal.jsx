@@ -13,6 +13,17 @@ const REASONS = [
   { value: 'sync', label: 'Marketplace sync correction' },
 ]
 
+/**
+ * What eBay does with the new quantity (backend pushProductChanges): live, out-of-stock, pending
+ * and paused listings are revised; an ended listing given stock is relisted.
+ */
+export function stockNote(listing, quantity, variant) {
+  const status = listing?.externalListingId ? listing.status : ''
+  if (['live', 'out_of_stock', 'pending', 'paused'].includes(status)) return `eBay gets ${quantity} for this ${variant ? 'variant' : 'listing'} when you save.`
+  if (status === 'ended' && quantity > 0) return `Saving relists this on eBay with ${quantity} in stock (eBay may charge a listing fee).`
+  return "This product isn't on sale on eBay: only the dashboard changes."
+}
+
 export default function AdjustModal({ product, onClose, onSaved }) {
   const { token } = useAuth()
   const variants = Array.isArray(product.variants) && product.variants.length > 1 ? product.variants : []
@@ -210,9 +221,7 @@ export default function AdjustModal({ product, onClose, onSaved }) {
           )}
           {projectedStock >= 0 && (
             <p className="mt-1 text-indigo-800 dark:text-indigo-200">
-              {product.shopListing?.externalListingId && ['live', 'out_of_stock'].includes(product.shopListing.status)
-                ? `eBay gets ${projectedStock} for this ${activeVariant ? 'variant' : 'listing'} when you save.`
-                : "This product isn't on sale on eBay: only the dashboard changes."}
+              {stockNote(product.shopListing, projectedStock, activeVariant)}
             </p>
           )}
         </div>

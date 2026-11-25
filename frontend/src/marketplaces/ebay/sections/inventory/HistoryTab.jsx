@@ -9,8 +9,8 @@ import Pagination from '../../../../components/ui/Pagination'
 
 const REASONS = ['all', 'sale', 'return', 'manual', 'sync', 'restock']
 
-/** Stock changes; `initialQ` starts it searched for one product (the History drawer). */
-export default function HistoryTab({ marketplace, refreshKey, initialQ = '', productId = '' }) {
+/** Stock changes; `productId` keeps it to one product (the History drawer). */
+export default function HistoryTab({ marketplace, refreshKey, productId = '' }) {
   const { token } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -18,7 +18,7 @@ export default function HistoryTab({ marketplace, refreshKey, initialQ = '', pro
   const [error, setError] = useState('')
   const [reason, setReason] = useState('all')
   const [direction, setDirection] = useState('all')
-  const [q, setQ] = useState(initialQ)
+  const [q, setQ] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
@@ -37,7 +37,7 @@ export default function HistoryTab({ marketplace, refreshKey, initialQ = '', pro
     }
   }
 
-  useEffect(() => { fetchRows() }, [marketplace, reason, direction, q, from, to, page, refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchRows() }, [marketplace, reason, direction, q, from, to, page, refreshKey, productId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Card>

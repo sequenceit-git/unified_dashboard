@@ -16,3 +16,13 @@ test('inventory pills, summary and needs attention from the stock counts', async
   assert.deepEqual(inventoryAttention({ lowCount: 0, outCount: 0 }), [])
   assert.deepEqual(inventoryAttention(null), [])
 })
+
+test('Adjust stock says what eBay does with the new quantity', async () => {
+  const { stockNote } = await server.ssrLoadModule('/src/marketplaces/ebay/sections/inventory/AdjustModal.jsx')
+  const L = (status) => ({ externalListingId: '123', status })
+  assert.equal(stockNote(L('paused'), 5, false), 'eBay gets 5 for this listing when you save.')
+  assert.equal(stockNote(L('pending'), 2, true), 'eBay gets 2 for this variant when you save.')
+  assert.match(stockNote(L('ended'), 5, false), /relists this on eBay with 5/)
+  assert.match(stockNote(L('ended'), 0, false), /only the dashboard changes/)
+  assert.match(stockNote(null, 5, false), /only the dashboard changes/)
+})
