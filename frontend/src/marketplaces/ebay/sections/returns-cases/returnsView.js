@@ -30,6 +30,8 @@ const doable = (row) => (row.actions || []).filter((a) => !a.detail)
 export function isOpen(row, kind) {
   if (kind === 'returns' && canDecideReturn(row.status)) return true
   if (kind === 'cancellations') return canDecideCancel(row.status)
+  // eBay gives open cases only Details (Appeal comes once closed): judge cases by status.
+  if (kind === 'cases') return !/closed/i.test(String(row.status || ''))
   return doable(row).length > 0
 }
 
@@ -43,7 +45,7 @@ export function kindsOf(section) {
     const rows = table.rows
       .map((r) => ({ ...r, id: r.id ?? String(r[k.idKey] ?? '') }))
       .sort((a, b) => Number(isOpen(b, k.key)) - Number(isOpen(a, k.key)) || time(a.respondBy) - time(b.respondBy) || time(b.created || b.opened) - time(a.created || a.opened))
-    return { ...k, rows, count: rows.length, open: rows.filter((r) => isOpen(r, k.key)).length, error: '' }
+    return { ...k, rows, count: rows.length, open: rows.filter((r) => isOpen(r, k.key)).length, error: '', note: table.note || '' }
   })
 }
 

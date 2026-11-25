@@ -120,11 +120,15 @@ function ReturnsCases() {
   useSyncReload(['orders', 'listings'], 'ebay', () => refetch())
 
   const kinds = kindsOf(data)
-  const reload = () => setFresh(Date.now())
-  const run = useRun(token, (message) => { setNotice(message); setOpen(null); reload() })
+  const reload = () => { setNotice(''); setFresh(Date.now()) }
   // Opens on the first kind with something to answer.
   const active = pill || kinds.find((k) => k.open)?.key || 'returns'
   const kind = kinds.find((k) => k.key === active)
+  // After an action the page stays on this kind (it doesn't jump when the last open one closes).
+  const run = useRun(token, (message) => { setPill(active); setOpen(null); setFresh(Date.now()); setNotice(message) })
+  // The drawer keeps the kind it was opened on, whatever the pills do meanwhile.
+  const openRow = (r) => { setPill(active); setOpen({ row: r, kindKey: active }) }
+  const openKind = open && kinds.find((k) => k.key === open.kindKey)
 
   return (
     <div className="space-y-3">
@@ -139,6 +143,7 @@ function ReturnsCases() {
       {notice && <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>}
       {!(error && !data) && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          {kind?.note && <p className={`mb-2 text-xs ${MUTED}`}>{kind.note}</p>}
           <DataTable
             columns={[
               { key: 'id', label: 'Request', render: (r) => <span><span className="font-medium">{r[kind.idKey] || r.id}</span>{r.orderId && <span className={`block text-xs ${MUTED}`}>Order {r.orderId}</span>}</span> },
@@ -155,8 +160,8 @@ function ReturnsCases() {
                     <span className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                       {main.decide
                         ? <ActionButton action={decideActions(r, kind.key)[0]} row={r} run={run} onDetail={() => {}} />
-                        : <Button size="sm" variant={main.primary ? 'primary' : 'secondary'} onClick={() => setOpen(r)}>{main.label}</Button>}
-                      {main.decide && <Button size="sm" variant="secondary" onClick={() => setOpen(r)}>Details</Button>}
+                        : <Button size="sm" variant={main.primary ? 'primary' : 'secondary'} onClick={() => openRow(r)}>{main.label}</Button>}
+                      {main.decide && <Button size="sm" variant="secondary" onClick={() => openRow(r)}>Details</Button>}
                     </span>
                   )
                 },
@@ -166,12 +171,12 @@ function ReturnsCases() {
             loading={loading && !data}
             error={kind?.error || ''}
             onRetry={reload}
-            onRowClick={setOpen}
+            onRowClick={openRow}
             rowKey="_key"
           />
         </div>
       )}
-      {open && kind && <Detail key={open.id} row={open} kind={kind} run={run} onClose={() => setOpen(null)} />}
+      {open && openKind && <Detail key={open.row.id} row={open.row} kind={openKind} run={run} onClose={() => setOpen(null)} />}
     </div>
   )
 }

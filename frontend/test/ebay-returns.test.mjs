@@ -58,3 +58,19 @@ test("the drawer's own decide actions per kind", async () => {
   assert.deepEqual(decideActions({ status: 'Cancel requested' }, 'cancellations').map((a) => a.id), ['cancel-approve', 'cancel-reject'])
   assert.deepEqual(decideActions({ status: 'Closed' }, 'returns'), [])
 })
+
+test('cases: open by status (eBay gives open cases only Details, closed ones Appeal); table notes kept', async () => {
+  const { kindsOf } = await load()
+  const k = kindsOf({ tables: [
+    { id: 'cases', note: 'case note', rows: [
+      { id: 'A', status: 'Open', actions: [{ id: 'case', detail: true }] },
+      { id: 'B', status: 'Closed', actions: [{ id: 'case', detail: true }, { id: 'case-appeal', label: 'Appeal' }] },
+    ] },
+    { id: 'inquiries', note: 'Answer these before the buyer can escalate', rows: [] },
+  ] })
+  const cases = k.find((x) => x.key === 'cases')
+  assert.equal(cases.open, 1)
+  assert.deepEqual(cases.rows.map((r) => r.id), ['A', 'B'])
+  assert.equal(cases.note, 'case note')
+  assert.match(k.find((x) => x.key === 'inquiries').note, /escalate/)
+})
