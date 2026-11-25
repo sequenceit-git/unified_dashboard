@@ -1,6 +1,8 @@
 /** What the eBay Orders page shows: state pills, needs attention, ship-by and each order's next step. */
 
 const PILLS = [
+  // All first; the page still opens on To ship.
+  ['all', 'All', {}],
   ['toShip', 'To ship', { status: 'paid,processing' }],
   ['late', 'Late', { late: '1' }],
   ['unpaid', 'Unpaid', { status: 'pending' }],
@@ -8,7 +10,6 @@ const PILLS = [
   ['delivered', 'Delivered', { status: 'delivered' }],
   ['cancelled', 'Cancelled', { status: 'cancelled' }],
   ['returns', 'Returns & refunds', { status: 'returned,refunded' }],
-  ['all', 'All', {}],
 ]
 
 /** Pills with counts; `query` is what the list asks the server for. Late, Unpaid and Returns only when there are some. */

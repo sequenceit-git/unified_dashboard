@@ -10,8 +10,8 @@ const COUNTS = { all: 48, toShip: 6, late: 1, unpaid: 0, shipped: 10, delivered:
 
 test('pills: to ship first; Late, Unpaid and Returns only when there are some', async () => {
   const { orderPills } = await load()
-  assert.deepEqual(orderPills(COUNTS).map((p) => [p.key, p.count]), [['toShip', 6], ['late', 1], ['shipped', 10], ['delivered', 30], ['cancelled', 1], ['all', 48]])
-  assert.deepEqual(orderPills(COUNTS)[0].query, { status: 'paid,processing' })
+  assert.deepEqual(orderPills(COUNTS).map((p) => [p.key, p.count]), [['all', 48], ['toShip', 6], ['late', 1], ['shipped', 10], ['delivered', 30], ['cancelled', 1]])
+  assert.deepEqual(orderPills(COUNTS).find((p) => p.key === 'toShip').query, { status: 'paid,processing' })
 })
 
 test('summary and needs attention', async () => {
@@ -35,7 +35,7 @@ test("ship-by in eBay's own (Pacific) days, only for orders to ship", async () =
 
 test('before the counts load, every pill shows (no count)', async () => {
   const { orderPills } = await load()
-  assert.deepEqual(orderPills(null).map((p) => p.key), ['toShip', 'late', 'unpaid', 'shipped', 'delivered', 'cancelled', 'returns', 'all'])
+  assert.deepEqual(orderPills(null).map((p) => p.key), ['all', 'toShip', 'late', 'unpaid', 'shipped', 'delivered', 'cancelled', 'returns'])
 })
 
 test('main row button: Add tracking for orders to ship, else Details', async () => {

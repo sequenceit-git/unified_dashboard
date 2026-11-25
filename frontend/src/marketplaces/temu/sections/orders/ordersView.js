@@ -1,6 +1,8 @@
 /** What the Temu Orders page shows: state pills, needs attention, ship-by and each order's next step. */
 
 const PILLS = [
+  // All first; the page still opens on To ship.
+  ['all', 'All', {}],
   ['toShip', 'To ship', { status: 'paid,processing' }],
   ['late', 'Late', { late: '1' }],
   ['shipped', 'Shipped', { status: 'shipped' }],
@@ -8,7 +10,6 @@ const PILLS = [
   ['cancelled', 'Cancelled', { status: 'cancelled' }],
   ['unpaid', 'Unpaid', { status: 'pending' }],
   ['returns', 'Returns & refunds', { status: 'returned,refunded' }],
-  ['all', 'All', {}],
 ]
 
 /** Pills with counts; `query` is what the list asks the server for. Late and Unpaid only when there are some. */

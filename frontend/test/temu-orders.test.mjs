@@ -12,7 +12,7 @@ const NOW = new Date('2026-11-25T12:00:00Z')
 test('pills: To ship first, Late only when some are late, Unpaid only when some are', async () => {
   const { orderPills } = await load()
   assert.deepEqual(orderPills(COUNTS).map((p) => [p.key, p.label, p.count]), [
-    ['toShip', 'To ship', 9], ['late', 'Late', 2], ['shipped', 'Shipped', 20], ['delivered', 'Delivered', 90], ['cancelled', 'Cancelled', 5], ['all', 'All', 126],
+    ['all', 'All', 126], ['toShip', 'To ship', 9], ['late', 'Late', 2], ['shipped', 'Shipped', 20], ['delivered', 'Delivered', 90], ['cancelled', 'Cancelled', 5],
   ])
   assert.deepEqual(orderPills(COUNTS).find((p) => p.key === 'late').query, { late: '1' })
   assert.deepEqual(orderPills(COUNTS).find((p) => p.key === 'toShip').query, { status: 'paid,processing' })
