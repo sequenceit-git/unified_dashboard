@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { api } from '../../../../../lib/api'
 import Button from '../../../../../components/ui/Button'
 import Modal from '../../../../../components/ui/Modal'
+import { discounted, margin } from '../offersView'
 
 export default function OfferModal({ item, onClose, onSuccess, token,  }) {
   const [discount, setDiscount] = useState('10')
@@ -67,6 +68,16 @@ export default function OfferModal({ item, onClose, onSuccess, token,  }) {
             className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
           />
           <p className="text-xs text-gray-500 mt-1">eBay requires a minimum discount of 5%.</p>
+          {item.listPrice?.value != null && (() => {
+            const offerPrice = discounted(item.listPrice.value, discount)
+            const left = margin(offerPrice, item.cost?.value ?? null)
+            return (
+              <p className="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-slate-800/60">
+                ${Number(item.listPrice.value).toFixed(2)} → <span className="font-semibold">${offerPrice.toFixed(2)}</span> for the buyers
+                {left ? <span className={left.loss ? ' font-semibold text-rose-600 dark:text-rose-400' : ' text-emerald-700 dark:text-emerald-400'}> · {left.text}</span> : <span className="text-gray-500"> · add the product's cost to see your margin</span>}
+              </p>
+            )
+          })()}
         </div>
 
         <div>
