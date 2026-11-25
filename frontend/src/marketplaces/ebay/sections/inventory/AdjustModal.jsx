@@ -4,6 +4,7 @@ import { api } from '../../../../lib/api'
 import Button from '../../../../components/ui/Button'
 import { Input, Select } from '../../../../components/ui/Input'
 import Modal from '../../../../components/ui/Modal'
+import { stockNote } from './inventoryView'
 
 const REASONS = [
   { value: 'manual', label: 'Manual adjustment' },
@@ -12,17 +13,6 @@ const REASONS = [
   { value: 'return', label: 'Return / Restocked' },
   { value: 'sync', label: 'Marketplace sync correction' },
 ]
-
-/**
- * What eBay does with the new quantity (backend pushProductChanges): live, out-of-stock, pending
- * and paused listings are revised; an ended listing given stock is relisted.
- */
-export function stockNote(listing, quantity, variant) {
-  const status = listing?.externalListingId ? listing.status : ''
-  if (['live', 'out_of_stock', 'pending', 'paused'].includes(status)) return `eBay gets ${quantity} for this ${variant ? 'variant' : 'listing'} when you save.`
-  if (status === 'ended' && quantity > 0) return `Saving relists this on eBay with ${quantity} in stock (eBay may charge a listing fee).`
-  return "This product isn't on sale on eBay: only the dashboard changes."
-}
 
 export default function AdjustModal({ product, onClose, onSaved }) {
   const { token } = useAuth()
