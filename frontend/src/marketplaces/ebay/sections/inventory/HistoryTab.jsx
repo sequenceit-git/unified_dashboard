@@ -9,7 +9,8 @@ import Pagination from '../../../../components/ui/Pagination'
 
 const REASONS = ['all', 'sale', 'return', 'manual', 'sync', 'restock']
 
-export default function HistoryTab({ marketplace, refreshKey }) {
+/** Stock changes; `initialQ` starts it searched for one product (the History drawer). */
+export default function HistoryTab({ marketplace, refreshKey, initialQ = '', productId = '' }) {
   const { token } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -17,7 +18,7 @@ export default function HistoryTab({ marketplace, refreshKey }) {
   const [error, setError] = useState('')
   const [reason, setReason] = useState('all')
   const [direction, setDirection] = useState('all')
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(initialQ)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
@@ -26,7 +27,7 @@ export default function HistoryTab({ marketplace, refreshKey }) {
     setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/ebay/inventory/logs${queryString({ reason, direction, q, from, to: to ? `${to}T23:59:59.999Z` : '', page, limit: 15 })}`, token)
+      const res = await api.get(`/api/ebay/inventory/logs${queryString({ reason, direction, q, productId: productId || undefined, from, to: to ? `${to}T23:59:59.999Z` : '', page, limit: 15 })}`, token)
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
     } catch (e) {

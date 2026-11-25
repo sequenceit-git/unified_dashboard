@@ -100,13 +100,23 @@ async function list(ctx) {
         if (listed.length) filter.$or.push({ _id: { $in: listed.map((row) => row.productId) } })
       }
     }
-    if (ctx.query.stock === 'low') filter.$expr = { $lte: ['$stock', '$lowStockThreshold'] }
+    // Low stock: some left, at or under the alert (out of stock is its own filter).
+    if (ctx.query.stock === 'low') {
+      filter.$expr = { $lte: ['$stock', '$lowStockThreshold'] }
+      filter.stock = { $gt: 0 }
+    }
     if (ctx.query.stock === 'out') filter.stock = 0
     const ids = await scopedIds(ctx)
     if (ids) filter._id = { $in: ids }
     // This shop's products only: each shop has its own products, stock and price.
     filter.marketplace = 'ebay'
     const marketplace = 'ebay'
+    // Inventory (listed=1): only products on eBay, as its stock counts are.
+    if (ctx.query.listed === '1') {
+      const onEbay = (await Listing.find({ marketplace }).select('productId').lean()).map((row) => row.productId)
+      const allowed = ids ? new Set(ids.map(String)) : null
+      filter._id = { $in: onEbay.filter((id) => !allowed || allowed.has(String(id))) }
+    }
     if (ctx.query.listing === 'unlisted') {
       // Products with no eBay listing yet (drafts, or never sent).
       const listed = (await Listing.find({ marketplace }).select('productId').lean()).map((row) => row.productId)

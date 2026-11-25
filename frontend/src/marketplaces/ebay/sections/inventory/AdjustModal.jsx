@@ -16,7 +16,8 @@ const REASONS = [
 export default function AdjustModal({ product, onClose, onSaved }) {
   const { token } = useAuth()
   const variants = Array.isArray(product.variants) && product.variants.length > 1 ? product.variants : []
-  const [variantSku, setVariantSku] = useState(variants[0]?.sku || '')
+  // Opens on the sold-out variant when there is one (Restock), else the first.
+  const [variantSku, setVariantSku] = useState((variants.find((v) => Number(v.stock) <= 0) || variants[0])?.sku || '')
   const activeVariant = variants.find((v) => v.sku === variantSku)
   const currentStock = Number(activeVariant ? activeVariant.stock : (product.stock ?? 0))
 
@@ -206,6 +207,13 @@ export default function AdjustModal({ product, onClose, onSaved }) {
           </div>
           {projectedStock < 0 && (
             <p className="mt-1 text-red-600 font-medium">Resulting stock cannot be less than 0.</p>
+          )}
+          {projectedStock >= 0 && (
+            <p className="mt-1 text-indigo-800 dark:text-indigo-200">
+              {product.shopListing?.externalListingId && ['live', 'out_of_stock'].includes(product.shopListing.status)
+                ? `eBay gets ${projectedStock} for this ${activeVariant ? 'variant' : 'listing'} when you save.`
+                : "This product isn't on sale on eBay: only the dashboard changes."}
+            </p>
           )}
         </div>
 

@@ -77,3 +77,17 @@ test('counts cover only products the list can show, each product once', async ()
     assert.deepEqual(await service.counts(admin), { all: 3, live: 1, unlisted: 1, out_of_stock: 0, ended: 0, error: 1, pending: 0 })
   } finally { restore() }
 })
+
+test('Inventory: low stock means some left, and listed=1 keeps it to products on eBay', async () => {
+  const { service, seen, restore } = load({ listings: [{ productId: 'a', status: 'live' }] })
+  try {
+    await service.list({ ...admin, query: { stock: 'low', listed: '1' } })
+    const f = seen.productFilters.at(-1)
+    assert.deepEqual(f.stock, { $gt: 0 })
+    assert.ok(f.$expr, 'stock at or under the low-stock alert')
+    assert.deepEqual(f._id, { $in: ['a'] })
+    await service.list({ ...admin, query: { stock: 'out' } })
+    assert.equal(seen.productFilters.at(-1).stock, 0)
+    assert.equal(seen.productFilters.at(-1)._id, undefined, 'without listed=1 nothing changes for the Listings page')
+  } finally { restore() }
+})
