@@ -2,13 +2,15 @@ import { useAuth } from '../auth/AuthContext'
 import { useShopSection } from '../hooks/useShopSection'
 import { useShopProfile } from '../hooks/useShopProfiles'
 import { EmptyState } from './ui/Feedback'
+import RequireShopSection from './RequireShopSection'
 
 /** Hides a shop page when the selected shop doesn't have that section or can't reach its API. */
 export default function ShopSectionGate({ sectionId, children }) {
   const { user, isAdmin } = useAuth()
   const shopSection = useShopSection()
   const { profile } = useShopProfile(shopSection?.marketplace)
-  if (!shopSection || !profile) return children
+  if (!shopSection) return <RequireShopSection />
+  if (!profile) return children
   const section = profile.sections.find((item) => item.id === sectionId)
   if (!section) return <EmptyState message={`${profile.label} doesn't have this section.`} />
   if (

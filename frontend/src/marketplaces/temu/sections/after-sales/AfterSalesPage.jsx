@@ -105,7 +105,8 @@ function Returns() {
   // When the page was opened: due dates are measured against it.
   const [now] = useState(() => new Date())
   const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
-  useSyncReload('orders', section?.marketplace, () => refetch())
+  // Live reloads use the cached address again (a forced Refresh must not make every sync event call the shop's API).
+  useSyncReload('orders', section?.marketplace, () => (fresh ? setFresh(0) : refetch()))
   if (!section) return <RequireShopSection />
 
   const table = (id) => (data?.tables || []).find((t) => t.id === id)

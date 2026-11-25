@@ -35,9 +35,10 @@ function Offers() {
   const [busy, setBusy] = useState('')
   const [countering, setCountering] = useState(null)
   const [sending, setSending] = useState(null)
-  const [now] = useState(() => new Date())
+  const [now, setNow] = useState(() => new Date())
   const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
-  useSyncReload(['orders', 'listings'], 'ebay', () => refetch())
+  // Live reloads use the cached address again (a forced Refresh must not make every sync event call the shop's API).
+  useSyncReload(['orders', 'listings'], 'ebay', () => (fresh ? setFresh(0) : refetch()))
 
   const table = (id) => (data?.tables || []).find((t) => t.id === id)
   const offersT = table('bestOffers')
@@ -46,11 +47,16 @@ function Offers() {
   const eligible = eligibleT && !eligibleT.error ? eligibleT.rows : null
   // Opens on offers when there are some, else on sending offers.
   const active = pill || (offers?.length || !eligible?.length ? 'offers' : 'send')
-  const reload = () => setFresh(Date.now())
-  const done = (text, isError = false) => { setNotice({ text, error: isError }); reload() }
+  // Refresh also re-reads the clock ("today", "expired").
+  const reload = () => { setNow(new Date()); setFresh(Date.now()) }
+  // After an action the page stays on this pill (it doesn't jump when the last offer goes).
+  const done = (text, isError = false) => { setPill(active); setNotice({ text, error: isError }); reload() }
+  // A multi-unit offer is per unit: the confirm shows the total too.
+  const total = (r) => (r.quantity > 1 && r.price?.value != null ? ` × ${r.quantity} = ${usd({ value: r.price.value * r.quantity })}` : '')
 
   const decide = async (row, action, confirmText) => {
-    if (!window.confirm(confirmText)) return
+    // One decision at a time (a second click must not send it twice).
+    if (busy || !window.confirm(confirmText)) return
     setBusy(`${row.id}:${action}`)
     try {
       const res = await api.post(`${BASE}/${action}`, { id: row.id }, token)
@@ -105,7 +111,7 @@ function Offers() {
                     label: '',
                     render: (r) => (
                       <RowActions
-                        main={{ label: 'Accept', primary: true, busy: busy === `${r.id}:offer-accept`, onClick: () => decide(r, 'offer-accept', `Accept ${r.buyer || 'the buyer'}'s offer of ${usd(r.price)} on item ${r.itemId}?`) }}
+                        main={{ label: 'Accept', primary: true, busy: busy === `${r.id}:offer-accept`, onClick: () => decide(r, 'offer-accept', `Accept ${r.buyer || 'the buyer'}'s offer of ${usd(r.price)}${total(r)} on item ${r.itemId}?`) }}
                         menu={[
                           { label: 'Counter…', onClick: () => setCountering(r) },
                           { label: 'Decline', onClick: () => decide(r, 'offer-decline', `Decline ${r.buyer || 'the buyer'}'s offer on item ${r.itemId}?`) },

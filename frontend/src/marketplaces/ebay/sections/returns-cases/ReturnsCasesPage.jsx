@@ -117,7 +117,8 @@ function ReturnsCases() {
   const [notice, setNotice] = useState('')
   const [now] = useState(() => new Date())
   const { data, loading, error, refetch } = useApi(`${BASE}${fresh ? `?refresh=1&n=${fresh}` : ''}`)
-  useSyncReload(['orders', 'listings'], 'ebay', () => refetch())
+  // Live reloads use the cached address again (a forced Refresh must not make every sync event call the shop's API).
+  useSyncReload(['orders', 'listings'], 'ebay', () => (fresh ? setFresh(0) : refetch()))
 
   const kinds = kindsOf(data)
   const reload = () => { setNotice(''); setFresh(Date.now()) }

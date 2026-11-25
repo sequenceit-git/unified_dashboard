@@ -30,7 +30,8 @@ function PriceReviews() {
   const [pill, setPill] = useState('waiting')
   const [fresh, setFresh] = useState(0)
   const { data, loading, error, refetch } = useApi(`/api/temu/sections/price-reviews${fresh ? `?refresh=1&n=${fresh}` : ''}`)
-  useSyncReload('listings', section?.marketplace, () => refetch())
+  // Live reloads use the cached address again (a forced Refresh must not make every sync event call the shop's API).
+  useSyncReload('listings', section?.marketplace, () => (fresh ? setFresh(0) : refetch()))
   if (!section) return <RequireShopSection />
 
   const table = (id) => (data?.tables || []).find((t) => t.id === id)

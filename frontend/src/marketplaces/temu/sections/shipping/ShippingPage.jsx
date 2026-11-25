@@ -34,7 +34,8 @@ function Shipping() {
   // Refresh asks the server for a fresh read (it keeps the section 10 minutes otherwise).
   const [fresh, setFresh] = useState(0)
   const { data, loading, error, refetch } = useApi(`/api/temu/sections/shipping${fresh ? `?refresh=1&n=${fresh}` : ''}`)
-  useSyncReload('orders', section?.marketplace, () => refetch())
+  // Live reloads use the cached address again (a forced Refresh must not make every sync event call the shop's API).
+  useSyncReload('orders', section?.marketplace, () => (fresh ? setFresh(0) : refetch()))
   if (!section) return <RequireShopSection />
 
   const t = shippingTiles(data)

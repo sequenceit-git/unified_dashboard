@@ -29,7 +29,8 @@ export function margin(price, cost) {
   if (cost == null || price == null || !Number.isFinite(Number(price))) return null
   const value = Math.round((Number(price) - Number(cost)) * 100) / 100
   const pct = Number(price) ? Math.round((value / Number(price)) * 100) : 0
-  const text = value < 0 ? `loss of $${Math.abs(value).toFixed(2)}` : `$${value.toFixed(2)} margin (${pct}%)`
+  // Price minus cost only: eBay fees and shipping come on top.
+  const text = value < 0 ? `loss of $${Math.abs(value).toFixed(2)} before fees` : `$${value.toFixed(2)} margin before fees (${pct}%)`
   return { value, pct, text, loss: value < 0 }
 }
 

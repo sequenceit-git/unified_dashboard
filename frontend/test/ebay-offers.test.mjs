@@ -21,7 +21,7 @@ test('summary and expiry', async () => {
 
 test('margin at a price: after cost; unknown cost gives nothing', async () => {
   const { margin } = await load()
-  assert.deepEqual(margin(16, 8), { value: 8, pct: 50, text: '$8.00 margin (50%)', loss: false })
+  assert.deepEqual(margin(16, 8), { value: 8, pct: 50, text: '$8.00 margin before fees (50%)', loss: false })
   assert.equal(margin(7, 8).loss, true)
   assert.equal(margin(7, 8).value, -1)
   assert.equal(margin(16, null), null)
