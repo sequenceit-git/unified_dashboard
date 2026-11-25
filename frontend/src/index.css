@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: classes follow the app's own theme (.dark on <html>, ThemeContext), not the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
