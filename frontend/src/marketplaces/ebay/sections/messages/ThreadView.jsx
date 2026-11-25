@@ -5,6 +5,7 @@ import Badge from '../../../../components/ui/Badge'
 import Button from '../../../../components/ui/Button'
 import { EmptyState, ErrorState, Spinner } from '../../../../components/ui/Feedback'
 import { Select } from '../../../../components/ui/Input'
+import { itemCard } from './messagesView'
 
 export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack }) {
   const { token } = useAuth()
@@ -62,13 +63,15 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
   const toggleStatus = () => update({ status: thread.status === 'open' ? 'closed' : 'open' })
   const toggleAi = () => update({ aiEnabled: !thread.aiEnabled })
 
+  const card = itemCard(thread)
+
   if (!convoId) return <div className="grid flex-1 place-items-center p-6"><EmptyState message="Select a conversation" /></div>
   if (loading) return <div className="grid flex-1 place-items-center p-6"><Spinner /></div>
   if (error) return <div className="grid flex-1 place-items-center p-6"><ErrorState message={error} onRetry={load} /></div>
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 sm:px-4 py-2.5 sm:py-3">
+      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 sm:px-4 py-2.5 sm:py-3 dark:border-slate-800">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <Button variant="secondary" size="sm" className="md:hidden shrink-0 px-2 py-1 text-xs" onClick={onBack}>← Back</Button>
           <span className="truncate font-medium text-sm sm:text-base">{thread.customerName || thread.externalThreadId}</span>
@@ -92,15 +95,25 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
         </div>
       </div>
 
+      {card && (
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/70 px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-800/40">
+          <span className="min-w-0">
+            <span className="block truncate font-medium">{card.title}{card.more ? ` +${card.more} more` : ''}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">Order {card.orderId} · {card.units} unit{card.units === 1 ? '' : 's'}{card.total != null ? ` · $${Number(card.total).toFixed(2)}` : ''}</span>
+          </span>
+          {card.status && <Badge>{card.status}</Badge>}
+        </div>
+      )}
+
       {thread.aiError && (
-        <p className="border-b border-yellow-200 bg-yellow-50 px-4 py-2 text-sm text-yellow-800">{thread.aiError}</p>
+        <p className="border-b border-yellow-200 bg-yellow-50 px-4 py-2 text-sm text-yellow-800 dark:border-yellow-900 dark:bg-yellow-950/40 dark:text-yellow-200">{thread.aiError}</p>
       )}
 
       <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {thread.messages.map((m) => (
-          <li key={m._id} className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${m.direction === 'inbound' ? 'bg-gray-100' : m.senderType === 'ai' ? 'ml-auto bg-purple-600 text-white' : 'ml-auto bg-indigo-600 text-white'}`}>
+          <li key={m._id} className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${m.direction === 'inbound' ? 'bg-gray-100 dark:bg-slate-800' : m.senderType === 'ai' ? 'ml-auto bg-purple-600 text-white' : 'ml-auto bg-indigo-600 text-white'}`}>
             <p>{m.text}</p>
-            <p className={`mt-1 text-[11px] ${m.direction === 'inbound' ? 'text-gray-500' : 'text-indigo-200'}`}>
+            <p className={`mt-1 text-[11px] ${m.direction === 'inbound' ? 'text-gray-500 dark:text-slate-400' : 'text-indigo-200'}`}>
               {thread.replyable === false ? thread.customerName || 'Marketplace' : SENDER_LABEL[m.senderType] || m.senderType} · {m.sentAt && new Date(m.sentAt).toLocaleString()}
             </p>
           </li>
@@ -108,9 +121,9 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
       </ul>
 
       {thread.replyable === false ? (
-        <p className="border-t border-gray-100 px-4 py-3 text-sm text-gray-500">This is a marketplace notice. It cannot be answered.</p>
+        <p className="border-t border-gray-100 px-4 py-3 text-sm text-gray-500 dark:border-slate-800 dark:text-slate-400">This is an eBay notice. It cannot be answered.</p>
       ) : (
-      <div className="border-t border-gray-100 px-4 py-3">
+      <div className="border-t border-gray-100 px-4 py-3 dark:border-slate-800">
         {templates.length > 0 && (
           <div className="mb-2">
             <Select
@@ -124,16 +137,18 @@ export default function ThreadView({ convoId, refreshKey = 0, onChanged, onBack 
           </div>
         )}
 
-        <div className="flex gap-2">
-          <input
+        <div className="flex items-end gap-2">
+          <textarea
             value={draft}
+            rows={2}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Write a reply to the buyer…"
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-base sm:text-sm focus:border-indigo-500 focus:outline-none"
+            onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() } }}
+            placeholder="Write a reply to the buyer… (Ctrl/⌘ + Enter sends)"
+            className="max-h-40 min-h-[44px] flex-1 resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-base sm:text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900"
           />
           <Button disabled={busy || !draft.trim()} onClick={send}>{busy ? 'Sending…' : 'Send'}</Button>
         </div>
-        {sendError && <p className="mt-2 text-sm text-red-600">{sendError}</p>}
+        {sendError && <p className="mt-2 text-sm text-red-600 dark:text-rose-400">{sendError}</p>}
       </div>
       )}
     </div>

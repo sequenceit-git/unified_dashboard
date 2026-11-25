@@ -1,4 +1,5 @@
 const express = require('express')
+const { conversationQuery } = require('../services/inboxQuery')
 const { requireAuth, loadAccess, requireMainRoute, shopFilter, limitToSection } = require('../../../../middleware/auth')
 const { paging, paged } = require('../../../../utils/query')
 const Conversation = require('../../../../models/Conversation')
@@ -27,11 +28,10 @@ function inboxRoutes(shopKey) {
         }
         filter.shopId = req.query.shopId
       }
-      if (req.query.status && req.query.status !== 'all') filter.status = req.query.status
-      if (req.query.type === 'buyers') filter.replyable = { $ne: false }
-      if (req.query.type === 'notices') filter.replyable = false
+      const { filter: wanted, sort } = conversationQuery(req.query)
+      Object.assign(filter, wanted)
       const pg = paging(req)
-      const out = await paged(Conversation, filter, pg, { lastMessageAt: -1 })
+      const out = await paged(Conversation, filter, pg, sort)
       res.json(out)
     } catch (err) {
       res.status(500).json({ error: err.message })
@@ -43,6 +43,8 @@ function inboxRoutes(shopKey) {
     try {
       const convo = await Conversation.findOne({ _id: req.params.id, ...shopFilter(req, Conversation) })
         .populate('customerId', 'name email')
+        // The order the conversation is about: its items make the item card on top of the thread.
+        .populate('orderId', 'externalOrderId status items totals placedAt')
       if (!convo) return res.status(404).json({ error: 'Not found' })
       const needsBody = convo.replyable === false && !(await Message.exists({ conversationId: convo._id }))
       // Opening a thread fetches its latest messages, at most once a minute per thread.
