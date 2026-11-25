@@ -32,6 +32,10 @@ async function list(ctx) {
           ...(row.identities || []).flatMap((i) => [i.username, i.externalBuyerId]),
         ].some((value) => String(value || '').toLowerCase().includes(q)))
     }
+    // Counts for the pills (after the search); ?repeat=1 keeps buyers with 2+ orders.
+    const isRepeat = (row) => Number(row.orderCount) >= 2
+    const counts = { all: customers.length, repeat: customers.filter(isRepeat).length }
+    if (ctx.query.repeat === '1') customers = customers.filter(isRepeat)
     const sortValue = (row) => {
       const raw = row[sortKey]
       if (raw == null || raw === '') return null
@@ -54,6 +58,7 @@ async function list(ctx) {
       limit: pg.limit,
       total,
       pages: Math.max(1, Math.ceil(total / pg.limit)),
+      counts,
     }
 }
 

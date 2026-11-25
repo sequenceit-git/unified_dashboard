@@ -5,9 +5,13 @@ import { api } from '../../../../lib/api'
 import Badge, { statusColor } from '../../../../components/ui/Badge'
 import Button from '../../../../components/ui/Button'
 import { Input } from '../../../../components/ui/Input'
-import Modal from '../../../../components/ui/Modal'
+import { Link } from 'react-router-dom'
+import Drawer from '../../ui/Drawer'
+import ActionButton from '../../ActionButton'
+import { orderLink } from './buyersView'
 
-export default function CustomerDrawer({ customer, onClose, onSaved }) {
+/** One buyer: contact & address (edit), stats, accounts, order history and the feedback they left (Reply). */
+export default function CustomerDrawer({ customer, onClose, onSaved, feedback = [], feedbackError = '', run }) {
   const { token } = useAuth()
   const buyerIdentity = (customer.identities || []).find((i) => getShop(i.marketplace)?.buyer?.email)
   const [name, setName] = useState(customer.name || '')
@@ -21,6 +25,13 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
   const [country] = useState(customer.address?.country || 'US')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  // Ask before throwing away typed changes (closing, or opening an order).
+  const start = customer.address || {}
+  const dirty = name !== (customer.name || '') || email !== (customer.email || '') || phone !== (customer.phone || '')
+    || street !== (start.street || '') || city !== (start.city || '') || state !== (start.state || '') || zip !== (start.zip || '')
+  const leaveOk = () => !dirty || window.confirm('Leave without saving the contact changes?')
+  const close = () => { if (leaveOk()) onClose() }
 
   const save = async (e) => {
     e.preventDefault()
@@ -46,7 +57,15 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
   }
 
   return (
-    <Modal title={customer.name || 'Customer'} onClose={onClose} wide>
+    <Drawer
+      title={customer.name || 'Customer'}
+      subtitle={`${customer.orderCount || 0} order${customer.orderCount === 1 ? '' : 's'} · $${(customer.totalSpent || 0).toFixed(2)} spent${customer.orderCount >= 2 ? ' · repeat buyer' : ''}`}
+      onClose={close}
+      footer={<>
+        <Button type="submit" form="ebay-buyer-form" disabled={busy}>{busy ? 'Saving…' : 'Save contact'}</Button>
+        <Button variant="secondary" onClick={close}>Close</Button>
+      </>}
+    >
       <div className="space-y-4 text-sm">
         {/* Quick Contact & Action Chips */}
         <div className="flex flex-wrap items-center gap-2">
@@ -78,12 +97,13 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
           ) : null}
         </div>
 
-        <form onSubmit={save} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <h3 className="font-semibold">Contact & address</h3>
+        <form id="ebay-buyer-form" onSubmit={save} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
           <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <Input label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
 
-          <div className="sm:col-span-3 border-t border-gray-100 pt-3">
+          <div className="sm:col-span-3 border-t border-gray-100 pt-3 dark:border-slate-800">
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Shipping Address</h4>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
               <div className="sm:col-span-2">
@@ -97,23 +117,20 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-600 sm:col-span-3">{error}</p>}
-          <div className="sm:col-span-3">
-            <Button type="submit" size="sm" disabled={busy}>Save</Button>
-          </div>
+          {error && <p className="text-sm text-red-600 sm:col-span-3 dark:text-rose-400">{error}</p>}
         </form>
 
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded bg-gray-50 p-2"><p className="font-bold">{customer.orderCount}</p><p className="text-xs text-gray-500">Orders</p></div>
-          <div className="rounded bg-gray-50 p-2"><p className="font-bold">${customer.totalSpent?.toFixed(2)}</p><p className="text-xs text-gray-500">Spent</p></div>
-          <div className="rounded bg-gray-50 p-2"><p className="font-bold">{customer.identities?.length || 0}</p><p className="text-xs text-gray-500">Shops</p></div>
+          <div className="rounded bg-gray-50 p-2 dark:bg-slate-800"><p className="font-bold">{customer.orderCount}</p><p className="text-xs text-gray-500 dark:text-slate-400">Orders</p></div>
+          <div className="rounded bg-gray-50 p-2 dark:bg-slate-800"><p className="font-bold">${customer.totalSpent?.toFixed(2)}</p><p className="text-xs text-gray-500 dark:text-slate-400">Spent</p></div>
+          <div className="rounded bg-gray-50 p-2 dark:bg-slate-800"><p className="font-bold">{customer.identities?.length || 0}</p><p className="text-xs text-gray-500 dark:text-slate-400">Shops</p></div>
         </div>
 
         <div>
           <h3 className="font-semibold">Marketplace identities</h3>
           <ul className="mt-1 space-y-1">
             {(customer.identities || []).map((idn, i) => (
-              <li key={i} className="flex justify-between items-center rounded bg-gray-50 px-2.5 py-1.5">
+              <li key={i} className="flex justify-between items-center rounded bg-gray-50 px-2.5 py-1.5 dark:bg-slate-800">
                 <span className="font-medium">{idn.marketplace} · @{idn.username}</span>
                 {getShop(idn.marketplace)?.buyer?.profileUrl && (
                   <a
@@ -132,16 +149,38 @@ export default function CustomerDrawer({ customer, onClose, onSaved }) {
 
         <div>
           <h3 className="font-semibold">Order history</h3>
-          <ul className="mt-1 max-h-48 space-y-1 overflow-y-auto">
+          <ul className="mt-1 space-y-1">
             {(customer.orders || []).map((o) => (
-              <li key={o._id} className="flex justify-between items-center rounded bg-gray-50 px-2 py-1">
-                <span className="font-mono text-xs">{o.externalOrderId}</span>
+              <li key={o._id} className="flex flex-wrap justify-between items-center gap-2 rounded bg-gray-50 px-2 py-1 dark:bg-slate-800">
+                <span>
+                  {orderLink(o) ? <Link to={orderLink(o)} onClick={(e) => { if (!leaveOk()) e.preventDefault() }} className="font-mono text-xs text-indigo-600 hover:underline dark:text-indigo-400">{o.externalOrderId}</Link> : <span className="font-mono text-xs">{o.externalOrderId}</span>}
+                  {(o.placedAt || o.createdAt) && <span className="ml-2 text-xs text-gray-500 dark:text-slate-400">{new Date(o.placedAt || o.createdAt).toLocaleDateString()}</span>}
+                </span>
                 <span><Badge color={statusColor(o.status)}>{o.status}</Badge> ${o.totals?.total?.toFixed(2)}</span>
               </li>
             ))}
+            {!(customer.orders || []).length && <li className="text-xs text-gray-500 dark:text-slate-400">No orders found for this shop.</li>}
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="font-semibold">Feedback from this buyer</h3>
+          {feedbackError && <p className="text-xs text-rose-600 dark:text-rose-400">Feedback couldn't be loaded: {feedbackError}</p>}
+          <ul className="mt-1 space-y-1">
+            {feedback.map((f) => (
+              <li key={f.id} className="rounded bg-gray-50 px-2 py-1.5 dark:bg-slate-800">
+                <span className="flex flex-wrap items-center justify-between gap-2">
+                  <span><Badge color={statusColor(f.rating)}>{f.rating}</Badge> <span className="ml-1 text-xs text-gray-500 dark:text-slate-400">{f.date ? new Date(f.date).toLocaleDateString() : ''}{f.item ? ` · ${f.item}` : ''}</span></span>
+                  {run && (f.actions || []).map((a) => <ActionButton key={a.id} action={a} row={f} run={run} onDetail={() => {}} />)}
+                </span>
+                <span className="mt-1 block">{f.comment}</span>
+                {f.reply && <span className="mt-1 block text-xs text-gray-500 dark:text-slate-400">Your reply: {f.reply}</span>}
+              </li>
+            ))}
+            {!feedbackError && !feedback.length && <li className="text-xs text-gray-500 dark:text-slate-400">No feedback from this buyer in eBay's recent feedback.</li>}
           </ul>
         </div>
       </div>
-    </Modal>
+    </Drawer>
   )
 }
