@@ -2,7 +2,7 @@
  * New eBay promotion as steps: discount → listings (search your live listings, or the whole store)
  * → dates → review. It creates the same sale event as before (a percentage off listings).
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../../../../auth/AuthContext'
 import { api, queryString } from '../../../../../lib/api'
 import { useApi } from '../../../../../hooks/useApi'
@@ -11,7 +11,7 @@ import { Input } from '../../../../../components/ui/Input'
 import { Spinner } from '../../../../../components/ui/Feedback'
 import StepPanel, { Step } from '../../../ui/StepPanel'
 import StepProblems from '../../../ui/StepProblems'
-import { newPromotionProblems } from '../promotionsView'
+import { effectiveStart, newPromotionProblems } from '../promotionsView'
 
 const STEPS = [{ id: 'discount', label: 'Discount' }, { id: 'listings', label: 'Listings' }, { id: 'dates', label: 'Dates' }, { id: 'review', label: 'Review' }]
 const local = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
@@ -30,8 +30,15 @@ export default function NewPromotionPanel({ onClose, onDone }) {
   const [tried, setTried] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const live = useApi(`/api/ebay/listings${queryString({ listing: 'live', q: q.trim() || undefined, limit: 50 })}`)
-  const rows = (live.data?.data || []).filter((r) => itemId(r))
+  // Search waits for a pause in typing (one request, not one per key).
+  const [query, setQuery] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(q.trim()), 300)
+    return () => clearTimeout(t)
+  }, [q])
+  const live = useApi(`/api/ebay/listings${queryString({ listing: 'live', q: query || undefined, limit: 50 })}`)
+  // Only products whose eBay listing is live (an ended listing's item id can't go on sale).
+  const rows = (live.data?.data || []).filter((r) => itemId(r) && r.shopListing?.status === 'live')
   const listingIds = [...picked.keys()]
   const problems = newPromotionProblems({ discount, wholeStore, listingIds, start, end })
   const shown = tried ? problems : []
@@ -54,7 +61,8 @@ export default function NewPromotionPanel({ onClose, onDone }) {
         description: 'Special Store Discount',
         percentageOff: Number(discount),
         listingIds: wholeStore ? [] : listingIds,
-        startDate: new Date(start).toISOString(),
+        // A start that passed while the panel was open moves to two minutes from now.
+        startDate: effectiveStart(start).toISOString(),
         endDate: new Date(end).toISOString(),
       }, token)
       onDone('Promotion created. eBay may take a moment to show it.')
@@ -100,10 +108,19 @@ export default function NewPromotionPanel({ onClose, onDone }) {
           <>
             <Input label="Search your live listings" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Title or SKU" />
             <p className="text-sm text-gray-500 dark:text-slate-400">{picked.size} picked</p>
+            {picked.size > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {[...picked.entries()].map(([id, title]) => (
+                  <button key={id} type="button" onClick={() => setPicked((m) => { const n = new Map(m); n.delete(id); return n })} className="rounded-full border border-gray-200 px-2 py-0.5 text-xs hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800" title="Remove">
+                    {String(title).slice(0, 30)} ✕
+                  </button>
+                ))}
+              </div>
+            )}
             {live.loading && <Spinner />}
             <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border dark:divide-slate-800 dark:border-slate-700">
               {rows.map((r) => (
-                <li key={itemId(r)}>
+                <li key={r._id}>
                   <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <input type="checkbox" checked={picked.has(itemId(r))} onChange={() => toggle(r)} />
                     <span className="min-w-0 flex-1"><span className="block truncate">{r.title}</span><span className="text-xs text-gray-500 dark:text-slate-400">Item {itemId(r)}{r.sku ? ` · ${r.sku}` : ''}</span></span>

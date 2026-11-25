@@ -41,3 +41,31 @@ test('new promotion checks, per step', async () => {
   assert.deepEqual(newPromotionProblems({ ...ok, wholeStore: true, listingIds: [] }, now), [])
   assert.match(newPromotionProblems({ ...ok, end: '2026-11-25T00:00' }, now)[0].message, /after the start/)
 })
+
+test('drafts are their own state (under Scheduled); Pause only while running', async () => {
+  const { promotionRows, pauseAction, promotionPills } = await load()
+  const rows = promotionRows({ tables: [{ id: 'promotions', rows: [
+    { id: '5', promotionId: 5, status: 'Draft', type: 'Order discount' },
+    { id: '6', promotionId: 6, status: 'Scheduled', type: 'Order discount' },
+  ] }] })
+  assert.deepEqual(rows.map((r) => r.state), ['draft', 'scheduled'])
+  assert.deepEqual(rows.map((r) => pauseAction(r)), [null, null])
+  assert.equal(promotionPills(rows).find((p) => p.key === 'scheduled').count, 2)
+})
+
+test('results with no promotion in the list are kept', async () => {
+  const { otherResults } = await load()
+  assert.deepEqual(otherResults({ tables: [
+    { id: 'promotions', rows: [{ promotionId: 1 }] },
+    { id: 'results', rows: [{ promotionId: 1 }, { promotionId: 9, name: 'Deleted sale' }] },
+  ] }).map((r) => r.promotionId), [9])
+})
+
+test('a start already past moves to just after now; the sale runs at least 24 hours', async () => {
+  const { newPromotionProblems, effectiveStart } = await load()
+  const now = new Date('2026-11-25T12:00:00Z')
+  assert.equal(effectiveStart('2026-11-25T11:00:00Z', now).toISOString(), '2026-11-25T12:02:00.000Z')
+  assert.equal(effectiveStart('2026-11-26T00:00:00Z', now).toISOString(), '2026-11-26T00:00:00.000Z')
+  const p = newPromotionProblems({ discount: '10', wholeStore: true, listingIds: [], start: '2026-11-25T11:00:00Z', end: '2026-11-25T20:00:00Z' }, now)
+  assert.match(p[0].message, /24 hours/)
+})

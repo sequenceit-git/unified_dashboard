@@ -19,7 +19,7 @@ import Drawer from '../../ui/Drawer'
 import SectionTable from '../../SectionTable'
 import { formatCell } from '../../sectionFormat'
 import NewPromotionPanel from './components/NewPromotionPanel'
-import { pauseAction, promotionPills, promotionRows } from './promotionsView'
+import { otherResults, pauseAction, promotionPills, promotionRows } from './promotionsView'
 
 const BASE = '/api/ebay/sections/promotions'
 const date = (v) => (v ? new Date(v).toLocaleDateString() : '—')
@@ -55,7 +55,8 @@ function Promotions() {
   const rows = promotionRows(data)
   const pills = promotionPills(rows)
   const active = pill || (rows?.some((r) => r.state === 'running') ? 'running' : 'all')
-  const shown = (rows || []).filter((r) => active === 'all' || r.state === active)
+  const shown = (rows || []).filter((r) => active === 'all' || r.state === active || (active === 'scheduled' && r.state === 'draft'))
+  const others = otherResults(data)
   const promotionsT = (data?.tables || []).find((t) => t.id === 'promotions')
   const resultsT = (data?.tables || []).find((t) => t.id === 'results')
   const s = Object.fromEntries((data?.summary || []).map((x) => [x.label, x]))
@@ -82,6 +83,7 @@ function Promotions() {
         summary={[
           rows && `${rows.filter((r) => r.state === 'running').length} running · ${rows.filter((r) => r.state === 'scheduled').length} scheduled`,
           s['Sales from promotions'] && `${formatCell('money', s['Sales from promotions'].value)} sales from promotions`,
+          s['Total sales'] && `${formatCell('money', s['Total sales'].value)} total sales`,
           s['Sales lift'] && `${Number(s['Sales lift'].value).toFixed(1)}% lift`,
         ].filter(Boolean).join(' · ')}
         actions={<>
@@ -104,7 +106,12 @@ function Promotions() {
                 key: 'result',
                 label: 'Results',
                 render: (r) => (r.result
-                  ? <span className="text-sm">{formatCell('money', r.result.promotionSales)} <span className={`text-xs ${MUTED}`}>· {r.result.orders} orders · {r.result.items} sold{r.result.lift != null ? ` · ${r.result.lift}% lift` : ''}</span></span>
+                  ? (
+                    <span className="block text-sm">
+                      {formatCell('money', r.result.promotionSales)} <span className={`text-xs ${MUTED}`}>· {r.result.orders} orders · {r.result.items} sold{r.result.lift != null ? ` · ${r.result.lift}% lift` : ''}</span>
+                      <span className={`block text-xs ${MUTED}`}>{r.result.totalSales ? `${formatCell('money', r.result.totalSales)} total sales` : ''}{r.result.discount ? ` · ${formatCell('money', r.result.discount)} discount given` : ''}</span>
+                    </span>
+                  )
                   : <span className="text-gray-400">—</span>),
               },
               {
@@ -134,6 +141,20 @@ function Promotions() {
             onRowClick={setViewing}
             rowKey="_key"
           />
+          {active === 'all' && others.length > 0 && (
+            <div className="mt-4">
+              <h3 className="mb-1 text-sm font-semibold">Other results</h3>
+              <p className={`mb-2 text-xs ${MUTED}`}>Promotions eBay still reports on but no longer lists (for example deleted ones).</p>
+              <ul className="divide-y text-sm dark:divide-slate-800">
+                {others.map((r) => (
+                  <li key={r.promotionId} className="flex flex-wrap justify-between gap-2 py-1.5">
+                    <span>{r.name}</span>
+                    <span className={MUTED}>{formatCell('money', r.promotionSales)} · {r.orders} orders · {r.items} sold{r.discount ? ` · ${formatCell('money', r.discount)} discount` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
       {viewing && <Listings row={viewing} onClose={() => setViewing(null)} />}
