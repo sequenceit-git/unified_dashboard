@@ -27,11 +27,14 @@ const firstWith = (shops, section) => shops.find((s) => has(s, section))
 
 const NAMED = { blue: '#2563eb', purple: '#9333ea', yellow: '#ca8a04', green: '#16a34a', red: '#dc2626', gray: '#64748b', indigo: '#4f46e5' }
 const PALETTE = ['#4f46e5', '#0891b2', '#d97706', '#db2777', '#16a34a', '#7c3aed']
-export const shopColor = (shop, index = 0) => NAMED[shop?.badgeColor] || PALETTE[index % PALETTE.length]
+export const shopColor = (shop, index = 0) => NAMED[shop?.badgeColor] || PALETTE[((index % PALETTE.length) + PALETTE.length) % PALETTE.length]
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
-/** Needs attention: only items with a count; a check that failed says so (never "all good"). */
+/**
+ * Needs attention: only items with a count; a check that failed says so (never "all good").
+ * `shops`: the shops this user can see, so links never open someone else's shop.
+ */
 export function attentionItems(data, shops) {
   const u = data?.unified || {}
   const a = data?.attention
@@ -43,6 +46,11 @@ export function attentionItems(data, shops) {
   if (u.openInbox) {
     const shop = firstWith(shops, 'messages')
     items.push({ id: 'inbox', text: `${plural(u.openInbox, 'message')} waiting`, to: shop ? shopLink(shop, 'messages') : null })
+  }
+  if (!a && u.lowStock) {
+    // The detailed checks failed: the low-stock count (out of stock included) is still known.
+    const shop = firstWith(shops, 'inventory')
+    items.push({ id: 'stock', text: `${u.lowStock} low or out of stock`, to: shop ? shopLink(shop, 'inventory') : null })
   }
   if (a && (a.outOfStock || u.lowStock)) {
     const low = Math.max(0, (u.lowStock || 0) - (a.outOfStock || 0))

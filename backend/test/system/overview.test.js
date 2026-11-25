@@ -5,18 +5,18 @@ const { stubModules, freshRequire } = require('../helpers/stub')
 const NOW = new Date('2026-11-25T12:00:00Z')
 const load = () => freshRequire('services/system/overview.js')
 
-test('daily series: 30 days, every day present, revenue and orders per shop', () => {
+test('daily series: the 30-day window (31 calendar days, first one partial), every day present', () => {
   const { dailySeries } = load()
   const days = dailySeries([
     { _id: { day: '2026-11-25', marketplace: 'temu' }, revenue: 20, orders: 2 },
     { _id: { day: '2026-11-25', marketplace: 'ebay' }, revenue: 5, orders: 1 },
     { _id: { day: '2026-10-27', marketplace: 'temu' }, revenue: 7, orders: 1 },
-  ], NOW, 30)
-  assert.equal(days.length, 30)
-  assert.equal(days[0].date, '2026-10-27')
-  assert.equal(days[29].date, '2026-11-25')
-  assert.deepEqual(days[29].shops, { temu: { revenue: 20, orders: 2 }, ebay: { revenue: 5, orders: 1 } })
-  assert.deepEqual(days[0].shops, { temu: { revenue: 7, orders: 1 } })
+  ], NOW)
+  assert.equal(days.length, 31)
+  assert.equal(days[0].date, '2026-10-26')
+  assert.equal(days[30].date, '2026-11-25')
+  assert.deepEqual(days[30].shops, { temu: { revenue: 20, orders: 2 }, ebay: { revenue: 5, orders: 1 } })
+  assert.deepEqual(days[1].shops, { temu: { revenue: 7, orders: 1 } })
   assert.deepEqual(days[10].shops, {})
 })
 
@@ -65,8 +65,27 @@ test('each part fails on its own; scoping filters reach every query', async () =
     assert.deepEqual(res.topProducts, null)
     assert.equal(res.attention.late, 2)
     assert.equal(res.attention.syncFailed24h, 1)
+    assert.equal('newBuyers30' in res, false, 'no "new buyers": the dashboard only knows when a buyer was first synced')
+    assert.deepEqual(res.previous, { revenue: 0, orders: 2 }, 'previous orders count every status, like orders30')
     assert.equal(res.byShop.length, 1)
     for (const [name, q] of seen.filter(([n]) => n.startsWith('orders'))) assert.deepEqual(q.shopId, { $in: ['s1'] }, `${name} keeps the shop scope`)
     assert.deepEqual(seen.find(([n]) => n === 'sync')[1].shopId, { $in: ['s1'] })
+  } finally { restore() }
+})
+
+test('when the shop list fails, failed syncs are unknown, not 0', async () => {
+  const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean']) p[m] = () => p; return p }
+  const restore = stubModules({
+    '/models/Order': { aggregate: async () => [], countDocuments: async () => 0, find: () => chain([]) },
+    '/models/Listing': { aggregate: async () => [] },
+    '/models/Shop': { find: () => { throw new Error('shops down') } },
+    '/models/SyncLog': { countDocuments: async () => 0 },
+    '/models/Customer': { countDocuments: async () => 0 },
+    '/models/Product': { countDocuments: async () => 0, find: () => chain([]) },
+  })
+  try {
+    const res = await load().overviewExtras({ now: NOW })
+    assert.equal(res.attention.syncFailed24h, null)
+    assert.match(res.errors.shops, /shops down/)
   } finally { restore() }
 })

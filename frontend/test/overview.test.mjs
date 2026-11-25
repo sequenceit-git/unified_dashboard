@@ -56,3 +56,14 @@ test('shop links and colours come from the registry', async () => {
   assert.equal(shopColor(SHOPS[0], 0), '#2563eb')
   assert.equal(shopColor({ key: 'z' }, 2), shopColor({ key: 'y' }, 2))
 })
+
+test('stock warning stays when the other checks failed', async () => {
+  const { attentionItems } = await load()
+  const items = attentionItems({ unified: { lowStock: 4 }, attention: null, errors: { attention: 'db down' } }, SHOPS)
+  assert.deepEqual(items.map((i) => [i.id, i.text]).slice(0, 1), [['stock', '4 low or out of stock']])
+})
+
+test('a shop missing from the registry still gets a colour', async () => {
+  const { shopColor } = await load()
+  assert.match(shopColor(undefined, -1), /^#/)
+})

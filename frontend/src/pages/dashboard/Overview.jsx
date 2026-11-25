@@ -119,7 +119,7 @@ export default function Overview() {
   // Shops the user can see (server-scoped cards), in registry order; the registry when cards failed.
   const visibleKeys = byShop ? new Set(byShop.map((c) => c.marketplace)) : null
   const shops = SHOPS.filter((s) => !visibleKeys || visibleKeys.has(s.key))
-  const items = attentionItems(data, SHOPS)
+  const items = attentionItems(data, shops)
   const orderShop = (o) => SHOPS.find((s) => s.key === o.marketplace)
 
   return (
@@ -158,8 +158,8 @@ export default function Overview() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className={CARD}><p className={`text-xs uppercase tracking-wide ${MUTED}`}>Revenue · 30 days</p><p className="mt-1 text-xl font-semibold">{usd(u.revenue)}{data?.previous && <Change now={u.revenue} before={data.previous.revenue} />}</p></div>
         <div className={CARD}><p className={`text-xs uppercase tracking-wide ${MUTED}`}>Orders · 30 days</p><p className="mt-1 text-xl font-semibold">{num(u.orders30)}{data?.previous && <Change now={u.orders30} before={data.previous.orders} />}</p></div>
-        <div className={CARD}><p className={`text-xs uppercase tracking-wide ${MUTED}`}>Average order</p><p className="mt-1 text-xl font-semibold">{data?.avgOrder == null ? '—' : usd(data.avgOrder, 2)}</p></div>
-        <div className={CARD}><p className={`text-xs uppercase tracking-wide ${MUTED}`}>Buyers</p><p className="mt-1 text-xl font-semibold">{num(u.buyers)}{data?.newBuyers30 != null && <span className={`ml-2 text-xs font-normal ${MUTED}`}>{data.newBuyers30} new</span>}</p></div>
+        <div className={CARD}><p className={`text-xs uppercase tracking-wide ${MUTED}`}>Average order <span className="normal-case">(not cancelled)</span></p><p className="mt-1 text-xl font-semibold">{data?.avgOrder == null ? '—' : usd(data.avgOrder, 2)}</p></div>
+        <div className={CARD}><p className={`text-xs uppercase tracking-wide ${MUTED}`}>Buyers</p><p className="mt-1 text-xl font-semibold">{num(u.buyers)}</p></div>
       </div>
 
       <SalesChart daily={data?.daily} shops={shops} errors={errors} />
@@ -171,7 +171,7 @@ export default function Overview() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {(byShop || []).map((card) => {
             const index = SHOPS.findIndex((s) => s.key === card.marketplace)
-            return <ShopCard key={card.shopId} card={card} shop={SHOPS[index]} index={index} />
+            return <ShopCard key={card.shopId} card={card} shop={SHOPS[index]} index={Math.max(index, 0)} />
           })}
         </div>
       </section>

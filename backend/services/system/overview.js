@@ -7,7 +7,6 @@ const Order = require('../../models/Order')
 const Listing = require('../../models/Listing')
 const Shop = require('../../models/Shop')
 const SyncLog = require('../../models/SyncLog')
-const Customer = require('../../models/Customer')
 const Product = require('../../models/Product')
 
 const DAY = 86400000
@@ -16,8 +15,11 @@ const NOT_SOLD = ['cancelled', 'refunded']
 const round = (n) => Math.round((Number(n) || 0) * 100) / 100
 const dayKey = (d) => d.toISOString().slice(0, 10)
 
-/** `days` days ending today (UTC), each `{ date, shops: { <marketplace>: { revenue, orders } } }`. */
-function dailySeries(rows, now, days = 30) {
+/**
+ * `days` UTC days ending today, each `{ date, shops: { <marketplace>: { revenue, orders } } }`. The
+ * default 31 covers the 30-day window (now − 30 days), whose first day is partial.
+ */
+function dailySeries(rows, now, days = 31) {
   const byDay = new Map()
   for (const r of rows || []) {
     const shops = byDay.get(r._id.day) || {}
@@ -73,9 +75,9 @@ function loginProblems(shops, now) {
 }
 
 /**
- * @param scope { orderFilter, listingFilter, shopScope, buyerFilter, productFilter, now }
+ * @param scope { orderFilter, listingFilter, shopScope, productFilter, now }
  */
-async function overviewExtras({ orderFilter = {}, listingFilter = {}, shopScope = {}, buyerFilter = {}, productFilter = {}, now = new Date() }) {
+async function overviewExtras({ orderFilter = {}, listingFilter = {}, shopScope = {}, productFilter = {}, now = new Date() }) {
   const since = new Date(now.getTime() - 30 * DAY)
   const before = new Date(now.getTime() - 60 * DAY)
   const errors = {}
@@ -99,12 +101,15 @@ async function overviewExtras({ orderFilter = {}, listingFilter = {}, shopScope 
   const shops = await part('shops', () => Shop.find(shopScope).select('name marketplace status authError auth.expiresAt lastSyncAt').lean())
   const shopIds = (shops || []).map((s) => s._id)
 
-  const [previous, current, newBuyers30, daily, byShop, attention, toShipNext, topProducts] = await Promise.all([
-    part('previous', () => sum(before, since)),
+  const [previous, current, daily, byShop, attention, toShipNext, topProducts] = await Promise.all([
+    // Defined like the page's own 30-day numbers: revenue without cancelled/refunded, orders of every status.
+    part('previous', async () => {
+      const [money, orders] = await Promise.all([sum(before, since), Order.countDocuments({ ...orderFilter, placedAt: { $gte: before, $lt: since } })])
+      return { revenue: money.revenue, orders }
+    }),
     part('current', () => sum(since, now)),
-    part('newBuyers30', () => Customer.countDocuments({ ...buyerFilter, createdAt: { $gte: since } })),
     part('daily', async () => dailySeries(await Order.aggregate([
-      { $match: { ...sold, placedAt: { $gte: new Date(now.getTime() - 29 * DAY - (now.getTime() % DAY)) } } },
+      { $match: { ...sold, placedAt: { $gte: since } } },
       { $group: { _id: { day: { $dateToString: { format: '%Y-%m-%d', date: '$placedAt' } }, marketplace: '$marketplace' }, revenue: { $sum: '$totals.total' }, orders: { $sum: 1 } } },
     ]), now)),
     part('byShop', async () => {
@@ -119,7 +124,8 @@ async function overviewExtras({ orderFilter = {}, listingFilter = {}, shopScope 
     part('attention', async () => {
       const [late, syncFailed24h, outOfStock] = await Promise.all([
         Order.countDocuments({ ...orderFilter, status: { $in: TO_SHIP }, 'shipping.shipBy': { $lt: now } }),
-        SyncLog.countDocuments({ shopId: { $in: shopIds }, status: 'failed', startedAt: { $gte: new Date(now.getTime() - DAY) } }),
+        // Unknown (null) when the shop list itself failed.
+        shops ? SyncLog.countDocuments({ shopId: { $in: shopIds }, status: 'failed', startedAt: { $gte: new Date(now.getTime() - DAY) } }) : null,
         Product.countDocuments({ ...productFilter, stock: { $lte: 0 } }),
       ])
       return { late, syncFailed24h, outOfStock, loginProblems: loginProblems(shops || [], now) }
@@ -158,8 +164,8 @@ async function overviewExtras({ orderFilter = {}, listingFilter = {}, shopScope 
 
   return {
     previous,
+    // Per order that wasn't cancelled or refunded.
     avgOrder: current && current.orders ? round(current.revenue / current.orders) : current ? 0 : null,
-    newBuyers30,
     daily,
     byShop,
     attention,

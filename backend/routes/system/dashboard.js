@@ -44,7 +44,7 @@ router.get('/overview', cachedResponse('dashboard', 30), async (req, res) => {
       : {}))()
     const lowStockPromise = productFilterPromise.then((filter) => resources.products.countDocuments({ ...filter, $expr: { $lte: ['$stock', '$lowStockThreshold'] } }))
     const shopScope = req.user.role === 'sub_admin' ? { _id: { $in: req.allowedShopIds || [] } } : {}
-    const extrasPromise = productFilterPromise.then((productFilter) => overviewExtras({ orderFilter, listingFilter, shopScope, buyerFilter, productFilter }))
+    const extrasPromise = productFilterPromise.then((productFilter) => overviewExtras({ orderFilter, listingFilter, shopScope, productFilter }))
     const [connectedShops, revenueRows, readyToShip, liveListings, orders30, buyers, openInbox, lowStock] = await Promise.all([
       // Sub-admins count only the shops they can open.
       resources.shops.find({

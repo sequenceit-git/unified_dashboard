@@ -114,7 +114,8 @@ async function claim(key, ttlSeconds) {
  */
 function cachedResponse(group, ttlSeconds) {
   return async (req, res, next) => {
-    if (req.method !== 'GET') return next()
+    // ?n=<anything> asks for fresh data (a Refresh button): no read, no write, no key per click.
+    if (req.method !== 'GET' || req.query?.n !== undefined) return next()
     const user = req.authUser || req.user || {}
     const scope = user.role === 'sub_admin' ? `sub:${(req.allowedShopIds || []).map(String).sort().join(',')}` : 'admin'
     const hash = crypto.createHash('sha1').update(`${scope}|${req.originalUrl}`).digest('hex').slice(0, 20)
