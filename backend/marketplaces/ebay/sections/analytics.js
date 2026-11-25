@@ -5,6 +5,7 @@
 const { HttpError } = require('../../../utils/httpError')
 const { col, tables, words, listingTitles } = require('../../../services/marketplace/sectionKit')
 const { ebayGet, scopeAware } = require('./helpers')
+const { readTraffic } = require('./trafficCache')
 
 const MARKETPLACE = 'EBAY_US'
 const METRICS = ['LISTING_IMPRESSION_TOTAL', 'LISTING_VIEWS_TOTAL', 'CLICK_THROUGH_RATE', 'SALES_CONVERSION_RATE', 'TRANSACTION']
@@ -125,7 +126,8 @@ async function analytics(token, shop, { now = new Date() } = {}) {
       title: 'Listing traffic (last 30 days)',
       note: 'How many buyers saw each listing in search (impressions), opened it (views), and bought.',
       columns: [col('listingId', 'Item'), col('title', 'Product'), col('impressions', 'Impressions', 'number'), col('views', 'Page views', 'number'), col('ctr', 'Click-through %', 'number'), col('conversion', 'Conversion %', 'number'), col('sold', 'Sold', 'number'), col('url', '', 'link')],
-      load: scopeAware(() => trafficRows(token, now), 'listing traffic'),
+      // Same Redis copy as the Listings page's views: one eBay read an hour for both.
+      load: scopeAware(async () => (await readTraffic(shop, 'listings', () => trafficRows(token, now))).value, 'listing traffic'),
     },
     {
       id: 'standards',

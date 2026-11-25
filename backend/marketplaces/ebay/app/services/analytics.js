@@ -229,53 +229,37 @@ async function traffic(ctx) {
     const to = String(ctx.query.to || '')
     if (!day.test(from) || !day.test(to)) throw new HttpError(400, { error: 'from and to must be YYYY-MM-DD' })
     const marketplaceManager = require('../manager')
-    const cache = require('../../../../services/core/cache')
     const { dailyTraffic } = require('../../sections/analytics')
-    // eBay rate-limits its traffic report and adds a day once a day: each range is read at most
-    // hourly per shop (requests at the same time share one read), and the last good copy is kept a
-    // week so its rate limit shows those numbers, marked stale, instead of an error.
-    const key = `shop:${shop._id}:traffic:${from}:${to}`
-    const lastKey = `shop:${shop._id}:traffic-last:${from}:${to}`
+    const { readTraffic } = require('../../sections/trafficCache')
     try {
-      return await cache.wrap(key, 60 * 60, async () => {
-        const out = await marketplaceManager.withShopToken(shop, (token) => dailyTraffic(token, from, to))
-        await cache.set(lastKey, out, 7 * 24 * 60 * 60)
-        return out
-      })
+      // Kept in Redis an hour; eBay's rate limit gives the last saved numbers, marked stale.
+      const { value, stale } = await readTraffic(shop, `day:${from}:${to}`, () => marketplaceManager.withShopToken(shop, (token) => dailyTraffic(token, from, to)))
+      return stale ? { ...value, stale: true } : value
     } catch (err) {
-      if (err?.status === 429) {
-        const last = await cache.get(lastKey)
-        if (last) return { ...last, stale: true }
-        throw new HttpError(429, { error: 'eBay limits how often traffic can be read. Try again in a few minutes.' })
-      }
+      if (err?.status === 429) throw new HttpError(429, { error: err.message })
       const denied = err?.status === 401 || err?.status === 403 || /insufficient|scope|permission/i.test(err?.message || '')
       throw new HttpError(502, { error: denied ? 'Reconnect eBay in Settings to allow listing traffic.' : err.message, ...(denied ? { reconnect: true } : {}) })
     }
 }
 
 /**
- * GET /listing-traffic — each listing's 30-day impressions and views for the Listings page, cached
- * an hour per shop (eBay rate-limits the report). A refused or rate-limited report gives
- * `{ rows: [], unavailable: true }` (views just don't show).
+ * GET /listing-traffic — each listing's 30-day impressions and views for the Listings page, read
+ * through the shared traffic cache (the Analytics page's Listing traffic tab uses the same copy).
+ * A refused or rate-limited report with nothing saved gives `{ rows: [], unavailable: true }`.
  */
 async function listingTraffic(ctx) {
     const { HttpError } = require('../../../../utils/httpError')
     const Shop = require('../../../../models/Shop')
-    const cache = require('../../../../services/core/cache')
     const filter = { marketplace: 'ebay', status: 'connected' }
     if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
     const shop = await Shop.findOne(filter)
     if (!shop) throw new HttpError(404, { error: 'No connected eBay shop' })
-    const key = `shop:${shop._id}:listing-traffic`
-    const hit = await cache.get(key)
-    if (hit !== undefined && hit !== null) return hit
     const marketplaceManager = require('../manager')
     const { listingTraffic: load } = require('../../sections/analytics')
+    const { readTraffic } = require('../../sections/trafficCache')
     try {
-      const rows = await marketplaceManager.withShopToken(shop, (token) => load(token))
-      const out = { rows: rows.map(({ listingId, impressions, views }) => ({ listingId, impressions, views })) }
-      await cache.set(key, out, 60 * 60)
-      return out
+      const { value } = await readTraffic(shop, 'listings', () => marketplaceManager.withShopToken(shop, (token) => load(token)))
+      return { rows: value.map(({ listingId, impressions, views }) => ({ listingId, impressions, views })) }
     } catch (err) {
       const denied = err?.status === 401 || err?.status === 403 || /insufficient|scope|permission/i.test(err?.message || '')
       if (denied || err?.status === 429) return { rows: [], unavailable: true }

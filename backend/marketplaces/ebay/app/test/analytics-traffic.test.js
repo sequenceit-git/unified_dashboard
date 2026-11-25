@@ -5,11 +5,13 @@ const { stubModules, freshRequire } = require('../../../../test/helpers/stub')
 const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean']) p[m] = () => p; return p }
 const admin = { user: { id: 'u1', role: 'super_admin' }, query: { from: '2026-11-17', to: '2026-11-23' }, body: {}, params: {} }
 
+// The cache as Redis gives it: get/set/del, and claim = SET NX (true only for the first caller).
 function memoryCache(store = new Map()) {
   return {
     get: async (k) => store.get(k),
     set: async (k, v) => { store.set(k, v) },
-    wrap: async (k, ttl, compute) => { if (store.has(k)) return store.get(k); const v = await compute(); store.set(k, v); return v },
+    del: async (k) => { store.delete(k) },
+    claim: async (k) => { if (store.has(k)) return false; store.set(k, 1); return true },
   }
 }
 
@@ -50,7 +52,7 @@ test("eBay's rate limit: the last traffic it sent for those days, marked stale; 
   const limited = () => { throw Object.assign(new Error('Too many requests.'), { status: 429 }) }
   const first = load({ store, dailyTraffic: async () => ({ latestDate: '2026-11-23', days: [{ date: '2026-11-23', impressions: 5, views: 1, sold: 0 }] }) })
   try { await first.service.traffic(admin) } finally { first.restore() }
-  for (const k of [...store.keys()]) if (!k.includes('last')) store.delete(k) // the hour's copy expired
+  store.delete('ebay-traffic:s1:day:2026-11-17:2026-11-23') // the hour's copy expired
   const again = load({ store, dailyTraffic: async () => limited() })
   try {
     const out = await again.service.traffic(admin)
@@ -64,6 +66,34 @@ test("eBay's rate limit: the last traffic it sent for those days, marked stale; 
       assert.match(e.body.error, /eBay limits how often/)
     })
   } finally { none.restore() }
+})
+
+test("an orders sync (clears shop:<id>:) leaves traffic in place; after a 429 eBay isn't asked for 5 minutes", async () => {
+  const store = new Map()
+  let calls = 0
+  const first = load({ store, dailyTraffic: async () => { calls += 1; return { latestDate: '2026-11-23', days: [] } } })
+  try {
+    await first.service.traffic(admin)
+    assert.ok([...store.keys()].every((k) => !k.startsWith('shop:')), 'not under the prefix every orders sync clears')
+    store.delete('ebay-traffic:s1:day:2026-11-17:2026-11-23')
+    store.set('ebay-traffic:s1:limited', 1) // a 429 a minute ago
+    const out = await first.service.traffic(admin)
+    assert.equal(out.stale, true)
+    assert.equal(calls, 1, 'paused: served the saved copy without calling eBay')
+  } finally { first.restore() }
+})
+
+test('a second process reading the same report waits for its result in Redis instead of calling eBay', async () => {
+  const store = new Map([['ebay-traffic:s1:lock:day:2026-11-17:2026-11-23', 1]]) // another process holds the lock
+  let calls = 0
+  const { restore } = load({ store, dailyTraffic: async () => { calls += 1; return {} } })
+  try {
+    const { readTraffic } = require('../../sections/trafficCache')
+    setTimeout(() => store.set('ebay-traffic:s1:day:2026-11-17:2026-11-23', { latestDate: '2026-11-23', days: [] }), 300)
+    const out = await readTraffic({ _id: 's1' }, 'day:2026-11-17:2026-11-23', async () => { calls += 1 }, { waitMs: 2000 })
+    assert.deepEqual(out, { value: { latestDate: '2026-11-23', days: [] }, stale: false })
+    assert.equal(calls, 0)
+  } finally { restore() }
 })
 
 test('a refused traffic report says to reconnect eBay', async () => {
@@ -118,7 +148,7 @@ test('listing views come from a cached 30-day traffic report; a refusal gives no
     '/models/Shop': { findOne: () => chain({ _id: 's1', marketplace: 'ebay', status: 'connected' }), find: () => chain([]) },
     '../manager': { withShopToken: async (s, fn) => fn('tok') },
     '../../sections/analytics': { listingTraffic: async () => { calls += 1; return [{ listingId: '1', impressions: 10, views: 2 }] } },
-    '/core/cache': { get: async (k) => cache.get(k), set: async (k, v) => { cache.set(k, v) } },
+    '/core/cache': memoryCache(cache),
   })
   try {
     const service = freshRequire('marketplaces/ebay/app/services/analytics.js')
@@ -131,7 +161,7 @@ test('listing views come from a cached 30-day traffic report; a refusal gives no
     '/models/Shop': { findOne: () => chain({ _id: 's1', marketplace: 'ebay', status: 'connected' }), find: () => chain([]) },
     '../manager': { withShopToken: async (s, fn) => fn('tok') },
     '../../sections/analytics': { listingTraffic: async () => { throw Object.assign(new Error('Insufficient permissions'), { status: 403 }) } },
-    '/core/cache': { get: async () => undefined, set: async () => {} },
+    '/core/cache': memoryCache(),
   })
   try {
     const service = freshRequire('marketplaces/ebay/app/services/analytics.js')
