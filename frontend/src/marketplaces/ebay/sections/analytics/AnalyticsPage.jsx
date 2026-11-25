@@ -65,7 +65,7 @@ export default function AnalyticsPage() {
           <h1 className="text-xl font-bold sm:text-2xl">{section.label} analytics</h1>
           <p className="text-xs text-gray-500">
             {tab === 'overview'
-              ? <>{current.from} to {current.to} (US Pacific days, as eBay counts them){latest && <> · eBay traffic up to {latest}</>}</>
+              ? <>{current.from} to {current.to} (US Pacific days, as eBay counts them){latest && <> · eBay traffic up to {latest}</>}{(traffic.data?.stale || prevTraffic.data?.stale) && <> · eBay is limiting traffic reads, so traffic shows its last saved numbers</>}</>
               : tab === 'listings' ? 'Each listing over the last 30 days' : "eBay's current seller level and service rates"}
           </p>
         </div>

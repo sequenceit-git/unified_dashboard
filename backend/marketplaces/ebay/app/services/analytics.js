@@ -229,10 +229,25 @@ async function traffic(ctx) {
     const to = String(ctx.query.to || '')
     if (!day.test(from) || !day.test(to)) throw new HttpError(400, { error: 'from and to must be YYYY-MM-DD' })
     const marketplaceManager = require('../manager')
+    const cache = require('../../../../services/core/cache')
     const { dailyTraffic } = require('../../sections/analytics')
+    // eBay rate-limits its traffic report and adds a day once a day: each range is read at most
+    // hourly per shop (requests at the same time share one read), and the last good copy is kept a
+    // week so its rate limit shows those numbers, marked stale, instead of an error.
+    const key = `shop:${shop._id}:traffic:${from}:${to}`
+    const lastKey = `shop:${shop._id}:traffic-last:${from}:${to}`
     try {
-      return await marketplaceManager.withShopToken(shop, (token) => dailyTraffic(token, from, to))
+      return await cache.wrap(key, 60 * 60, async () => {
+        const out = await marketplaceManager.withShopToken(shop, (token) => dailyTraffic(token, from, to))
+        await cache.set(lastKey, out, 7 * 24 * 60 * 60)
+        return out
+      })
     } catch (err) {
+      if (err?.status === 429) {
+        const last = await cache.get(lastKey)
+        if (last) return { ...last, stale: true }
+        throw new HttpError(429, { error: 'eBay limits how often traffic can be read. Try again in a few minutes.' })
+      }
       const denied = err?.status === 401 || err?.status === 403 || /insufficient|scope|permission/i.test(err?.message || '')
       throw new HttpError(502, { error: denied ? 'Reconnect eBay in Settings to allow listing traffic.' : err.message, ...(denied ? { reconnect: true } : {}) })
     }
@@ -240,7 +255,8 @@ async function traffic(ctx) {
 
 /**
  * GET /listing-traffic — each listing's 30-day impressions and views for the Listings page, cached
- * 10 minutes per shop. A refused report gives `{ rows: [], unavailable: true }` (views just don't show).
+ * an hour per shop (eBay rate-limits the report). A refused or rate-limited report gives
+ * `{ rows: [], unavailable: true }` (views just don't show).
  */
 async function listingTraffic(ctx) {
     const { HttpError } = require('../../../../utils/httpError')
@@ -258,11 +274,11 @@ async function listingTraffic(ctx) {
     try {
       const rows = await marketplaceManager.withShopToken(shop, (token) => load(token))
       const out = { rows: rows.map(({ listingId, impressions, views }) => ({ listingId, impressions, views })) }
-      await cache.set(key, out, 600)
+      await cache.set(key, out, 60 * 60)
       return out
     } catch (err) {
       const denied = err?.status === 401 || err?.status === 403 || /insufficient|scope|permission/i.test(err?.message || '')
-      if (denied) return { rows: [], unavailable: true }
+      if (denied || err?.status === 429) return { rows: [], unavailable: true }
       throw new HttpError(502, { error: err.message })
     }
 }

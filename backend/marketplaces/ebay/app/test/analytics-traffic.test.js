@@ -5,7 +5,15 @@ const { stubModules, freshRequire } = require('../../../../test/helpers/stub')
 const chain = (v) => { const p = Promise.resolve(v); for (const m of ['select', 'sort', 'limit', 'lean']) p[m] = () => p; return p }
 const admin = { user: { id: 'u1', role: 'super_admin' }, query: { from: '2026-11-17', to: '2026-11-23' }, body: {}, params: {} }
 
-function load({ dailyTraffic, shop = { _id: 's1', marketplace: 'ebay', status: 'connected' }, pipelines = [], shopFilters = [] }) {
+function memoryCache(store = new Map()) {
+  return {
+    get: async (k) => store.get(k),
+    set: async (k, v) => { store.set(k, v) },
+    wrap: async (k, ttl, compute) => { if (store.has(k)) return store.get(k); const v = await compute(); store.set(k, v); return v },
+  }
+}
+
+function load({ dailyTraffic, shop = { _id: 's1', marketplace: 'ebay', status: 'connected' }, pipelines = [], shopFilters = [], store = new Map() }) {
   const restore = stubModules({
     '/models/Order': { schema: { path: () => true }, aggregate: async (pl) => { pipelines.push(pl); return [] } },
     '/models/Product': {},
@@ -13,6 +21,7 @@ function load({ dailyTraffic, shop = { _id: 's1', marketplace: 'ebay', status: '
     '/models/Shop': { findOne: (f) => { shopFilters.push(f); return chain(shop) }, find: () => chain([]) },
     '../manager': { withShopToken: async (s, fn) => fn('tok') },
     '../../sections/analytics': { dailyTraffic },
+    '/core/cache': memoryCache(store),
   })
   return { service: freshRequire('marketplaces/ebay/app/services/analytics.js'), restore }
 }
@@ -24,6 +33,37 @@ test("traffic comes from eBay's daily traffic report for the asked days", async 
     assert.deepEqual(await service.traffic(admin), { latestDate: '2026-11-23', days: [] })
     assert.deepEqual(seen, [['tok', '2026-11-17', '2026-11-23']])
   } finally { restore() }
+})
+
+test("eBay's traffic for the same days is read once, then served from the cache", async () => {
+  let calls = 0
+  const { service, restore } = load({ dailyTraffic: async () => { calls += 1; return { latestDate: '2026-11-23', days: [] } } })
+  try {
+    await service.traffic(admin)
+    await service.traffic(admin)
+    assert.equal(calls, 1)
+  } finally { restore() }
+})
+
+test("eBay's rate limit: the last traffic it sent for those days, marked stale; none yet says to wait", async () => {
+  const store = new Map()
+  const limited = () => { throw Object.assign(new Error('Too many requests.'), { status: 429 }) }
+  const first = load({ store, dailyTraffic: async () => ({ latestDate: '2026-11-23', days: [{ date: '2026-11-23', impressions: 5, views: 1, sold: 0 }] }) })
+  try { await first.service.traffic(admin) } finally { first.restore() }
+  for (const k of [...store.keys()]) if (!k.includes('last')) store.delete(k) // the hour's copy expired
+  const again = load({ store, dailyTraffic: async () => limited() })
+  try {
+    const out = await again.service.traffic(admin)
+    assert.equal(out.stale, true)
+    assert.equal(out.days[0].impressions, 5)
+  } finally { again.restore() }
+  const none = load({ dailyTraffic: async () => limited() })
+  try {
+    await none.service.traffic(admin).then(() => assert.fail('should reject'), (e) => {
+      assert.equal(e.status, 429)
+      assert.match(e.body.error, /eBay limits how often/)
+    })
+  } finally { none.restore() }
 })
 
 test('a refused traffic report says to reconnect eBay', async () => {
