@@ -13,12 +13,15 @@ export default function Drawer({ title, subtitle, onClose, footer, children }) {
   useEffect(() => {
     // Esc closes the drawer unless something inside it (a popup) already handled the key.
     // A popup open on top of the drawer handles its own Esc; the drawer stays.
-    const onKey = (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('[data-modal]')) close.current() }
+    // Not while typing in a field either (Esc there would lose what was typed); ✕ still closes.
+    const typing = () => /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')
+    const onKey = (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('[data-modal]') && !typing()) close.current() }
     window.addEventListener('keydown', onKey)
     // The page behind doesn't scroll while the drawer is open; focus moves into the drawer.
     const before = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    panel.current?.focus()
+    // Focus moves into the drawer, unless a field inside already took it (autoFocus).
+    if (panel.current && !panel.current.contains(document.activeElement)) panel.current.focus()
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = before

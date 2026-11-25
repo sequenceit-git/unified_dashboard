@@ -36,17 +36,40 @@ async function orderAppToken(service) {
   }
 }
 
-/**
- * All eBay orders changed since the last complete sync (everything eBay still returns on the
- * first run), read page by page. `complete` is false if the page cap was hit, so the sync
- * cursor is not advanced and the remainder is picked up next time.
- */
 /** eBay's latest ship time for an order: the earliest line item shipByDate (undefined when none). */
 function ebayShipBy(o) {
   const dates = (o?.lineItems || []).map((li) => li.lineItemFulfillmentInstructions?.shipByDate).filter(Boolean).map((d) => new Date(d)).filter((d) => !Number.isNaN(d.getTime()))
   return dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : undefined
 }
 
+/**
+ * Open eBay orders (paid / processing) stored without eBay's ship-by date and not in this sync's
+ * own fetch: re-read by id (up to 20 per sync), so orders imported before ship-by dates were kept
+ * get theirs without a full re-sync.
+ */
+async function ordersMissingShipBy(shop, token, service, fetchedIds) {
+  if (typeof service.getOrder !== 'function') return []
+  const rows = await Order.find({
+    shopId: shop._id,
+    status: { $in: ['paid', 'processing'] },
+    'shipping.shipBy': null,
+    // Recent ones only: an order eBay gives no ship-by date is not re-read forever.
+    placedAt: { $gte: new Date(Date.now() - 30 * 86400000) },
+    externalOrderId: { $nin: [...fetchedIds] },
+  }).select('externalOrderId').limit(20).lean()
+  const extra = []
+  for (const row of rows) {
+    const order = await service.getOrder(token, row.externalOrderId).catch(() => null)
+    if (order?.orderId) extra.push(order)
+  }
+  return extra
+}
+
+/**
+ * All eBay orders changed since the last complete sync (everything eBay still returns on the
+ * first run), read page by page. `complete` is false if the page cap was hit, so the sync
+ * cursor is not advanced and the remainder is picked up next time.
+ */
 async function fetchEbayOrders(shop, token, service) {
   const OVERLAP_MS = 60 * 60 * 1000
   const PAGE = 200
@@ -143,6 +166,8 @@ async function fetchOrders(manager, shop, token, service) {
           if (extraOrder?.orderId) res.orders.push(extraOrder)
         }
       }
+      for (const o of res.orders) if (o.orderId) fetchedIds.add(String(o.orderId))
+      res.orders.push(...await ordersMissingShipBy(shop, token, service, fetchedIds).catch(() => []))
     }
 
     const now = new Date()
@@ -485,6 +510,7 @@ const { researchListing } = require('./researchListing')
 
 module.exports = {
   ebayShipBy,
+  ordersMissingShipBy,
   publishedSku,
   promotionTargets,
   listingVariants,

@@ -5,7 +5,7 @@ import { marketplaceLabel, getShop } from '../../..'
 import Badge, { statusColor } from '../../../../components/ui/Badge'
 import Button from '../../../../components/ui/Button'
 import Drawer from '../../ui/Drawer'
-import { shipByText } from './ordersView'
+import { shipByDate, shipByText } from './ordersView'
 import { Select } from '../../../../components/ui/Input'
 
 const CARRIERS = [
@@ -149,7 +149,7 @@ export default function OrderDrawer({ order, onClose, onSaved, focus }) {
 
   // Shipping & tracking: first for orders to ship (where Add tracking lands), lower down otherwise.
   const shippingPart = (
-    <div className={`${box} ${focus === 'ship' ? 'ring-2 ring-indigo-400' : ''}`}>
+    <div className={`${box} ${focus === 'ship' && !order.shipping?.trackingNumber ? 'ring-2 ring-indigo-400' : ''}`}>
       <h3 className="font-semibold text-gray-900 dark:text-slate-100">{toShip ? 'Ship this order' : 'Shipping & tracking'}</h3>
       <p className="text-xs text-gray-500 dark:text-slate-400">
         Carrier: <span className="font-semibold text-gray-700 dark:text-gray-300">{order.shipping?.carrier || 'None'}</span>
@@ -182,7 +182,7 @@ export default function OrderDrawer({ order, onClose, onSaved, focus }) {
           <Badge color={statusColor(order.status)}>{order.status}</Badge>
           <span>${order.totals?.total?.toFixed(2)}</span>
           {order.placedAt && <span>· placed {new Date(order.placedAt).toLocaleDateString()}</span>}
-          {due && <span className={due.late ? 'font-semibold text-rose-600 dark:text-rose-400' : ''}>· ship by {new Date(order.shipping.shipBy).toLocaleDateString()} ({due.text})</span>}
+          {due && <span className={due.late ? 'font-semibold text-rose-600 dark:text-rose-400' : ''}>· ship by {shipByDate(order.shipping.shipBy)} ({due.text})</span>}
         </span>
       )}
       onClose={onClose}

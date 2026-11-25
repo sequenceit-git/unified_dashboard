@@ -44,6 +44,15 @@ export default function OrdersPage() {
   const [selected, setSelected] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
+  // A new link search (?q=) while on the page: search it across every state.
+  useEffect(() => {
+    if (linkQ === q) return
+    setQ(linkQ)
+    if (linkQ) setPill('all')
+    setPage(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkQ])
+
   const pills = orderPills(counts)
   // A pill that disappears (e.g. no more late orders) falls back to To ship.
   const active = pills.some((p) => p.key === pill) ? pill : 'toShip'
@@ -148,7 +157,7 @@ export default function OrdersPage() {
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <DataTable
           columns={[
-            { key: 'externalOrderId', label: 'Order', render: (r) => <span><span className="font-medium">{r.externalOrderId}</span>{r.placedAt && <span className="block text-xs text-gray-500 dark:text-slate-400">{new Date(r.placedAt).toLocaleDateString()}</span>}</span> },
+            { key: 'placedAt', label: 'Order', sortable: true, render: (r) => <span><span className="font-medium">{r.externalOrderId}</span>{r.placedAt && <span className="block text-xs text-gray-500 dark:text-slate-400">{new Date(r.placedAt).toLocaleDateString()}</span>}</span> },
             { key: 'buyer', label: 'Buyer', render: (r) => <span><span>{r.buyer?.name || '—'}</span>{r.buyer?.username && <span className="block font-mono text-[11px] text-gray-500 dark:text-slate-400">@{r.buyer.username}</span>}</span> },
             {
               key: 'items',

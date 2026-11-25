@@ -14,7 +14,8 @@ const PILLS = [
 /** Pills with counts; `query` is what the list asks the server for. Late, Unpaid and Returns only when there are some. */
 export function orderPills(counts) {
   return PILLS
-    .filter(([key]) => !['late', 'unpaid', 'returns'].includes(key) || counts?.[key] > 0)
+    // Without counts (not loaded, or failed) every pill shows, so no state is out of reach.
+    .filter(([key]) => !counts || !['late', 'unpaid', 'returns'].includes(key) || counts[key] > 0)
     .map(([key, label, query]) => ({ key, label, query, count: counts ? counts[key] ?? 0 : null }))
 }
 
@@ -32,8 +33,16 @@ export function attentionItems(counts) {
 }
 
 const DAY = 86400000
-const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+// eBay's ship-by date is the end of a day in Pacific time: days are counted on that calendar.
+const ZONE = 'America/Los_Angeles'
+const dayStart = (d) => {
+  const [y, m, day] = new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d).split('-').map(Number)
+  return Date.UTC(y, m - 1, day)
+}
 const TO_SHIP = ['paid', 'processing']
+
+/** The ship-by day as eBay means it (its Pacific calendar day). */
+export const shipByDate = (raw) => (raw ? new Date(raw).toLocaleDateString(undefined, { timeZone: ZONE }) : '')
 
 /** For orders still to ship: "today", "in 2 days" or "late 2 days" (null otherwise). */
 export function shipByText(order, now = new Date()) {
@@ -41,8 +50,8 @@ export function shipByText(order, now = new Date()) {
   if (!TO_SHIP.includes(order?.status) || !raw) return null
   const due = new Date(raw)
   if (due < now) {
-    const days = Math.max(1, Math.round((dayStart(now) - dayStart(due)) / DAY))
-    return { text: `late ${days} day${days === 1 ? '' : 's'}`, late: true }
+    const days = Math.round((dayStart(now) - dayStart(due)) / DAY)
+    return { text: days <= 0 ? 'late today' : `late ${days} day${days === 1 ? '' : 's'}`, late: true }
   }
   const days = Math.round((dayStart(due) - dayStart(now)) / DAY)
   return { text: days <= 0 ? 'today' : `in ${days} day${days === 1 ? '' : 's'}`, late: false }

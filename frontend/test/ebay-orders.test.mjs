@@ -12,7 +12,6 @@ test('pills: to ship first; Late, Unpaid and Returns only when there are some', 
   const { orderPills } = await load()
   assert.deepEqual(orderPills(COUNTS).map((p) => [p.key, p.count]), [['toShip', 6], ['late', 1], ['shipped', 10], ['delivered', 30], ['cancelled', 1], ['all', 48]])
   assert.deepEqual(orderPills(COUNTS)[0].query, { status: 'paid,processing' })
-  assert.deepEqual(orderPills(null).map((p) => p.count).slice(0, 2), [null, null])
 })
 
 test('summary and needs attention', async () => {
@@ -22,13 +21,21 @@ test('summary and needs attention', async () => {
   assert.deepEqual(attentionItems(null), [])
 })
 
-test('ship-by in the seller\'s own days, only for orders to ship', async () => {
-  const { shipByText } = await load()
-  const now = new Date(2026, 10, 25, 10)
-  assert.deepEqual(shipByText({ status: 'paid', shipping: { shipBy: new Date(2026, 10, 27, 9).toISOString() } }, now), { text: 'in 2 days', late: false })
-  assert.deepEqual(shipByText({ status: 'processing', shipping: { shipBy: new Date(2026, 10, 25, 20).toISOString() } }, now), { text: 'today', late: false })
-  assert.deepEqual(shipByText({ status: 'paid', shipping: { shipBy: new Date(2026, 10, 23, 9).toISOString() } }, now), { text: 'late 2 days', late: true })
-  assert.equal(shipByText({ status: 'shipped', shipping: { shipBy: new Date(2026, 10, 23).toISOString() } }, now), null)
+test("ship-by in eBay's own (Pacific) days, only for orders to ship", async () => {
+  const { shipByText, shipByDate } = await load()
+  const now = new Date('2026-11-25T18:00:00Z') // 10:00 on 25 Nov in Pacific time
+  // eBay's ship-by is the end of a Pacific day (07:59:59 UTC the next morning).
+  assert.deepEqual(shipByText({ status: 'paid', shipping: { shipBy: '2026-11-28T07:59:59Z' } }, now), { text: 'in 2 days', late: false })
+  assert.deepEqual(shipByText({ status: 'processing', shipping: { shipBy: '2026-11-26T07:59:59Z' } }, now), { text: 'today', late: false })
+  assert.deepEqual(shipByText({ status: 'paid', shipping: { shipBy: '2026-11-24T07:59:59Z' } }, now), { text: 'late 2 days', late: true })
+  assert.deepEqual(shipByText({ status: 'paid', shipping: { shipBy: '2026-11-25T17:00:00Z' } }, now), { text: 'late today', late: true })
+  assert.equal(shipByText({ status: 'shipped', shipping: { shipBy: '2026-11-23T07:59:59Z' } }, now), null)
+  assert.equal(shipByDate('2026-11-28T07:59:59Z'), new Date('2026-11-27T12:00:00Z').toLocaleDateString(undefined, { timeZone: 'America/Los_Angeles' }))
+})
+
+test('before the counts load, every pill shows (no count)', async () => {
+  const { orderPills } = await load()
+  assert.deepEqual(orderPills(null).map((p) => p.key), ['toShip', 'late', 'unpaid', 'shipped', 'delivered', 'cancelled', 'returns', 'all'])
 })
 
 test('main row button: Add tracking for orders to ship, else Details', async () => {
