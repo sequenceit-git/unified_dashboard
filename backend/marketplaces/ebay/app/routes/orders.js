@@ -21,6 +21,16 @@ function ordersRoutes(shopKey) {
     }
   })
 
+  // GET /api/<shop>/orders/counts — orders per state, late ones and returns waiting (status pills, needs attention)
+  router.get('/counts', async (req, res) => {
+    try {
+      res.json(await service.counts(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // GET /api/<shop>/orders/:id
   router.get('/:id', async (req, res) => {
     try {

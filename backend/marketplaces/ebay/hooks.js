@@ -41,6 +41,12 @@ async function orderAppToken(service) {
  * first run), read page by page. `complete` is false if the page cap was hit, so the sync
  * cursor is not advanced and the remainder is picked up next time.
  */
+/** eBay's latest ship time for an order: the earliest line item shipByDate (undefined when none). */
+function ebayShipBy(o) {
+  const dates = (o?.lineItems || []).map((li) => li.lineItemFulfillmentInstructions?.shipByDate).filter(Boolean).map((d) => new Date(d)).filter((d) => !Number.isNaN(d.getTime()))
+  return dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : undefined
+}
+
 async function fetchEbayOrders(shop, token, service) {
   const OVERLAP_MS = 60 * 60 * 1000
   const PAGE = 200
@@ -255,6 +261,7 @@ async function fetchOrders(manager, shop, token, service) {
 
       const shippingObj = {
         carrier: carrier || undefined,
+        shipBy: ebayShipBy(o),
         deliveredAt: (orderStatus === 'delivered' && maxEstimatedDelivery) ? maxEstimatedDelivery : undefined,
       }
 
@@ -477,6 +484,7 @@ function publishedSku(product, publishRes) {
 const { researchListing } = require('./researchListing')
 
 module.exports = {
+  ebayShipBy,
   publishedSku,
   promotionTargets,
   listingVariants,

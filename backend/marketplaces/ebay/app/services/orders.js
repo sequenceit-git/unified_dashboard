@@ -26,22 +26,28 @@ async function notifyOrderChanged(order) {
 }
 
 const SORTABLE = ['placedAt', 'totals.total', 'createdAt', 'status']
+// Orders waiting to be shipped (paid, or being prepared).
+const TO_SHIP = ['paid', 'processing']
 
 /** GET / */
 async function list(ctx) {
-    const filter = { ...shopFilter(ctx, Order) }
-    if (ctx.query.marketplace && ctx.query.marketplace !== 'all') {
-      const marketplace = 'ebay'
-      if (!marketplace) throw new HttpError(400, { error: 'Unknown marketplace' })
-      filter.marketplace = marketplace
-    }
+    // Always this shop's orders (the page is eBay's own).
+    const filter = { ...shopFilter(ctx, Order), marketplace: 'ebay' }
     if (ctx.query.shopId) {
       if (ctx.user.role === 'sub_admin' && !ctx.allowedShopIds.some((id) => String(id) === ctx.query.shopId)) {
         throw new HttpError(403, { error: 'You do not have access to this shop' })
       }
       filter.shopId = ctx.query.shopId
     }
-    if (ctx.query.status && ctx.query.status !== 'all') filter.status = ctx.query.status
+    if (ctx.query.status && ctx.query.status !== 'all') {
+      const list = String(ctx.query.status).split(',').map((s) => s.trim()).filter(Boolean)
+      filter.status = list.length > 1 ? { $in: list } : list[0]
+    }
+    // Late: still to ship, past eBay's ship-by date.
+    if (ctx.query.late === '1') {
+      filter.status = { $in: TO_SHIP }
+      filter['shipping.shipBy'] = { $lt: new Date() }
+    }
     if (ctx.query.from || ctx.query.to) {
       filter.placedAt = {}
       if (ctx.query.from) filter.placedAt.$gte = new Date(ctx.query.from)
@@ -72,6 +78,31 @@ async function list(ctx) {
     const pg = paging(ctx)
     const out = await paged(Order, filter, pg, sortOf(ctx, SORTABLE, '-placedAt'))
     return out
+}
+
+/**
+ * GET /counts — eBay orders per state for the status pills, the late ones (to ship, past eBay's
+ * ship-by date) and orders with a return waiting for the seller.
+ */
+async function counts(ctx, { now = new Date() } = {}) {
+    const base = { ...shopFilter(ctx, Order), marketplace: 'ebay' }
+    const [rows, late, returnsRequested] = await Promise.all([
+      Order.aggregate([{ $match: base }, { $group: { _id: '$status', n: { $sum: 1 } } }]),
+      Order.countDocuments({ ...base, status: { $in: TO_SHIP }, 'shipping.shipBy': { $lt: now } }),
+      Order.countDocuments({ ...base, 'returns.status': 'requested' }),
+    ])
+    const by = Object.fromEntries(rows.map((r) => [r._id, r.n]))
+    return {
+      all: rows.reduce((t, r) => t + r.n, 0),
+      toShip: (by.paid || 0) + (by.processing || 0),
+      late,
+      unpaid: by.pending || 0,
+      shipped: by.shipped || 0,
+      delivered: by.delivered || 0,
+      cancelled: by.cancelled || 0,
+      returns: (by.returned || 0) + (by.refunded || 0),
+      returnsRequested,
+    }
 }
 
 /** GET /:id */
@@ -272,4 +303,4 @@ async function refund(ctx) {
     return { success: true, order, marketplaceResult }
 }
 
-module.exports = { list, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }
+module.exports = { list, counts, get, sync, updateStatus, updateShipping, addReturn, updateReturn, cancel, refund }

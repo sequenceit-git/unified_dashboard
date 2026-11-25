@@ -38,6 +38,7 @@
       "POST /inventory/adjust",
       "POST /inventory/sync",
       "GET /orders/",
+      "GET /orders/counts",
       "GET /orders/:id",
       "POST /orders/sync",
       "PATCH /orders/:id/status",
