@@ -31,6 +31,16 @@ function inventoryRoutes(shopKey) {
     }
   })
 
+  // POST /api/<shop>/inventory/tiktok-stock/fix { productId, skuId } — send the dashboard's stock for that SKU to TikTok
+  router.post('/tiktok-stock/fix', async (req, res) => {
+    try {
+      res.json(await service.fixTikTokStock(ctxOf(req)))
+    } catch (err) {
+      if (err instanceof HttpError) return res.status(err.status).json(err.body)
+      res.status(502).json({ error: err.message })
+    }
+  })
+
   router.get('/logs', async (req, res) => {
     try {
       res.json(await service.logs(ctxOf(req)))

@@ -55,3 +55,14 @@ test('closed lists ended and paused; a TikTok product id finds its product', asy
     assert.ok(seen.listingFilters.some((f) => f.marketplace === 'tiktok_shop' && f.externalListingId?.$regex))
   } finally { restore() }
 })
+
+test('Inventory lists: listed=1 is products on TikTok only; low stock leaves out sold-out ones', async () => {
+  const { service, seen, restore } = load({ listings: [{ productId: 'a', status: 'live' }, { productId: 'b', status: 'ended' }] })
+  try {
+    await service.list({ ...admin, query: { listed: '1', stock: 'low' } })
+    const filter = seen.counted.at(-1) || seen.productFilters.at(-1)
+    assert.deepEqual(filter._id, { $in: ['a', 'b'] })
+    assert.deepEqual(filter.stock, { $gt: 0 })
+    assert.ok(filter.$expr)
+  } finally { restore() }
+})

@@ -98,13 +98,23 @@ async function list(ctx) {
         if (listed.length) filter.$or.push({ _id: { $in: listed.map((row) => row.productId) } })
       }
     }
-    if (ctx.query.stock === 'low') filter.$expr = { $lte: ['$stock', '$lowStockThreshold'] }
+    // Low stock: some left, at or under the alert (out of stock is its own filter).
+    if (ctx.query.stock === 'low') {
+      filter.$expr = { $lte: ['$stock', '$lowStockThreshold'] }
+      filter.stock = { $gt: 0 }
+    }
     if (ctx.query.stock === 'out') filter.stock = 0
     const ids = await scopedIds(ctx)
     if (ids) filter._id = { $in: ids }
     // This shop's products only: each shop has its own products, stock and price.
     filter.marketplace = 'tiktok_shop'
     const marketplace = 'tiktok_shop'
+    // Inventory (listed=1): only products on TikTok, as its stock counts are.
+    if (ctx.query.listed === '1') {
+      const onTikTok = (await Listing.find({ marketplace }).select('productId').lean()).map((row) => row.productId)
+      const allowed = ids ? new Set(ids.map(String)) : null
+      filter._id = { $in: onTikTok.filter((id) => !allowed || allowed.has(String(id))) }
+    }
     if (ctx.query.listing && ctx.query.listing !== 'all') {
       const rows = await Listing.find({ marketplace, ...listingStatusFilter(ctx.query.listing) }).select('productId')
       const allowed = ids ? new Set(ids.map(String)) : null

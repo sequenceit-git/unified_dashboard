@@ -266,4 +266,27 @@ async function tiktokStock(ctx) {
     return rows.map((r, i) => [r, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([r]) => r)
 }
 
-module.exports = { lowStock, logs, adjust, sync, tiktokStock }
+/**
+ * POST /tiktok-stock/fix { productId, skuId } — "Use dashboard stock": sends the dashboard's stock
+ * for that TikTok SKU (worked out here, never taken from the page). A SKU whose stock is spread over
+ * several warehouses is left to Seller Center, so no warehouse is emptied by accident.
+ */
+async function fixTikTokStock(ctx) {
+    const productId = String(ctx.body?.productId || '')
+    const skuId = String(ctx.body?.skuId || '')
+    if (!/^\d+$/.test(productId) || !/^[\w-]+$/.test(skuId)) throw new HttpError(400, { error: 'Unknown TikTok SKU' })
+    const row = (await tiktokStock(ctx)).find((r) => r.productId === productId && r.tiktokSkuId === skuId)
+    if (!row || row.dashboardStock == null) throw new HttpError(400, { error: 'The dashboard has no stock for this TikTok SKU. Link it to a product first, or change it in TikTok Seller Center.' })
+    if (row.warehouses.filter((w) => w.available > 0).length > 1) {
+      throw new HttpError(400, { error: `${row.sku} has stock in more than one warehouse on TikTok. Change it in TikTok Seller Center.` })
+    }
+    const Shop = require('../../../../models/Shop')
+    const filter = { marketplace: 'tiktok_shop', status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter)
+    const tiktok = require('../../service')
+    await marketplaceManager.withShopToken(shop, (token) => tiktok.updateStock(token, null, row.dashboardStock, { externalListingId: `${productId}:${skuId}`, shop }))
+    return { message: `TikTok now has ${row.dashboardStock} for ${row.sku || skuId}.` }
+}
+
+module.exports = { lowStock, logs, adjust, sync, tiktokStock, fixTikTokStock }

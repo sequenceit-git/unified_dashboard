@@ -4,11 +4,12 @@ import { api, queryString } from '../../../../lib/api'
 import Card from '../../../../components/ui/Card'
 import DataTable from '../../../../components/ui/DataTable'
 import Pagination from '../../../../components/ui/Pagination'
-import RowMenu from '../../../../components/ui/RowMenu'
+import RowActions from '../../ui/RowActions'
 import SearchInput from '../../../../components/ui/SearchInput'
 import { useSyncReload } from '../../../../hooks/useLiveEvents'
 
-export default function StockTab({ marketplace, onAdjust, refreshKey }) {
+/** Products on TikTok and their stock; `stock` filters to low or out of stock. */
+export default function StockTab({ marketplace, stock = 'all', onAdjust, onHistory, onTotal, refreshKey }) {
   const { token } = useAuth()
   const [rows, setRows] = useState([])
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 })
@@ -23,17 +24,20 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
     setPage(1)
     setRows([])
     setLoading(true)
-  }, [marketplace])
+  }, [marketplace, stock])
 
   const fetchRows = async ({ quiet = false } = {}) => {
     const id = ++requestId.current
     if (!quiet) setLoading(true)
     setError('')
     try {
-      const res = await api.get(`/api/tiktok/products${queryString({ q, sort, page, limit: 15 })}`, token)
+      const res = await api.get(`/api/tiktok/products${queryString({ q, sort, page, limit: 15, listed: 1, ...(stock !== 'all' ? { stock } : {}) })}`, token)
       if (id !== requestId.current) return
       setRows(res.data)
       setMeta({ page: res.page, pages: res.pages, total: res.total })
+      if (stock === 'all' && !q) onTotal?.(res.total)
+      // A row that left the filter (e.g. restocked) can empty the last page: go back one.
+      if (res.page > 1 && !res.data.length) setPage(Math.max(1, res.pages))
     } catch (e) {
       if (id !== requestId.current) return
       setError(e.message)
@@ -46,14 +50,14 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
     const t = setTimeout(fetchRows, q ? 300 : 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketplace, q, sort, page, refreshKey])
+  }, [marketplace, stock, q, sort, page, refreshKey])
 
   useSyncReload(['listings', 'orders'], marketplace === 'all' ? '' : marketplace, () => fetchRows({ quiet: true }))
 
   return (
     <Card>
       <div className="mb-3">
-        <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search SKU…" />
+        <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Search SKU or title…" />
       </div>
       <DataTable
         columns={[
@@ -91,7 +95,7 @@ export default function StockTab({ marketplace, onAdjust, refreshKey }) {
             key: 'adjust', label: '',
             render: (r) => (
               <span onClick={(e) => e.stopPropagation()}>
-                <RowMenu items={[{ label: 'Adjust stock', onClick: () => onAdjust(r) }]} />
+                <RowActions main={{ label: 'Adjust', primary: r.stock <= r.lowStockThreshold, onClick: () => onAdjust(r) }} menu={[{ label: 'History', onClick: () => onHistory(r) }]} />
               </span>
             ),
           },

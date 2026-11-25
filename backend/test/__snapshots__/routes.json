@@ -104,6 +104,7 @@
       "PATCH /products/:id/price",
       "GET /inventory/low-stock",
       "GET /inventory/tiktok-stock",
+      "POST /inventory/tiktok-stock/fix",
       "GET /inventory/logs",
       "POST /inventory/adjust",
       "POST /inventory/sync",
