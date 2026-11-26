@@ -41,6 +41,16 @@ router.get('/me', async (req, res) => {
   }
 })
 
+// PATCH /api/auth/me — change own sign-in email and/or password (needs current password)
+router.patch('/me', async (req, res) => {
+  try {
+    res.json(await service.updateMe(ctxOf(req)))
+  } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json(err.body)
+    res.status(400).json({ error: err.message })
+  }
+})
+
 // POST /api/auth/users — super_admin creates sub_admins and their access
 router.post('/users', requireRole('super_admin'), async (req, res) => {
   try {

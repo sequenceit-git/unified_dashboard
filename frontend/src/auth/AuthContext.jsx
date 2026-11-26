@@ -65,12 +65,22 @@ export function AuthProvider({ children }) {
     return data.user
   }
 
+  // After the user edits their own account (email), keep the stored copy in step.
+  const setCurrentUser = (u) => {
+    setUser(u)
+    try {
+      localStorage.setItem('user', JSON.stringify(u))
+    } catch {
+      // Ignore storage errors.
+    }
+  }
+
   const quickLogin = (email) => login(email, QUICK_PASSWORD)
   const hasRoute = (route) => user?.role === 'super_admin' || user?.mainRoutes?.includes(route)
 
   return (
     <AuthContext.Provider
-      value={{ token, user, login, quickLogin, logout, isAdmin: user?.role === 'super_admin', hasRoute }}
+      value={{ token, user, setCurrentUser, login, quickLogin, logout, isAdmin: user?.role === 'super_admin', hasRoute }}
     >
       {children}
     </AuthContext.Provider>

@@ -11,6 +11,7 @@ import { useShopProfiles } from '../../hooks/useShopProfiles'
 import { api } from '../../lib/api'
 import { allowedShopSections } from '../../hooks/useShopSection'
 import { marketplaceLabel } from '../../marketplaces'
+import AccountSettings from './AccountSettings'
 import AiAgentSettings from './AiAgentSettings'
 
 function statusLabel(shop, configured, isAdmin) {
@@ -165,7 +166,7 @@ export default function SettingsPage() {
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">Workspace</p>
         <h1 className="page-heading mt-1 text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="mt-2 text-sm text-gray-500">Connect marketplace shops and set up the AI agent.</p>
+        <p className="mt-2 text-sm text-gray-500">Your sign-in details, marketplace shops and the AI agent.</p>
       </div>
 
       {message && (
@@ -179,6 +180,8 @@ export default function SettingsPage() {
           {message}
         </div>
       )}
+
+      <AccountSettings />
 
       {isAdmin && configsRes.error && <ErrorState message={configsRes.error} onRetry={configsRes.refetch} />}
 

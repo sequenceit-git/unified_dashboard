@@ -370,4 +370,40 @@ async function me(ctx) {
   return await userSummary(user)
 }
 
-module.exports = { listUsers, register, login, me, createUser, updateUser, deleteUser }
+/** PATCH /me: the signed-in user changes their own sign-in email and/or password (current password required). */
+async function updateMe(ctx) {
+  const { currentPassword, email, newPassword } = ctx.body || {}
+  const user = await User.findById(ctx.user.id).select('+passwordHash')
+  if (!user || user.isDeleted || user.status !== 'active') {
+    throw new HttpError(401, { error: 'User is inactive or no longer exists' })
+  }
+  if (!(await bcrypt.compare(String(currentPassword || ''), user.passwordHash))) {
+    throw new HttpError(400, { error: 'Current password is incorrect' })
+  }
+
+  let changed = false
+  const wantedEmail = String(email ?? '').trim().toLowerCase()
+  if (wantedEmail && wantedEmail !== String(user.email || '').toLowerCase()) {
+    const parsed = parseIdentity(wantedEmail)
+    if (parsed.error) throw new HttpError(400, { error: parsed.error })
+    if (await identityTaken(parsed.username, user._id)) {
+      throw new HttpError(400, { error: 'That username or email is already in use' })
+    }
+    user.email = parsed.email
+    user.username = parsed.username
+    changed = true
+  }
+  if (newPassword) {
+    const weak = passwordError(newPassword)
+    if (weak) throw new HttpError(400, { error: weak })
+    user.passwordHash = await bcrypt.hash(String(newPassword), 10)
+    changed = true
+  }
+  if (!changed) throw new HttpError(400, { error: 'Nothing to change' })
+
+  await user.save()
+  clearUserAccessCache(String(user._id))
+  return await userSummary(user)
+}
+
+module.exports = { listUsers, register, login, me, updateMe, createUser, updateUser, deleteUser }
