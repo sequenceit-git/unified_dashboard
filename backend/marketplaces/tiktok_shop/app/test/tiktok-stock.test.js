@@ -77,3 +77,25 @@ test('"Use dashboard stock" sends the dashboard\'s number for that one TikTok SK
     assert.equal(updates.length, 1)
   } finally { restore() }
 })
+
+test('TikTok\'s reading is cached between page loads, but a fix always reads TikTok live', async () => {
+  const calls = []
+  let available = 7
+  const restore = load({
+    calls,
+    listings: [{ externalListingId: '100', productId: 'p1' }],
+    products: [{ _id: 'p1', title: 'Cable', sku: 'CABLE', stock: 2, variants: [] }],
+    inventory: () => [{ product_id: '100', skus: [{ id: 's1', seller_sku: 'CABLE', total_available_quantity: available, warehouse_inventory: [{ warehouse_id: 'W1', available_quantity: available }] }] }],
+  })
+  try {
+    const service = freshRequire('marketplaces/tiktok_shop/app/services/inventory.js')
+    await Promise.all([service.tiktokStock(admin), service.tiktokStock(admin)])
+    assert.equal((await service.tiktokStock(admin))[0].tiktokTotal, 7)
+    assert.equal(calls.length, 1, 'one TikTok call for three loads')
+    available = 4
+    await service.fixTikTokStock({ ...admin, body: { productId: '100', skuId: 's1' } })
+    assert.equal(calls.length, 2, 'the fix re-read TikTok')
+    assert.equal((await service.tiktokStock(admin))[0].tiktokTotal, 4)
+    assert.equal(calls.length, 3, 'and cleared the reading afterwards')
+  } finally { restore() }
+})

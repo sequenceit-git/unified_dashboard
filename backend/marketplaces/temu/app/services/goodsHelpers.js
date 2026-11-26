@@ -92,25 +92,26 @@ async function uploadImages(ctx) {
 
 /** GET helpers/shipping-templates — the shop's shipping templates (made in Seller Center). */
 async function shippingTemplates(ctx) {
-  const res = await temuCall(ctx, 'bg.freight.template.list.query')
+  const res = await cache.wrap(`temu:ship-templates:${await shopKey(ctx)}`, TTL, () => temuCall(ctx, 'bg.freight.template.list.query'))
   return (res.templateList || []).map((t) => ({ id: t.templateId, name: t.templateName }))
 }
 
 /** GET helpers/brands — brands registered for the shop. */
 async function brands(ctx) {
-  const res = await temuCall(ctx, 'temu.local.goods.brand.trademark.V2.get', { page: 1, size: 100 })
+  const res = await cache.wrap(`temu:brands:${await shopKey(ctx)}`, TTL, () => temuCall(ctx, 'temu.local.goods.brand.trademark.V2.get', { page: 1, size: 100 }))
   return (res.trademarkList || []).map((b) => ({ brandId: b.brandId, trademarkId: b.trademarkId, name: b.brandName || b.trademarkName }))
 }
 
 /** GET helpers/tax-codes?catId= */
 async function taxCodes(ctx) {
-  const res = await temuCall(ctx, 'bg.local.goods.tax.code.get', { catId: intParam(ctx.query.catId, 'catId') })
+  const catId = intParam(ctx.query.catId, 'catId')
+  const res = await cache.wrap(`temu:tax-codes:${await shopKey(ctx)}:${catId}`, TTL, () => temuCall(ctx, 'bg.local.goods.tax.code.get', { catId }))
   return (res.itemTaxCodeList || []).map((t) => ({ code: t.itemTaxCode, name: t.itemTaxCodeDesc, suggested: Boolean(t.isSuggest) }))
 }
 
 /** GET helpers/net-units */
 async function netUnits(ctx) {
-  const res = await temuCall(ctx, 'temu.local.goods.sku.net.content.unit.query')
+  const res = await cache.wrap(`temu:net-units:${await shopKey(ctx)}`, TTL, () => temuCall(ctx, 'temu.local.goods.sku.net.content.unit.query'))
   return (res.netContentUnitTypeDTOList || []).flatMap((t) => (t.netContentUnitDTOList || []).map((u) => ({ code: u.code, name: u.value, type: t.value })))
 }
 

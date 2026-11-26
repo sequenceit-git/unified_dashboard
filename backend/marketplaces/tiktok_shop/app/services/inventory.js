@@ -4,6 +4,8 @@ const InventoryLog = require('../../../../models/InventoryLog')
 const Product = require('../../../../models/Product')
 const Listing = require('../../../../models/Listing')
 const marketplaceManager = require('../manager')
+const cache = require('../../../../services/core/cache')
+const { stockCheckKey, STOCK_CHECK_TTL, clearStockCheck } = require('../../../../services/core/stockCheckCache')
 const events = require('../../../../services/core/events')
 const { HttpError } = require('../../../../utils/httpError')
 const { shopFilter, canAccessShop } = require('../../../../middleware/auth')
@@ -236,12 +238,18 @@ async function tiktokStock(ctx) {
     const productByTikTokId = new Map(listings.map((l) => [String(l.externalListingId), productById.get(String(l.productId))]))
     const ids = [...new Set(listings.map((l) => String(l.externalListingId)))]
     const tiktok = require('../../service')
-    const inventory = []
-    await marketplaceManager.withShopToken(shop, async (token) => {
-      for (let i = 0; i < ids.length; i += 50) {
-        const res = await tiktok.call(token, 'POST', '/product/202309/inventory/search', { shop, body: { product_ids: ids.slice(i, i + 50) } })
-        inventory.push(...(res.inventory || []))
-      }
+    // TikTok's side is cached briefly; the dashboard side is always fresh.
+    // Cleared by a stock change, a "Use dashboard stock" fix and every orders sync (`shop:<id>:`).
+    ids.sort()
+    const inventory = await cache.wrap(stockCheckKey(shop._id, ids), STOCK_CHECK_TTL, async () => {
+      const out = []
+      await marketplaceManager.withShopToken(shop, async (token) => {
+        for (let i = 0; i < ids.length; i += 50) {
+          const res = await tiktok.call(token, 'POST', '/product/202309/inventory/search', { shop, body: { product_ids: ids.slice(i, i + 50) } })
+          out.push(...(res.inventory || []))
+        }
+      })
+      return out
     })
     const rows = inventory.flatMap((item) => {
       const product = productByTikTokId.get(String(item.product_id))
@@ -271,10 +279,20 @@ async function tiktokStock(ctx) {
  * for that TikTok SKU (worked out here, never taken from the page). A SKU whose stock is spread over
  * several warehouses is left to Seller Center, so no warehouse is emptied by accident.
  */
+async function clearShopStockCheck(ctx, marketplace) {
+    const Shop = require('../../../../models/Shop')
+    const filter = { marketplace, status: 'connected' }
+    if (ctx.user.role === 'sub_admin') filter._id = { $in: ctx.allowedShopIds || [] }
+    const shop = await Shop.findOne(filter).select('_id').lean()
+    if (shop) await clearStockCheck([shop._id])
+}
+
 async function fixTikTokStock(ctx) {
     const productId = String(ctx.body?.productId || '')
     const skuId = String(ctx.body?.skuId || '')
     if (!/^\d+$/.test(productId) || !/^[\w-]+$/.test(skuId)) throw new HttpError(400, { error: 'Unknown TikTok SKU' })
+    // Read TikTok live here: the one-warehouse check below must not use a cached reading.
+    await clearShopStockCheck(ctx, 'tiktok_shop')
     const row = (await tiktokStock(ctx)).find((r) => r.productId === productId && r.tiktokSkuId === skuId)
     if (!row || row.dashboardStock == null) throw new HttpError(400, { error: 'The dashboard has no stock for this TikTok SKU. Link it to a product first, or change it in TikTok Seller Center.' })
     if (row.warehouses.filter((w) => w.available > 0).length > 1) {
@@ -286,6 +304,7 @@ async function fixTikTokStock(ctx) {
     const shop = await Shop.findOne(filter)
     const tiktok = require('../../service')
     await marketplaceManager.withShopToken(shop, (token) => tiktok.updateStock(token, null, row.dashboardStock, { externalListingId: `${productId}:${skuId}`, shop }))
+    await cache.invalidate(`shop:${shop._id}:stock-check`)
     return { message: `TikTok now has ${row.dashboardStock} for ${row.sku || skuId}.` }
 }
 

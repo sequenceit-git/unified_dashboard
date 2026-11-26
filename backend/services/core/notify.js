@@ -111,6 +111,8 @@ async function stockChangedOnShops(product, { was, stock } = {}) {
   if (!product?._id) return
   const Listing = require('../../models/Listing')
   const listings = await Listing.find({ productId: product._id }).populate('shopId', 'name marketplace')
+  // The shops' "SKU differs" stock checks must re-read the marketplace after this change.
+  await require('./stockCheckCache').clearStockCheck(listings.map((listing) => listing.shopId?._id)).catch(() => {})
   if (!listings.length) {
     await stockChanged(product, null, { was, stock })
     return

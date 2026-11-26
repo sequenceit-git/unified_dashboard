@@ -4,6 +4,8 @@ const InventoryLog = require('../../../../models/InventoryLog')
 const Product = require('../../../../models/Product')
 const Listing = require('../../../../models/Listing')
 const marketplaceManager = require('../manager')
+const cache = require('../../../../services/core/cache')
+const { stockCheckKey, STOCK_CHECK_TTL } = require('../../../../services/core/stockCheckCache')
 const events = require('../../../../services/core/events')
 const { HttpError } = require('../../../../utils/httpError')
 const { shopFilter, canAccessShop } = require('../../../../middleware/auth')
@@ -237,13 +239,19 @@ async function temuStock(ctx) {
     const bySku = new Map(listings.map((l) => [l.skuId, l]))
     const byGoods = new Map(listings.map((l) => [l.goodsId, l]))
     const temu = require('../../service')
-    const stocks = []
-    // Asked per listed goods, so SKUs that exist only on Temu (added in Seller Center) show too.
-    await marketplaceManager.withShopToken(shop, async (token) => {
-      for (const goodsId of byGoods.keys()) {
-        const res = await temu.call('temu.local.goods.sku.stock.query', { access_token: token, goodsId: Number(goodsId) })
-        for (const goods of res.stockList || []) for (const sku of goods.skuStockInfoList || []) stocks.push({ goodsId: String(goods.goodsId), ...sku })
-      }
+    // Temu's side is cached briefly (one call per goods adds up); the dashboard side is always fresh.
+    // Cleared by a stock change, a "Use dashboard stock" fix and every orders sync (`shop:<id>:`).
+    const goodsIds = [...byGoods.keys()].sort()
+    const stocks = await cache.wrap(stockCheckKey(shop._id, goodsIds), STOCK_CHECK_TTL, async () => {
+      const out = []
+      // Asked per listed goods, so SKUs that exist only on Temu (added in Seller Center) show too.
+      await marketplaceManager.withShopToken(shop, async (token) => {
+        for (const goodsId of goodsIds) {
+          const res = await temu.call('temu.local.goods.sku.stock.query', { access_token: token, goodsId: Number(goodsId) })
+          for (const goods of res.stockList || []) for (const sku of goods.skuStockInfoList || []) out.push({ goodsId: String(goods.goodsId), ...sku })
+        }
+      })
+      return out
     })
     const rows = stocks.map((sku) => {
       const listing = bySku.get(String(sku.skuId))
@@ -283,6 +291,7 @@ async function fixTemuStock(ctx) {
     const shop = await Shop.findOne(filter)
     const temu = require('../../service')
     await marketplaceManager.withShopToken(shop, (token) => temu.updateStock(token, null, row.dashboardStock, { externalListingId: `${goodsId}:${skuId}` }))
+    await cache.invalidate(`shop:${shop._id}:stock-check`)
     return { message: `Temu now has ${row.dashboardStock} for ${row.sku || skuId}.` }
 }
 
