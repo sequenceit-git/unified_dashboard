@@ -2,20 +2,38 @@
  * Overview: cross-shop command center grounded in stored database data across connected shops.
  * Shared page: shops come from the registry (`src/marketplaces/index.js`), never by name.
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { SHOPS } from '../../marketplaces'
 import Button from '../../components/ui/Button'
 import { ErrorState, Spinner } from '../../components/ui/Feedback'
 import { useApi } from '../../hooks/useApi'
+import { useLiveEvents } from '../../hooks/useLiveEvents'
 import { Change, PartError, QueuesSection, SalesSection, ShopCard } from './OverviewPanels'
 import { CARD, MUTED, attentionItems, greeting, num, usd } from './overviewView'
+
+/** Sync kinds whose results the overview shows (they clear its server cache). */
+const OVERVIEW_SYNCS = ['orders', 'listings', 'inbox', 'full']
+const RELOAD_DELAY_MS = 4000
 
 export default function Overview() {
   const { token } = useAuth()
   const [fresh, setFresh] = useState(0)
   const { data, loading, error, refetch } = useApi(token ? `/api/dashboard/overview${fresh ? `?n=${fresh}` : ''}` : null)
+  // A finished sync cleared the server's cached overview: reload it (the cached copy, not a forced
+  // fresh one), at most once every few seconds however many shops finish together.
+  const reloadTimer = useRef(null)
+  useLiveEvents((event) => {
+    if (event.type !== 'sync' || !OVERVIEW_SYNCS.includes(event.kind) || reloadTimer.current) return
+    if (event.kind === 'inbox' && !event.newMessages && !event.updatedThreads) return
+    reloadTimer.current = setTimeout(() => {
+      reloadTimer.current = null
+      if (fresh) setFresh(0)
+      else refetch()
+    }, RELOAD_DELAY_MS)
+  })
+  useEffect(() => () => clearTimeout(reloadTimer.current), [])
   const [hour] = useState(() => new Date().getHours())
   const [today] = useState(() => new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }))
 

@@ -10,6 +10,8 @@ const redis = require('./redis')
 const PREFIX = 'ecompilot:cache:'
 const memory = new Map()
 const inflight = new Map()
+/** cachedResponse keys whose response is being built right now → promise of the body. */
+const responding = new Map()
 
 function memoryGet(key) {
   const entry = memory.get(key)
@@ -125,9 +127,32 @@ function cachedResponse(group, ttlSeconds) {
       res.set('X-Cache', 'HIT')
       return res.json(hit)
     }
+    // The same response is already being built (e.g. every open tab reloading after a sync):
+    // wait for it instead of running the same queries again.
+    if (responding.has(key)) {
+      const body = await responding.get(key)
+      if (body !== undefined) {
+        res.set('X-Cache', 'HIT')
+        return res.json(body)
+      }
+      return next()
+    }
+    let finish
+    const pending = new Promise((resolve) => { finish = resolve })
+    responding.set(key, pending)
+    const done = (body) => {
+      if (responding.get(key) === pending) responding.delete(key)
+      finish(body)
+    }
+    res.on('close', () => done(undefined))
     const send = res.json.bind(res)
     res.json = (body) => {
-      if (res.statusCode === 200) set(key, body, ttlSeconds)
+      if (res.statusCode === 200) {
+        set(key, body, ttlSeconds)
+        done(body)
+      } else {
+        done(undefined)
+      }
       res.set('X-Cache', 'MISS')
       return send(body)
     }
