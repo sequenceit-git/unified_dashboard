@@ -9,6 +9,7 @@ const registry = require('../../marketplaces')
 const { canonical: canonicalMarketplace } = registry
 const { runDiscoveryAgent } = require('../../agent/discovery/discoveryAgent')
 const { productImages } = require('../../agent/discovery/listingImage')
+const cache = require('../core/cache')
 const { getAiConfig } = require('../../services/system/aiSettings')
 const { HttpError } = require('../../utils/httpError')
 const { generateRecommendationsExcel, verifiedLinks } = require('../catalog/excelExport')
@@ -156,6 +157,8 @@ async function recommendations(ctx) {
     let imagesAdded = false
     await Promise.all(docs.map(async (opp) => {
       if (opp.image) return
+      // A product with no photo found is looked up again at most every 6 hours, not on every open.
+      if (!(await cache.claim(`discovery:img:${report._id}:${opp._id || opp.rank || opp.title}`, 6 * 3600))) return
       const pages = [opp.listingUrl, ...(opp.sources || []).map((source) => source.url)].filter(Boolean)
       const images = await productImages({ hinted: opp.images || [], pages, title: opp.title })
       if (!images.length) return
