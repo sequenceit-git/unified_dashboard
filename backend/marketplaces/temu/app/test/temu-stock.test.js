@@ -28,7 +28,7 @@ test('stock is compared per SKU and mismatches come first', async () => {
     const service = freshRequire('marketplaces/temu/app/services/inventory.js')
     const rows = await service.temuStock(admin)
     assert.deepEqual(rows.map((r) => [r.sku, r.goodsId, r.skuId, r.temuStock, r.dashboardStock, r.mismatch]), [
-      ['CASE-BLUE', '77', '2', 9, 5, true], ['CASE-RED', '77', '1', 4, 4, false], ['CABLE', '88', '5', 3, 3, false],
+      ['2', '77', '2', 9, 5, true], ['1', '77', '1', 4, 4, false], ['5', '88', '5', 3, 3, false],
     ])
     assert.equal(rows[0].preSale, 2)
     assert.deepEqual(calls.map(([t]) => t), ['temu.local.goods.sku.stock.query', 'temu.local.goods.sku.stock.query'])
@@ -73,7 +73,7 @@ test('SKUs that exist only on Temu still show', async () => {
   try {
     const service = freshRequire('marketplaces/temu/app/services/inventory.js')
     const rows = await service.temuStock(admin)
-    assert.deepEqual(rows.map((r) => [r.sku, r.dashboardStock]), [['CASE', 4], ['CASE-NEW', null]])
+    assert.deepEqual(rows.map((r) => [r.sku, r.dashboardStock]), [['1', 4], ['9', null]])
     assert.equal(calls[0].goodsId, 77)
   } finally { restore() }
 })

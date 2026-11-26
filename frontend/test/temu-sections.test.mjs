@@ -59,7 +59,7 @@ test('SKUs are made from the chosen variant values and keep what was typed', asy
   const { skusFor, formFromProduct } = await load('/src/marketplaces/temu/sections/goods/listing/temuForm.js')
   const form = formFromProduct({ title: 'Tee', sku: 'TEE', basePrice: 9.99, stock: 4, weight: 0.5, images: ['/uploads/a.jpg'] })
   assert.equal(form.title, 'Tee')
-  assert.equal(form.outGoodsSn, 'TEE')
+  assert.equal(form.outGoodsSn, undefined) // Temu makes the SKU ids
   const red = { parentSpecId: 3001, specId: 9001, vid: 31, value: 'Red' }
   const blue = { parentSpecId: 3001, specId: 9002, vid: 32, value: 'Blue' }
   const xl = { parentSpecId: 3002, specId: 7777, value: 'XL' }
@@ -135,8 +135,8 @@ test('new goods made in the Temu form become a dashboard product first', async (
   const { newProductBody, formFromProduct } = await load('/src/marketplaces/temu/sections/goods/listing/temuForm.js')
   const form = { ...formFromProduct({}), title: ' Red mug ', description: 'Ceramic', images: ['/uploads/a.jpg'], outGoodsSn: 'MUG-1',
     variants: [{ basePrice: '9.5', quantity: '3' }, { basePrice: '8', quantity: '2' }] }
-  assert.deepEqual(newProductBody(form), { title: 'Red mug', description: 'Ceramic', images: ['/uploads/a.jpg'], basePrice: 8, stock: 5, sku: 'MUG-1', status: 'active' })
-  assert.equal(newProductBody({ ...form, outGoodsSn: '' }).sku, undefined)
+  // No SKU of our own: it becomes Temu's SKU id once Temu has the goods.
+  assert.deepEqual(newProductBody(form), { title: 'Red mug', description: 'Ceramic', images: ['/uploads/a.jpg'], basePrice: 8, stock: 5, status: 'active' })
 })
 
 test('the stock check stays hidden when Temu and the dashboard agree', async () => {

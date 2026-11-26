@@ -15,7 +15,7 @@ function newSku(marketplace) {
 }
 
 // SKUs a tool made up rather than a seller: our own draft SKUs and random IDs (UUIDs).
-const MACHINE_SKU = [/^BOT-/i, /^EP-/i, /^EBAY-\d{6}-[A-F0-9]{6}$/i, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i]
+const MACHINE_SKU = [/^BOT-/i, /^EP-/i, /^EBAY-\d{6}-[A-F0-9]{6}$/i, /^TEMU-\d{6}-[A-F0-9]{6}$/i, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i]
 
 const isMachineSku = (sku) => MACHINE_SKU.some((pattern) => pattern.test(String(sku || '').trim()))
 

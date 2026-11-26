@@ -22,7 +22,7 @@ const FORM = (extra = {}) => ({
 
 test("a single-SKU goods builds Temu's add body", () => {
   const body = buildGoodsAdd(FORM(), TEMPLATE)
-  assert.deepEqual(body.goodsBasic, { catId: 29069, goodsName: 'Cotton tee', outGoodsSn: 'TEE', goodsGallery: { goodsCarouselImage: ['https://temu.img/a.jpg', 'https://temu.img/b.jpg'], detailImage: ['https://temu.img/a.jpg', 'https://temu.img/b.jpg'] } })
+  assert.deepEqual(body.goodsBasic, { catId: 29069, goodsName: 'Cotton tee', goodsGallery: { goodsCarouselImage: ['https://temu.img/a.jpg', 'https://temu.img/b.jpg'], detailImage: ['https://temu.img/a.jpg', 'https://temu.img/b.jpg'] } })
   assert.deepEqual(body.goodsServicePromise, { costTemplateId: 'T1', fulfillmentType: 1, shipmentLimitDay: 2 })
   assert.deepEqual(body.bulletPoints, ['Soft', 'Light'])
   assert.equal(body.goodsDesc, 'Soft.')
@@ -35,11 +35,13 @@ test("a single-SKU goods builds Temu's add body", () => {
     { templatePid: 2000, refPid: 200, parentSpecId: 3001, specId: 9001, vid: 31, value: 'Red' },
   ])
   assert.deepEqual(body.skuList, [{
-    specIdList: [9001], outSkuSn: 'TEE-R', quantity: 12,
+    specIdList: [9001], quantity: 12,
     price: { basePrice: { amount: '9.99', currency: 'USD' }, listPriceType: 1 },
     weight: '0.4', weightUnit: 'lb', length: '10', width: '8', height: '1', volumeUnit: 'in', images: ['https://temu.img/r.jpg'],
   }])
   assert.equal(body.goodsTrademark, undefined)
+  // Temu makes the SKU ids: our own goods / SKU codes are never sent.
+  assert.equal(JSON.stringify(body).includes('outSkuSn') || JSON.stringify(body).includes('outGoodsSn'), false)
 })
 
 test('variants become skuList with their spec ids', () => {

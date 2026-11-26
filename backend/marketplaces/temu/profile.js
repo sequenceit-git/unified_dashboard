@@ -52,7 +52,8 @@ module.exports = {
     ended: { label: 'Removed', color: 'gray' },
     error: { label: 'Rejected', color: 'red' },
   },
-  rawStatuses: {},
+  // Temu's own sub-status (e.g. 4004 "Product to be completed"), stored as marketplaceStatus.
+  rawStatuses: require('./goodsStatus').rawStatuses,
   productForm: {
     titleMax: 250,
     maxImages: 10,

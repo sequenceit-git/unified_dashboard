@@ -35,7 +35,7 @@ function temuGoodsRows(result) {
     for (const sku of skus) {
       rows.push({
         goods: good.goodsName || sku.goodsName || 'Temu goods',
-        sku: sku.outSkuSn || sku.outGoodsSn || good.outGoodsSn || String(sku.skuId || good.goodsId || ''),
+        sku: String(sku.skuId || good.goodsId || ''),
         price: temuAmount(sku.retailPrice || sku.price || good.price, good.currency),
         listPrice: temuAmount(sku.listPrice || good.listPrice, good.currency),
         stock: Number(sku.quantity || sku.stock || good.quantity || 0),

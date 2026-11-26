@@ -18,7 +18,6 @@ export function formFromProduct(product = {}) {
     title: product.title || '',
     description: product.description || '',
     bulletPoints: [],
-    outGoodsSn: product.sku || '',
     images: product.images || [],
     shippingTemplateId: '',
     handlingDays: 2,
@@ -77,7 +76,6 @@ export function skusFor(groups, previous = [], form = {}) {
   const d = form.defaults || {}
   return combos.map((specs) => old.get(keyOf(specs)) || {
     specs,
-    outSkuSn: form.outGoodsSn ? `${form.outGoodsSn}-${specs.map((s) => s.value).join('-')}`.replace(/\s+/g, '').slice(0, 100) : '',
     basePrice: d.basePrice || '',
     listPrice: '',
     quantity: d.quantity || '',
@@ -149,7 +147,6 @@ export function newProductBody(form) {
     images: form.images || [],
     basePrice: prices.length ? Math.min(...prices) : undefined,
     stock: (form.variants || []).reduce((t, v) => t + (Number(v.quantity) || 0), 0),
-    ...(filled(form.outGoodsSn) ? { sku: String(form.outGoodsSn).trim() } : {}),
     status: 'active',
   }
 }
@@ -161,7 +158,6 @@ export function toTemuForm(form, temuUrl) {
     title: form.title.trim(),
     description: form.description,
     bulletPoints: (form.bulletPoints || []).filter(filled),
-    outGoodsSn: form.outGoodsSn,
     images: form.images.map(temuUrl),
     shippingTemplateId: form.shippingTemplateId,
     handlingDays: Number(form.handlingDays) || 2,

@@ -99,7 +99,7 @@ export default function ListModal({ product, onClose, onSaved }) {
     setBusy('check')
     setCheckNote('')
     try {
-      const { problems } = await api.post('/api/temu/goods/helpers/check', { title: form.title, description: form.description, bulletPoints: form.bulletPoints.filter(Boolean), outGoodsSn: form.outGoodsSn, skus: form.variants.map((v) => v.outSkuSn).filter(Boolean) }, token)
+      const { problems } = await api.post('/api/temu/goods/helpers/check', { title: form.title, description: form.description, bulletPoints: form.bulletPoints.filter(Boolean) }, token)
       setCheckNote(problems.length ? problems.map((p) => p.message).join(' ') : 'Temu found no banned words or duplicate codes.')
     } catch (err) {
       setCheckNote(err.message)
@@ -223,10 +223,9 @@ export default function ListModal({ product, onClose, onSaved }) {
               <span className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-slate-300">Description (plain text)</span>
               <textarea className="w-full rounded-lg border px-3 py-2 dark:border-slate-700 dark:bg-slate-900" rows={5} maxLength={10000} value={form.description} onChange={(e) => set({ description: e.target.value })} />
             </label>
-            <Input label="Goods code (optional)" value={form.outGoodsSn} maxLength={100} onChange={(e) => set({ outGoodsSn: e.target.value })} />
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="secondary" type="button" size="sm" disabled={Boolean(busy)} onClick={check}>{busy === 'check' ? 'Checking…' : 'Check with Temu'}</Button>
-              <span className="text-xs text-gray-500">Banned words and duplicate codes, before you list.</span>
+              <span className="text-xs text-gray-500">Banned words, before you list. Temu gives each SKU its own SKU id.</span>
             </div>
             {checkNote && <p className="text-xs text-gray-700 dark:text-slate-300">{checkNote}</p>}
           </div>

@@ -63,7 +63,7 @@ export default function TemuVariants({ token, catId, template, form, setGroups, 
       {form.variants.length > 0 && (
         <div className="overflow-x-auto">
           <table className="min-w-full text-xs">
-            <thead><tr className="text-left text-gray-500"><th className="p-1">SKU</th><th className="p-1">Price $</th><th className="p-1">List price $</th><th className="p-1">Stock</th><th className="p-1">Weight lb</th><th className="p-1">L × W × H in</th><th className="p-1">Seller code</th><th className="p-1">Photo</th></tr></thead>
+            <thead><tr className="text-left text-gray-500"><th className="p-1">SKU</th><th className="p-1">Price $</th><th className="p-1">List price $</th><th className="p-1">Stock</th><th className="p-1">Weight lb</th><th className="p-1">L × W × H in</th><th className="p-1">Photo</th></tr></thead>
             <tbody>
               {form.variants.map((s, i) => {
                 const err = ['basePrice', 'listPrice', 'quantity', 'weight', 'size', 'images'].map((f) => errors[`variants.${i}.${f}`]).filter(Boolean).join(' ')
@@ -76,7 +76,6 @@ export default function TemuVariants({ token, catId, template, form, setGroups, 
                     <td className="p-1">{cell('quantity', 'w-16')}</td>
                     <td className="p-1">{cell('weight', 'w-16')}</td>
                     <td className="p-1 whitespace-nowrap">{cell('length', 'w-12')} {cell('width', 'w-12')} {cell('height', 'w-12')}</td>
-                    <td className="p-1">{cell('outSkuSn', 'w-28')}</td>
                     <td className="p-1 w-32"><Select value={s.images?.[0] || ''} options={photos} onChange={(e) => setSku(i, { images: e.target.value ? [e.target.value] : [] })} /></td>
                   </tr>
                 )

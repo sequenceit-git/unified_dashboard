@@ -14,7 +14,11 @@ module.exports = {
   sections: require('./sections'),
   webhooks: require('./webhooks'),
   /** A Product Discovery find shaped for Temu (title rules and length). */
-  hooks: { researchListing: (input) => require('./researchListing').researchListing(input) },
+  hooks: {
+    researchListing: (input) => require('./researchListing').researchListing(input),
+    /** Once Temu has the goods, its SKU id is the product's SKU (we never push our own codes). */
+    publishedSku: (_product, publishRes) => publishRes?.temuSkus?.[0]?.skuId || null,
+  },
   listingUrl: require('./listingUrl').listingUrl,
   routes: require('./routes'),
   /** The shop's app: dashboard API, sync jobs, listing pushes (loaded on first use, after every adapter). */

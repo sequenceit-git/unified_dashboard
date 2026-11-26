@@ -248,12 +248,12 @@ async function temuStock(ctx) {
     const rows = stocks.map((sku) => {
       const listing = bySku.get(String(sku.skuId))
       const product = products.get((listing || byGoods.get(sku.goodsId))?.productId)
-      const variant = product?.variants?.find((v) => v.sku && v.sku === sku.outSkuSn)
+      const variant = product?.variants?.find((v) => v.sku && (v.sku === String(sku.skuId) || v.sku === sku.outSkuSn))
       // A product's own stock only counts for a SKU the dashboard lists.
       const dashboardStock = variant ? variant.stock ?? 0 : listing && product && !(product.variants || []).length ? product.stock ?? 0 : null
       const temuStock = sku.selfOrdinaryStock?.stock ?? 0
       return {
-        sku: sku.outSkuSn || String(sku.skuId),
+        sku: String(sku.skuId),
         goodsId: sku.goodsId,
         skuId: String(sku.skuId),
         product: product?.title || '',

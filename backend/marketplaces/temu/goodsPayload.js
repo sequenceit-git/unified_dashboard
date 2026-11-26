@@ -2,13 +2,14 @@
  * Turns the dashboard's Temu listing form into Temu's bg.local.goods.add body (Temu's release
  * guide, product/00-how-to-release-product.md). Pure: no Temu calls.
  *
- * form = { catId, title, description, bulletPoints[], outGoodsSn, images[] (Temu urls),
+ * form = { catId, title, description, bulletPoints[], images[] (Temu urls),
  *   shippingTemplateId, handlingDays, attributes: { [templatePid]: { vids?: [], value?, unitId? } },
- *   variants: [{ specs: [{ parentSpecId, specId, vid?, value }], outSkuSn, basePrice, listPrice?,
+ *   variants: [{ specs: [{ parentSpecId, specId, vid?, value }], basePrice, listPrice?,
  *     quantity, weight, weightUnit, length, width, height, volumeUnit, images[],
  *     externalProductType?, externalProductId? }], brand?: { brandId, trademarkId }, taxCode?,
  *   origin?: { region1, region2? } }
  * template = the helpers' template (attributes / variants with templatePid, refPid, parent, units).
+ * No seller SKU / goods codes are sent: Temu's own SKU ids are the SKUs.
  * Amounts are whole currency units ("9.99"), as everywhere for Temu. Temu US site: weight in lb,
  * sizes in inches (one decimal), base price at least $0.02.
  */
@@ -139,14 +140,12 @@ function buildGoodsAdd(form, template) {
     goodsBasic: {
       catId: Number(form.catId),
       goodsName: String(form.title).trim(),
-      ...(filled(form.outGoodsSn) ? { outGoodsSn: String(form.outGoodsSn).trim() } : {}),
       goodsGallery: { goodsCarouselImage: form.images, detailImage: form.images },
     },
     goodsServicePromise: { costTemplateId: String(form.shippingTemplateId), fulfillmentType: 1, shipmentLimitDay: Number(form.handlingDays) || 2 },
     goodsProperty: { goodsProperties: goodsProperties(form, template) },
     skuList: form.variants.map((v) => ({
       specIdList: v.specs.map((s) => s.specId),
-      ...(filled(v.outSkuSn) ? { outSkuSn: String(v.outSkuSn).trim() } : {}),
       quantity: Number(v.quantity),
       // No list price: Temu's listPriceType 1 (none needed).
       price: { basePrice: money(v.basePrice), ...(filled(v.listPrice) ? { listPrice: money(v.listPrice) } : { listPriceType: 1 }) },

@@ -66,7 +66,8 @@ module.exports = {
             const skuId = line.skuId
             const rawSku = String(line.extCode || line.outSkuSn || '').trim()
             return {
-              sku: rawSku || String(skuId || goodsId || ''),
+              // Temu's SKU id is the SKU; the seller code (older goods) still matches by rawSku.
+              sku: String(skuId || rawSku || goodsId || ''),
               rawSku,
               lineItemId: line.orderSn ? String(line.orderSn) : undefined,
               externalListingId: goodsId && skuId ? `${goodsId}:${skuId}` : undefined,

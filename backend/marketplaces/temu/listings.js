@@ -2,37 +2,61 @@
 const { temuMoney } = require('./format')
 const { buildGoodsAdd } = require('./goodsPayload')
 const { mapTemplate } = require('./goodsTemplate')
+const { goodsState, subStatusOf } = require('./goodsStatus')
+
+let loggedUnknown = false
 
 const filled = (v) => v !== undefined && v !== null && String(v).trim() !== ''
 const badRequest = (message, extra = {}) => Object.assign(new Error(message), { status: 400, ...extra })
 
 module.exports = {
+  /**
+   * Every goods on Temu (Active + Inactive, then Incomplete), one item per SKU. The status is
+   * Temu's own sub-status (goodsStatus.js): goods Temu rejected or took down show as such, not
+   * as on sale. The SKU is Temu's SKU id (the dashboard does not push its own SKU codes).
+   */
   async getInventory(accessToken, _options = {}) {
     const pageSize = 100
     const maxPages = 20
-    const goods = []
+    const byId = new Map()
     let complete = true
-    for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
-      const result = await this.call('bg.local.goods.list.query', {
-        access_token: accessToken,
-        pageNo,
-        pageSize,
-        goodsSearchType: 1,
-        goodsStatusFilterType: 1,
-      })
-      const page = result.goodsList || result.pageItems || result.list || []
-      goods.push(...page)
-      if (page.length < pageSize) break
-      if (pageNo === maxPages) complete = false
+    // 1 = Active and Inactive, 4 = Incomplete (in review, or to be completed after a violation).
+    for (const filterType of [1, 4]) {
+      try {
+        for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
+          const result = await this.call('bg.local.goods.list.query', {
+            access_token: accessToken,
+            pageNo,
+            pageSize,
+            goodsSearchType: 1,
+            goodsStatusFilterType: filterType,
+          })
+          const page = result.goodsList || result.pageItems || result.list || []
+          for (const good of page) byId.set(String(good.goodsId ?? `${filterType}:${byId.size}`), { good, filterType })
+          if (page.length < pageSize) break
+          if (pageNo === maxPages) complete = false
+        }
+      } catch (err) {
+        if (filterType === 1) throw err
+        complete = false // without the Incomplete goods, nothing may be ended as gone
+      }
     }
     const items = []
-    for (const good of goods) {
+    for (const { good, filterType } of byId.values()) {
+      const state = goodsState(good, filterType)
+      if (state.status === 'live' && filterType === 1 && !subStatusOf(good) && !loggedUnknown) {
+        loggedUnknown = true
+        console.warn('Temu goods list sent no known sub-status; status fields:', JSON.stringify(Object.fromEntries(Object.entries(good).filter(([k]) => /status/i.test(k)))))
+      }
       const skus = good.skuList || good.skuInfoList || [good]
       for (const sku of skus) {
-        const rawSku = String(sku.outSkuSn || sku.outGoodsSn || good.outGoodsSn || '').trim()
+        const sellerCode = String(sku.outSkuSn || '').trim()
+        const skuId = String(sku.skuId || good.goodsId || '')
         items.push({
-          sku: rawSku || String(sku.skuId || good.goodsId),
-          rawSku,
+          sku: skuId,
+          rawSku: skuId,
+          // Goods listed earlier with our own SKU codes still match their dashboard product.
+          matchSkus: [sellerCode, String(good.outGoodsSn || '').trim()].filter(Boolean),
           title: good.goodsName || sku.goodsName || 'Temu goods',
           description: '',
           price: temuMoney(sku.retailPrice ?? good.retailPrice ?? sku.price),
@@ -40,8 +64,9 @@ module.exports = {
           images: [good.thumbUrl || good.imageUrl].filter(Boolean),
           category: '',
           brand: '',
-          listingStatus: 'live',
-          marketplaceStatus: 'ONSALE',
+          listingStatus: state.status,
+          marketplaceStatus: state.marketplaceStatus,
+          ...(state.reason ? { listingError: state.reason } : {}),
           externalListingId: sku.skuId && (good.goodsId || sku.goodsId)
             ? `${good.goodsId || sku.goodsId}:${sku.skuId}`
             : String(good.goodsId || sku.goodsId || sku.skuId),

@@ -9,7 +9,7 @@ export const TEMU_LIST_STEPS = [
 ]
 
 function stepOf(field, message) {
-  if (['title', 'images', 'bulletPoints', 'description', 'outGoodsSn'].includes(field)) return 'basics'
+  if (['title', 'images', 'bulletPoints', 'description'].includes(field)) return 'basics'
   if (field === 'catId' || field.startsWith('attributes')) return 'category'
   if (field.startsWith('variants')) return 'skus'
   if (field === 'shippingTemplateId' || field === 'handlingDays') return 'shipping'

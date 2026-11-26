@@ -390,7 +390,60 @@
         "color": "red"
       }
     },
-    "rawStatuses": {},
+    "rawStatuses": {
+      "2001": {
+        "label": "On sale",
+        "color": "green"
+      },
+      "2002": {
+        "label": "On sale: documents due",
+        "color": "green"
+      },
+      "2005": {
+        "label": "On sale: category to fix",
+        "color": "green"
+      },
+      "2006": {
+        "label": "On sale: SKU set to fix",
+        "color": "green"
+      },
+      "2101": {
+        "label": "On sale: low traffic",
+        "color": "green"
+      },
+      "3001": {
+        "label": "Off sale: penalty",
+        "color": "red"
+      },
+      "3002": {
+        "label": "Off sale",
+        "color": "gray"
+      },
+      "3003": {
+        "label": "Sold out",
+        "color": "yellow"
+      },
+      "3004": {
+        "label": "Inactive: price too high",
+        "color": "gray"
+      },
+      "4001": {
+        "label": "Price evaluation in progress",
+        "color": "blue"
+      },
+      "4002": {
+        "label": "Under review",
+        "color": "blue"
+      },
+      "4003": {
+        "label": "Price evaluation failed",
+        "color": "red"
+      },
+      "4004": {
+        "label": "Product to be completed",
+        "color": "red"
+      }
+    },
     "productForm": {
       "titleMax": 250,
       "maxImages": 10,

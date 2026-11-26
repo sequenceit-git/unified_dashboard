@@ -12,6 +12,7 @@ const { listingUrl } = require('../../..')
 const { HttpError } = require('../../../../utils/httpError')
 const { shopFilter } = require('../../../../middleware/auth')
 const { assertProductAccess } = require('../../../../services/productAccess')
+const { SUB_STATUS } = require('../../goodsStatus')
 const ADAPTER = require('../..')
 
 const SORTABLE = ['createdAt', 'sku', 'title', 'basePrice', 'costPrice', 'stock']
@@ -581,6 +582,13 @@ const GOODS_SUB_STATUS = {
   14: 'Deletion refused (price assessment)',
 }
 
+/** Publication status as words: Temu's 4-digit sub-status (e.g. 4004 "Product to be completed") wins. */
+function publishState(st) {
+  const sub = SUB_STATUS[Number(st.subStatus)]
+  if (sub) return { state: sub.label, detail: sub.reason || '', listingStatus: sub.status }
+  return { state: GOODS_STATUS[st.status] || (st.status != null ? `Status ${st.status}` : 'Unknown'), detail: GOODS_SUB_STATUS[st.subStatus] || '' }
+}
+
 /** The user's connected Temu shop that lists this goods (never another shop's goods). */
 async function temuShopForGoods(ctx, goodsId) {
     if (!/^\d+$/.test(String(goodsId || ''))) throw new HttpError(400, { error: 'goodsId must be a Temu goods id' })
@@ -608,6 +616,14 @@ async function temuDetail(ctx) {
     const own = (skus.skuList || []).filter((s) => String(s.goodsId) === goodsId)
     const fromDetail = new Map((detail.skuList || []).map((s) => [String(s.skuId), s]))
     const st = (publish.goodsPublishStatusList || []).find((p) => String(p.goodsId) === goodsId) || {}
+    const status = publishState(st)
+    // Temu's word wins over a stale stored status (e.g. still "Off sale" after Temu rejected it).
+    if (['error', 'pending', 'paused', 'ended'].includes(status.listingStatus)) {
+      await Listing.updateMany(
+        { shopId: shop._id, marketplace: 'temu', externalListingId: { $in: [goodsId, new RegExp(`^${goodsId}:`)] }, status: { $ne: status.listingStatus } },
+        { $set: { status: status.listingStatus, marketplaceStatus: String(st.subStatus), syncError: status.listingStatus === 'error' ? status.detail : null } },
+      )
+    }
     return {
       goods: {
         title: detail.goodsName || '',
@@ -625,7 +641,7 @@ async function temuDetail(ctx) {
           sellerCode: s.skuSn ?? d.outSkuSn ?? '',
         }
       }),
-      status: { state: GOODS_STATUS[st.status] || (st.status != null ? `Status ${st.status}` : 'Unknown'), detail: GOODS_SUB_STATUS[st.subStatus] || '' },
+      status,
     }
 }
 
